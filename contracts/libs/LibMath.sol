@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: 
 
-pragma solidity >=0.7.4;
+pragma solidity >=0.7.1;
 
-contract LibMath {
+library LibMath {
 
     // 0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3
     // 606 ~ 672 gas
@@ -40,7 +40,6 @@ contract LibMath {
         while (next < z) {
             z = next;
             next = (next + y / next) >> 1;
-            loops += 1;
         }
         return z;
     }
