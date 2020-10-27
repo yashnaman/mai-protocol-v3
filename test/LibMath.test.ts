@@ -3,6 +3,7 @@ import { waffleChai } from "@ethereum-waffle/chai";
 import { Contract } from 'ethers';
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle';
 import LibMath from '../artifacts/TestLibMath.json';
+import './helper';
 
 use(solidity);
 use(waffleChai);
