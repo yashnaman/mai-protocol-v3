@@ -1,8 +1,10 @@
+import chai from "chai";
 import {Contract} from 'ethers';
 import {deployContract, MockProvider, solidity} from 'ethereum-waffle';
-import LibMath from '../build/TestLibMath.json';
+import LibMath from '../artifacts/TestLibMath.json';
+chai.use(solidity);
 
-use(solidity);
+const { expect } = chai;
 
 describe('LibMath', () => {
   const [wallet, walletTo] = new MockProvider().getWallets();

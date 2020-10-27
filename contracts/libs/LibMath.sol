@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: 
-
-pragma solidity >=0.7.1;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity >=0.7.4;
 
 library LibMath {
 
@@ -25,7 +24,7 @@ library LibMath {
         if (y < 3) {
             return (y + 1) / 2;
         }
-        
+
         // binary estimate
         // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
         uint256 next;
@@ -33,7 +32,7 @@ library LibMath {
             uint n = (mostSignificantBit(y) + 1) / 2;
             next = (1 << (n - 1)) + (y >> (n + 1));
         }
-        
+
         // modified babylonian method
         // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
         uint256 z = y;
