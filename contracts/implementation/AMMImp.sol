@@ -40,10 +40,10 @@ library AMMImp {
     ) public returns (int256) {
         MarginAccount memory account = perpetual.traderAccounts[address(this)];
         if (account.positionAmount == 0) {
-            return perpetual.ammSettings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance);
+            return perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance);
         } else if (account.positionAmount > 0) {
-            int256 b = perpetual.ammSettings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(perpetual.state.indexPrice).wmul(account.positionAmount);
-            b = b.add(perpetual.ammSettings.targetLeverage.wmul(account.cashBalance));
+            int256 b = perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(perpetual.state.indexPrice).wmul(account.positionAmount);
+            b = b.add(perpetual.settings.targetLeverage.wmul(account.cashBalance));
         }
     }
 

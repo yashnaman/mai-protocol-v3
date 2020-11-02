@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-contract PerpetualMaker {
+import "../lib/LibEnumerableMap.sol";
 
+struct VersionInfo {
+    string version;
+    address implementation;
+    uint256 commitTime;
+}
+
+contract PerpetualMaker {
     // implementation list
+    mapping(address => VersionInfo) internal _versions;
+    VersionInfo[] internal _versionList;
 
     function addImplementation(bytes32 id, address implementation) external {
     }

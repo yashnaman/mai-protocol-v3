@@ -19,12 +19,8 @@ struct Settings {
     int256 liquidatorPenaltyRate;
     int256 liquidationGasReserve;
     int256 fundPenaltyRate;
-    int256 lpFee;
-}
-
-struct AMMSettings {
     int256 halfSpreadRate;
-    int256 beta;
+    int256 beta1;
     int256 beta2;
     int256 lpFeeRate;
     int256 baseFundingRate;
@@ -63,9 +59,7 @@ struct Perpetual {
     address operator;
     address oracle;
     State state;
-    AMMSettings ammSettings;
     Settings settings;
-    MarginAccount ammAccount;
     mapping(address => MarginAccount) traderAccounts;
     mapping(address => LiquidationProviderAccount) lpAccounts;
     mapping(address => mapping(address => bytes32)) accessControls;
