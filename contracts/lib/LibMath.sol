@@ -20,22 +20,24 @@ library LibMath {
     }
 
     // https://en.wikipedia.org/wiki/Integer_square_root
-    function sqrt(uint256 y) internal pure returns (uint256) {
+    function sqrt(int256 y) internal pure returns (int256) {
+        require(y >= 0, "negative sqrt");
         if (y < 3) {
             return (y + 1) / 2;
         }
 
         // binary estimate
         // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
-        uint256 next;
+        int256 next;
         {
-            uint n = (mostSignificantBit(y) + 1) / 2;
-            next = (1 << (n - 1)) + (y >> (n + 1));
+            uint8 n = mostSignificantBit(uint256(y));
+            n = (n + 1) / 2;
+            next = int256((1 << (n - 1)) + (uint256(y) >> (n + 1)));
         }
 
         // modified babylonian method
         // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
-        uint256 z = y;
+        int256 z = y;
         while (next < z) {
             z = next;
             next = (next + y / next) >> 1;

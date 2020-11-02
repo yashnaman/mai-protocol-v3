@@ -22,8 +22,13 @@ struct Settings {
     int256 lpFee;
 }
 
-struct AMMState {
-    int256 reserve;
+struct AMMSettings {
+    int256 halfSpreadRate;
+    int256 beta;
+    int256 beta2;
+    int256 lpFeeRate;
+    int256 baseFundingRate;
+    int256 targetLeverage;
 }
 
 struct MarginAccount {
@@ -40,7 +45,8 @@ struct LiquidationProviderAccount {
 struct State {
     bool emergency;
     bool shutdown;
-    int256 markPrice;
+    int256 markPrice; // slow
+    int256 indexPrice; // fast
     int256 unitSocialLoss;
     int256 unitAccumulatedFundingLoss;
     int256 totalPositionAmount;
@@ -57,7 +63,7 @@ struct Perpetual {
     address operator;
     address oracle;
     State state;
-    AMMState ammState;
+    AMMSettings ammSettings;
     Settings settings;
     MarginAccount ammAccount;
     mapping(address => MarginAccount) traderAccounts;

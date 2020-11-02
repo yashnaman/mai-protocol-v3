@@ -10,7 +10,7 @@ contract TestLibMath {
         return LibMath.mostSignificantBit(x);
     }
 
-    function sqrt(uint256 y) public pure returns (uint256) {
+    function sqrt(int256 y) public pure returns (int256) {
         return LibMath.sqrt(y);
     }
 }
