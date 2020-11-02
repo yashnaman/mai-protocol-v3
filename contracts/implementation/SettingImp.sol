@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "./Storage.sol";
+import "../Type.sol";
 
-library Settings {
+library SettingImp {
 
     function setArgument(
-        Storage.Perpetual storage perpetual,
+        Perpetual storage perpetual,
         bytes32 entry,
         int256 value
     ) public {

@@ -3,12 +3,12 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
-import "./SafeMathEx.sol";
+import "./lib/LibSafeMathExt.sol";
 
 library Utils {
 
     using SignedSafeMath for int256;
-    using SafeMathEx for int256;
+    using LibSafeMathExt for int256;
 
     function hasSameSign(int256 x, int256 y) internal pure returns (bool) {
         if (x == 0 || y == 0) {

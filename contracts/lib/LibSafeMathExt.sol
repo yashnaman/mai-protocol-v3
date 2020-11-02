@@ -4,19 +4,19 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
-import "./Constant.sol";
+import "./LibConstant.sol";
 
-library SafeMathEx {
+library LibSafeMathExt {
 
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
+        z = x.mul(y).add(LibConstant.UNSIGNED_ONE / 2) / LibConstant.UNSIGNED_ONE;
     }
 
     function wdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x.mul(Constant.UNSIGNED_ONE).add(y / 2).div(y);
+        z = x.mul(LibConstant.UNSIGNED_ONE).add(y / 2).div(y);
     }
 
     function wfrac(uint256 x, uint256 y, uint256 z) internal pure returns (uint256 r) {
@@ -24,7 +24,7 @@ library SafeMathEx {
     }
 
     function wmul(int256 x, int256 y) internal pure returns (int256 z) {
-        z = roundHalfUp(x.mul(y), Constant.SIGNED_ONE) / Constant.SIGNED_ONE;
+        z = roundHalfUp(x.mul(y), LibConstant.SIGNED_ONE) / LibConstant.SIGNED_ONE;
     }
 
     function wdiv(int256 x, int256 y) internal pure returns (int256 z) {
@@ -32,7 +32,7 @@ library SafeMathEx {
             y = neg(y);
             x = neg(x);
         }
-        z = roundHalfUp(x.mul(Constant.SIGNED_ONE), y).div(y);
+        z = roundHalfUp(x.mul(LibConstant.SIGNED_ONE), y).div(y);
     }
 
     function wfrac(int256 x, int256 y, int256 z) internal pure returns (int256 r) {
@@ -52,8 +52,9 @@ library SafeMathEx {
         return SignedSafeMath.sub(int256(0), a);
     }
 
-    // ROUND_HALF_UP rule helper. You have to call roundHalfUp(x, y) / y to finish the rounding operation
-    // 0.5 ≈ 1, 0.4 ≈ 0, -0.5 ≈ -1, -0.4 ≈ 0
+    /// @dev ROUND_HALF_UP rule helper.
+    ///      You have to call roundHalfUp(x, y) / y to finish the rounding operation
+    ///      0.5 ≈ 1, 0.4 ≈ 0, -0.5 ≈ -1, -0.4 ≈ 0
     function roundHalfUp(int256 x, int256 y) internal pure returns (int256) {
         require(y > 0, "roundHalfUp only supports y > 0");
         if (x >= 0) {

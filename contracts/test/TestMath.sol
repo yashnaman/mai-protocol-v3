@@ -2,7 +2,7 @@
 
 pragma solidity >=0.7.4;
 
-import "../libs/LibMath.sol";
+import "../lib/LibMath.sol";
 
 contract TestLibMath {
 

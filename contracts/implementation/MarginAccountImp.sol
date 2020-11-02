@@ -3,19 +3,19 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "../lib/LibSafeMathExt.sol";
 
-import "./Storage.sol";
-import "./SafeMathEx.sol";
-import "./Utils.sol";
+import "../Type.sol";
+import "../Utils.sol";
 
-library MarginAccount {
+library MarginAccountImp {
 
     using SignedSafeMath for int256;
-    using SafeMathEx for int256;
+    using LibSafeMathExt for int256;
 
     function initialMargin(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         return account.positionAmount
             .wmul(perpetual.state.markPrice)
@@ -24,8 +24,8 @@ library MarginAccount {
     }
 
     function maintenanceMargin(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         return account.positionAmount
             .wmul(perpetual.state.markPrice)
@@ -34,8 +34,8 @@ library MarginAccount {
     }
 
     function margin(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         return account.cashBalance
             .sub(account.positionAmount.wmul(perpetual.state.markPrice))
@@ -44,52 +44,52 @@ library MarginAccount {
     }
 
     function availableMargin(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         return margin(perpetual, account).sub(initialMargin(perpetual, account));
     }
 
     function withdrawableMargin(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         return availableMargin(perpetual, account).max(0);
     }
 
     function isInitialMarginSafe(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (bool) {
         return margin(perpetual, account) >= initialMargin(perpetual, account);
     }
 
     function isMaintenanceMarginSafe(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (bool) {
         return margin(perpetual, account) >= maintenanceMargin(perpetual, account);
     }
 
     function socialLoss(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         int256 loss = account.positionAmount.wmul(perpetual.state.unitSocialLoss);
         return loss.sub(account.entrySocialLoss);
     }
 
     function fundingLoss(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
         int256 loss = perpetual.state.unitAccumulatedFundingLoss.wmul(account.positionAmount);
         return loss.sub(account.entryFundingLoss);
     }
 
     function updatePosition(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account,
+        Perpetual storage perpetual,
+        MarginAccount memory account,
         int256 closingPositionAmount,
         int256 openingPositionAmount
     ) public view {
@@ -105,8 +105,8 @@ library MarginAccount {
     }
 
     function updateOpeningLoss(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account,
+        Perpetual storage perpetual,
+        MarginAccount memory account,
         int256 positionAmount
     ) internal view {
         account.entrySocialLoss = account.entrySocialLoss
@@ -116,8 +116,8 @@ library MarginAccount {
     }
 
     function updateClosingLoss(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account,
+        Perpetual storage perpetual,
+        MarginAccount memory account,
         int256 positionAmount
     ) internal view {
         account.entrySocialLoss = account.entrySocialLoss
@@ -127,16 +127,16 @@ library MarginAccount {
     }
 
     function deposit(
-        Storage.Perpetual storage,
-        Storage.MarginAccount memory account,
+        Perpetual storage,
+        MarginAccount memory account,
         int256 amount
     ) public pure returns (int256) {
         account.cashBalance = account.cashBalance.add(amount);
     }
 
     function withdraw(
-        Storage.Perpetual storage perpetual,
-        Storage.MarginAccount memory account,
+        Perpetual storage perpetual,
+        MarginAccount memory account,
         int256 amount
     ) public view returns (int256) {
         account.cashBalance = account.cashBalance.sub(amount);
