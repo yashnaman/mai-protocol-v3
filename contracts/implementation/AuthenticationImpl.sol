@@ -34,18 +34,18 @@ library AuthenticationImpl {
         address accessor,
         bytes32 privilege
     ) internal view returns (bool) {
-        return _test(perpetual.accessControls[owner][accessor], privilege);
+        return _testBit(perpetual.accessControls[owner][accessor], privilege);
     }
 
-    function _testBit(bytes32 value, bytes32 bit) pure returns (bool) {
-        return value & bit;
+    function _testBit(bytes32 value, bytes32 bit) internal pure returns (bool) {
+        return value & bit > 0;
     }
 
-    function _setBit(bytes32 value, bytes32 bit) pure returns (bytes32) {
+    function _setBit(bytes32 value, bytes32 bit) internal pure returns (bytes32) {
         return value | bit;
     }
 
-    function _cleanBit(bytes32 value, bytes32 bit) pure returns (bytes32) {
+    function _cleanBit(bytes32 value, bytes32 bit) internal pure returns (bytes32) {
         return value & (~bit);
     }
 }

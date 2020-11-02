@@ -57,7 +57,7 @@ library TradeImp {
         // taker            = trader
         // maker            = amm
         // positionAmount   = amount from taker's side
-        require(positionAmount > 0, LibError.ZERO_POSITION_AMOUNT);
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
         Recipe memory recipe = tradePosition(perpetual, context, positionAmount, priceLimit);
         recipe.makerOpeningAmount > 0 ?
             perpetual.isInitialMarginSafe(context.makerAccount) :
@@ -81,7 +81,7 @@ library TradeImp {
         // taker            = liquidator
         // maker            = amm
         // positionAmount   = liquidator from taker's side
-        require(positionAmount > 0, LibError.ZERO_POSITION_AMOUNT);
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
         takePosition(perpetual, context, positionAmount, priceLimit);
 
         int256 liquidateValue = context.tradingPrice.wmul(positionAmount);
@@ -126,7 +126,7 @@ library TradeImp {
         int256 positionAmount,
         int256 priceLimit
     ) internal returns (Recipe memory) {
-        require(positionAmount > 0, LibError.ZERO_POSITION_AMOUNT);
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
         // trade
         Recipe memory recipe;
         _splitAmount(perpetual, context, recipe, positionAmount);

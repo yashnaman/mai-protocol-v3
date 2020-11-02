@@ -15,7 +15,8 @@ library AMMImp {
     using LibMath for int256;
 
     function updateFundingRate(
-        Perpetual storage perpetual
+        Perpetual storage perpetual,
+        Context memory context
     ) public {
         // update funding rate.
 

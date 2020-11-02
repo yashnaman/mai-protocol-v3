@@ -20,12 +20,12 @@ contract PerpetualWrapper {
     Perpetual internal _perpetual;
 
     function deposit(address trader, int256 collateralAmount) external {
-        require(collateralAmount > 0, LibError.ZERO_COLLATERAL_AMOUNT);
+        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
         _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
     }
 
     function withdraw(address trader, int256 collateralAmount) external {
-        require(collateralAmount > 0, LibError.ZERO_COLLATERAL_AMOUNT);
+        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
         _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
     }
 

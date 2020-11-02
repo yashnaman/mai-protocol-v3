@@ -9,7 +9,7 @@ contract PerpetualMaker {
     }
     function removeImplementation(bytes32 id) external {
     }
-    function verifyImplementation(address implementation) {
+    function verifyImplementation(address implementation) external {
     }
 
     // create
