@@ -2,6 +2,8 @@
 pragma solidity 0.7.4;
 
 struct Context {
+    address taker;
+    address maker;
     MarginAccount takerAccount;
     MarginAccount makerAccount;
     int256 lpFee;
@@ -49,10 +51,6 @@ struct State {
     int256 insuranceFund;
 }
 
-struct AccessControl {
-    mapping (address => bytes32) privileges;
-}
-
 struct Perpetual {
     string symbol;
     address vault;
@@ -64,5 +62,4 @@ struct Perpetual {
     Settings settings;
     mapping(address => MarginAccount) traderAccounts;
     mapping(address => LiquidationProviderAccount) lpAccounts;
-    mapping(address => mapping(address => bytes32)) accessControls;
 }

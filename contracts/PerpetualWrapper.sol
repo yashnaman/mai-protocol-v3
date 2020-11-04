@@ -5,19 +5,27 @@ pragma experimental ABIEncoderV2;
 import "./Type.sol";
 import "./lib/LibError.sol";
 
+import "./implementation/AMMImp.sol";
+import "./implementation/ContextImp.sol";
 import "./implementation/MarginAccountImp.sol";
 import "./implementation/TradeImp.sol";
-import "./implementation/AMMImp.sol";
-import "./implementation/AuthenticationImpl.sol";
 
-contract PerpetualWrapper {
+import "./AccessControl.sol";
+import "./CallContext.sol";
 
-    using AuthenticationImpl for Perpetual;
+contract PerpetualWrapper is
+    CallContext,
+    AccessControl {
+
+    using AMMImp for Perpetual;
+    using ContextImp for Perpetual;
     using MarginAccountImp for Perpetual;
     using TradeImp for Perpetual;
-    using AMMImp for Perpetual;
 
     Perpetual internal _perpetual;
+
+    event Deposit(address trader, int256 collateralAmount);
+    event Withdraw(address trader, int256 collateralAmount);
 
     function initialize(
         string calldata symbol,
@@ -48,34 +56,87 @@ contract PerpetualWrapper {
         _perpetual.settings.targetLeverage = arguments[13];
     }
 
-    function deposit(address trader, int256 collateralAmount) external {
-        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
-        _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
+    modifier updateFunding() {
+        // update acc funding
+        _;
+        // update funding rate
     }
 
-    function withdraw(address trader, int256 collateralAmount) external {
-        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
-        _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
+    modifier authRequired(address trader, uint256 privilege) {
+        require(trader == msg.sender || _hasPrivilege(trader, msg.sender, privilege), "auth required");
+        _;
     }
 
-    function trade(int256 positionAmount, int256 priceLimit) external {
+    function deposit(
+        address trader,
+        int256 collateralAmount
+    ) external authRequired(trader, _PRIVILEGE_DEPOSTI) {
+        require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
+        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
+
+        _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
+
+        emit Deposit(trader, collateralAmount);
+    }
+
+    function withdraw(
+        address trader,
+        int256 collateralAmount
+    ) external updateFunding authRequired(trader, _PRIVILEGE_DEPOSTI) {
+        require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
+        require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
+
+        _perpetual.withdraw(_perpetual.traderAccounts[trader], collateralAmount);
+
+        emit Withdraw(trader, collateralAmount);
+    }
+
+    function trade(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    ) external updateFunding authRequired(trader, _PRIVILEGE_TRADE) {
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
+        require(priceLimit >= 0, LibError.INVALID_TRADING_PRICE);
+        require(deadline >= _now(), LibError.EXCEED_DEADLINE);
+
         Context memory context;
-        _perpetual.updateFundingRate(context);
         _perpetual.trade(context, positionAmount, priceLimit);
-        // _perpetual.commit(context);
+        _perpetual.commit(context);
     }
 
-    function liquidate(address trader, int256 positionAmount, int256 priceLimit) external {
+    function liquidate(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    ) external updateFunding {
+        require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
+        require(priceLimit >= 0, LibError.INVALID_TRADING_PRICE);
+        require(deadline >= _now(), LibError.EXCEED_DEADLINE);
+
+        require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
+
         Context memory context;
-        _perpetual.updateFundingRate(context);
         _perpetual.liquidate(context, positionAmount, priceLimit);
-        // _perpetual.commit(context);
+        _perpetual.commit(context);
     }
 
-    function liquidate2(address trader, int256 positionAmount, int256 priceLimit) external {
+    function liquidate2(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    ) external updateFunding {
+        require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
+        require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
+        require(priceLimit >= 0, LibError.INVALID_TRADING_PRICE);
+        require(deadline >= _now(), LibError.EXCEED_DEADLINE);
+
         Context memory context;
-        _perpetual.updateFundingRate(context);
         _perpetual.liquidate2(context, positionAmount, priceLimit);
-        // _perpetual.commit(context);
+        _perpetual.commit(context);
     }
 }

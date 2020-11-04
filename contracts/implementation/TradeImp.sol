@@ -103,7 +103,7 @@ library TradeImp {
         require(_validatePrice(positionAmount, takingPrice, priceLimit), LibError.EXCEED_PRICE_LIMIT);
         context.tradingPrice = takingPrice;
         Recipe memory recipe;
-        _splitAmount(perpetual, context, recipe, positionAmount);
+        _splitAmount(context, recipe, positionAmount);
         int256 takenValue = takingPrice.wmul(positionAmount);
         context.takerAccount.cashBalance = context.takerAccount.cashBalance
             .sub(takenValue);
@@ -129,8 +129,8 @@ library TradeImp {
         require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
         // trade
         Recipe memory recipe;
-        _splitAmount(perpetual, context, recipe, positionAmount);
-        _generateTradingPlan(perpetual, context, recipe, positionAmount);
+        _splitAmount(context, recipe, positionAmount);
+        _generateTradingPlan(context, recipe, positionAmount);
         ( int256 totalCashCost, int256 totalFeeCost ) = _executeTradingPlan(perpetual, context, recipe);
         // validation
         int256 tradingPrice = totalCashCost.wdiv(positionAmount);
@@ -185,7 +185,6 @@ library TradeImp {
     }
 
     function _splitAmount(
-        Perpetual storage perpetual,
         Context memory context,
         Recipe memory recipe,
         int256 positionAmount
@@ -201,7 +200,6 @@ library TradeImp {
     }
 
     function _generateTradingPlan(
-        Perpetual storage perpetual,
         Context memory context,
         Recipe memory recipe,
         int256 positionAmount

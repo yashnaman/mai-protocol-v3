@@ -76,11 +76,4 @@ library LibEnumerableMap {
         require(map._entries.length > index, "index out of bounds");
         return map._entries[index]._key;
     }
-
-    /**
-     * @dev Returns the position `index` for given key.
-     */
-    function index(GenericEnumerableMap storage map, bytes32 key) internal view returns (uint256) {
-        return map._indexes[key];
-    }
 }
