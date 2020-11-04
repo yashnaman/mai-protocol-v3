@@ -3,7 +3,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
-import "./lib/LibSafeMathExt.sol";
+import "./LibSafeMathExt.sol";
 
 library Utils {
 

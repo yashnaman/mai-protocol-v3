@@ -3,10 +3,10 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "../lib/LibSafeMathExt.sol";
 
+import "../lib/LibSafeMathExt.sol";
+import "../lib/LibUtils.sol";
 import "../Type.sol";
-import "../Utils.sol";
 
 library MarginAccountImp {
 
@@ -20,7 +20,7 @@ library MarginAccountImp {
         return account.positionAmount
             .wmul(perpetual.state.markPrice)
             .wmul(perpetual.settings.initialMarginRate)
-            .max(perpetual.settings.minimalMargin);
+            .max(perpetual.settings.reservedMargin);
     }
 
     function maintenanceMargin(
@@ -30,7 +30,7 @@ library MarginAccountImp {
         return account.positionAmount
             .wmul(perpetual.state.markPrice)
             .wmul(perpetual.settings.maintenanceMarginRate)
-            .max(perpetual.settings.minimalMargin);
+            .max(perpetual.settings.reservedMargin);
     }
 
     function margin(

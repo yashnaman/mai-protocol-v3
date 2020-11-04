@@ -11,18 +11,18 @@ struct Context {
 }
 
 struct Settings {
-    int256 minimalMargin;
+    int256 reservedMargin;
     int256 initialMarginRate;
     int256 maintenanceMarginRate;
     int256 vaultFeeRate;
     int256 operatorFeeRate;
-    int256 liquidatorPenaltyRate;
+    int256 liquidityProviderFeeRate;
+    int256 liquidationPenaltyRate1;
+    int256 liquidationPenaltyRate2;
     int256 liquidationGasReserve;
-    int256 fundPenaltyRate;
     int256 halfSpreadRate;
     int256 beta1;
     int256 beta2;
-    int256 lpFeeRate;
     int256 baseFundingRate;
     int256 targetLeverage;
 }
@@ -56,8 +56,10 @@ struct AccessControl {
 struct Perpetual {
     string symbol;
     address vault;
+    address parent;
     address operator;
     address oracle;
+
     State state;
     Settings settings;
     mapping(address => MarginAccount) traderAccounts;

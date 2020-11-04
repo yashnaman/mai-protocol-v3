@@ -1,25 +1,29 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "../lib/LibEnumerableMap.sol";
+import "./ProxyBuilder.sol";
+import "./ProxyTracer.sol";
+import "./VersionController.sol";
 
-struct VersionInfo {
-    string version;
-    address implementation;
-    uint256 commitTime;
-}
+contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
 
-contract PerpetualMaker {
-    // implementation list
-    mapping(address => VersionInfo) internal _versions;
-    VersionInfo[] internal _versionList;
+    address internal _vault;
 
-    function addImplementation(bytes32 id, address implementation) external {
+    event CreatePerpetual(address proxy, address implementation);
+
+    function createPerpetual(
+        string calldata symbol,
+        address implementation,
+        address oracle,
+        int256[14] calldata arguments
+    ) external {
+        require(_verifyVersion(implementation), "invalid implementation");
+        bytes memory initializeData = abi.encodeWithSignature(
+            "initialize(string,address,address,address,int256[])",
+            symbol, oracle, msg.sender, _vault, arguments
+        );
+        address newProxy = _createProxy(implementation, address(this), initializeData);
+        _registerInstance(newProxy, implementation);
+        emit CreatePerpetual(newProxy, implementation);
     }
-    function removeImplementation(bytes32 id) external {
-    }
-    function verifyImplementation(address implementation) external {
-    }
-
-    // create
 }

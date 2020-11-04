@@ -65,8 +65,8 @@ library TradeImp {
 
         int256 liquidateValue = context.tradingPrice.wmul(positionAmount);
         int256 penaltyToLiquidator = perpetual.settings.liquidationGasReserve;
-        int256 penaltyToLP = liquidateValue.wmul(perpetual.settings.liquidatorPenaltyRate);
-        int256 penaltyToFund = liquidateValue.wmul(perpetual.settings.fundPenaltyRate);
+        int256 penaltyToLP = liquidateValue.wmul(perpetual.settings.liquidationPenaltyRate1);
+        int256 penaltyToFund = liquidateValue.wmul(perpetual.settings.liquidationPenaltyRate2);
         int256 socialLoss = handleLiquidationLoss(perpetual, context, penaltyToLP, penaltyToFund);
         // TODO: socialLoss > 0
         return penaltyToLiquidator;
@@ -86,8 +86,8 @@ library TradeImp {
 
         int256 liquidateValue = context.tradingPrice.wmul(positionAmount);
         int256 penaltyToLiquidator = perpetual.settings.liquidationGasReserve;
-        int256 penaltyToLiquidator2 = liquidateValue.wmul(perpetual.settings.liquidatorPenaltyRate);
-        int256 penaltyToFund = liquidateValue.wmul(perpetual.settings.fundPenaltyRate);
+        int256 penaltyToLiquidator2 = liquidateValue.wmul(perpetual.settings.liquidationPenaltyRate1);
+        int256 penaltyToFund = liquidateValue.wmul(perpetual.settings.liquidationPenaltyRate2);
         int256 socialLoss = handleLiquidationLoss(perpetual, context, penaltyToLiquidator2, penaltyToFund);
         // TODO: socialLoss > 0
         return penaltyToLiquidator.add(penaltyToLiquidator2);
