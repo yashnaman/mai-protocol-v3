@@ -2,6 +2,12 @@
 pragma solidity >=0.7.4;
 
 library LibMath {
+    uint256 private constant _POSITIVE_INT256_MAX = 2**255 - 1;
+
+    function toInt256(uint256 x) internal pure returns (int256) {
+        require(x <= _POSITIVE_INT256_MAX, "uint256 overflow");
+        return int256(x);
+    }
 
     // 0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3
     // 606 ~ 672 gas

@@ -10,6 +10,8 @@ struct Context {
     int256 vaultFee;
     int256 operatorFee;
     int256 tradingPrice;
+    // 不含fee
+    int256 deltaMargin;
 }
 
 struct Settings {
@@ -49,6 +51,9 @@ struct State {
     int256 unitAccumulatedFundingLoss;
     int256 totalPositionAmount;
     int256 insuranceFund;
+    uint256 lastFundingTime;
+    int256 lastIndexPrice;
+    int256 lastFundingRate;
 }
 
 struct Perpetual {

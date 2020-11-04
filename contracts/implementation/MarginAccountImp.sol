@@ -71,6 +71,13 @@ library MarginAccountImp {
         return margin(perpetual, account) >= maintenanceMargin(perpetual, account);
     }
 
+    function availableCashBalance(
+	Perpetual storage perpetual,
+	MarginAccount memory account
+    ) public view returns (int256) {
+	return account.cashBalance.sub(fundingLoss(perpetual, account)).sub(socialLoss(perpetual, account));
+    }
+
     function socialLoss(
         Perpetual storage perpetual,
         MarginAccount memory account

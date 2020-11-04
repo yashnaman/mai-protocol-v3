@@ -228,7 +228,7 @@ library TradeImp {
             if (tradingAmount == 0) {
                 continue;
             }
-            ( int256 cashCost, int256 feeCost ) = perpetual.determineDeltaCashBalance(tradingAmount);
+            ( int256 cashCost, int256 feeCost ) = perpetual.determineDeltaCashBalance(context, tradingAmount);
             totalCashCost = totalCashCost.add(cashCost);
             totalFeeCost = totalFeeCost.add(feeCost);
         }
