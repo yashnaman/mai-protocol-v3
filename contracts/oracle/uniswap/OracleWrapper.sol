@@ -1,13 +1,54 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-contract OracleUniswapV2Wapper {
+import "./OracleUniswapV2.sol";
 
-    // function Symbol() public view returns (uint256);
-    // function collateral() public view returns (address);
-	// function asset() public view returns (address);
-	// function priceTimeout() public view returns (uint256);
-	// function priceTWAPLong() public view returns (uint256 newPrice, uint256 newTimestamp);
-	// function priceTWAPShort() public view returns (uint256 newPrice, uint256 newTimestamp);
+contract OracleUniswapV2Wapper is OracleUniswapV2 {
 
+    using FixedPoint for *;
+
+    string internal _symbol;
+    uint256 internal _priceTimeout;
+
+    constructor(
+        string memory symbol,
+        address factory,
+        address asset,
+        address collateral,
+        address[] memory path,
+        uint256 priceTimeout
+    ) public OracleUniswapV2(factory, asset, collateral, path) {
+        _symbol = symbol;
+        _priceTimeout = priceTimeout;
+    }
+
+    function Symbol() public view returns (string memory) {
+        return _symbol;
+    }
+
+	function asset() public view returns (address) {
+        return _asset;
+    }
+
+    function collateral() public view returns (address) {
+        return _collateral;
+    }
+
+	function priceTimeout() public view returns (uint256) {
+        return _priceTimeout;
+    }
+
+	function priceTWAPLong() public returns (uint256 newPrice, uint256 newTimestamp) {
+        _update();
+        return (_slowAveragePrice.decode(), _lastPriceTimestamp);
+    }
+
+	function priceTWAPShort() public returns (uint256 newPrice, uint256 newTimestamp) {
+        _update();
+        return (_fastAveragePrice.decode(), _lastPriceTimestamp);
+    }
+
+    function updatePrice() public returns (bool) {
+        return _update();
+    }
 }

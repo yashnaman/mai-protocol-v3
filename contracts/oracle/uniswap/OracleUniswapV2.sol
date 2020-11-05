@@ -10,12 +10,15 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 contract OracleUniswapV2 {
 	using FixedPoint for *;
 
-    uint256 public constant PERIOD = 24 hours;
-
-	struct PairState {
+	struct PairInfo {
 		IUniswapV2Pair pair;
 		address token0;
 		address token1;
+	}
+
+	struct PriceCache {
+		FixedPoint.uq112x112 lastPrice;
+		FixedPoint.uq112x112 lastAveragePrice;
 		uint256 lastCumulativePrice;
 		uint32 lastBlockTimestamp;
 	}
@@ -23,14 +26,23 @@ contract OracleUniswapV2 {
     address internal immutable _collateral;
     address internal immutable _asset;
 
-	PairState[] internal _queryState;
-    FixedPoint.uq112x112 internal _averagePrice;
+	uint256 internal _fastPeriod;
+	uint256 internal _slowPeriod;
+
+	PairInfo[] internal _pairInfo;
+	PriceCache[] internal _slowPriceCache;
+	PriceCache[] internal _fastPriceCache;
+
+    FixedPoint.uq112x112 internal _slowAveragePrice;
+	FixedPoint.uq112x112 internal _fastAveragePrice;
+	uint32 _lastUpdateTimestamp;
+	uint32 _lastPriceTimestamp;
 
 	// token a => collateral
 	// token b => asset
-    constructor(address factory, address collateral, address asset, address[] memory path) public {
-		require(path.length >= 2, "");
-		require(path[0] == collateral && path[path.length - 1] == asset, "");
+    constructor(address factory, address asset, address collateral, address[] memory path) public {
+		require(path.length >= 2, "paths are too short");
+		require(path[0] == collateral && path[path.length - 1] == asset, "paths must be from asset to collateral");
 
 		_collateral = collateral;
 		_asset = asset;
@@ -44,7 +56,7 @@ contract OracleUniswapV2 {
 					uint112 reserve0,
 					uint112 reserve1,
 				) = pair.getReserves();
-				require(reserve0 != 0 && reserve1 != 0, 'ExampleOracleSimple: NO_RESERVES');
+				require(reserve0 != 0 && reserve1 != 0, 'no reserve');
 			}
 			address token0 = pair.token0();
 			address token1 = pair.token1();
@@ -52,39 +64,89 @@ contract OracleUniswapV2 {
 				uint256 cumulativePrice,
 				uint32 lastBlockTimestamp
 			) = _getCurrentCumulativePrices(pair, token0, token1);
-			_queryState.push(PairState({
+			_pairInfo.push(PairInfo({
 				pair: pair,
 				token0: token0,
-				token1: token1,
-				lastCumulativePrice: cumulativePrice,
-				lastBlockTimestamp: lastBlockTimestamp
+				token1: token1
 			}));
+			PriceCache memory initialData;
+			initialData.lastCumulativePrice = cumulativePrice;
+			initialData.lastBlockTimestamp = lastBlockTimestamp;
+			_slowPriceCache.push(initialData);
+			_fastPriceCache.push(initialData);
         }
     }
 
-    function update() internal returns (uint256) {
-		FixedPoint.uq112x112 memory tempAveragePrice = FixedPoint.uq112x112(uint224(1));
-		uint256 pathLength = _queryState.length - 1;
+    function _update() internal returns (bool) {
+		uint32 currentBlockTimestamp = _currentBlockTimestamp();
+		if (currentBlockTimestamp == _lastUpdateTimestamp) {
+			return false;
+		}
+		FixedPoint.uq112x112 memory slowAveragePrice = FixedPoint.uq112x112(uint224(1));
+		FixedPoint.uq112x112 memory fastAveragePrice = FixedPoint.uq112x112(uint224(1));
+		uint256 pathLength = _pairInfo.length - 1;
         for (uint256 i = 0; i < pathLength; i++) {
-			PairState memory state = _queryState[i];
+			PairInfo memory info = _pairInfo[i];
 			(
 				uint256 cumulativePrice,
 				uint32 lastBlockTimestamp
-			) = _getCurrentCumulativePrices(state.pair, state.token0, state.token1);
-			uint32 timeElapsed = lastBlockTimestamp - state.lastBlockTimestamp;
-			FixedPoint.uq112x112 memory price =
-				FixedPoint.uq112x112(uint224((cumulativePrice - state.lastCumulativePrice) / timeElapsed));
-			tempAveragePrice = tempAveragePrice.muluq(price);
-			_queryState[i].lastCumulativePrice = cumulativePrice;
-			_queryState[i].lastBlockTimestamp = lastBlockTimestamp;
+			) = _getCurrentCumulativePrices(info.pair, info.token0, info.token1);
+			FixedPoint.uq112x112 memory slowPrice = _updatePriceCache(
+				_slowPriceCache[i],
+				cumulativePrice,
+				currentBlockTimestamp,
+				lastBlockTimestamp,
+				_slowPeriod
+			);
+			FixedPoint.uq112x112 memory fastPrice = _updatePriceCache(
+				_fastPriceCache[i],
+				cumulativePrice,
+				currentBlockTimestamp,
+				lastBlockTimestamp,
+				_fastPeriod
+			);
+			slowAveragePrice = slowAveragePrice.muluq(slowPrice);
+			fastAveragePrice = fastAveragePrice.muluq(fastPrice);
+			if (lastBlockTimestamp > _lastPriceTimestamp) {
+				_lastPriceTimestamp = lastBlockTimestamp;
+			}
         }
-		_averagePrice = tempAveragePrice;
+		_slowAveragePrice = slowAveragePrice;
+		_fastAveragePrice = fastAveragePrice;
+		_lastUpdateTimestamp = currentBlockTimestamp;
+		return true;
     }
 
-    // note this will always return 0 before update has been called successfully for the first time.
-    function query(uint256 amountIn) external view returns (uint256 amountOut) {
-		amountOut = _averagePrice.mul(amountIn).decode144();
-    }
+	function _updatePriceCache(
+		PriceCache storage priceCache,
+		uint256 cumulativePrice,
+		uint32 currentBlockTimestamp,
+		uint32 lastBlockTimestamp,
+		uint256 updatePeriod
+	) internal returns (FixedPoint.uq112x112 memory) {
+		if (lastBlockTimestamp == priceCache.lastBlockTimestamp) {
+			return priceCache.lastPrice;
+		}
+		FixedPoint.uq112x112 memory price = _getAveragePrice(priceCache, cumulativePrice, lastBlockTimestamp);
+		if (currentBlockTimestamp - priceCache.lastBlockTimestamp >= updatePeriod) {
+			priceCache.lastAveragePrice = price;
+			priceCache.lastCumulativePrice = cumulativePrice;
+			priceCache.lastBlockTimestamp = lastBlockTimestamp;
+		}
+		priceCache.lastPrice = price;
+		return price;
+	}
+
+	function _getAveragePrice(
+		PriceCache storage priceCache,
+		uint256 cumulativePrice,
+		uint32 lastBlockTimestamp
+	) internal view returns (FixedPoint.uq112x112 memory) {
+		uint32 timeElapsed = lastBlockTimestamp - priceCache.lastBlockTimestamp;
+		FixedPoint.uq112x112 memory price =
+			FixedPoint.uq112x112(uint224((cumulativePrice - priceCache.lastCumulativePrice) / timeElapsed));
+		return FixedPoint.uq112x112((price.decode() + priceCache.lastAveragePrice.decode()) / 2);
+	}
 
 	/// @dev Return cumulativePrice of token0.
 	function _getCurrentCumulativePrices(
@@ -103,9 +165,9 @@ contract OracleUniswapV2 {
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
     function _sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, 'identical addresses');
         (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
+        require(token0 != address(0), 'zero addess');
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
@@ -127,13 +189,15 @@ contract OracleUniswapV2 {
     // produces the cumulative price using counterfactuals to save gas and avoid a call to sync.
     function _currentCumulativePrices(
         IUniswapV2Pair pair
-    ) internal view returns (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestamp) {
-        blockTimestamp = _currentBlockTimestamp();
+    ) internal view returns (uint256 price0Cumulative, uint256 price1Cumulative, uint32 blockTimestampLast) {
+        uint32 blockTimestamp = _currentBlockTimestamp();
         price0Cumulative = pair.price0CumulativeLast();
         price1Cumulative = pair.price1CumulativeLast();
 
+		uint112 reserve0;
+		uint112 reserve1;
         // if time has elapsed since the last update on the pair, mock the accumulated price values
-        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = pair.getReserves();
+        ( reserve0,  reserve1, blockTimestampLast) = pair.getReserves();
         if (blockTimestampLast != blockTimestamp) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;

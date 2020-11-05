@@ -67,6 +67,20 @@ contract PerpetualWrapper is
         _;
     }
 
+    // privilege
+    function grantPrivilege(address accessor, uint256 privilege) public {
+        _grantPrivilege(msg.sender, accessor, privilege);
+    }
+
+    function revokePrivilege(address accessor, uint256 privilege) public {
+        _revokePrivilege(msg.sender, accessor, privilege);
+    }
+
+    function hasPrivilege(address owner, address accessor, uint256 privilege) public view returns (bool) {
+        return _hasPrivilege(msg.sender, accessor, privilege);
+    }
+
+    // trade
     function deposit(
         address trader,
         int256 collateralAmount
@@ -101,7 +115,7 @@ contract PerpetualWrapper is
         require(priceLimit >= 0, LibError.INVALID_TRADING_PRICE);
         require(deadline >= _now(), LibError.EXCEED_DEADLINE);
 
-        Context memory context;
+        Context memory context = _perpetual.makeContext(trader, address(this));
         _perpetual.trade(context, positionAmount, priceLimit);
         _perpetual.commit(context);
     }
@@ -119,7 +133,7 @@ contract PerpetualWrapper is
 
         require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
 
-        Context memory context;
+        Context memory context = _perpetual.makeContext(msg.sender, trader);
         _perpetual.liquidate(context, positionAmount, priceLimit);
         _perpetual.commit(context);
     }
@@ -135,7 +149,7 @@ contract PerpetualWrapper is
         require(priceLimit >= 0, LibError.INVALID_TRADING_PRICE);
         require(deadline >= _now(), LibError.EXCEED_DEADLINE);
 
-        Context memory context;
+        Context memory context = _perpetual.makeContext(msg.sender, trader);
         _perpetual.liquidate2(context, positionAmount, priceLimit);
         _perpetual.commit(context);
     }
