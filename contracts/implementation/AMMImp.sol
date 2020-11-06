@@ -103,7 +103,7 @@ library AMMImp {
         Perpetual storage perpetual,
         MarginAccount memory account,
         int256 tradeAmount
-    ) public returns (int256 deltaMargin) {
+    ) public view returns (int256 deltaMargin) {
         require(tradeAmount != 0, "no zero trade amount");
         (int256 closeAmount, int256 openAmount) = Utils.splitAmount(account.positionAmount, tradeAmount);
         deltaMargin = deltaMargin.add(close(perpetual, account, closeAmount));
@@ -284,10 +284,10 @@ library AMMImp {
         int256 amount
     ) public {
         require(amount > 0, "remove amount must over 0");
-        require(isSafe(perpetual, account), "before remove unsafe");
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "before remove unsafe");
         MarginAccount memory afterRemoveAccount = account;
         afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
-        require(isSafe(perpetual, afterRemoveAccount), "after remove unsafe");
+        require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "after remove unsafe");
         // int256 penalty = 
     }
 

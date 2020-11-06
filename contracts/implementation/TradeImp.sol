@@ -125,7 +125,7 @@ library TradeImp {
             int256 takerClosingAmount,
             int256 takerOpeningAmount
         ) = Utils.splitAmount(context.takerAccount.positionAmount, positionAmount);
-        int256 deltaMargin = perpetual.determineDeltaCashBalance(context.makerAccount, positionAmount);
+        int256 deltaMargin = perpetual.determineDeltaMargin(context.makerAccount, positionAmount);
         // price
         int256 tradingPrice = deltaMargin.wdiv(positionAmount);
         require(tradingPrice > 0, LibError.INVALID_TRADING_PRICE);
@@ -218,7 +218,7 @@ library TradeImp {
     //         if (tradingAmount == 0) {
     //             continue;
     //         }
-    //         int256 cashCost = perpetual.determineDeltaCashBalance(context.makerAccount, tradingAmount);
+    //         int256 cashCost = perpetual.determineDeltaMargin(context.makerAccount, tradingAmount);
     //         totalCashCost = totalCashCost.add(cashCost);
     //     }
     //     return (totalCashCost, totalFeeCost);
