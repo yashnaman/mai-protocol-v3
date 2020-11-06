@@ -39,5 +39,9 @@ describe("Example", function () {
 	it("example", async function () {
 		const perpetual = await createPerpetual();
 		await perpetual.deposit(user1, "100000000000000");
+
+		console.log(await perpetual.margin(user1));
+
+
 	});
 });

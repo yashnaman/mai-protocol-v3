@@ -1,19 +1,25 @@
 import { expect, use } from "chai";
 import { waffleChai } from "@ethereum-waffle/chai";
-import { Contract } from 'ethers';
-import { deployContract, MockProvider, solidity } from 'ethereum-waffle';
-import LibMath from '../artifacts/TestLibMath.json';
+import { ethers } from "hardhat";
+import { Signer } from "ethers";
+
 import './helper';
 
-use(solidity);
 use(waffleChai);
 
 describe('LibMath', () => {
-  const [wallet, walletTo] = new MockProvider().getWallets();
-  let libMath: Contract;
+  let accounts: Signer[];
+  let libMath;
+
+	let createFromFactory = async (path, libraries = {}) => {
+		const factory = await ethers.getContractFactory(path, { libraries: libraries });
+		const deployed = await factory.deploy();
+		return deployed;
+	}
 
   beforeEach(async () => {
-    libMath = await deployContract(wallet, LibMath);
+    accounts = await ethers.getSigners();
+    libMath = await createFromFactory("contracts/test/TestLibMath.sol:TestLibMath");
   });
 
   describe('mostSignificantBit', () => {

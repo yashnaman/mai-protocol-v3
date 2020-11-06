@@ -80,6 +80,23 @@ contract PerpetualWrapper is
         return _hasPrivilege(msg.sender, accessor, privilege);
     }
 
+    // atribute
+    function initialMargin(address trader) public view returns (int256) {
+        return _perpetual.initialMargin(_perpetual.traderAccounts[trader]);
+    }
+
+    function maintenanceMargin(address trader) public view returns (int256) {
+        return _perpetual.maintenanceMargin(_perpetual.traderAccounts[trader]);
+    }
+
+    function availableMargin(address trader) public view returns (int256) {
+        return _perpetual.availableMargin(_perpetual.traderAccounts[trader]);
+    }
+
+    function withdrawableMargin(address trader) public view returns (int256) {
+        return _perpetual.withdrawableMargin(_perpetual.traderAccounts[trader]);
+    }
+
     // trade
     function deposit(
         address trader,
