@@ -107,25 +107,25 @@ library AMMImp {
 	    funding(perpetual, account);
 	    if (tradeAmount > 0) {
 	        if (account.positionAmount > 0) {
-	    	if (tradeAmount > account.positionAmount) {
-	    	    close(perpetual, account, account.positionAmount, Side.LONG);
-	    	    open(perpetual, account, tradeAmount.sub(account.positionAmount), Side.SHORT);
-	    	} else {
-	    	    close(perpetual, account, tradeAmount, Side.LONG);
-	    	}
+	    	    if (tradeAmount > account.positionAmount) {
+	    	        close(perpetual, account, account.positionAmount, Side.LONG);
+	    	        open(perpetual, account, tradeAmount.sub(account.positionAmount), Side.SHORT);
+	    	    } else {
+	    	        close(perpetual, account, tradeAmount, Side.LONG);
+	    	    }
 	        } else {
-	    	open(perpetual, account, tradeAmount, Side.SHORT);
+	    	    open(perpetual, account, tradeAmount, Side.SHORT);
 	        }
 	    } else {
 	        if (account.positionAmount < 0) {
-	    	if (tradeAmount < account.positionAmount) {
-	    	    close(perpetual, account, account.positionAmount, Side.SHORT);
-	    	    open(perpetual, account, tradeAmount.sub(account.positionAmount), Side.LONG);
-	    	} else {
-	    	    close(perpetual, account, tradeAmount, Side.SHORT);
-	    	}
+	    	    if (tradeAmount < account.positionAmount) {
+	    	        close(perpetual, account, account.positionAmount, Side.SHORT);
+	    	        open(perpetual, account, tradeAmount.sub(account.positionAmount), Side.LONG);
+	    	    } else {
+	    	        close(perpetual, account, tradeAmount, Side.SHORT);
+	    	    }
 	        } else {
-	    	open(perpetual, account, tradeAmount, Side.LONG);
+	    	    open(perpetual, account, tradeAmount, Side.LONG);
 	        }
 	    }
     }
@@ -139,16 +139,16 @@ library AMMImp {
 	   (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
 	   if (account.positionAmount == 0 || isSafe(perpetual, account, perpetual.settings.beta1, side)) {
 	       if (side == Side.LONG) {
-	   	deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
+	   	       deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
 	       } else {
-	   	deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
+	   	       deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
 	       }
 	       (int256 newVirtualMargin, ) = regress(perpetual, account, perpetual.settings.beta1);
 	       if (newVirtualMargin != virtualMargin) {
-	   	revert("after trade unsafe(origin margin change)");
+	   	       revert("after trade unsafe(origin margin change)");
 	       }
 	       if (!isSafe(perpetual, account, perpetual.settings.beta1, side)) {
-	   	revert("after trade unsafe");
+	   	       revert("after trade unsafe");
 	       }
 	   } else {
 	       revert("before trade unsafe");
@@ -165,9 +165,9 @@ library AMMImp {
 	    (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta2);
 	    if (isSafe(perpetual, account, perpetual.settings.beta2, side)) {
 	        if (side == Side.LONG) {
-	    	deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
+	    	    deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
 	        } else {
-	    	deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
+	    	    deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
 	        }
 	    } else {
 	        deltaMargin = perpetual.state.indexPrice.wmul(tradeAmount);
