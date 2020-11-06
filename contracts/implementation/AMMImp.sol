@@ -129,7 +129,7 @@ library AMMImp {
         if (tradeAmount == 0) {
             return 0;
         }
-        require(isSafe(perpetual, account, perpetual.settings.beta1), "before trade unsafe");
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "unsafe before trade");
         (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
         if (account.positionAmount > 0 || (account.positionAmount == 0 && tradeAmount > 0)) {
             deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
@@ -138,9 +138,9 @@ library AMMImp {
         }
         account.cashBalance = account.cashBalance.add(deltaMargin);
         account.positionAmount = account.positionAmount.add(tradeAmount);
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "unsafe after trade");
         (int256 newVirtualMargin, ) = regress(perpetual, account, perpetual.settings.beta1);
-        require(newVirtualMargin == virtualMargin, "after trade unsafe(origin margin change)");
-        require(isSafe(perpetual, account, perpetual.settings.beta1), "after trade unsafe");
+        require(newVirtualMargin == virtualMargin, "unsafe after trade (origin margin change)");
     }
 
     function close(
@@ -284,10 +284,10 @@ library AMMImp {
         int256 amount
     ) public {
         require(amount > 0, "remove amount must over 0");
-        require(isSafe(perpetual, account, perpetual.settings.beta1), "before remove unsafe");
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "unsafe before remove");
         MarginAccount memory afterRemoveAccount = account;
         afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
-        require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "after remove unsafe");
+        require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "unsafe after remove");
         // int256 penalty = 
     }
 
