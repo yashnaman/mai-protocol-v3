@@ -129,8 +129,8 @@ library AMMImp {
         if (tradeAmount == 0) {
             return 0;
         }
-        (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
         require(isSafe(perpetual, account, perpetual.settings.beta1), "before trade unsafe");
+        (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
         if (account.positionAmount > 0 || (account.positionAmount == 0 && tradeAmount > 0)) {
             deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
         } else {
@@ -152,8 +152,8 @@ library AMMImp {
             return 0;
         }
         require(account.positionAmount != 0, "zero position before close");
-        (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta2);
         if (isSafe(perpetual, account, perpetual.settings.beta2)) {
+            (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta2);
             if (account.positionAmount > 0) {
                 deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
             } else {
