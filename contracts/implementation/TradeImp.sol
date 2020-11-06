@@ -19,15 +19,15 @@ library TradeImp {
     using MarginAccountImp for Perpetual;
     using AMMImp for Perpetual;
 
-    uint256 internal constant _MAX_PLAN_SIZE = 3;
+    // uint256 internal constant _MAX_PLAN_SIZE = 3;
 
-    struct Recipe {
-        int256[_MAX_PLAN_SIZE] plan;
-        int256 takerOpeningAmount;
-        int256 takerClosingAmount;
-        int256 makerOpeningAmount;
-        int256 makerClosingAmount;
-    }
+    // struct Recipe {
+    //     int256[_MAX_PLAN_SIZE] plan;
+    //     int256 takerOpeningAmount;
+    //     int256 takerClosingAmount;
+    //     int256 makerOpeningAmount;
+    //     int256 makerClosingAmount;
+    // }
 
     function trade(
         Perpetual storage perpetual,
@@ -35,14 +35,11 @@ library TradeImp {
         int256 positionAmount,
         int256 priceLimit
     ) public {
-        Recipe memory recipe = tradePosition(perpetual, context, positionAmount, priceLimit);
+        ( , int256 takerOpeningAmount ) = _tradePosition(perpetual, context, positionAmount, priceLimit);
         // safe check
-        recipe.takerOpeningAmount > 0 ?
+        takerOpeningAmount > 0 ?
             perpetual.isInitialMarginSafe(context.takerAccount) :
             perpetual.isMaintenanceMarginSafe(context.takerAccount);
-        recipe.makerOpeningAmount > 0 ?
-            perpetual.isInitialMarginSafe(context.makerAccount) :
-            perpetual.isMaintenanceMarginSafe(context.makerAccount);
     }
 
     function liquidate(
@@ -55,11 +52,7 @@ library TradeImp {
         // maker            = amm
         // positionAmount   = amount from taker's side
         require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
-        Recipe memory recipe = tradePosition(perpetual, context, positionAmount, priceLimit);
-        recipe.makerOpeningAmount > 0 ?
-            perpetual.isInitialMarginSafe(context.makerAccount) :
-            perpetual.isMaintenanceMarginSafe(context.makerAccount);
-
+        _tradePosition(perpetual, context, positionAmount, priceLimit);
         int256 liquidateValue = context.tradingPrice.wmul(positionAmount);
         int256 penaltyToLiquidator = perpetual.settings.liquidationGasReserve;
         int256 penaltyToLP = liquidateValue.wmul(perpetual.settings.liquidationPenaltyRate1);
@@ -79,7 +72,7 @@ library TradeImp {
         // maker            = amm
         // positionAmount   = liquidator from taker's side
         require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
-        takePosition(perpetual, context, positionAmount, priceLimit);
+        _takePosition(perpetual, context, positionAmount, priceLimit);
 
         int256 liquidateValue = context.tradingPrice.wmul(positionAmount);
         int256 penaltyToLiquidator = perpetual.settings.liquidationGasReserve;
@@ -90,62 +83,62 @@ library TradeImp {
         return penaltyToLiquidator.add(penaltyToLiquidator2);
     }
 
-    function takePosition(
+    function _takePosition(
         Perpetual storage perpetual,
         Context memory context,
         int256 positionAmount,
         int256 priceLimit
-    ) public {
+    ) public view {
         int256 takingPrice = perpetual.state.markPrice;
         require(_validatePrice(positionAmount, takingPrice, priceLimit), LibError.EXCEED_PRICE_LIMIT);
-        context.tradingPrice = takingPrice;
-        Recipe memory recipe;
-        _splitAmount(context, recipe, positionAmount);
+        (
+            int256 takerClosingAmount,
+            int256 takerOpeningAmount
+        ) = Utils.splitAmount(context.takerAccount.positionAmount, positionAmount);
+        (
+            int256 makerClosingAmount,
+            int256 makerOpeningAmount
+        ) = Utils.splitAmount(context.makerAccount.positionAmount, positionAmount.neg());
         int256 takenValue = takingPrice.wmul(positionAmount);
+        context.deltaMargin = takenValue;
         context.takerAccount.cashBalance = context.takerAccount.cashBalance
             .sub(takenValue);
         context.makerAccount.cashBalance = context.makerAccount.cashBalance
             .add(takenValue);
-        perpetual.updatePosition(context.takerAccount, recipe.takerClosingAmount, recipe.takerOpeningAmount);
-        perpetual.updatePosition(context.makerAccount, recipe.makerClosingAmount, recipe.makerOpeningAmount);
+        perpetual.updatePosition(context.takerAccount, takerClosingAmount, takerOpeningAmount);
+        perpetual.updatePosition(context.makerAccount, makerClosingAmount, makerOpeningAmount);
 
-        recipe.takerOpeningAmount > 0 ?
+        takerOpeningAmount > 0 ?
             perpetual.isInitialMarginSafe(context.takerAccount) :
             perpetual.isMaintenanceMarginSafe(context.takerAccount);
-        // recipe.makerOpeningAmount > 0 ?
-        //     perpetual.isInitialMarginSafe(context.makerAccount) :
-        //     perpetual.isMaintenanceMarginSafe(context.makerAccount);
     }
 
-    function tradePosition(
+    function _tradePosition(
         Perpetual storage perpetual,
         Context memory context,
         int256 positionAmount,
         int256 priceLimit
-    ) internal returns (Recipe memory) {
+    ) internal view returns (int256, int256) {
         require(positionAmount > 0, LibError.INVALID_POSITION_AMOUNT);
         // trade
-        Recipe memory recipe;
-        _splitAmount(context, recipe, positionAmount);
-        _generateTradingPlan(context, recipe, positionAmount);
-        ( int256 totalCashCost, int256 totalFeeCost ) = _executeTradingPlan(perpetual, context, recipe);
-        // validation
-        int256 tradingPrice = totalCashCost.wdiv(positionAmount);
+        (
+            int256 takerClosingAmount,
+            int256 takerOpeningAmount
+        ) = Utils.splitAmount(context.takerAccount.positionAmount, positionAmount);
+        int256 deltaMargin = perpetual.determineDeltaCashBalance(context.makerAccount, positionAmount);
+        // price
+        int256 tradingPrice = deltaMargin.wdiv(positionAmount);
         require(tradingPrice > 0, LibError.INVALID_TRADING_PRICE);
         require(_validatePrice(positionAmount, tradingPrice, priceLimit), LibError.EXCEED_PRICE_LIMIT);
         // fee
-        int256 tradingValue = tradingPrice.wmul(positionAmount);
-        context.vaultFee = tradingValue.wmul(perpetual.settings.vaultFeeRate);
-        context.operatorFee = tradingValue.wmul(perpetual.settings.operatorFeeRate);
-        context.lpFee = totalFeeCost;
-        context.tradingPrice = tradingPrice;
+        context.lpFee = deltaMargin.wmul(perpetual.settings.liquidityProviderFeeRate);
+        context.vaultFee = deltaMargin.wmul(perpetual.settings.vaultFeeRate);
+        context.operatorFee = deltaMargin.wmul(perpetual.settings.operatorFeeRate);
         // update margin account
-        int256 takerCost = totalCashCost.add(context.lpFee).add(context.vaultFee).add(context.operatorFee);
+        int256 takerCost = deltaMargin.add(context.lpFee).add(context.vaultFee).add(context.operatorFee);
         context.takerAccount.cashBalance = context.takerAccount.cashBalance.sub(takerCost);
-        context.makerAccount.cashBalance = context.makerAccount.cashBalance.add(totalCashCost);
-        perpetual.updatePosition(context.takerAccount, recipe.takerClosingAmount, recipe.takerOpeningAmount);
-        perpetual.updatePosition(context.makerAccount, recipe.makerClosingAmount, recipe.makerOpeningAmount);
-        return recipe;
+        perpetual.updatePosition(context.takerAccount, takerClosingAmount, takerOpeningAmount);
+        return (takerClosingAmount, takerOpeningAmount);
     }
 
     function handleLiquidationLoss(
@@ -181,54 +174,53 @@ library TradeImp {
         return positionAmount >= 0? price < priceLimit: price > priceLimit;
     }
 
-    function _splitAmount(
-        Context memory context,
-        Recipe memory recipe,
-        int256 positionAmount
-    ) internal {
-        (
-            recipe.takerClosingAmount,
-            recipe.takerOpeningAmount
-        ) = Utils.splitAmount(context.takerAccount.positionAmount, positionAmount);
-        (
-            recipe.makerClosingAmount,
-            recipe.makerOpeningAmount
-        ) = Utils.splitAmount(context.makerAccount.positionAmount, positionAmount.neg());
-    }
+    // function _splitAmount(
+    //     Context memory context,
+    //     Recipe memory recipe,
+    //     int256 positionAmount
+    // ) internal {
+    //     (
+    //         recipe.takerClosingAmount,
+    //         recipe.takerOpeningAmount
+    //     ) = Utils.splitAmount(context.takerAccount.positionAmount, positionAmount);
+    //     (
+    //         recipe.makerClosingAmount,
+    //         recipe.makerOpeningAmount
+    //     ) = Utils.splitAmount(context.makerAccount.positionAmount, positionAmount.neg());
+    // }
 
-    function _generateTradingPlan(
-        Context memory context,
-        Recipe memory recipe,
-        int256 positionAmount
-    ) internal {
-        int256 sign = Utils.extractSign(positionAmount);
-        recipe.plan[0] = recipe.takerClosingAmount.abs()
-            .min(recipe.makerClosingAmount.abs())
-            .mul(sign);
-        recipe.plan[1] = recipe.takerClosingAmount
-            .add(recipe.makerClosingAmount).abs()
-            .mul(sign);
-        recipe.plan[2] = positionAmount
-            .sub(recipe.plan[0])
-            .sub(recipe.plan[1]);
-    }
+    // function _generateTradingPlan(
+    //     Context memory context,
+    //     Recipe memory recipe,
+    //     int256 positionAmount
+    // ) internal {
+    //     int256 sign = Utils.extractSign(positionAmount);
+    //     recipe.plan[0] = recipe.takerClosingAmount.abs()
+    //         .min(recipe.makerClosingAmount.abs())
+    //         .mul(sign);
+    //     recipe.plan[1] = recipe.takerClosingAmount
+    //         .add(recipe.makerClosingAmount).abs()
+    //         .mul(sign);
+    //     recipe.plan[2] = positionAmount
+    //         .sub(recipe.plan[0])
+    //         .sub(recipe.plan[1]);
+    // }
 
-    function _executeTradingPlan(
-        Perpetual storage perpetual,
-        Context memory context,
-        Recipe memory recipe
-    ) internal returns (int256, int256) {
-        int256 totalCashCost = 0;
-        int256 totalFeeCost = 0;
-        for (uint256 i = 0; i < _MAX_PLAN_SIZE; i++) {
-            int256 tradingAmount = recipe.plan[i];
-            if (tradingAmount == 0) {
-                continue;
-            }
-            int256 cashCost = perpetual.determineDeltaCashBalance(context.makerAccount, tradingAmount);
-            totalCashCost = totalCashCost.add(cashCost);
-        }
-        return (totalCashCost, totalFeeCost);
-    }
-
+    // function _executeTradingPlan(
+    //     Perpetual storage perpetual,
+    //     Context memory context,
+    //     Recipe memory recipe
+    // ) internal returns (int256, int256) {
+    //     int256 totalCashCost = 0;
+    //     int256 totalFeeCost = 0;
+    //     for (uint256 i = 0; i < _MAX_PLAN_SIZE; i++) {
+    //         int256 tradingAmount = recipe.plan[i];
+    //         if (tradingAmount == 0) {
+    //             continue;
+    //         }
+    //         int256 cashCost = perpetual.determineDeltaCashBalance(context.makerAccount, tradingAmount);
+    //         totalCashCost = totalCashCost.add(cashCost);
+    //     }
+    //     return (totalCashCost, totalFeeCost);
+    // }
 }

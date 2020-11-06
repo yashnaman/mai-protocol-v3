@@ -33,16 +33,6 @@ library MarginAccountImp {
             .max(perpetual.settings.reservedMargin);
     }
 
-    // function reservedMargin(
-    //     Perpetual storage perpetual,
-    //     MarginAccount memory account
-    // ) public view returns (int256) {
-    //     if (account.positionAmount > 0) {
-    //         return perpetual.settings.reservedMargin;
-    //     }
-    //     return 0;
-    // }
-
     function margin(
         Perpetual storage perpetual,
         MarginAccount memory account

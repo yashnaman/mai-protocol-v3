@@ -20,8 +20,8 @@ library AMMImp {
     using LibMath for uint256;
 
     function funding(
-	Perpetual storage perpetual,
-	MarginAccount memory account
+		Perpetual storage perpetual,
+		MarginAccount memory account
     ) internal {
 	uint256 blockTime = getBlockTimestamp();
 	(int256 newIndexPrice, uint256 newIndexTimestamp) = indexPrice();
@@ -35,11 +35,11 @@ library AMMImp {
     }
 
     function forceFunding(
-	Perpetual storage perpetual,
-	MarginAccount memory account,
-	uint256 blockTime,
-	int256 newIndexPrice,
-	uint256 newIndexTimestamp
+		Perpetual storage perpetual,
+		MarginAccount memory account,
+		uint256 blockTime,
+		int256 newIndexPrice,
+		uint256 newIndexTimestamp
     ) private {
 	if (perpetual.state.lastFundingTime == 0) {
 	    // funding initialization required. but in this case, it's safe to just do nothing and return
@@ -54,10 +54,10 @@ library AMMImp {
     }
 
     function nextStateWithTimespan(
-	Perpetual storage perpetual,
-	MarginAccount memory account,
-	int256 newIndexPrice,
-	uint256 endTimestamp
+		Perpetual storage perpetual,
+		MarginAccount memory account,
+		int256 newIndexPrice,
+		uint256 endTimestamp
     ) private {
 	require(perpetual.state.lastFundingTime != 0, "funding initialization required");
 	require(endTimestamp >= perpetual.state.lastFundingTime, "time steps (n) must be positive");
@@ -102,9 +102,8 @@ library AMMImp {
 	Perpetual storage perpetual,
 	MarginAccount memory account,
 	int256 tradeAmount
-    ) public returns (int256 deltaMargin) {
-	require(tradeAmount != 0, "no zero trade amount");
-	funding(perpetual, account);
+    ) public view returns (int256 deltaMargin) {
+		require(tradeAmount != 0, "no zero trade amount");
 	if (tradeAmount > 0) {
 	    if (account.positionAmount > 0) {
 		if (tradeAmount > account.positionAmount) {
