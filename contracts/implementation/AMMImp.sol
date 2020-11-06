@@ -102,9 +102,8 @@ library AMMImp {
 	    Perpetual storage perpetual,
 	    MarginAccount memory account,
 	    int256 tradeAmount
-    ) public returns (int256 deltaMargin) {
+    ) public view returns (int256 deltaMargin) {
 	    require(tradeAmount != 0, "no zero trade amount");
-	    funding(perpetual, account);
 	    if (tradeAmount > 0) {
 	        if (account.positionAmount > 0) {
 	    	    if (tradeAmount > account.positionAmount) {
