@@ -130,24 +130,17 @@ library AMMImp {
             return 0;
         }
         (int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
-        if (isSafe(perpetual, account, perpetual.settings.beta1)) {
-            if (account.positionAmount > 0 || (account.positionAmount == 0 && tradeAmount > 0)) {
-                deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
-            } else {
-                deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
-            }
-            account.cashBalance = account.cashBalance.add(deltaMargin);
-            account.positionAmount = account.positionAmount.add(tradeAmount);
-            (int256 newVirtualMargin, ) = regress(perpetual, account, perpetual.settings.beta1);
-            if (newVirtualMargin != virtualMargin) {
-                revert("after trade unsafe(origin margin change)");
-            }
-            if (!isSafe(perpetual, account, perpetual.settings.beta1)) {
-                revert("after trade unsafe");
-            }
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "before trade unsafe");
+        if (account.positionAmount > 0 || (account.positionAmount == 0 && tradeAmount > 0)) {
+            deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
         } else {
-            revert("before trade unsafe");
+            deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.add(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
         }
+        account.cashBalance = account.cashBalance.add(deltaMargin);
+        account.positionAmount = account.positionAmount.add(tradeAmount);
+        (int256 newVirtualMargin, ) = regress(perpetual, account, perpetual.settings.beta1);
+        require(newVirtualMargin == virtualMargin, "after trade unsafe(origin margin change)");
+        require(isSafe(perpetual, account, perpetual.settings.beta1), "after trade unsafe");
     }
 
     function close(
@@ -281,14 +274,21 @@ library AMMImp {
         MarginAccount memory account,
         int256 amount
     ) public {
+        require(amount > 0, "add amount must over 0");
         account.cashBalance = account.cashBalance.add(amount);
     }
 
     function removeLiquidatity(
         Perpetual storage perpetual,
+        MarginAccount memory account,
         int256 amount
     ) public {
-
+        require(amount > 0, "remove amount must over 0");
+        require(isSafe(perpetual, account), "before remove unsafe");
+        MarginAccount memory afterRemoveAccount = account;
+        afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
+        require(isSafe(perpetual, afterRemoveAccount), "after remove unsafe");
+        // int256 penalty = 
     }
 
 }
