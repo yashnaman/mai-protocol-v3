@@ -88,7 +88,10 @@ contract PerpetualWrapper is
         require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
 
-        _perpetual.deposit(_perpetual.traderAccounts[trader], collateralAmount);
+        _perpetual.increaseCashBalance(
+            _perpetual.traderAccounts[trader], 
+            collateralAmount
+        );
 
         emit Deposit(trader, collateralAmount);
     }
@@ -100,7 +103,11 @@ contract PerpetualWrapper is
         require(trader != address(0), LibError.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
 
-        _perpetual.withdraw(_perpetual.traderAccounts[trader], collateralAmount);
+        _perpetual.decreaseCashBalance(
+            _perpetual.traderAccounts[trader], 
+            collateralAmount
+        );
+        _perpetual.isInitialMarginSafe(_perpetual.traderAccounts[trader]);
 
         emit Withdraw(trader, collateralAmount);
     }

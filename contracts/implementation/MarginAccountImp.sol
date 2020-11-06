@@ -33,6 +33,16 @@ library MarginAccountImp {
             .max(perpetual.settings.reservedMargin);
     }
 
+    // function reservedMargin(
+    //     Perpetual storage perpetual,
+    //     MarginAccount memory account
+    // ) public view returns (int256) {
+    //     if (account.positionAmount > 0) {
+    //         return perpetual.settings.reservedMargin;
+    //     }
+    //     return 0;
+    // }
+
     function margin(
         Perpetual storage perpetual,
         MarginAccount memory account
@@ -54,7 +64,11 @@ library MarginAccountImp {
         Perpetual storage perpetual,
         MarginAccount memory account
     ) public view returns (int256) {
-        return availableMargin(perpetual, account).max(0);
+        int256 withdrawableAmount = margin(perpetual, account);
+        if (account.positionAmount != 0) {
+            withdrawableAmount = withdrawableAmount.sub(initialMargin(perpetual, account));
+        }
+        return withdrawableAmount.max(0);
     }
 
     function isInitialMarginSafe(
@@ -72,10 +86,10 @@ library MarginAccountImp {
     }
 
     function availableCashBalance(
-	Perpetual storage perpetual,
-	MarginAccount memory account
+        Perpetual storage perpetual,
+        MarginAccount memory account
     ) public view returns (int256) {
-	return account.cashBalance.sub(fundingLoss(perpetual, account)).sub(socialLoss(perpetual, account));
+	    return account.cashBalance.sub(fundingLoss(perpetual, account)).sub(socialLoss(perpetual, account));
     }
 
     function socialLoss(
@@ -133,20 +147,23 @@ library MarginAccountImp {
                 .wfrac(account.positionAmount.sub(positionAmount), account.positionAmount);
     }
 
-    function deposit(
+    function increaseCashBalance(
         Perpetual storage,
         MarginAccount memory account,
         int256 amount
     ) public pure returns (int256) {
+        int256 beforeIncreasing = account.cashBalance;
         account.cashBalance = account.cashBalance.add(amount);
+        require(account.cashBalance >= beforeIncreasing);
     }
 
-    function withdraw(
-        Perpetual storage perpetual,
+    function decreaseCashBalance(
+        Perpetual storage,
         MarginAccount memory account,
         int256 amount
-    ) public view returns (int256) {
-        account.cashBalance = account.cashBalance.sub(amount);
-        isInitialMarginSafe(perpetual, account);
+    ) public pure returns (int256) {
+        int256 beforeDecreasing = account.cashBalance;
+        account.cashBalance = account.cashBalance.add(amount);
+        require(account.cashBalance <= beforeDecreasing);
     }
 }

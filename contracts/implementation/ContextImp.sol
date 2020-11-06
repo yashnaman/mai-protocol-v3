@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../Type.sol";
+import "./MarginAccountImp.sol";
 
 library ContextImp {
 
@@ -26,7 +27,7 @@ library ContextImp {
         perpetual.traderAccounts[context.taker] = context.takerAccount;
         perpetual.traderAccounts[context.maker] = context.makerAccount;
         // fee
-        perpetual.lpFee;
+        // perpetual.lpFee;
         // perpetual.vaultFee;
         // perpetual.operatorFee;
         // perpetual.tradingPrice;

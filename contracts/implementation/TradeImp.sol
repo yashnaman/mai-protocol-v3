@@ -35,9 +35,6 @@ library TradeImp {
         int256 positionAmount,
         int256 priceLimit
     ) public {
-        // taker            = trader
-        // maker            = amm
-        // positionAmount   = amount from taker's side
         Recipe memory recipe = tradePosition(perpetual, context, positionAmount, priceLimit);
         // safe check
         recipe.takerOpeningAmount > 0 ?

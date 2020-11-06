@@ -4,16 +4,16 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 contract Liquidation {
-    using EnumerableMap for EnumerableMap.AddressSet;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     EnumerableSet.AddressSet internal _traders;
 
     function _registerTrader(address trader) internal {
-        _traders.add(_traders);
+        _traders.add(trader);
     }
 
     function _unregisterTrader(address trader) internal {
-        _traders.remove(_traders);
+        _traders.remove(trader);
     }
 
     EnumerableSet.AddressSet internal _settledTraders;
