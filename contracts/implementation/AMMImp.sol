@@ -288,7 +288,15 @@ library AMMImp {
         MarginAccount memory afterRemoveAccount = account;
         afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
         require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "unsafe after remove");
-        // int256 penalty = 
+        (, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
+        (, int256 newOriginMargin) = regress(perpetual, afterRemoveAccount, perpetual.settings.beta1);
+        int256 penalty = originMargin.sub(newOriginMargin).sub(perpetual.settings.targetLeverage.wmul(amount));
+        if (penalty < 0) {
+            penalty = 0;
+        } else if (penalty > amount) {
+            penalty = amount;
+        }
+        account.cashBalance = account.cashBalance.sub(amount.sub(penalty));
     }
 
 }

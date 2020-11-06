@@ -38,7 +38,7 @@ struct MarginAccount {
     int256 entryFundingLoss;
 }
 
-struct LiquidationProviderAccount {
+struct LiquidityProviderAccount {
     int256 entryInsuranceFund;
 }
 
@@ -66,5 +66,5 @@ struct Perpetual {
     State state;
     Settings settings;
     mapping(address => MarginAccount) traderAccounts;
-    mapping(address => LiquidationProviderAccount) lpAccounts;
+    mapping(address => LiquidityProviderAccount) lpAccounts;
 }
