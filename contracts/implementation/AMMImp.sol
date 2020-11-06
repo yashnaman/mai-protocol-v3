@@ -24,14 +24,14 @@ library AMMImp {
 	MarginAccount memory account
     ) internal {
 	uint256 blockTime = getBlockTimestamp();
-        (int256 newIndexPrice, uint256 newIndexTimestamp) = indexPrice();
-        if (
-            blockTime != perpetual.state.lastFundingTime ||
-            newIndexPrice != perpetual.state.lastIndexPrice ||
-            newIndexTimestamp > perpetual.state.lastFundingTime
-        ) {
-            forceFunding(perpetual, account, blockTime, newIndexPrice, newIndexTimestamp);
-        }
+	(int256 newIndexPrice, uint256 newIndexTimestamp) = indexPrice();
+	if (
+	    blockTime != perpetual.state.lastFundingTime ||
+	    newIndexPrice != perpetual.state.lastIndexPrice ||
+	    newIndexTimestamp > perpetual.state.lastFundingTime
+	) {
+	    forceFunding(perpetual, account, blockTime, newIndexPrice, newIndexTimestamp);
+	}
     }
 
     function forceFunding(
@@ -41,35 +41,35 @@ library AMMImp {
 	int256 newIndexPrice,
 	uint256 newIndexTimestamp
     ) private {
-        if (perpetual.state.lastFundingTime == 0) {
-            // funding initialization required. but in this case, it's safe to just do nothing and return
-            return;
-        }
-        if (newIndexTimestamp > perpetual.state.lastFundingTime) {
-            // the 1st update
-            nextStateWithTimespan(perpetual, account, newIndexPrice, newIndexTimestamp);
-        }
-        // the 2nd update;
-        nextStateWithTimespan(perpetual, account, newIndexPrice, blockTime);
+	if (perpetual.state.lastFundingTime == 0) {
+	    // funding initialization required. but in this case, it's safe to just do nothing and return
+	    return;
+	}
+	if (newIndexTimestamp > perpetual.state.lastFundingTime) {
+	    // the 1st update
+	    nextStateWithTimespan(perpetual, account, newIndexPrice, newIndexTimestamp);
+	}
+	// the 2nd update;
+	nextStateWithTimespan(perpetual, account, newIndexPrice, blockTime);
     }
 
     function nextStateWithTimespan(
 	Perpetual storage perpetual,
 	MarginAccount memory account,
-        int256 newIndexPrice,
-        uint256 endTimestamp
+	int256 newIndexPrice,
+	uint256 endTimestamp
     ) private {
-        require(perpetual.state.lastFundingTime != 0, "funding initialization required");
-        require(endTimestamp >= perpetual.state.lastFundingTime, "time steps (n) must be positive");
+	require(perpetual.state.lastFundingTime != 0, "funding initialization required");
+	require(endTimestamp >= perpetual.state.lastFundingTime, "time steps (n) must be positive");
 
-        if (perpetual.state.lastFundingTime != endTimestamp) {
-            int256 timeDelta = endTimestamp.sub(perpetual.state.lastFundingTime).toInt256();
+	if (perpetual.state.lastFundingTime != endTimestamp) {
+	    int256 timeDelta = endTimestamp.sub(perpetual.state.lastFundingTime).toInt256();
 	    perpetual.state.unitAccumulatedFundingLoss = perpetual.state.unitAccumulatedFundingLoss.add(perpetual.state.lastIndexPrice.wmul(timeDelta).wmul(perpetual.state.lastFundingRate).div(28800));
-            perpetual.state.lastFundingTime = endTimestamp;
-        }
+	    perpetual.state.lastFundingTime = endTimestamp;
+	}
 
-        // always update
-        perpetual.state.lastIndexPrice = newIndexPrice; // should update before calculate funding rate()
+	// always update
+	perpetual.state.lastIndexPrice = newIndexPrice; // should update before calculate funding rate()
 	perpetual.state.lastFundingRate = fundingRate(perpetual, account);
     }
 
@@ -88,26 +88,26 @@ library AMMImp {
     }
 
     function getBlockTimestamp() internal view returns (uint256) {
-        return block.timestamp;
+	return block.timestamp;
     }
 
     function indexPrice() public view returns (int256 price, uint256 timestamp) {
-        // (price, timestamp) = priceFeeder.price();
+	// (price, timestamp) = priceFeeder.price();
 	price = 1;
 	timestamp = 1;
-        require(price != 0, "dangerous index price");
+	require(price != 0, "dangerous index price");
     }
 
     function determineDeltaCashBalance(
-        Perpetual storage perpetual,
-        MarginAccount memory account,
-        int256 tradeAmount
+	Perpetual storage perpetual,
+	MarginAccount memory account,
+	int256 tradeAmount
     ) public returns (int256 deltaMargin) {
 	require(tradeAmount != 0, "no zero trade amount");
 	funding(perpetual, account);
-        if (tradeAmount > 0) {
+	if (tradeAmount > 0) {
 	    if (account.positionAmount > 0) {
-                if (tradeAmount > account.positionAmount) {
+		if (tradeAmount > account.positionAmount) {
 		    close(perpetual, account, account.positionAmount, Side.LONG);
 		    open(perpetual, account, tradeAmount.sub(account.positionAmount), Side.SHORT);
 		} else {
@@ -137,9 +137,9 @@ library AMMImp {
 	Side side
     ) internal view returns (int256 deltaMargin) {
 	(int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
-        if (account.positionAmount == 0 || isSafe(perpetual, account, perpetual.settings.beta1, side)) {
+	if (account.positionAmount == 0 || isSafe(perpetual, account, perpetual.settings.beta1, side)) {
 	    if (side == Side.LONG) {
-	        deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
+		deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
 	    } else {
 		deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta1, perpetual.state.indexPrice);
 	    }
@@ -165,7 +165,7 @@ library AMMImp {
 	(int256 virtualMargin, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta2);
 	if (isSafe(perpetual, account, perpetual.settings.beta2, side)) {
 	    if (side == Side.LONG) {
-	        deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
+		deltaMargin = longDeltaMargin(originMargin, perpetual.availableCashBalance(account).add(virtualMargin), account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
 	    } else {
 		deltaMargin = shortDeltaMargin(originMargin, account.positionAmount, account.positionAmount.sub(tradeAmount), perpetual.settings.beta2, perpetual.state.indexPrice);
 	    }
@@ -175,22 +175,22 @@ library AMMImp {
     }
 
     function regress(
-        Perpetual storage perpetual,
+	Perpetual storage perpetual,
 	MarginAccount memory account,
 	int256 beta
     ) public view returns (int256 virtualMargin, int256 originMargin) {
-        if (account.positionAmount == 0) {
-            virtualMargin = perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance);
-        } else if (account.positionAmount > 0) {
-            int256 b = perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(perpetual.state.indexPrice).wmul(account.positionAmount);
-            b = b.add(perpetual.settings.targetLeverage.wmul(account.cashBalance));
-            int256 beforeSqrt = beta.wmul(perpetual.state.indexPrice).wmul(perpetual.settings.targetLeverage).wmul(account.cashBalance).mul(account.positionAmount).mul(4);
-            beforeSqrt = beforeSqrt.add(b.mul(b));
-            virtualMargin = beta.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance).mul(2);
+	if (account.positionAmount == 0) {
+	    virtualMargin = perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance);
+	} else if (account.positionAmount > 0) {
+	    int256 b = perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE).wmul(perpetual.state.indexPrice).wmul(account.positionAmount);
+	    b = b.add(perpetual.settings.targetLeverage.wmul(account.cashBalance));
+	    int256 beforeSqrt = beta.wmul(perpetual.state.indexPrice).wmul(perpetual.settings.targetLeverage).wmul(account.cashBalance).mul(account.positionAmount).mul(4);
+	    beforeSqrt = beforeSqrt.add(b.mul(b));
+	    virtualMargin = beta.sub(LibConstant.SIGNED_ONE).wmul(account.cashBalance).mul(2);
 	    virtualMargin = virtualMargin.add(beforeSqrt.sqrt()).add(b);
 	    virtualMargin = virtualMargin.wmul(perpetual.settings.targetLeverage.sub(LibConstant.SIGNED_ONE));
 	    virtualMargin = virtualMargin.wdiv(perpetual.settings.targetLeverage.add(beta).sub(LibConstant.SIGNED_ONE)).div(2);
-        } else {
+	} else {
 	    int256 a = perpetual.state.indexPrice.wmul(account.positionAmount).mul(2);
 	    int256 b = perpetual.settings.targetLeverage.add(LibConstant.SIGNED_ONE).wmul(perpetual.state.indexPrice).wmul(account.positionAmount);
 	    b = b.add(perpetual.settings.targetLeverage.wmul(account.cashBalance));
@@ -203,7 +203,7 @@ library AMMImp {
     }
 
     function longDeltaMargin(
-        int256 originMargin,
+	int256 originMargin,
 	int256 availableMargin,
 	int256 positionAmount1,
 	int256 positionAmount2,
@@ -279,15 +279,16 @@ library AMMImp {
     }
 
     function addLiquidatity(
-        Perpetual storage perpetual,
-        int256 amount
+	Perpetual storage perpetual,
+	MarginAccount memory account,
+	int256 amount
     ) public {
-
+	account.cashBalance = account.cashBalance.add(amount);
     }
 
     function removeLiquidatity(
-        Perpetual storage perpetual,
-        int256 amount
+	Perpetual storage perpetual,
+	int256 amount
     ) public {
 
     }
