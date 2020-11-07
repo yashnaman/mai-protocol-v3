@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-struct Context {
-    address taker;
-    address maker;
-    MarginAccount takerAccount;
-    MarginAccount makerAccount;
-    int256 lpFee;
-    int256 vaultFee;
-    int256 operatorFee;
-    int256 tradingPrice;
-    // 不含fee
-    int256 deltaMargin;
-}
+// struct Context {
+//     address taker;
+//     address maker;
+//     MarginAccount takerAccount;
+//     MarginAccount makerAccount;
+//     int256 lpFee;
+//     int256 vaultFee;
+//     int256 operatorFee;
+//     int256 tradingPrice;
+//     // 不含fee
+//     int256 deltaMargin;
+// }
 
 struct Settings {
     int256 reservedMargin;
@@ -31,10 +31,21 @@ struct Settings {
     int256 targetLeverage;
 }
 
+struct FundingState {
+    int256 unitAccumulatedFundingLoss;
+    int256 lastIndexPrice;
+    int256 lastFundingRate;
+    uint256 lastFundingTime;
+}
+
+struct OraclePrice {
+    int256 price;
+    uint256 timestamp;
+}
+
 struct MarginAccount {
     int256 cashBalance;
     int256 positionAmount;
-    int256 entrySocialLoss;
     int256 entryFundingLoss;
 }
 
@@ -42,29 +53,6 @@ struct LiquidityProviderAccount {
     int256 entryInsuranceFund;
 }
 
-struct State {
-    bool emergency;
-    bool shutdown;
-    int256 markPrice; // slow
-    int256 indexPrice; // fast
-    int256 unitSocialLoss;
-    int256 unitAccumulatedFundingLoss;
-    int256 totalPositionAmount;
-    int256 insuranceFund;
-    uint256 lastFundingTime;
-    int256 lastIndexPrice;
-    int256 lastFundingRate;
-}
-
-struct Perpetual {
-    string symbol;
-    address vault;
-    address parent;
-    address operator;
-    address oracle;
-
-    State state;
-    Settings settings;
-    mapping(address => MarginAccount) traderAccounts;
-    mapping(address => LiquidityProviderAccount) lpAccounts;
+struct AccessControl {
+    uint256 privileges;
 }

@@ -3,7 +3,6 @@ pragma solidity 0.7.4;
 
 import "../thirdparty/upgrades/AdminUpgradeabilityProxy.sol";
 
-
 /// @title Create a upgradeable proxy as storage of new perpetual.
 contract ProxyBuilder {
 
