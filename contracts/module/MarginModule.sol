@@ -36,11 +36,12 @@ library MarginModule {
             .max(settings.reservedMargin);
     }
 
-    // function availableCashBalance(
-    //     MarginAccount memory account
-    // ) public view returns (int256) {
-	//     return account.cashBalance.sub(fundingLoss(account)).sub(socialLoss(account));
-    // }
+    function availableCashBalance(
+        MarginAccount memory account,
+        int256 unitAccumulatedFundingLoss
+    ) public pure returns (int256) {
+	    return account.cashBalance.sub(fundingLoss(account, unitAccumulatedFundingLoss));
+    }
 
     function margin(
         MarginAccount memory account,

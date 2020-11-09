@@ -2,15 +2,15 @@
 
 pragma solidity >=0.7.4;
 
-import "../lib/LibMath.sol";
+import "../libraries/Math.sol";
 
 contract TestLibMath {
 
     function mostSignificantBit(uint256 x) public pure returns (uint8) {
-        return LibMath.mostSignificantBit(x);
+        return Math.mostSignificantBit(x);
     }
 
     function sqrt(int256 y) public pure returns (int256) {
-        return LibMath.sqrt(y);
+        return Math.sqrt(y);
     }
 }

@@ -3,21 +3,21 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../lib/LibEnumerableMap.sol";
-import "../lib/LibSafeCastExt.sol";
-import "../CallContext.sol";
+import "../libraries/EnumerableMap.sol";
+import "../libraries/SafeCastExt.sol";
+import "../Context.sol";
 
-contract ProxyTracer is CallContext {
+contract ProxyTracer is Context {
     using SafeMath for uint256;
-    using LibSafeCastExt for address;
-    using LibSafeCastExt for bytes32;
-    using LibEnumerableMap for LibEnumerableMap.GenericEnumerableMap;
+    using SafeCastExt for address;
+    using SafeCastExt for bytes32;
+    using EnumerableMap for EnumerableMap.GenericEnumerableMap;
 
     // address of proxy => struct {
     //     address of proxy
     //     address of implementation
     // }
-    LibEnumerableMap.GenericEnumerableMap internal _proxyInstances;
+    EnumerableMap.GenericEnumerableMap internal _proxyInstances;
 
     function _registerInstance(address proxy, address implementation) internal {
         require(proxy != address(0), "invalid proxy");

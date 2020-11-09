@@ -10,6 +10,7 @@ import "./libraries/Utils.sol";
 
 import "./Type.sol";
 import "./State.sol";
+import "./Core.sol";
 
 import "./module/MarginModule.sol";
 
@@ -38,9 +39,10 @@ contract Action is State {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
+        ( int256 markPrice, ) = _markPrice();
         MarginAccount memory traderAccount = _marginAccounts[trader];
         traderAccount.decreaseCashBalance(collateralAmount);
-        traderAccount.isInitialMarginSafe(_settings, _state.markPrice, _state.unitAccumulatedFundingLoss);
+        traderAccount.isInitialMarginSafe(_settings, markPrice, _fundingState.unitAccumulatedFundingLoss);
         _marginAccounts[trader] = traderAccount;
     }
 
@@ -72,9 +74,9 @@ contract Action is State {
             account,
             penaltyToLP,
             penaltyToFund,
-            _state.insuranceFund
+            _insuranceFund
         );
-        _state.insuranceFund = newInsuraceFund > 0 ? newInsuraceFund : 0;
+        _insuranceFund = newInsuraceFund > 0 ? newInsuraceFund : 0;
         liquidationLoss = newInsuraceFund < 0 ? newInsuraceFund : 0;
         // fee
     }
@@ -95,9 +97,9 @@ contract Action is State {
             makerAccount,
             penaltyToLiquidator,
             penaltyToFund,
-            _state.insuranceFund
+            _insuranceFund
         );
-        _state.insuranceFund = newInsuraceFund > 0 ? newInsuraceFund : 0;
+        _insuranceFund = newInsuraceFund > 0 ? newInsuraceFund : 0;
         liquidationLoss = newInsuraceFund < 0 ? newInsuraceFund : 0;
         // fee
     }
@@ -107,7 +109,7 @@ contract Action is State {
         int256 positionAmount,
         int256 priceLimit,
         bool requireSafeClose
-    ) internal view returns (int256 deltaMargin) {
+    ) internal returns (int256 deltaMargin) {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
         (
             int256 closingAmount,
@@ -121,11 +123,12 @@ contract Action is State {
             .add(_settings.operatorFeeRate)
             .wmul(deltaMargin);
         account.decreaseCashBalance(deltaMargin.add(tradingFee));
-        account.updatePosition(closingAmount, openingAmount, _state.unitAccumulatedFundingLoss);
+        account.updatePosition(closingAmount, openingAmount, _fundingState.unitAccumulatedFundingLoss);
+        ( int256 markPrice, ) = _markPrice();
         if (openingAmount > 0) {
-            _requireSafeOpen(account);
+            _requireSafeOpen(account, markPrice);
         } else if (requireSafeClose) {
-            _requireSafeClose(account);
+            _requireSafeClose(account, markPrice);
         }
     }
 
@@ -134,9 +137,9 @@ contract Action is State {
         MarginAccount memory makerAccount,
         int256 positionAmount,
         int256 priceLimit
-    ) public view returns (int256 deltaMargin) {
+    ) public returns (int256 deltaMargin) {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
-        int256 price = _state.markPrice;
+        ( int256 price, ) = _markPrice();
         _validatePrice(positionAmount, price, priceLimit);
         (
             int256 takerClosingAmount,
@@ -150,9 +153,9 @@ contract Action is State {
         deltaMargin = price.wmul(positionAmount);
         takerAccount.decreaseCashBalance(deltaMargin);
         makerAccount.increaseCashBalance(deltaMargin);
-        takerAccount.updatePosition(takerClosingAmount, takerOpeningAmount, _state.unitAccumulatedFundingLoss);
-        makerAccount.updatePosition(makerClosingAmount, makerOpeningAmount, _state.unitAccumulatedFundingLoss);
-        takerOpeningAmount > 0 ? _requireSafeOpen(takerAccount) : _requireSafeClose(takerAccount);
+        takerAccount.updatePosition(takerClosingAmount, takerOpeningAmount, _fundingState.unitAccumulatedFundingLoss);
+        makerAccount.updatePosition(makerClosingAmount, makerOpeningAmount, _fundingState.unitAccumulatedFundingLoss);
+        takerOpeningAmount > 0 ? _requireSafeOpen(takerAccount, price) : _requireSafeClose(takerAccount, price);
     }
 
     function _validatePrice(int256 positionAmount, int256 price, int256 priceLimit) internal pure {
@@ -168,38 +171,39 @@ contract Action is State {
         MarginAccount memory account,
         int256 penaltyToLiquidator,
         int256 penaltyToFund,
-        int256 insuranceFund
-    ) internal view returns (int256 nextInsuranceFund) {
+        int256 _insuranceFund
+    ) internal returns (int256 nextInsuranceFund) {
         int256 penalty = penaltyToLiquidator.add(penaltyToFund);
         if (account.cashBalance >= penalty) {
             account.decreaseCashBalance(penalty);
-            nextInsuranceFund = insuranceFund.add(penaltyToFund);
+            nextInsuranceFund = _insuranceFund.add(penaltyToFund);
         } else {
-            int256 accountMargin = account.margin(_state.markPrice, _state.unitAccumulatedFundingLoss);
-            if (accountMargin.add(insuranceFund) >= penaltyToLiquidator) {
+            ( int256 price, ) = _markPrice();
+            int256 accountMargin = account.margin(price, _fundingState.unitAccumulatedFundingLoss);
+            if (accountMargin.add(_insuranceFund) >= penaltyToLiquidator) {
                 account.decreaseCashBalance(accountMargin);
                 nextInsuranceFund = accountMargin
                     .sub(penaltyToLiquidator)
-                    .add(insuranceFund);
+                    .add(_insuranceFund);
             } else {
                 account.decreaseCashBalance(accountMargin);
-                insuranceFund = penaltyToLiquidator
-                    .sub(insuranceFund)
+                _insuranceFund = penaltyToLiquidator
+                    .sub(_insuranceFund)
                     .sub(accountMargin);
             }
         }
     }
 
-    function _requireSafeOpen(MarginAccount memory account) internal view {
+    function _requireSafeOpen(MarginAccount memory account, int256 markPrice) internal view {
         require(
-            account.isInitialMarginSafe(_settings, _state.markPrice, _state.unitAccumulatedFundingLoss),
+            account.isInitialMarginSafe(_settings, markPrice, _fundingState.unitAccumulatedFundingLoss),
             Error.ACCOUNT_IM_UNSAFE
         );
     }
 
-    function _requireSafeClose(MarginAccount memory account) internal view {
+    function _requireSafeClose(MarginAccount memory account, int256 markPrice) internal view {
         require(
-            account.isMaintenanceMarginSafe(_settings, _state.markPrice, _state.unitAccumulatedFundingLoss),
+            account.isMaintenanceMarginSafe(_settings, markPrice, _fundingState.unitAccumulatedFundingLoss),
             Error.ACCOUNT_MM_UNSAFE
         );
     }

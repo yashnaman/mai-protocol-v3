@@ -1,6 +1,9 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-typechain";
+import "hardhat-contract-sizer";
+import "hardhat-gas-reporter";
+import "hardhat-abi-exporter";
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
   const accounts = await hre.ethers.getSigners();
@@ -30,5 +33,16 @@ module.exports = {
         tests: "./test",
         cache: "./cache",
         artifacts: "./artifacts"
+    },
+    contractSizer: {
+      alphaSort: true,
+      runOnCompile: false,
+      disambiguatePaths: false,
+    },
+    abiExporter: {
+      path: './abi',
+      clear: false,
+      flat: true,
+      only: ['PereptualMaker', 'Perpetual'],
     }
 };

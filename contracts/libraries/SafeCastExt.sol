@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-library SafeMathExt {
+library SafeCastExt {
 
     function toAddress(bytes32 b) internal pure returns (address) {
         return address(uint160(uint256(b)));

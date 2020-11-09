@@ -33,6 +33,7 @@ struct Settings {
 
 struct FundingState {
     int256 unitAccumulatedFundingLoss;
+    int256 fundingRate;
     int256 lastIndexPrice;
     int256 lastFundingRate;
     uint256 lastFundingTime;

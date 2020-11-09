@@ -21,9 +21,9 @@ contract Core {
     Settings internal _settings;
     FundingState internal _fundingState;
 
+    mapping(address => int256) internal _entryInsuranceFund;
     mapping(address => MarginAccount) internal _marginAccounts;
     mapping(address => mapping(address => AccessControl)) internal _accessControls;
-    mapping(address => LiquidityProviderAccount) internal _liquidityProviderAccounts;
 
     bytes32[50] __gap;
 }

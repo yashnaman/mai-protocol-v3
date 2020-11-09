@@ -15,13 +15,15 @@ import "./State.sol";
 import "./module/MarginModule.sol";
 import "./module/AccessControlModule.sol";
 
-contract Perpetual is Core, Action, Context {
+contract Perpetual is Action {
 
     using MarginModule for MarginAccount;
     using AccessControlModule for AccessControl;
 
     event Deposit(address trader, int256 collateralAmount);
     event Withdraw(address trader, int256 collateralAmount);
+    event AddLiquidatity(address trader, int256 collateralAmount);
+    event RemoveLiquidatity(address trader, int256 collateralAmount);
     event Trade(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
     event Liquidate1(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
     event Liquidate2(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
@@ -56,7 +58,7 @@ contract Perpetual is Core, Action, Context {
     modifier updateFunding() {
         _tryUpdateFundingState();
         _;
-        _tryUpdateFundingRate();
+        // _updateFundingRate();
     }
 
     modifier authRequired(address trader, uint256 privilege) {
@@ -68,31 +70,31 @@ contract Perpetual is Core, Action, Context {
     }
 
     // atribute
-    function initialMargin(address trader) public view returns (int256) {
+    function initialMargin(address trader) public returns (int256) {
         ( int256 markPrice, ) = _markPrice();
         return _marginAccounts[trader].initialMargin(_settings, markPrice);
     }
 
-    function maintenanceMargin(address trader) public view returns (int256) {
+    function maintenanceMargin(address trader) public returns (int256) {
         ( int256 markPrice, ) = _markPrice();
         return _marginAccounts[trader].maintenanceMargin(_settings, markPrice);
     }
 
-    function availableMargin(address trader) public view returns (int256) {
+    function availableMargin(address trader) public returns (int256) {
         ( int256 markPrice, ) = _markPrice();
         return _marginAccounts[trader].availableMargin(
             _settings,
             markPrice,
-            _state.unitAccumulatedFundingLoss
+            _fundingState.unitAccumulatedFundingLoss
         );
     }
 
-    function withdrawableMargin(address trader) public view returns (int256) {
+    function withdrawableMargin(address trader) public returns (int256) {
         ( int256 markPrice, ) = _markPrice();
         return _marginAccounts[trader].withdrawableMargin(
             _settings,
             markPrice,
-            _state.unitAccumulatedFundingLoss
+            _fundingState.unitAccumulatedFundingLoss
         );
     }
 
@@ -119,6 +121,26 @@ contract Perpetual is Core, Action, Context {
         _withdraw(trader, collateralAmount);
 
         emit Withdraw(trader, collateralAmount);
+    }
+
+    function addLiquidatity(
+        address trader,
+        int256 collateralAmount
+    ) public {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        //
+        _deposit(address(this), collateralAmount);
+        _entryInsuranceFund[trader] = _insuranceFund;
+
+    }
+
+    function removeLiquidatity(
+        address trader,
+        int256 collateralAmount
+    ) public {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
     }
 
     function trade(

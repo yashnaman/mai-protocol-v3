@@ -3,19 +3,19 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../lib/LibEnumerableMap.sol";
-import "../lib/LibSafeCastExt.sol";
-import "../CallContext.sol";
+import "../libraries/EnumerableMap.sol";
+import "../libraries/SafeCastExt.sol";
+import "../Context.sol";
 
-contract VersionController is CallContext {
+contract VersionController is Context {
     using SafeMath for uint256;
-    using LibSafeCastExt for address;
-    using LibSafeCastExt for bytes32;
-    using LibEnumerableMap for LibEnumerableMap.GenericEnumerableMap;
+    using SafeCastExt for address;
+    using SafeCastExt for bytes32;
+    using EnumerableMap for EnumerableMap.GenericEnumerableMap;
 
     enum VersionState { NULL, READY, DEPRECATED }
 
-    LibEnumerableMap.GenericEnumerableMap internal _versions;
+    EnumerableMap.GenericEnumerableMap internal _versions;
 
     // struct VersionInfo {
     //     bool deprecated;
@@ -48,7 +48,6 @@ contract VersionController is CallContext {
     }
 
     function _retrieveVersionList(
-        address implementation,
         uint256 begin,
         uint256 end
     ) internal view returns (address[] memory) {
