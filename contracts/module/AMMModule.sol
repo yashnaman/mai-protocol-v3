@@ -22,36 +22,120 @@ library AMMModule {
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    function determineDeltaFundingLoss(
+    function calculateNextFundingState(
+        FundingState storage fundingState,
+        Settings storage settings,
+        MarginAccount storage ammAccount,
+        OraclePrice memory oracleData,
+        uint256 currentTimestamp
+    ) internal view returns (int256 newUnitAccumulatedFundingLoss, int256 newFundingRate) {
+        int256 unitLoss;
+        newUnitAccumulatedFundingLoss = fundingState.unitAccumulatedFundingLoss;
+        // lastFundingTime => price time
+        if (oracleData.timestamp > fundingState.lastFundingTime) {
+            unitLoss = _calculateDeltaFundingLoss(
+                fundingState.lastIndexPrice,
+                fundingState.fundingRate,
+                fundingState.lastFundingTime,
+                oracleData.timestamp
+            );
+            newUnitAccumulatedFundingLoss = newUnitAccumulatedFundingLoss.add(unitLoss);
+            newFundingRate = calculateNextFundingRate(
+                fundingState,
+                settings,
+                ammAccount,
+                fundingState.lastIndexPrice
+            );
+        }
+        // price time => now
+        unitLoss = _calculateDeltaFundingLoss(
+            oracleData.price,
+            newFundingRate,
+            oracleData.timestamp,
+            currentTimestamp
+        );
+        newUnitAccumulatedFundingLoss = newUnitAccumulatedFundingLoss.add(unitLoss);
+        newFundingRate = calculateNextFundingRate(
+            fundingState,
+            settings,
+            ammAccount,
+            oracleData.price
+        );
+    }
+
+    function calculateNextFundingRate(
+        FundingState storage fundingState,
+        Settings storage settings,
+        MarginAccount storage ammAccount,
+        int256 indexPrice
+    ) internal view returns (int256 newFundingRate) {
+        if (ammAccount.positionAmount == 0) {
+            newFundingRate = 0;
+        } else {
+            int256 availableCashBalance = ammAccount.availableCashBalance(fundingState.unitAccumulatedFundingLoss);
+            (
+                int256 mv,
+                int256 m0
+            ) = regress(
+                indexPrice,
+                settings.targetLeverage,
+                availableCashBalance,
+                ammAccount.positionAmount,
+                settings.beta1
+            );
+            if (ammAccount.positionAmount > 0) {
+                newFundingRate = availableCashBalance.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
+            } else {
+                newFundingRate = indexPrice.neg().wfrac(ammAccount.positionAmount, m0);
+            }
+            return newFundingRate.wmul(settings.baseFundingRate);
+        }
+    }
+
+    function calculateDeltaMargin(
+        FundingState storage fundingState,
+        Settings storage settings,
+        MarginAccount storage ammAccount,
+        int256 indexPrice,
+        int256 tradingAmount
+    ) internal view returns (int256 deltaMargin, int256 newCashBalance) {
+        require(tradingAmount != 0, "no zero trade amount");
+        int256 cashBalance = ammAccount.availableCashBalance(fundingState.unitAccumulatedFundingLoss);
+        int256 positionAmount = ammAccount.positionAmount;
+        (
+            int256 closingAmount,
+            int256 openingAmount
+        ) = Utils.splitAmount(positionAmount, tradingAmount);
+        deltaMargin = deltaMargin.add(
+            close(settings, indexPrice, cashBalance, positionAmount, closingAmount)
+        );
+        deltaMargin = deltaMargin.add(
+            open(settings, indexPrice, cashBalance.add(deltaMargin), positionAmount.add(closingAmount), openingAmount)
+        );
+        if (deltaMargin > 0) {
+            // (1+a)*(1+b)-1=a+b+a*b
+            deltaMargin = deltaMargin.wmul(Constant.SIGNED_ONE.add(settings.halfSpreadRate));
+        } else {
+            // 1-(1-a)*(1-b)=a+b-a*b
+            deltaMargin = deltaMargin.wmul(Constant.SIGNED_ONE.sub(settings.halfSpreadRate));
+        }
+        int256 fee = settings.halfSpreadRate
+            .add(settings.liquidityProviderFeeRate)
+            .add(settings.halfSpreadRate.wmul(settings.liquidityProviderFeeRate))
+            .wmul(deltaMargin);
+        newCashBalance = cashBalance.add(fee.abs());
+    }
+
+    function _calculateDeltaFundingLoss(
         int256 indexPrice,
         int256 fundingRate,
         uint256 beginTimestamp,
         uint256 endTimestamp
-    ) public pure returns (int256 deltaUnitAccumulatedFundingLoss) {
+    ) internal pure returns (int256 deltaUnitAccumulatedFundingLoss) {
         require(endTimestamp > beginTimestamp, "time steps (n) must be positive");
         int256 timeElapsed = int256(endTimestamp.sub(beginTimestamp));
         deltaUnitAccumulatedFundingLoss = indexPrice
             .wfrac(fundingRate.wmul(timeElapsed), FUNDING_INTERVAL);
-    }
-
-    function calculateBaseFundingRate(
-        Settings storage settings,
-        int256 cashBalance,
-        int256 positionAmount,
-        int256 indexPrice
-    ) public view returns (int256 baseFundingRate) {
-        if (positionAmount == 0) {
-            baseFundingRate = 0;
-        } else {
-            ( int256 mv, int256 m0 )
-                = regress(indexPrice, settings.targetLeverage, cashBalance, positionAmount, settings.beta1);
-            if (positionAmount > 0) {
-                baseFundingRate = cashBalance.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
-            } else {
-                baseFundingRate = indexPrice.neg().wfrac(positionAmount, m0);
-            }
-            return baseFundingRate.wmul(settings.baseFundingRate);
-        }
     }
 
     function regress(
@@ -104,36 +188,6 @@ library AMMModule {
         mv = mv.wfrac(targetLeverage.sub(Constant.SIGNED_ONE), targetLeverage).div(2);
     }
 
-    function determineDeltaMargin(
-        Settings storage settings,
-        int256 indexPrice,
-        int256 cashBalance,
-        int256 positionAmount,
-        int256 tradingAmount
-    ) public view returns (int256 deltaMargin, int256 newCashBalance) {
-        require(tradingAmount != 0, "no zero trade amount");
-
-        (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(positionAmount, tradingAmount);
-        deltaMargin = deltaMargin.add(
-            close(settings, indexPrice, cashBalance, positionAmount, closingAmount)
-        );
-        deltaMargin = deltaMargin.add(
-            open(settings, indexPrice, cashBalance.add(deltaMargin), positionAmount.add(closingAmount), openingAmount)
-        );
-        if (deltaMargin > 0) {
-            // (1+a)*(1+b)-1=a+b+a*b
-            deltaMargin = deltaMargin.wmul(Constant.SIGNED_ONE.add(settings.halfSpreadRate));
-        } else {
-            // 1-(1-a)*(1-b)=a+b-a*b
-            deltaMargin = deltaMargin.wmul(Constant.SIGNED_ONE.sub(settings.halfSpreadRate));
-        }
-        int256 fee = settings.halfSpreadRate
-            .add(settings.liquidityProviderFeeRate)
-            .add(settings.halfSpreadRate.wmul(settings.liquidityProviderFeeRate))
-            .wmul(deltaMargin);
-        newCashBalance = cashBalance.add(fee.abs());
-    }
-
     function open(
         Settings storage settings,
         int256 indexPrice,
@@ -145,7 +199,7 @@ library AMMModule {
             return 0;
         }
         require(
-            _isMarginSafe(indexPrice, cashBalance, positionAmount, settings.targetLeverage, settings.beta1),
+            _isAMMMarginSafe(indexPrice, cashBalance, positionAmount, settings.targetLeverage, settings.beta1),
             "unsafe before trade"
         );
         ( int256 mv, int256 m0 )
@@ -171,7 +225,7 @@ library AMMModule {
         int256 newCashBalance = cashBalance.add(deltaMargin);
         int256 newPositionAmount = positionAmount.add(tradingAmount);
         require(
-            _isMarginSafe(indexPrice, newCashBalance, newPositionAmount, settings.targetLeverage, settings.beta1),
+            _isAMMMarginSafe(indexPrice, newCashBalance, newPositionAmount, settings.targetLeverage, settings.beta1),
             "unsafe before trade"
         );
         (int256 newMV, ) = regress(
@@ -195,7 +249,7 @@ library AMMModule {
         if (tradingAmount == 0) {
             return 0;
         }
-        if (_isMarginSafe(indexPrice, cashBalance, positionAmount, settings.targetLeverage, settings.beta2)) {
+        if (_isAMMMarginSafe(indexPrice, cashBalance, positionAmount, settings.targetLeverage, settings.beta2)) {
             ( int256 mv, int256 m0 )
                 = regress(indexPrice, settings.targetLeverage, cashBalance, positionAmount, settings.beta2);
             if (positionAmount > 0) {
@@ -252,7 +306,7 @@ library AMMModule {
         deltaMargin = deltaMargin.wmul(indexPrice).wmul(positionAmount2.sub(positionAmount1)).neg();
     }
 
-    function _isMarginSafe(
+    function _isAMMMarginSafe(
         int256 indexPrice,
         int256 cashBalance,
         int256 positionAmount,
@@ -292,36 +346,5 @@ library AMMModule {
         upperbound = beta.mul(targetLeverage).sqrt().mul(2).add(targetLeverage).add(Constant.SIGNED_ONE);
         upperbound = targetLeverage.wfrac(cashBalance, positionAmount.neg()).wdiv(upperbound);
     }
-
-
-    // function addLiquidatity(
-    //     Perpetual storage perpetual,
-    //     MarginAccount memory account,
-    //     int256 amount
-    // ) public {
-    //     require(amount > 0, "add amount must over 0");
-    //     account.cashBalance = account.cashBalance.add(amount);
-    // }
-
-    // function removeLiquidatity(
-    //     Perpetual storage perpetual,
-    //     MarginAccount memory account,
-    //     int256 amount
-    // ) public {
-    //     require(amount > 0, "remove amount must over 0");
-    //     require(isSafe(perpetual, account, perpetual.settings.beta1), "unsafe before remove");
-    //     MarginAccount memory afterRemoveAccount = account;
-    //     afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
-    //     require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "unsafe after remove");
-    //     (, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
-    //     (, int256 newOriginMargin) = regress(perpetual, afterRemoveAccount, perpetual.settings.beta1);
-    //     int256 penalty = originMargin.sub(newOriginMargin).sub(perpetual.settings.targetLeverage.wmul(amount));
-    //     if (penalty < 0) {
-    //         penalty = 0;
-    //     } else if (penalty > amount) {
-    //         penalty = amount;
-    //     }
-    //     account.cashBalance = account.cashBalance.sub(amount.sub(penalty));
-    // }
 
 }

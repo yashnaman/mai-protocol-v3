@@ -18,75 +18,65 @@ contract State is Core, Context  {
     using AMMModule for FundingState;
     using MarginModule for MarginAccount;
 
-    function _markPrice() internal returns (int256 price, uint256 updateTimestamp) {
+    function _markPrice() internal view returns (int256 price) {
+        return _markPriceData().price;
+    }
+
+    function _markPriceData() internal view returns (OraclePrice memory) {
         if (_now() == _marketOracleData.timestamp) {
-            return (_marketOracleData.price, _marketOracleData.timestamp);
+            return _marketOracleData;
         }
-        return (0, 0);
+        return OraclePrice(0, 0);
     }
 
-    function _indexPrice() internal returns (int256 price, uint256 updateTimestamp) {
+    function _indexPrice() internal view returns (int256 price) {
+        return _indexPriceData().price;
+    }
+
+    function _indexPriceData() internal view returns (OraclePrice memory) {
         if (_now() == _indexOracleData.timestamp) {
-            return (_indexOracleData.price, _indexOracleData.timestamp);
+            return _indexOracleData;
         }
-        return (0, 0);
+        return OraclePrice(0, 0);
     }
 
-    function _isFundingStateOutOfDate(uint256 newPriceTimestamp) internal view returns (bool) {
+    function _isFundingStateOutdated(uint256 newPriceTimestamp) internal view returns (bool) {
         return _fundingState.lastFundingTime != _now()
             || _fundingState.lastFundingTime != _indexOracleData.timestamp
             || _fundingState.lastFundingTime < newPriceTimestamp;
     }
 
-
-    function _tryUpdateFundingState() internal {
-        ( int256 price, uint256 priceTimestamp ) =  _indexPrice();
-        if (_isFundingStateOutOfDate(priceTimestamp)) {
-            _updateFundingState(price, priceTimestamp);
-        }
-    }
-
-    function _updateFundingState(int256 indexPrice, uint256 indexPriceTimestamp) internal {
+    function _updatePreFundingState() internal {
         if (_fundingState.lastFundingTime == 0) {
             return;
         }
-        MarginAccount memory ammAccount = _marginAccounts[address(this)];
-        int256 unitLoss;
-        int256 newFundingRate;
-        int256 newUnitAccumulatedFundingLoss = _fundingState.unitAccumulatedFundingLoss;
-        // lastFundingTime => price time
-        if (indexPriceTimestamp > _fundingState.lastFundingTime) {
-            unitLoss = AMMModule.determineDeltaFundingLoss(
-                _fundingState.lastIndexPrice,
-                _fundingState.fundingRate,
-                _fundingState.lastFundingTime,
-                indexPriceTimestamp
-            );
-            newUnitAccumulatedFundingLoss = newUnitAccumulatedFundingLoss.add(unitLoss);
-            newFundingRate = AMMModule.calculateBaseFundingRate(
-                _settings,
-                ammAccount.availableCashBalance(newUnitAccumulatedFundingLoss),
-                ammAccount.positionAmount,
-                _fundingState.lastIndexPrice
-            );
+        OraclePrice memory priceData = _indexPriceData();
+        if (!_isFundingStateOutdated(priceData.timestamp)) {
+            return;
         }
-        // price time => now
-        unitLoss = AMMModule.determineDeltaFundingLoss(
-            indexPrice,
-            newFundingRate,
-            indexPriceTimestamp,
-            _now()
-        );
-        newUnitAccumulatedFundingLoss = newUnitAccumulatedFundingLoss.add(unitLoss);
-        newFundingRate = AMMModule.calculateBaseFundingRate(
+        uint256 endFundingTime = _now();
+        (
+            int256 newUnitAccumulatedFundingLoss,
+            int256 newFundingRate
+        ) = _fundingState.calculateNextFundingState(
             _settings,
-            ammAccount.availableCashBalance(newUnitAccumulatedFundingLoss),
-            ammAccount.positionAmount,
-            indexPrice
+            _marginAccounts[_self()],
+            priceData,
+            endFundingTime
         );
-        _fundingState.lastIndexPrice = indexPrice;
-        _fundingState.lastFundingTime = _now();
+        _fundingState.lastIndexPrice = priceData.price;
+        _fundingState.lastFundingTime = endFundingTime;
         _fundingState.fundingRate = newFundingRate;
         _fundingState.unitAccumulatedFundingLoss = newUnitAccumulatedFundingLoss;
+    }
+
+    function _updatePostFundingState() internal {
+        OraclePrice memory priceData = _indexPriceData();
+        int256 newFundingRate = _fundingState.calculateNextFundingRate(
+            _settings,
+            _marginAccounts[_self()],
+            priceData.price
+        );
+        _fundingState.fundingRate = newFundingRate;
     }
 }

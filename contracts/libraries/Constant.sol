@@ -16,5 +16,11 @@ library Constant {
     uint256 internal constant PRIVILEGE_DEPOSTI = 0x1;
     uint256 internal constant PRIVILEGE_WITHDRAW = 0x2;
     uint256 internal constant PRIVILEGE_TRADE = 0x4;
-    uint256 internal constant PRIVILEGE_GUARD = PRIVILEGE_DEPOSTI | PRIVILEGE_WITHDRAW | PRIVILEGE_TRADE;
+    uint256 internal constant PRIVILEGE_ADD_LIQUIDITY = 0x8;
+    uint256 internal constant PRIVILEGE_REMOVE_LIQUIDITY = 0x16;
+    uint256 internal constant PRIVILEGE_GUARD = PRIVILEGE_DEPOSTI
+        | PRIVILEGE_WITHDRAW
+        | PRIVILEGE_TRADE
+        | PRIVILEGE_ADD_LIQUIDITY
+        | PRIVILEGE_REMOVE_LIQUIDITY;
 }

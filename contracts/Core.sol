@@ -12,11 +12,11 @@ contract Core {
     bool internal _emergency;
     bool internal _shutdown;
 
-    OraclePrice internal _indexOracleData;
-    OraclePrice internal _marketOracleData;
-
     int256 internal _insuranceFund;
     int256 internal _totalPositionAmount;
+
+    OraclePrice internal _indexOracleData;
+    OraclePrice internal _marketOracleData;
 
     Settings internal _settings;
     FundingState internal _fundingState;

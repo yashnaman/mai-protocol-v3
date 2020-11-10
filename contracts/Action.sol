@@ -39,7 +39,7 @@ contract Action is State {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
-        ( int256 markPrice, ) = _markPrice();
+        int256 markPrice = _markPrice();
         MarginAccount memory traderAccount = _marginAccounts[trader];
         traderAccount.decreaseCashBalance(collateralAmount);
         traderAccount.isInitialMarginSafe(_settings, markPrice, _fundingState.unitAccumulatedFundingLoss);
@@ -124,7 +124,7 @@ contract Action is State {
             .wmul(deltaMargin);
         account.decreaseCashBalance(deltaMargin.add(tradingFee));
         account.updatePosition(closingAmount, openingAmount, _fundingState.unitAccumulatedFundingLoss);
-        ( int256 markPrice, ) = _markPrice();
+        int256 markPrice = _markPrice();
         if (openingAmount > 0) {
             _requireSafeOpen(account, markPrice);
         } else if (requireSafeClose) {
@@ -139,8 +139,8 @@ contract Action is State {
         int256 priceLimit
     ) public returns (int256 deltaMargin) {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
-        ( int256 price, ) = _markPrice();
-        _validatePrice(positionAmount, price, priceLimit);
+        int256 markPrice = _markPrice();
+        _validatePrice(positionAmount, markPrice, priceLimit);
         (
             int256 takerClosingAmount,
             int256 takerOpeningAmount
@@ -150,12 +150,16 @@ contract Action is State {
             int256 makerOpeningAmount
         ) = Utils.splitAmount(makerAccount.positionAmount, positionAmount.neg());
 
-        deltaMargin = price.wmul(positionAmount);
+        deltaMargin = markPrice.wmul(positionAmount);
         takerAccount.decreaseCashBalance(deltaMargin);
         makerAccount.increaseCashBalance(deltaMargin);
         takerAccount.updatePosition(takerClosingAmount, takerOpeningAmount, _fundingState.unitAccumulatedFundingLoss);
         makerAccount.updatePosition(makerClosingAmount, makerOpeningAmount, _fundingState.unitAccumulatedFundingLoss);
-        takerOpeningAmount > 0 ? _requireSafeOpen(takerAccount, price) : _requireSafeClose(takerAccount, price);
+        if (takerOpeningAmount > 0) {
+            _requireSafeOpen(takerAccount, markPrice);
+        } else {
+            _requireSafeClose(takerAccount, markPrice);
+        }
     }
 
     function _validatePrice(int256 positionAmount, int256 price, int256 priceLimit) internal pure {
@@ -178,8 +182,8 @@ contract Action is State {
             account.decreaseCashBalance(penalty);
             nextInsuranceFund = _insuranceFund.add(penaltyToFund);
         } else {
-            ( int256 price, ) = _markPrice();
-            int256 accountMargin = account.margin(price, _fundingState.unitAccumulatedFundingLoss);
+            int256 markPrice = _markPrice();
+            int256 accountMargin = account.margin(markPrice, _fundingState.unitAccumulatedFundingLoss);
             if (accountMargin.add(_insuranceFund) >= penaltyToLiquidator) {
                 account.decreaseCashBalance(accountMargin);
                 nextInsuranceFund = accountMargin

@@ -32,7 +32,9 @@ contract Perpetual is Action {
         string calldata symbol,
         address oracle,
         address operator,
-        int256[14] calldata arguments
+        int256[14] calldata arguments,
+        int256[14] calldata argumentsMinValue,
+        int256[14] calldata argumentsMaxValue
     ) external {
         _symbol = symbol;
         _oracle = oracle;
@@ -56,9 +58,9 @@ contract Perpetual is Action {
     }
 
     modifier updateFunding() {
-        _tryUpdateFundingState();
+        _updatePreFundingState();
         _;
-        // _updateFundingRate();
+        _updatePostFundingState();
     }
 
     modifier authRequired(address trader, uint256 privilege) {
@@ -70,30 +72,26 @@ contract Perpetual is Action {
     }
 
     // atribute
-    function initialMargin(address trader) public returns (int256) {
-        ( int256 markPrice, ) = _markPrice();
-        return _marginAccounts[trader].initialMargin(_settings, markPrice);
+    function initialMargin(address trader) public view returns (int256) {
+        return _marginAccounts[trader].initialMargin(_settings, _markPrice());
     }
 
-    function maintenanceMargin(address trader) public returns (int256) {
-        ( int256 markPrice, ) = _markPrice();
-        return _marginAccounts[trader].maintenanceMargin(_settings, markPrice);
+    function maintenanceMargin(address trader) public view returns (int256) {
+        return _marginAccounts[trader].maintenanceMargin(_settings, _markPrice());
     }
 
-    function availableMargin(address trader) public returns (int256) {
-        ( int256 markPrice, ) = _markPrice();
+    function availableMargin(address trader) public view returns (int256) {
         return _marginAccounts[trader].availableMargin(
             _settings,
-            markPrice,
+            _markPrice(),
             _fundingState.unitAccumulatedFundingLoss
         );
     }
 
-    function withdrawableMargin(address trader) public returns (int256) {
-        ( int256 markPrice, ) = _markPrice();
+    function withdrawableMargin(address trader) public view returns (int256) {
         return _marginAccounts[trader].withdrawableMargin(
             _settings,
-            markPrice,
+            _markPrice(),
             _fundingState.unitAccumulatedFundingLoss
         );
     }
@@ -114,7 +112,7 @@ contract Perpetual is Action {
     function withdraw(
         address trader,
         int256 collateralAmount
-    ) external updateFunding authRequired(trader, Constant.PRIVILEGE_DEPOSTI) {
+    ) external updateFunding authRequired(trader, Constant.PRIVILEGE_WITHDRAW) {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
@@ -129,10 +127,10 @@ contract Perpetual is Action {
     ) public {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        //
         _deposit(address(this), collateralAmount);
         _entryInsuranceFund[trader] = _insuranceFund;
 
+        emit AddLiquidatity(trader, collateralAmount);
     }
 
     function removeLiquidatity(
@@ -141,6 +139,26 @@ contract Perpetual is Action {
     ) public {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
+        // require(isSafe(perpetual, account, perpetual.settings.beta1), "unsafe before remove");
+
+        // MarginAccount memory afterRemoveAccount = account;
+        // afterRemoveAccount.cashBalance = afterRemoveAccount.cashBalance.sub(amount);
+
+        // // require(isSafe(perpetual, afterRemoveAccount, perpetual.settings.beta1), "unsafe after remove");
+
+        // (, int256 originMargin) = regress(perpetual, account, perpetual.settings.beta1);
+        // (, int256 newOriginMargin) = regress(perpetual, afterRemoveAccount, perpetual.settings.beta1);
+
+        // int256 penalty = originMargin.sub(newOriginMargin).sub(perpetual.settings.targetLeverage.wmul(amount));
+        // if (penalty < 0) {
+        //     penalty = 0;
+        // } else if (penalty > amount) {
+        //     penalty = amount;
+        // }
+        // account.cashBalance = account.cashBalance.sub(amount.sub(penalty));
+
+        emit RemoveLiquidatity(trader, collateralAmount);
     }
 
     function trade(
