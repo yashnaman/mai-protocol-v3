@@ -11,11 +11,11 @@ contract GovernorAlpha {
     /// @notice The name of this contract
     string public constant name = "Mcdex LP Governor Alpha";
 
-    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    function quorumVoteRate() public pure returns (uint256) { return 4e16; } // 400,000 = 4% of Comp
+    /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    function quorumVoteRate() public pure returns (uint256) { return 4e16; } // 4%
 
-    /// @notice The number of votes required in order for a voter to become a proposer
-    function proposalRateThreshold() public pure returns (uint256) { return 1e16; } // 100,000 = 1% of Comp
+    /// @notice The threshold of votes ratio required in order for a voter to become a proposer
+    function proposalRateThreshold() public pure returns (uint256) { return 1e16; } // 1%
 
     /// @notice The maximum number of actions that can be included in a proposal
     function proposalMaxOperations() public pure returns (uint256) { return 10; } // 10 actions
@@ -26,10 +26,10 @@ contract GovernorAlpha {
     /// @notice The duration of voting on a proposal, in blocks
     function votingPeriod() public pure returns (uint256) { return 17280; } // ~3 days in blocks (assuming 15s blocks)
 
-    /// @notice The address of the Compound Protocol Timelock
+    /// @notice The address of the Timelock
     TimelockInterface public timelock;
 
-    /// @notice The address of the Compound governance token
+    /// @notice The address of the governance token
     LPShareTokenInterface public lp;
 
     /// @notice The total number of proposals
@@ -207,7 +207,7 @@ contract GovernorAlpha {
     }
 
     function _castVote(address voter, uint256 proposalId, bool support) internal {
-        require(state(proposalId) == ProposalState.Active, "GovernorAlpha::_castVote: voting is closed");
+        require(state(proposalId) == ProposalState.Active, "GovernorAlpha::_castVote: voting is not active");
         Proposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
         require(receipt.hasVoted == false, "GovernorAlpha::_castVote: voter already voted");
