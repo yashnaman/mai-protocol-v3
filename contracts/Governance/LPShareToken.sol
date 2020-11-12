@@ -91,14 +91,15 @@ contract LPShareToken {
      *
      * - `to` cannot be the zero address.
      */
-    function mint(address account, uint256 amount, uint256 insuranceFund) public {
+    function mint(address account, uint256 amount, uint256 insurance) public {
         require(msg.sender == _minter, "Only minter can mint");
         require(account != address(0), "Mint to the zero address");
 
         totalSupply = totalSupply.add(amount);
-        updateEntryInsurance(account, insuranceFund, amount);
+        updateEntryInsurance(account, insurance, amount);
         balances[account] = balances[account].add(amount);
-        _moveDelegates(address(0), account, amount);
+        address delegatee = delegates[account] == address(0) ? account : delegates[account];
+        _moveDelegates(address(0), delegatee, amount);
         emit Transfer(address(0), account, amount);
     }
 
@@ -119,7 +120,8 @@ contract LPShareToken {
 
         balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
         totalSupply = totalSupply.sub(amount);
-        _moveDelegates(account, address(0), amount);
+        address delegatee = delegates[account] == address(0) ? account : delegates[account];
+        _moveDelegates(delegatee, address(0), amount);
         emit Transfer(account, address(0), amount);
     }
 
@@ -131,6 +133,10 @@ contract LPShareToken {
      */
     function allowance(address account, address spender) external view returns (uint256) {
         return allowances[account][spender];
+    }
+
+    function entryInsurance(address account) external view returns (uint256) {
+        return entryInsurances[account];
     }
 
     /**
