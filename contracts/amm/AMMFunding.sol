@@ -114,7 +114,7 @@ library AMMFunding {
             } else {
                 newFundingRate = indexPrice.neg().wfrac(ammAccount.positionAmount, m0);
             }
-            newFundingRate = newFundingRate.wmul(riskParameter.FundingRateCoefficent.value);
+            newFundingRate = newFundingRate.wmul(riskParameter.fundingRateCoefficent.value);
         }
     }
 

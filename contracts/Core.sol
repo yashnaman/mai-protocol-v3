@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "./CallContext.sol";
+import "./Context.sol";
 import "./Type.sol";
 
 interface IFactory {
@@ -9,13 +9,14 @@ interface IFactory {
     function vaultFeeRate() external view returns (int256);
 }
 
-contract Core is CallContext {
+contract Core is Context {
 
     int256 constant private BASIC_PARAMETER_LENGTH = 7;
 
     string internal _symbol;
     address internal _factory;
     address internal _operator;
+    address internal _voter;
 
     int256 internal _reservedMargin;
     int256 internal _initialMarginRate;
@@ -28,6 +29,7 @@ contract Core is CallContext {
     function __CoreInitialize(
         string calldata symbol,
         address operator,
+        address voter,
         int256[BASIC_PARAMETER_LENGTH] calldata argValues
     ) internal {
         require(operator != address(0), "invalid operator");
@@ -35,6 +37,7 @@ contract Core is CallContext {
         _symbol = symbol;
         _factory = _msgSender();
         _operator = operator;
+        _voter = voter;
 
         _reservedMargin = argValues[0];
         _initialMarginRate = argValues[1];
@@ -45,6 +48,16 @@ contract Core is CallContext {
         _liquidationGasReward = argValues[6];
     }
 
+    modifier onlyVoter() {
+        require(_msgSender() == _voter, "");
+        _;
+    }
+
+    modifier onlyOperator() {
+        require(_msgSender() == _operator, "");
+        _;
+    }
+
     function _vault() internal view returns (address) {
         return IFactory(_factory).vault();
     }
@@ -53,7 +66,7 @@ contract Core is CallContext {
         return IFactory(_factory).vaultFeeRate();
     }
 
-    function updateSetting(bytes32 key, int256 newValue) internal {
+    function _updateSetting(bytes32 key, int256 newValue) internal {
         if (key == "reserveMargin") {
             _reservedMargin = newValue;
         } else if (key == "initialMarginRate") {

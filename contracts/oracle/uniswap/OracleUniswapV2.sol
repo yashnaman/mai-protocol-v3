@@ -40,7 +40,7 @@ contract OracleUniswapV2 {
 
 	// token a => collateral
 	// token b => asset
-    constructor(address factory, address asset, address collateral, address[] memory path) public {
+    constructor(address factory, address asset, address collateral, address[] memory path) {
 		require(path.length >= 2, "paths are too short");
 		require(path[0] == collateral && path[path.length - 1] == asset, "paths must be from asset to collateral");
 

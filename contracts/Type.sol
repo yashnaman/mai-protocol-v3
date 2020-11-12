@@ -26,19 +26,10 @@ struct MarginAccount {
     int256 entryFundingLoss;
 }
 
-struct AccessControl {
-    uint256 privileges;
-}
-
-struct Progress {
-    int256 currentValue;
-    int256 totalValue;
-}
-
 struct RiskParameter {
     Option halfSpreadRate;
     Option beta1;
     Option beta2;
-    Option FundingRateCoefficent;
+    Option fundingRateCoefficent;
     Option virtualLeverage;
 }

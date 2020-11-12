@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "./CallContext.sol";
+import "./Context.sol";
 import "./Type.sol";
 
 // import "./module/ArgumentModule.sol";
@@ -15,7 +15,7 @@ interface IPriceOracle {
 	function priceTWAPShort() external returns (int256 newPrice, uint256 newTimestamp);
 }
 
-contract Oracle is CallContext {
+contract Oracle is Context {
 
     address internal _oracle;
     OraclePriceData internal _indexPriceCache;

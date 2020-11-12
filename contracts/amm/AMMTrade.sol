@@ -36,6 +36,7 @@ library AMMTrade {
             int256 closingAmount,
             int256 openingAmount
         ) = Utils.splitAmount(positionAmount, tradingAmount);
+        // TC说这个不对
         deltaMargin = deltaMargin.add(
             closePosition(
                 riskParameter,
@@ -58,6 +59,52 @@ library AMMTrade {
         deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
 
+    function calculateRemovingLiquidityPenalty(
+        FundingState storage fundingState,
+        RiskParameter storage riskParameter,
+        MarginAccount storage ammAccount,
+        int256 indexPrice,
+        int256 amount
+    ) internal view returns (int256 penalty) {
+        int256 cashBalance = AMMCommon.calculateCashBalance(ammAccount, fundingState.unitAccFundingLoss);
+        int256 positionAmount = ammAccount.positionAmount;
+        require(_isAMMMarginSafe(
+                cashBalance,
+                positionAmount,
+                indexPrice,
+                riskParameter.virtualLeverage.value,
+                riskParameter.beta1.value
+            ),
+            "unsafe before trade"
+        );
+        int256 newCashBalance = cashBalance.sub(amount);
+        require(_isAMMMarginSafe(
+                newCashBalance,
+                positionAmount,
+                indexPrice,
+                riskParameter.virtualLeverage.value,
+                riskParameter.beta1.value
+            ),
+            "unsafe before trade"
+        );
+        (, int256 m0) = AMMCommon.regress(
+            cashBalance,
+            positionAmount,
+            indexPrice,
+            riskParameter.virtualLeverage.value,
+            riskParameter.beta1.value
+        );
+        (, int256 newM0) = AMMCommon.regress(
+            newCashBalance,
+            positionAmount,
+            indexPrice,
+            riskParameter.virtualLeverage.value,
+            riskParameter.beta1.value
+        );
+        penalty = m0.sub(newM0).sub(riskParameter.virtualLeverage.value.wmul(amount));
+        penalty = penalty < 0 ? 0 : amount;
+    }
+
     function openPosition(
         RiskParameter storage riskParameter,
         int256 cashBalance,
@@ -69,9 +116,9 @@ library AMMTrade {
             return 0;
         }
         require(_isAMMMarginSafe(
-                indexPrice,
                 cashBalance,
                 positionAmount,
+                indexPrice,
                 riskParameter.virtualLeverage.value,
                 riskParameter.beta1.value
             ),
@@ -102,12 +149,13 @@ library AMMTrade {
                 riskParameter.beta1.value
             );
         }
+        // TODO: tc 说这个不对
         int256 newCashBalance = cashBalance.add(deltaMargin);
         int256 newPositionAmount = positionAmount.add(tradingAmount);
         require(_isAMMMarginSafe(
-                indexPrice,
                 newCashBalance,
                 newPositionAmount,
+                indexPrice,
                 riskParameter.virtualLeverage.value,
                 riskParameter.beta1.value
             ),
@@ -136,9 +184,9 @@ library AMMTrade {
         }
         int256 closingBeta = riskParameter.beta2.value;
         if (_isAMMMarginSafe(
-                indexPrice,
                 cashBalance,
                 positionAmount,
+                indexPrice,
                 riskParameter.virtualLeverage.value,
                 closingBeta
             )) {
@@ -204,9 +252,9 @@ library AMMTrade {
     }
 
     function _isAMMMarginSafe(
-        int256 indexPrice,
         int256 cashBalance,
         int256 positionAmount,
+        int256 indexPrice,
         int256 virtualLeverage,
         int256 beta
     ) private pure returns (bool) {

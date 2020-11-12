@@ -11,10 +11,10 @@ import "./implementation/MarginAccountImp.sol";
 import "./implementation/TradeImp.sol";
 
 import "./AccessControl.sol";
-import "./CallContext.sol";
+import "./Context.sol";
 
 contract PerpetualWrapper is
-    CallContext,
+    Context,
     AccessControl {
 
     using AMMImp for Perpetual;
@@ -106,7 +106,7 @@ contract PerpetualWrapper is
         require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
 
         _perpetual.increaseCashBalance(
-            _perpetual.traderAccounts[trader], 
+            _perpetual.traderAccounts[trader],
             collateralAmount
         );
 
@@ -121,7 +121,7 @@ contract PerpetualWrapper is
         require(collateralAmount > 0, LibError.INVALID_COLLATERAL_AMOUNT);
 
         _perpetual.decreaseCashBalance(
-            _perpetual.traderAccounts[trader], 
+            _perpetual.traderAccounts[trader],
             collateralAmount
         );
         _perpetual.isInitialMarginSafe(_perpetual.traderAccounts[trader]);

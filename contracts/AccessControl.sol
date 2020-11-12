@@ -17,11 +17,11 @@ contract AccessControl {
         _accessControls[owner][trader] = _accessControls[owner][trader].set(privilege);
     }
 
-    function revokePrivilege(address owner, address trader, uint256 privilege) internal {
+    function _revokePrivilege(address owner, address trader, uint256 privilege) internal {
         _accessControls[owner][trader] = _accessControls[owner][trader].clean(privilege);
     }
 
-    function isGranted(address owner, address trader, uint256 privilege) internal view returns (bool) {
+    function _isGranted(address owner, address trader, uint256 privilege) internal view returns (bool) {
         return  _accessControls[owner][trader] > 0 && _accessControls[owner][trader].test(privilege);
     }
 

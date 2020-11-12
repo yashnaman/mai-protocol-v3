@@ -15,7 +15,7 @@ import "./Funding.sol";
 import "./Fee.sol";
 import "./amm/AMMTrade.sol";
 
-contract Trade is CallContext, Core, Oracle, Funding, Fee {
+contract Trade is Context, Core, Oracle, Funding, Fee {
 
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
@@ -36,13 +36,42 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         _isInitialMarginSafe(trader, _markPrice());
     }
 
+    function _donateInsuranceFund(int256 amount) internal {
+        _insuranceFund2 = _insuranceFund2.add(amount);
+    }
+
+    function _addLiquidity(address trader, int256 amount) internal {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        _updateCashBalance(_self(), amount);
+    }
+
+    function _removeLiquidity(address trader, int256 amount) internal {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        int256 penalty = AMMTrade.calculateRemovingLiquidityPenalty(
+            _fundingState,
+            _riskParameter,
+            _marginAccounts[_self()],
+            _indexPrice(),
+            amount
+        );
+        _updateCashBalance(_self(), amount.sub(penalty).neg());
+    }
+
     function _trade(
         address trader,
-        int256 positionAmount,
+        int256 amount,
         int256 priceLimit
     ) internal {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        _tradePosition(trader, positionAmount, priceLimit);
+        require(amount != 0, Error.INVALID_POSITION_AMOUNT);
+        (,, int256 openingAmount ) = _tradePosition(trader, amount, priceLimit);
+        if (openingAmount > 0) {
+            _isInitialMarginSafe(trader, _markPrice());
+        } else {
+            _isMaintenanceMarginSafe(trader, _markPrice());
+        }
     }
 
     function _liquidate1(
@@ -50,7 +79,7 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         int256 positionAmount,
         int256 priceLimit
     ) internal returns (int256 liquidationLoss) {
-        int256 deltaMargin = _tradePosition(trader, positionAmount, priceLimit);
+        ( int256 deltaMargin,, ) = _tradePosition(trader, positionAmount, priceLimit);
         int256 penaltyToLiquidator = _liquidationGasReward;
         int256 penaltyToFund = deltaMargin.wmul(_liquidationPenaltyRate);
         (
@@ -69,16 +98,26 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         _insuranceFund2 = newInsuraceFund2;
         liquidationLoss = newInsuraceFund2 < 0 ? newInsuraceFund2 : 0;
         // fee
-        _updateTradingFee(deltaMargin);
+        // to keeper
     }
 
     function _liquidate2(
         address taker,
         address maker,
-        int256 positionAmount,
+        int256 amount,
         int256 priceLimit
     ) internal returns (int256 liquidationLoss) {
-        int256 deltaMargin = _takePosition(taker, maker, positionAmount, priceLimit);
+        ( int256 deltaMargin, , int256 takerOpeningAmount ) = _takePosition(
+            taker,
+            maker,
+            amount,
+            priceLimit
+        );
+        if (takerOpeningAmount > 0) {
+            _isInitialMarginSafe(taker, _markPrice());
+        } else {
+            _isMaintenanceMarginSafe(taker, _markPrice());
+        }
         int256 penaltyToLiquidator = deltaMargin
             .wmul(_liquidationPenaltyRate)
             .add(_liquidationGasReward);
@@ -98,14 +137,14 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         _insuranceFund2 = newInsuraceFund2;
         liquidationLoss = newInsuraceFund2 < 0 ? newInsuraceFund2 : 0;
         // fee
-        _updateTradingFee(deltaMargin);
+        // to keeper
     }
 
     function _tradePosition(
         address trader,
         int256 positionAmount,
         int256 priceLimit
-    ) internal returns (int256 deltaMargin) {
+    ) internal returns (int256 deltaMargin, int256 closingAmount, int256 openingAmount) {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
         deltaMargin = AMMTrade.calculateDeltaMargin(
             _fundingState,
@@ -118,10 +157,13 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         int256 vaultFee = deltaMargin.wmul(_vaultFeeRate());
         int256 operatorFee = deltaMargin.wmul(_operatorFeeRate);
         int256 lpFee = deltaMargin.wmul(_liquidityProviderFeeRate);
-        _updatePosition(trader, positionAmount);
+        ( closingAmount, openingAmount ) = _updatePosition(trader, positionAmount);
         _updatePosition(_self(), positionAmount.neg());
         _updateCashBalance(trader, deltaMargin.add(lpFee).add(vaultFee).add(operatorFee).neg());
         _updateCashBalance(_self(), deltaMargin.add(lpFee));
+        // fee
+        _increaseClaimableFee(_vault(),  vaultFee);
+        _increaseClaimableFee(_operator,  operatorFee);
     }
 
     function _takePosition(
@@ -129,12 +171,12 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         address maker,
         int256 positionAmount,
         int256 priceLimit
-    ) public returns (int256 deltaMargin) {
+    ) public returns (int256 deltaMargin, int256 closingAmount, int256 openingAmount) {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
         int256 markPrice = _markPrice();
         _validatePrice(positionAmount, markPrice, priceLimit);
         deltaMargin = markPrice.wmul(positionAmount);
-        _updatePosition(taker, positionAmount);
+        ( closingAmount, openingAmount ) = _updatePosition(taker, positionAmount);
         _updatePosition(maker, positionAmount.neg());
         _updateCashBalance(taker, deltaMargin.neg());
         _updateCashBalance(maker, deltaMargin);
@@ -175,9 +217,12 @@ contract Trade is CallContext, Core, Oracle, Funding, Fee {
         }
     }
 
-    function _updatePosition(address trader, int256 amount) internal {
+    function _updatePosition(
+        address trader,
+        int256 amount
+    ) internal returns (int256 closingAmount, int256 openingAmount) {
         MarginAccount memory account = _marginAccounts[trader];
-        ( int256 closingAmount, int256 openingAmount ) = Utils.splitAmount(account.positionAmount, amount);
+        ( closingAmount, openingAmount ) = Utils.splitAmount(account.positionAmount, amount);
         if (closingAmount != 0) {
             _closePosition(account, closingAmount);
         }

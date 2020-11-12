@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-contract CallContext {
+contract Context {
 
     function _self() internal view virtual returns (address) {
         return address(this);

@@ -4,7 +4,7 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 import "./libraries/SafeMathExt.sol";
-import "./CallContext.sol";
+import "./Context.sol";
 import "./Type.sol";
 import "./Core.sol";
 

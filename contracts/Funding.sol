@@ -7,11 +7,11 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "./libraries/SafeMathExt.sol";
 import "./amm/AMMFunding.sol";
 import "./Type.sol";
-import "./CallContext.sol";
+import "./Context.sol";
 import "./Margin.sol";
 import "./Oracle.sol";
 
-contract Funding is CallContext, Core, Margin, Oracle {
+contract Funding is Context, Core, Margin, Oracle {
 
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
@@ -56,13 +56,55 @@ contract Funding is CallContext, Core, Margin, Oracle {
 
     function _closePosition(MarginAccount memory account, int256 amount) internal view override {
         super._closePosition(account, amount);
-        account.entryFundingLoss = account.entryFundingLoss
-                .wfrac(account.positionAmount.sub(amount), account.positionAmount);
+        int256 partialLoss = account.entryFundingLoss.wfrac(amount, account.positionAmount);
+        int256 actualLoss = _fundingState.unitAccFundingLoss
+            .wmul(amount)
+            .sub(partialLoss);
+        account.cashBalance = account.cashBalance.sub(actualLoss);
+        account.entryFundingLoss = account.entryFundingLoss.sub(partialLoss);
     }
 
     function _openPosition(MarginAccount memory account, int256 amount) internal view override {
         super._openPosition(account, amount);
         account.entryFundingLoss = account.entryFundingLoss
                 .add(_fundingState.unitAccFundingLoss.wmul(amount));
+    }
+
+    function _adjustRiskParameter(bytes32 key, int256 newValue) internal {
+        if (key == "halfSpreadRate") {
+            _riskParameter.halfSpreadRate.value = newValue;
+        } else if (key == "beta1") {
+            _riskParameter.beta1.value = newValue;
+        } else if (key == "beta2") {
+            _riskParameter.beta2.value = newValue;
+        } else if (key == "fundingRateCoefficent") {
+            _riskParameter.fundingRateCoefficent.value = newValue;
+        } else if (key == "virtualLeverage") {
+            _riskParameter.virtualLeverage.value = newValue;
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function _updateRiskParameter(bytes32 key, int256 newValue, int256 newMinValue, int256 newMaxValue) internal {
+        if (key == "halfSpreadRate") {
+            _updateOption(_riskParameter.halfSpreadRate, newValue, newMinValue, newMaxValue);
+        } else if (key == "beta1") {
+            _updateOption(_riskParameter.beta1, newValue, newMinValue, newMaxValue);
+        } else if (key == "beta2") {
+            _updateOption(_riskParameter.beta2, newValue, newMinValue, newMaxValue);
+        } else if (key == "fundingRateCoefficent") {
+            _updateOption(_riskParameter.fundingRateCoefficent, newValue, newMinValue, newMaxValue);
+        } else if (key == "virtualLeverage") {
+            _updateOption(_riskParameter.virtualLeverage, newValue, newMinValue, newMaxValue);
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function _updateOption(Option storage option, int256 newValue, int256 newMinValue, int256 newMaxValue) internal {
+        option.value = newValue;
+        option.minValue = newMinValue;
+        option.maxValue = newMaxValue;
     }
 }
