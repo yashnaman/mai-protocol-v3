@@ -98,6 +98,7 @@ contract LPShareToken {
         totalSupply = totalSupply.add(amount);
         updateEntryInsurance(account, insuranceFund, amount);
         balances[account] = balances[account].add(amount);
+        _moveDelegates(address(0), account, amount);
         emit Transfer(address(0), account, amount);
     }
 
@@ -118,6 +119,7 @@ contract LPShareToken {
 
         balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
         totalSupply = totalSupply.sub(amount);
+        _moveDelegates(account, address(0), amount);
         emit Transfer(account, address(0), amount);
     }
 
