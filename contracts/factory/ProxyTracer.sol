@@ -5,9 +5,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../libraries/EnumerableMap.sol";
 import "../libraries/SafeCastExt.sol";
-import "../Context.sol";
 
-contract ProxyTracer is Context {
+contract ProxyTracer {
     using SafeMath for uint256;
     using SafeCastExt for address;
     using SafeCastExt for bytes32;
