@@ -5,7 +5,6 @@ import "./libraries/Bitwise.sol";
 import "./libraries/Constant.sol";
 
 contract AccessControl {
-
     using Bitwise for uint256;
 
     mapping(address => mapping(address => uint256)) internal _accessControls;
@@ -13,20 +12,37 @@ contract AccessControl {
     event GrantPrivilege(address owner, address accessor, uint256 privilege);
     event RevokePrivilege(address owner, address accessor, uint256 privilege);
 
-    function _grantPrivilege(address owner, address trader, uint256 privilege) internal {
-        _accessControls[owner][trader] = _accessControls[owner][trader].set(privilege);
+    function _grantPrivilege(
+        address owner,
+        address trader,
+        uint256 privilege
+    ) internal {
+        _accessControls[owner][trader] = _accessControls[owner][trader].set(
+            privilege
+        );
     }
 
-    function _revokePrivilege(address owner, address trader, uint256 privilege) internal {
-        _accessControls[owner][trader] = _accessControls[owner][trader].clean(privilege);
+    function _revokePrivilege(
+        address owner,
+        address trader,
+        uint256 privilege
+    ) internal {
+        _accessControls[owner][trader] = _accessControls[owner][trader].clean(
+            privilege
+        );
     }
 
-    function _isGranted(address owner, address trader, uint256 privilege) internal view returns (bool) {
-        return  _accessControls[owner][trader] > 0 && _accessControls[owner][trader].test(privilege);
+    function _isGranted(
+        address owner,
+        address trader,
+        uint256 privilege
+    ) internal view returns (bool) {
+        return
+            _accessControls[owner][trader] > 0 &&
+            _accessControls[owner][trader].test(privilege);
     }
 
     function _isValid(uint256 privilege) internal pure returns (bool) {
         return privilege > 0 && privilege <= Constant.PRIVILEGE_GUARD;
     }
-
 }

@@ -10,25 +10,39 @@ import "./Type.sol";
 import "./Context.sol";
 import "./Trade.sol";
 import "./State.sol";
+import "./Settle.sol";
 import "./AccessControl.sol";
 
-contract Perpetual is
-    Context,
-    Core,
-    Oracle,
-    Funding,
-    Trade,
-    AccessControl {
-
+contract Perpetual is Context, Trade, Settle, AccessControl {
     event Deposit(address trader, int256 collateralAmount);
     event Withdraw(address trader, int256 collateralAmount);
     event AddLiquidatity(address trader, int256 collateralAmount);
     event RemoveLiquidatity(address trader, int256 collateralAmount);
-    event TradePosition(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
-    event Liquidate1(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
-    event Liquidate2(address trader, int256 positionAmount, int256 priceLimit, uint256 deadline);
+    event TradePosition(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    );
+    event Liquidate1(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    );
+    event Liquidate2(
+        address trader,
+        int256 positionAmount,
+        int256 priceLimit,
+        uint256 deadline
+    );
     event UpdateCoreSetting(bytes32 key, int256 value);
-    event UpdateRiskSetting(bytes32 key, int256 value, int256 minValue, int256 maxValue);
+    event UpdateRiskSetting(
+        bytes32 key,
+        int256 value,
+        int256 minValue,
+        int256 maxValue
+    );
     event AdjustRiskSetting(bytes32 key, int256 value);
     event ClaimFee(address claimer, int256 amount);
 
@@ -68,24 +82,51 @@ contract Perpetual is
     }
 
     modifier authRequired(address trader, uint256 privilege) {
-        require(trader == _msgSender() || _isGranted(trader, _msgSender(), privilege), "auth required");
+        require(
+            trader == _msgSender() ||
+                _isGranted(trader, _msgSender(), privilege),
+            "auth required"
+        );
         _;
+    }
+
+    modifier userTrace(address trader) {
+        int256 preAmount = _marginAccounts[trader].positionAmount;
+        _;
+        int256 postAmount = _marginAccounts[trader].positionAmount;
+        if (preAmount == 0 && postAmount != 0) {
+            _registerUser(trader);
+        } else if (preAmount != 0 && postAmount == 0) {
+            _deregisterUser(trader);
+        }
     }
 
     // admin
     // core settings -- can only be updated through voting
-    function updateCoreSetting(bytes32 key, int256 newValue) external onlyVoter {
-        _updateSetting(key, newValue);
+    function updateCoreParameter(bytes32 key, int256 newValue)
+        external
+        voteOnly
+    {
+        _updateCoreParameter(key, newValue);
         emit UpdateCoreSetting(key, newValue);
     }
+
     //
-    function updateRiskParameter(bytes32 key, int256 newValue, int256 minValue, int256 maxValue) external onlyVoter {
-         _updateRiskParameter(key, newValue, minValue, maxValue);
+    function updateRiskParameter(
+        bytes32 key,
+        int256 newValue,
+        int256 minValue,
+        int256 maxValue
+    ) external voteOnly {
+        _updateRiskParameter(key, newValue, minValue, maxValue);
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
     }
 
-    function adjustRiskParameter(bytes32 key, int256 newValue) external onlyOperator {
-         _adjustRiskParameter(key, newValue);
+    function adjustRiskParameter(bytes32 key, int256 newValue)
+        external
+        operatorOnly
+    {
+        _adjustRiskParameter(key, newValue);
         emit AdjustRiskSetting(key, newValue);
     }
 
@@ -99,51 +140,69 @@ contract Perpetual is
     }
 
     // reade
-    function marginAccount(
-        address trader
-    ) external returns (int256 margin, int256 positionAmount, int256 cashBalance) {
-        margin = _margin(trader, _markPrice());
+    function marginAccount(address trader)
+        external
+        returns (
+            int256 margin,
+            int256 positionAmount,
+            int256 availableMargin
+        )
+    {
+        margin = _margin(trader);
         positionAmount = _marginAccounts[trader].positionAmount;
-        cashBalance = _cashBalance(trader);
+        availableMargin = _availableMargin(trader);
     }
 
     // trade
-    function deposit(
-        address trader,
-        int256 collateralAmount
-    ) external authRequired(trader, Constant.PRIVILEGE_DEPOSTI) {
+    function deposit(address trader, int256 collateralAmount)
+        external
+        authRequired(trader, Constant.PRIVILEGE_DEPOSTI)
+        whenNormal
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
         _deposit(trader, collateralAmount);
         emit Deposit(trader, collateralAmount);
     }
 
-    function withdraw(
-        address trader,
-        int256 collateralAmount
-    ) external updateFunding authRequired(trader, Constant.PRIVILEGE_WITHDRAW) {
+    function withdraw(address trader, int256 collateralAmount)
+        external
+        updateFunding
+        authRequired(trader, Constant.PRIVILEGE_WITHDRAW)
+        whenNormal
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
         _withdraw(trader, collateralAmount);
         emit Withdraw(trader, collateralAmount);
     }
 
-    function addLiquidatity(
-        address trader,
-        int256 collateralAmount
-    ) public {
+    function settle(address trader, int256 collateralAmount)
+        external
+        updateFunding
+        authRequired(trader, Constant.PRIVILEGE_WITHDRAW)
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
+        _withdraw(trader, collateralAmount);
+        emit Withdraw(trader, collateralAmount);
+    }
+
+    function addLiquidatity(address trader, int256 collateralAmount) public {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
         _deposit(address(this), collateralAmount);
         emit AddLiquidatity(trader, collateralAmount);
     }
 
-    function removeLiquidatity(
-        address trader,
-        int256 collateralAmount
-    ) public {
+    function removeLiquidatity(address trader, int256 collateralAmount) public {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
         _removeLiquidity(trader, collateralAmount);
         emit RemoveLiquidatity(trader, collateralAmount);
     }
@@ -153,10 +212,17 @@ contract Perpetual is
         int256 positionAmount,
         int256 priceLimit,
         uint256 deadline
-    ) external updateFunding authRequired(trader, Constant.PRIVILEGE_TRADE) {
+    )
+        external
+        userTrace(trader)
+        updateFunding
+        whenNormal
+        authRequired(trader, Constant.PRIVILEGE_TRADE)
+    {
         require(positionAmount > 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
+
         _trade(trader, positionAmount, priceLimit);
         emit TradePosition(trader, positionAmount, priceLimit, deadline);
     }
@@ -166,11 +232,12 @@ contract Perpetual is
         int256 positionAmount,
         int256 priceLimit,
         uint256 deadline
-    ) external updateFunding {
+    ) external userTrace(trader) updateFunding whenNormal {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(positionAmount > 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
+
         _liquidate1(trader, positionAmount, priceLimit);
         emit Liquidate1(trader, positionAmount, priceLimit, deadline);
     }
@@ -180,13 +247,19 @@ contract Perpetual is
         int256 positionAmount,
         int256 priceLimit,
         uint256 deadline
-    ) external updateFunding {
+    )
+        external
+        userTrace(_msgSender())
+        userTrace(trader)
+        updateFunding
+        whenNormal
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(positionAmount > 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
+
         _liquidate2(_msgSender(), trader, positionAmount, priceLimit);
         emit Liquidate2(trader, positionAmount, priceLimit, deadline);
     }
-
 }

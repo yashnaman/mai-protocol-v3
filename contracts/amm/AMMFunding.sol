@@ -14,7 +14,6 @@ import "../libraries/Utils.sol";
 import "./AMMCommon.sol";
 
 library AMMFunding {
-
     using Math for int256;
     using Math for uint256;
     using SafeMathExt for int256;
@@ -42,7 +41,9 @@ library AMMFunding {
                 fundingState.lastFundingTime,
                 indexPriceTimestamp
             );
-            tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(deltaUnitAccFundingLoss);
+            tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
+                deltaUnitAccFundingLoss
+            );
             tmpFundingRate = calculateFundingRate(
                 fundingState,
                 riskParameter,
@@ -57,7 +58,9 @@ library AMMFunding {
             indexPriceTimestamp,
             checkTimestamp
         );
-        tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(deltaUnitAccFundingLoss);
+        tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
+            deltaUnitAccFundingLoss
+        );
         tmpFundingRate = calculateFundingRate(
             fundingState,
             riskParameter,
@@ -76,7 +79,12 @@ library AMMFunding {
         MarginAccount storage ammAccount,
         int256 indexPrice
     ) internal {
-        int256 newFundingRate = calculateFundingRate(fundingState, riskParameter, ammAccount, indexPrice);
+        int256 newFundingRate = calculateFundingRate(
+            fundingState,
+            riskParameter,
+            ammAccount,
+            indexPrice
+        );
         fundingState.fundingRate = newFundingRate;
     }
 
@@ -86,10 +94,15 @@ library AMMFunding {
         uint256 beginTimestamp,
         uint256 endTimestamp
     ) internal pure returns (int256 deltaUnitAccumulatedFundingLoss) {
-        require(endTimestamp > beginTimestamp, "time steps (n) must be positive");
+        require(
+            endTimestamp > beginTimestamp,
+            "time steps (n) must be positive"
+        );
         int256 timeElapsed = int256(endTimestamp.sub(beginTimestamp));
-        deltaUnitAccumulatedFundingLoss = indexPrice
-            .wfrac(fundingRate.wmul(timeElapsed), FUNDING_INTERVAL);
+        deltaUnitAccumulatedFundingLoss = indexPrice.wfrac(
+            fundingRate.wmul(timeElapsed),
+            FUNDING_INTERVAL
+        );
     }
 
     function calculateFundingRate(
@@ -101,8 +114,11 @@ library AMMFunding {
         if (ammAccount.positionAmount == 0) {
             newFundingRate = 0;
         } else {
-            int256 mc = AMMCommon.calculateCashBalance(ammAccount, fundingState.unitAccFundingLoss);
-            ( int256 mv, int256 m0 ) = AMMCommon.regress(
+            int256 mc = AMMCommon.calculateCashBalance(
+                ammAccount,
+                fundingState.unitAccFundingLoss
+            );
+            (int256 mv, int256 m0) = AMMCommon.regress(
                 mc,
                 ammAccount.positionAmount,
                 indexPrice,
@@ -112,10 +128,14 @@ library AMMFunding {
             if (ammAccount.positionAmount > 0) {
                 newFundingRate = mc.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
             } else {
-                newFundingRate = indexPrice.neg().wfrac(ammAccount.positionAmount, m0);
+                newFundingRate = indexPrice.neg().wfrac(
+                    ammAccount.positionAmount,
+                    m0
+                );
             }
-            newFundingRate = newFundingRate.wmul(riskParameter.fundingRateCoefficent.value);
+            newFundingRate = newFundingRate.wmul(
+                riskParameter.fundingRateCoefficent.value
+            );
         }
     }
-
 }

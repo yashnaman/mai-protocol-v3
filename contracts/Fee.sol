@@ -11,8 +11,8 @@ contract Fee is Core {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
 
-    mapping (address => int256) internal _claimableFee;
-    mapping (address => int256) internal _totalFee;
+    mapping(address => int256) internal _claimableFee;
+    mapping(address => int256) internal _totalFee;
 
     function _increaseClaimableFee(address claimer, int256 amount) internal {
         _claimableFee[claimer] = _claimableFee[claimer].add(amount);

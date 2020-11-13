@@ -32,11 +32,11 @@ contract State {
         return _emergency;
     }
 
-    function _enterEmergencyState() internal whenNormal {
+    function _enterEmergencyState() internal virtual whenNormal {
         _emergency = true;
     }
 
-    function _enterShuttingDownState() internal whenEmergency {
+    function _enterShuttingDownState() internal virtual whenEmergency {
         _emergency = false;
         _shuttingdown = true;
     }

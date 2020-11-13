@@ -8,15 +8,23 @@ import "./Type.sol";
 
 interface IPriceOracle {
     function symbol() external view returns (uint256);
+
     function collateral() external view returns (address);
-	function underlyingAsset() external view returns (address);
-	function priceTimeout() external view returns (uint256);
-	function priceTWAPLong() external returns (int256 newPrice, uint256 newTimestamp);
-	function priceTWAPShort() external returns (int256 newPrice, uint256 newTimestamp);
+
+    function underlyingAsset() external view returns (address);
+
+    function priceTimeout() external view returns (uint256);
+
+    function priceTWAPLong()
+        external
+        returns (int256 newPrice, uint256 newTimestamp);
+
+    function priceTWAPShort()
+        external
+        returns (int256 newPrice, uint256 newTimestamp);
 }
 
 contract Oracle is Context {
-
     address internal _oracle;
     OraclePriceData internal _indexPriceCache;
     OraclePriceData internal _marketPriceCache;
@@ -30,10 +38,18 @@ contract Oracle is Context {
         return _markPriceData().price;
     }
 
-    function _markPriceData() internal returns (OraclePriceData memory) {
+    function _markPriceData()
+        internal
+        virtual
+        returns (OraclePriceData memory)
+    {
         if (_now() != _marketPriceCache.timestamp) {
-            ( int256 price, uint256 time) = IPriceOracle(_oracle).priceTWAPLong();
-            _marketPriceCache = OraclePriceData({ price: price, timestamp: time });
+            (int256 price, uint256 time) = IPriceOracle(_oracle)
+                .priceTWAPLong();
+            _marketPriceCache = OraclePriceData({
+                price: price,
+                timestamp: time
+            });
         }
         return _marketPriceCache;
     }
@@ -42,10 +58,15 @@ contract Oracle is Context {
         return _indexPriceData().price;
     }
 
-    function _indexPriceData() internal returns (OraclePriceData memory) {
+    function _indexPriceData()
+        internal
+        virtual
+        returns (OraclePriceData memory)
+    {
         if (_now() != _indexPriceCache.timestamp) {
-            ( int256 price, uint256 time) = IPriceOracle(_oracle).priceTWAPShort();
-            _indexPriceCache = OraclePriceData({ price: price, timestamp: time });
+            (int256 price, uint256 time) = IPriceOracle(_oracle)
+                .priceTWAPShort();
+            _indexPriceCache = OraclePriceData({price: price, timestamp: time});
         }
         return _indexPriceCache;
     }

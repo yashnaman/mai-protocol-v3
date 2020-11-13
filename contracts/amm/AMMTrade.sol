@@ -30,12 +30,15 @@ library AMMTrade {
         int256 tradingAmount
     ) internal view returns (int256 deltaMargin) {
         require(tradingAmount != 0, "no zero trade amount");
-        int256 cashBalance = AMMCommon.calculateCashBalance(ammAccount, fundingState.unitAccFundingLoss);
+        int256 cashBalance = AMMCommon.calculateCashBalance(
+            ammAccount,
+            fundingState.unitAccFundingLoss
+        );
         int256 positionAmount = ammAccount.positionAmount;
-        (
-            int256 closingAmount,
-            int256 openingAmount
-        ) = Utils.splitAmount(positionAmount, tradingAmount);
+        (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
+            positionAmount,
+            tradingAmount
+        );
         // TC说这个不对
         deltaMargin = deltaMargin.add(
             closePosition(
@@ -66,9 +69,13 @@ library AMMTrade {
         int256 indexPrice,
         int256 amount
     ) internal view returns (int256 penalty) {
-        int256 cashBalance = AMMCommon.calculateCashBalance(ammAccount, fundingState.unitAccFundingLoss);
+        int256 cashBalance = AMMCommon.calculateCashBalance(
+            ammAccount,
+            fundingState.unitAccFundingLoss
+        );
         int256 positionAmount = ammAccount.positionAmount;
-        require(_isAMMMarginSafe(
+        require(
+            _isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
@@ -78,7 +85,8 @@ library AMMTrade {
             "unsafe before trade"
         );
         int256 newCashBalance = cashBalance.sub(amount);
-        require(_isAMMMarginSafe(
+        require(
+            _isAMMMarginSafe(
                 newCashBalance,
                 positionAmount,
                 indexPrice,
@@ -101,7 +109,9 @@ library AMMTrade {
             riskParameter.virtualLeverage.value,
             riskParameter.beta1.value
         );
-        penalty = m0.sub(newM0).sub(riskParameter.virtualLeverage.value.wmul(amount));
+        penalty = m0.sub(newM0).sub(
+            riskParameter.virtualLeverage.value.wmul(amount)
+        );
         penalty = penalty < 0 ? 0 : amount;
     }
 
@@ -115,7 +125,8 @@ library AMMTrade {
         if (tradingAmount == 0) {
             return 0;
         }
-        require(_isAMMMarginSafe(
+        require(
+            _isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
@@ -124,7 +135,7 @@ library AMMTrade {
             ),
             "unsafe before trade"
         );
-        ( int256 mv, int256 m0 ) = AMMCommon.regress(
+        (int256 mv, int256 m0) = AMMCommon.regress(
             cashBalance,
             positionAmount,
             indexPrice,
@@ -152,7 +163,8 @@ library AMMTrade {
         // TODO: tc 说这个不对
         int256 newCashBalance = cashBalance.add(deltaMargin);
         int256 newPositionAmount = positionAmount.add(tradingAmount);
-        require(_isAMMMarginSafe(
+        require(
+            _isAMMMarginSafe(
                 newCashBalance,
                 newPositionAmount,
                 indexPrice,
@@ -183,14 +195,16 @@ library AMMTrade {
             return 0;
         }
         int256 closingBeta = riskParameter.beta2.value;
-        if (_isAMMMarginSafe(
+        if (
+            _isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
                 riskParameter.virtualLeverage.value,
                 closingBeta
-            )) {
-            ( int256 mv, int256 m0 ) = AMMCommon.regress(
+            )
+        ) {
+            (int256 mv, int256 m0) = AMMCommon.regress(
                 indexPrice,
                 riskParameter.virtualLeverage.value,
                 cashBalance,
@@ -245,10 +259,17 @@ library AMMTrade {
         int256 beta
     ) public pure returns (int256 deltaMargin) {
         deltaMargin = beta.wmul(m0).wmul(m0);
-        deltaMargin = deltaMargin.wdiv(positionAmount1.wmul(indexPrice).add(m0));
-        deltaMargin = deltaMargin.wdiv(positionAmount2.wmul(indexPrice).add(m0));
+        deltaMargin = deltaMargin.wdiv(
+            positionAmount1.wmul(indexPrice).add(m0)
+        );
+        deltaMargin = deltaMargin.wdiv(
+            positionAmount2.wmul(indexPrice).add(m0)
+        );
         deltaMargin = deltaMargin.add(Constant.SIGNED_ONE).sub(beta);
-        deltaMargin = deltaMargin.wmul(indexPrice).wmul(positionAmount2.sub(positionAmount1)).neg();
+        deltaMargin = deltaMargin
+            .wmul(indexPrice)
+            .wmul(positionAmount2.sub(positionAmount1))
+            .neg();
     }
 
     function _isAMMMarginSafe(
@@ -262,9 +283,23 @@ library AMMTrade {
             return true;
         }
         if (positionAmount > 0) {
-            return indexPrice >= _indexLowerbound(cashBalance, positionAmount, virtualLeverage, beta);
+            return
+                indexPrice >=
+                _indexLowerbound(
+                    cashBalance,
+                    positionAmount,
+                    virtualLeverage,
+                    beta
+                );
         } else {
-            return indexPrice <= _indexUpperbound(cashBalance, positionAmount, virtualLeverage, beta);
+            return
+                indexPrice <=
+                _indexUpperbound(
+                    cashBalance,
+                    positionAmount,
+                    virtualLeverage,
+                    beta
+                );
         }
     }
 
@@ -277,9 +312,10 @@ library AMMTrade {
         int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
         lowerbound = t.add(beta).mul(beta);
         lowerbound = lowerbound.sqrt().mul(2).add(t).add(beta.mul(2));
-        lowerbound = lowerbound
-            .wfrac(virtualLeverage, positionAmount)
-            .wfrac(cashBalance.neg(), t.wmul(t));
+        lowerbound = lowerbound.wfrac(virtualLeverage, positionAmount).wfrac(
+            cashBalance.neg(),
+            t.wmul(t)
+        );
     }
 
     function _indexUpperbound(
@@ -288,8 +324,14 @@ library AMMTrade {
         int256 virtualLeverage,
         int256 beta
     ) private pure returns (int256 upperbound) {
-        upperbound = beta.mul(virtualLeverage).sqrt().mul(2).add(virtualLeverage).add(Constant.SIGNED_ONE);
-        upperbound = virtualLeverage.wfrac(cashBalance, positionAmount.neg()).wdiv(upperbound);
+        upperbound = beta
+            .mul(virtualLeverage)
+            .sqrt()
+            .mul(2)
+            .add(virtualLeverage)
+            .add(Constant.SIGNED_ONE);
+        upperbound = virtualLeverage
+            .wfrac(cashBalance, positionAmount.neg())
+            .wdiv(upperbound);
     }
-
 }

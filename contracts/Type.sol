@@ -26,6 +26,16 @@ struct MarginAccount {
     int256 entryFundingLoss;
 }
 
+struct CoreParameter {
+    int256 initialMarginRate;
+    int256 maintenanceMarginRate;
+    int256 operatorFeeRate;
+    int256 vaultFeeRate;
+    int256 lpFeeRate;
+    int256 liquidationPenaltyRate;
+    int256 keeperGasReward;
+}
+
 struct RiskParameter {
     Option halfSpreadRate;
     Option beta1;

@@ -26,11 +26,26 @@ library AMMCommon {
         if (positionAmount == 0) {
             mv = virtualLeverage.sub(Constant.SIGNED_ONE).wmul(cashBalance);
         } else if (positionAmount > 0) {
-            mv = calculateLongVirtualMargin(cashBalance, positionAmount, indexPrice, virtualLeverage, beta);
+            mv = calculateLongVirtualMargin(
+                cashBalance,
+                positionAmount,
+                indexPrice,
+                virtualLeverage,
+                beta
+            );
         } else {
-            mv = calculateShortVirtualMargin(cashBalance, positionAmount, indexPrice, virtualLeverage, beta);
+            mv = calculateShortVirtualMargin(
+                cashBalance,
+                positionAmount,
+                indexPrice,
+                virtualLeverage,
+                beta
+            );
         }
-        m0 = mv.wfrac(virtualLeverage, virtualLeverage.sub(Constant.SIGNED_ONE));
+        m0 = mv.wfrac(
+            virtualLeverage,
+            virtualLeverage.sub(Constant.SIGNED_ONE)
+        );
     }
 
     function calculateLongVirtualMargin(
@@ -41,8 +56,14 @@ library AMMCommon {
         int256 beta
     ) internal pure returns (int256 mv) {
         int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
-        int256 b = t.wmul(indexPrice.wmul(positionAmount)).add(virtualLeverage.wmul(cashBalance));
-        int256 beforeSqrt = beta.wmul(indexPrice).wmul(virtualLeverage.wmul(cashBalance)).mul(positionAmount).mul(4);
+        int256 b = t.wmul(indexPrice.wmul(positionAmount)).add(
+            virtualLeverage.wmul(cashBalance)
+        );
+        int256 beforeSqrt = beta
+            .wmul(indexPrice)
+            .wmul(virtualLeverage.wmul(cashBalance))
+            .mul(positionAmount)
+            .mul(4);
         beforeSqrt = beforeSqrt.add(b.mul(b));
         mv = beta.sub(Constant.SIGNED_ONE).wmul(cashBalance).mul(2);
         mv = mv.add(beforeSqrt.sqrt()).add(b);
@@ -61,15 +82,22 @@ library AMMCommon {
             .add(Constant.SIGNED_ONE)
             .wmul(indexPrice.wmul(positionAmount))
             .add(virtualLeverage.wmul(cashBalance));
-        int256 beforeSqrt = b.mul(b).sub(beta.wmul(virtualLeverage).wmul(a).mul(a));
+        int256 beforeSqrt = b.mul(b).sub(
+            beta.wmul(virtualLeverage).wmul(a).mul(a)
+        );
         mv = b.sub(a).add(beforeSqrt.sqrt());
-        mv = mv.wfrac(virtualLeverage.sub(Constant.SIGNED_ONE), virtualLeverage).div(2);
+        mv = mv
+            .wfrac(virtualLeverage.sub(Constant.SIGNED_ONE), virtualLeverage)
+            .div(2);
     }
 
     function calculateCashBalance(
         MarginAccount storage account,
         int256 unitAccFundingLoss
     ) internal view returns (int256) {
-        return account.positionAmount.wmul(unitAccFundingLoss).sub(account.cashBalance);
+        return
+            account.positionAmount.wmul(unitAccFundingLoss).sub(
+                account.cashBalance
+            );
     }
 }
