@@ -42,7 +42,7 @@ contract OracleUniswapV2 {
 	// token b => asset
     constructor(address factory, address asset, address collateral, address[] memory path) {
 		require(path.length >= 2, "paths are too short");
-		require(path[0] == collateral && path[path.length - 1] == asset, "paths must be from asset to collateral");
+		require(path[0] == asset && path[path.length - 1] == collateral, "paths must be from asset to collateral");
 
 		_collateral = collateral;
 		_asset = asset;
@@ -50,6 +50,7 @@ contract OracleUniswapV2 {
 		uint256 pathLength = path.length - 1;
 		for (uint256 i = 0; i < pathLength; i++) {
 			IUniswapV2Pair pair = IUniswapV2Pair(_pairFor(factory, path[i], path[i+1]));
+			PriceCache memory initialData;
 			{
 				// ensure that there's liquidity in the pair
 				(
@@ -57,19 +58,26 @@ contract OracleUniswapV2 {
 					uint112 reserve1,
 				) = pair.getReserves();
 				require(reserve0 != 0 && reserve1 != 0, 'no reserve');
+				(address tokenA,) = _sortTokens(path[i], path[i+1]);
+				if (tokenA == path[i]) {
+					initialData.lastPrice = FixedPoint.fraction(reserve1, reserve0);
+					initialData.lastAveragePrice = FixedPoint.fraction(reserve1, reserve0);
+				} else {
+					initialData.lastPrice = FixedPoint.fraction(reserve0, reserve1);
+					initialData.lastAveragePrice = FixedPoint.fraction(reserve0, reserve1);
+				}
 			}
 			address token0 = pair.token0();
 			address token1 = pair.token1();
 			(
 				uint256 cumulativePrice,
 				uint32 lastBlockTimestamp
-			) = _getCurrentCumulativePrices(pair, token0, token1);
+			) = _getCurrentCumulativePrices(pair, path[i], path[i+1]);
 			_pairInfo.push(PairInfo({
 				pair: pair,
-				token0: token0,
-				token1: token1
+				token0: path[i],
+				token1: path[i+1]
 			}));
-			PriceCache memory initialData;
 			initialData.lastCumulativePrice = cumulativePrice;
 			initialData.lastBlockTimestamp = lastBlockTimestamp;
 			_slowPriceCache.push(initialData);
@@ -82,10 +90,10 @@ contract OracleUniswapV2 {
 		if (currentBlockTimestamp == _lastUpdateTimestamp) {
 			return false;
 		}
-		FixedPoint.uq112x112 memory slowAveragePrice = FixedPoint.uq112x112(uint224(1));
-		FixedPoint.uq112x112 memory fastAveragePrice = FixedPoint.uq112x112(uint224(1));
+		FixedPoint.uq112x112 memory slowAveragePrice = FixedPoint.uq112x112(uint224(2**112));
+		FixedPoint.uq112x112 memory fastAveragePrice = FixedPoint.uq112x112(uint224(2**112));
 		uint256 pathLength = _pairInfo.length - 1;
-        for (uint256 i = 0; i < pathLength; i++) {
+        for (uint256 i = 0; i <= pathLength; i++) {
 			PairInfo memory info = _pairInfo[i];
 			(
 				uint256 cumulativePrice,
@@ -145,7 +153,7 @@ contract OracleUniswapV2 {
 		uint32 timeElapsed = lastBlockTimestamp - priceCache.lastBlockTimestamp;
 		FixedPoint.uq112x112 memory price =
 			FixedPoint.uq112x112(uint224((cumulativePrice - priceCache.lastCumulativePrice) / timeElapsed));
-		return FixedPoint.uq112x112((price.decode() + priceCache.lastAveragePrice.decode()) / 2);
+		return FixedPoint.uq112x112(uint224((price._x + priceCache.lastAveragePrice._x) / 2));
 	}
 
 	/// @dev Return cumulativePrice of token0.
@@ -198,7 +206,7 @@ contract OracleUniswapV2 {
 		uint112 reserve1;
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         ( reserve0,  reserve1, blockTimestampLast) = pair.getReserves();
-        if (blockTimestampLast != blockTimestamp) {
+        if (false) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
             // addition overflow is desired
