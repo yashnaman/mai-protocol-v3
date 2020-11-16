@@ -48,6 +48,7 @@ contract OracleUniswapV2 {
 		_asset = asset;
 
 		uint256 pathLength = path.length - 1;
+		uint32 currentBlockTimestamp = _currentBlockTimestamp();
 		for (uint256 i = 0; i < pathLength; i++) {
 			IUniswapV2Pair pair = IUniswapV2Pair(_pairFor(factory, path[i], path[i+1]));
 			PriceCache memory initialData;
@@ -69,17 +70,14 @@ contract OracleUniswapV2 {
 			}
 			address token0 = pair.token0();
 			address token1 = pair.token1();
-			(
-				uint256 cumulativePrice,
-				uint32 lastBlockTimestamp
-			) = _getCurrentCumulativePrices(pair, path[i], path[i+1]);
+			(uint256 cumulativePrice, ) = _getCurrentCumulativePrices(pair, path[i], path[i+1]);
 			_pairInfo.push(PairInfo({
 				pair: pair,
 				token0: path[i],
 				token1: path[i+1]
 			}));
 			initialData.lastCumulativePrice = cumulativePrice;
-			initialData.lastBlockTimestamp = lastBlockTimestamp;
+			initialData.lastBlockTimestamp = currentBlockTimestamp;
 			_slowPriceCache.push(initialData);
 			_fastPriceCache.push(initialData);
         }
@@ -93,6 +91,7 @@ contract OracleUniswapV2 {
 		FixedPoint.uq112x112 memory slowAveragePrice = FixedPoint.uq112x112(uint224(2**112));
 		FixedPoint.uq112x112 memory fastAveragePrice = FixedPoint.uq112x112(uint224(2**112));
 		uint256 pathLength = _pairInfo.length - 1;
+        _lastPriceTimestamp = uint32(-1);
         for (uint256 i = 0; i <= pathLength; i++) {
 			PairInfo memory info = _pairInfo[i];
 			(
@@ -103,19 +102,17 @@ contract OracleUniswapV2 {
 				_slowPriceCache[i],
 				cumulativePrice,
 				currentBlockTimestamp,
-				lastBlockTimestamp,
 				_slowPeriod
 			);
 			FixedPoint.uq112x112 memory fastPrice = _updatePriceCache(
 				_fastPriceCache[i],
 				cumulativePrice,
 				currentBlockTimestamp,
-				lastBlockTimestamp,
 				_fastPeriod
 			);
 			slowAveragePrice = slowAveragePrice.muluq(slowPrice);
 			fastAveragePrice = fastAveragePrice.muluq(fastPrice);
-			if (lastBlockTimestamp > _lastPriceTimestamp) {
+			if (lastBlockTimestamp < _lastPriceTimestamp) {
 				_lastPriceTimestamp = lastBlockTimestamp;
 			}
         }
@@ -129,17 +126,16 @@ contract OracleUniswapV2 {
 		PriceCache storage priceCache,
 		uint256 cumulativePrice,
 		uint32 currentBlockTimestamp,
-		uint32 lastBlockTimestamp,
 		uint256 updatePeriod
 	) internal returns (FixedPoint.uq112x112 memory) {
-		if (lastBlockTimestamp == priceCache.lastBlockTimestamp) {
+		if (currentBlockTimestamp == priceCache.lastBlockTimestamp) {
 			return priceCache.lastPrice;
 		}
-		FixedPoint.uq112x112 memory price = _getAveragePrice(priceCache, cumulativePrice, lastBlockTimestamp);
+		FixedPoint.uq112x112 memory price = _getAveragePrice(priceCache, cumulativePrice, currentBlockTimestamp);
 		if (currentBlockTimestamp - priceCache.lastBlockTimestamp >= updatePeriod) {
 			priceCache.lastAveragePrice = price;
 			priceCache.lastCumulativePrice = cumulativePrice;
-			priceCache.lastBlockTimestamp = lastBlockTimestamp;
+			priceCache.lastBlockTimestamp = currentBlockTimestamp;
 		}
 		priceCache.lastPrice = price;
 		return price;
@@ -206,7 +202,7 @@ contract OracleUniswapV2 {
 		uint112 reserve1;
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         ( reserve0,  reserve1, blockTimestampLast) = pair.getReserves();
-        if (false) {
+        if (blockTimestampLast != blockTimestamp) {
             // subtraction overflow is desired
             uint32 timeElapsed = blockTimestamp - blockTimestampLast;
             // addition overflow is desired
