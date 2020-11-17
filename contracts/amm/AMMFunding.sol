@@ -118,6 +118,16 @@ library AMMFunding {
                 ammAccount,
                 fundingState.unitAccFundingLoss
             );
+            require(
+                AMMCommon.isAMMMarginSafe(
+                    mc,
+                    ammAccount.positionAmount,
+                    indexPrice,
+                    riskParameter.virtualLeverage.value,
+                    riskParameter.beta1.value
+                ),
+                "amm unsafe"
+            );
             (int256 mv, int256 m0) = AMMCommon.regress(
                 mc,
                 ammAccount.positionAmount,

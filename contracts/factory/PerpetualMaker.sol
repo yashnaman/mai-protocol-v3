@@ -6,10 +6,15 @@ import "./ProxyTracer.sol";
 import "./VersionController.sol";
 
 contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
-
     address internal _vault;
 
-    event CreatePerpetual(address proxy, address implementation);
+    event CreatePerpetual(
+        address proxy,
+        address operator,
+        address oracle,
+        address implementation,
+        int256[14] arguments
+    );
 
     function createPerpetual(
         string calldata symbol,
@@ -20,10 +25,24 @@ contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
         require(_verifyVersion(implementation), "invalid implementation");
         bytes memory initializeData = abi.encodeWithSignature(
             "initialize(string,address,address,address,int256[])",
-            symbol, oracle, msg.sender, _vault, arguments
+            symbol,
+            oracle,
+            msg.sender,
+            _vault,
+            arguments
         );
-        address newProxy = _createProxy(implementation, address(this), initializeData);
+        address newProxy = _createProxy(
+            implementation,
+            address(this),
+            initializeData
+        );
         _registerInstance(newProxy, implementation);
-        emit CreatePerpetual(newProxy, implementation);
+        emit CreatePerpetual(
+            newProxy,
+            msg.sender,
+            oracle,
+            implementation,
+            arguments
+        );
     }
 }

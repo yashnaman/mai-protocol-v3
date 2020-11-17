@@ -32,6 +32,7 @@ struct CoreParameter {
     int256 operatorFeeRate;
     int256 vaultFeeRate;
     int256 lpFeeRate;
+    int256 ReferRebateReeRate;
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
 }

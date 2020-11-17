@@ -75,7 +75,7 @@ library AMMTrade {
         );
         int256 positionAmount = ammAccount.positionAmount;
         require(
-            _isAMMMarginSafe(
+            AMMCommon.isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
@@ -86,7 +86,7 @@ library AMMTrade {
         );
         int256 newCashBalance = cashBalance.sub(amount);
         require(
-            _isAMMMarginSafe(
+            AMMCommon.isAMMMarginSafe(
                 newCashBalance,
                 positionAmount,
                 indexPrice,
@@ -126,7 +126,7 @@ library AMMTrade {
             return 0;
         }
         require(
-            _isAMMMarginSafe(
+            AMMCommon.isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
@@ -164,7 +164,7 @@ library AMMTrade {
         int256 newCashBalance = cashBalance.add(deltaMargin);
         int256 newPositionAmount = positionAmount.add(tradingAmount);
         require(
-            _isAMMMarginSafe(
+            AMMCommon.isAMMMarginSafe(
                 newCashBalance,
                 newPositionAmount,
                 indexPrice,
@@ -196,7 +196,7 @@ library AMMTrade {
         }
         int256 closingBeta = riskParameter.beta2.value;
         if (
-            _isAMMMarginSafe(
+            AMMCommon.isAMMMarginSafe(
                 cashBalance,
                 positionAmount,
                 indexPrice,
@@ -270,68 +270,5 @@ library AMMTrade {
             .wmul(indexPrice)
             .wmul(positionAmount2.sub(positionAmount1))
             .neg();
-    }
-
-    function _isAMMMarginSafe(
-        int256 cashBalance,
-        int256 positionAmount,
-        int256 indexPrice,
-        int256 virtualLeverage,
-        int256 beta
-    ) private pure returns (bool) {
-        if (positionAmount == 0 || (positionAmount > 0 && cashBalance < 0)) {
-            return true;
-        }
-        if (positionAmount > 0) {
-            return
-                indexPrice >=
-                _indexLowerbound(
-                    cashBalance,
-                    positionAmount,
-                    virtualLeverage,
-                    beta
-                );
-        } else {
-            return
-                indexPrice <=
-                _indexUpperbound(
-                    cashBalance,
-                    positionAmount,
-                    virtualLeverage,
-                    beta
-                );
-        }
-    }
-
-    function _indexLowerbound(
-        int256 cashBalance,
-        int256 positionAmount,
-        int256 virtualLeverage,
-        int256 beta
-    ) private pure returns (int256 lowerbound) {
-        int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
-        lowerbound = t.add(beta).mul(beta);
-        lowerbound = lowerbound.sqrt().mul(2).add(t).add(beta.mul(2));
-        lowerbound = lowerbound.wfrac(virtualLeverage, positionAmount).wfrac(
-            cashBalance.neg(),
-            t.wmul(t)
-        );
-    }
-
-    function _indexUpperbound(
-        int256 cashBalance,
-        int256 positionAmount,
-        int256 virtualLeverage,
-        int256 beta
-    ) private pure returns (int256 upperbound) {
-        upperbound = beta
-            .mul(virtualLeverage)
-            .sqrt()
-            .mul(2)
-            .add(virtualLeverage)
-            .add(Constant.SIGNED_ONE);
-        upperbound = virtualLeverage
-            .wfrac(cashBalance, positionAmount.neg())
-            .wdiv(upperbound);
     }
 }

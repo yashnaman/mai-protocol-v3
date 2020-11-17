@@ -8,16 +8,18 @@ import "./libraries/Utils.sol";
 
 import "./Type.sol";
 import "./Context.sol";
+import "./Collateral.sol";
 import "./Trade.sol";
 import "./State.sol";
 import "./Settle.sol";
 import "./AccessControl.sol";
 
-contract Perpetual is Context, Trade, Settle, AccessControl {
+contract Perpetual is Context, Trade, Settle, AccessControl, Collateral {
     event Deposit(address trader, int256 collateralAmount);
     event Withdraw(address trader, int256 collateralAmount);
     event AddLiquidatity(address trader, int256 collateralAmount);
     event RemoveLiquidatity(address trader, int256 collateralAmount);
+
     event TradePosition(
         address trader,
         int256 positionAmount,
@@ -153,6 +155,10 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         availableMargin = _availableMargin(trader);
     }
 
+    function ammState() external view returns (int256 unitAccFundingLoss) {
+        return _fundingState.unitAccFundingLoss;
+    }
+
     // trade
     function deposit(address trader, int256 collateralAmount)
         external
@@ -162,6 +168,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
+        _transferFromUser(trader, collateralAmount);
         _deposit(trader, collateralAmount);
         emit Deposit(trader, collateralAmount);
     }
@@ -176,6 +183,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
         _withdraw(trader, collateralAmount);
+        _transferFromUser(trader, collateralAmount);
         emit Withdraw(trader, collateralAmount);
     }
 
@@ -188,6 +196,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
         _withdraw(trader, collateralAmount);
+        _transferFromUser(trader, collateralAmount);
         emit Withdraw(trader, collateralAmount);
     }
 
@@ -196,6 +205,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
         _deposit(address(this), collateralAmount);
+        _transferFromUser(trader, collateralAmount);
         emit AddLiquidatity(trader, collateralAmount);
     }
 
@@ -204,6 +214,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl {
         require(collateralAmount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
         _removeLiquidity(trader, collateralAmount);
+        _transferFromUser(trader, collateralAmount);
         emit RemoveLiquidatity(trader, collateralAmount);
     }
 
