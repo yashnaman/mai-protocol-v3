@@ -222,7 +222,8 @@ contract Perpetual is Context, Trade, Settle, AccessControl, Collateral {
         address trader,
         int256 positionAmount,
         int256 priceLimit,
-        uint256 deadline
+        uint256 deadline,
+        address referrer
     )
         external
         userTrace(trader)
@@ -234,7 +235,7 @@ contract Perpetual is Context, Trade, Settle, AccessControl, Collateral {
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
 
-        _trade(trader, positionAmount, priceLimit);
+        _trade(trader, positionAmount, priceLimit, referrer);
         emit TradePosition(trader, positionAmount, priceLimit, deadline);
     }
 

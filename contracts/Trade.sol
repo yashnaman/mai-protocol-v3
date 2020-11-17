@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 import "./libraries/Error.sol";
+import "./libraries/Constant.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
@@ -61,11 +62,17 @@ contract Trade is Context, Funding, Fee {
     function _trade(
         address trader,
         int256 amount,
-        int256 priceLimit
+        int256 priceLimit,
+        address referrer
     ) internal {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
-        (, , int256 openingAmount) = _tradePosition(trader, amount, priceLimit);
+        (, , int256 openingAmount) = _tradePosition(
+            trader,
+            amount,
+            priceLimit,
+            referrer
+        );
         if (openingAmount > 0) {
             _isInitialMarginSafe(trader);
         } else {
@@ -81,7 +88,8 @@ contract Trade is Context, Funding, Fee {
         (int256 deltaMargin, , ) = _tradePosition(
             trader,
             positionAmount,
-            priceLimit
+            priceLimit,
+            Constant.INVALID_ADDRESS
         );
         int256 penaltyToLiquidator = _coreParameter.keeperGasReward;
         int256 penaltyToFund = deltaMargin.wmul(
@@ -148,7 +156,8 @@ contract Trade is Context, Funding, Fee {
     function _tradePosition(
         address trader,
         int256 positionAmount,
-        int256 priceLimit
+        int256 priceLimit,
+        address referrer
     )
         internal
         returns (
@@ -170,9 +179,13 @@ contract Trade is Context, Funding, Fee {
             deltaMargin.wdiv(positionAmount),
             priceLimit
         );
-        int256 vaultFee = deltaMargin.wmul(_coreParameter.vaultFeeRate);
-        int256 operatorFee = deltaMargin.wmul(_coreParameter.operatorFeeRate);
-        int256 lpFee = deltaMargin.wmul(_coreParameter.lpFeeRate);
+
+        (
+            int256 vaultFee,
+            int256 operatorFee,
+            int256 lpFee,
+            int256 rebate
+        ) = _tradingFee(deltaMargin, referrer);
         (closingAmount, openingAmount) = _updatePosition(
             trader,
             positionAmount
@@ -186,6 +199,34 @@ contract Trade is Context, Funding, Fee {
         // fee
         _increaseClaimableFee(_vault, vaultFee);
         _increaseClaimableFee(_operator, operatorFee);
+        _increaseClaimableFee(referrer, rebate);
+    }
+
+    function _tradingFee(int256 deltaMargin, address referrer)
+        internal
+        view
+        returns (
+            int256 vaultFee,
+            int256 operatorFee,
+            int256 lpFee,
+            int256 rebate
+        )
+    {
+        vaultFee = deltaMargin.wmul(_coreParameter.vaultFeeRate);
+        lpFee = deltaMargin.wmul(_coreParameter.lpFeeRate);
+        operatorFee = deltaMargin.wmul(_coreParameter.operatorFeeRate);
+        if (
+            _coreParameter.referrerRebateRate > 0 &&
+            referrer != Constant.INVALID_ADDRESS
+        ) {
+            int256 lpFeeRebate = lpFee.wmul(_coreParameter.referrerRebateRate);
+            int256 operatorFeeRabate = operatorFee.wmul(
+                _coreParameter.referrerRebateRate
+            );
+            lpFee = lpFee.sub(lpFeeRebate);
+            operatorFee = operatorFee.sub(operatorFee);
+            rebate = lpFeeRebate.add(operatorFeeRabate);
+        }
     }
 
     function _takePosition(

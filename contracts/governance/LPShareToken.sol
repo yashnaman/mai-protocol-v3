@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
 contract LPShareToken {
-
     using SafeMath for uint256;
     using SafeMathExt for uint256;
 
@@ -21,20 +21,19 @@ contract LPShareToken {
     uint256 public totalSupply = 0;
 
     // Allowance amounts on behalf of others
-    mapping (address => mapping (address => uint256)) internal allowances;
+    mapping(address => mapping(address => uint256)) internal allowances;
 
     // Official record of token balances for each account
-    mapping (address => uint256) internal balances;
+    mapping(address => uint256) internal balances;
 
     /// @notice A record of each accounts delegate
-    mapping (address => address) public delegates;
+    mapping(address => address) public delegates;
 
     // A record of each accounts entryInsurance
-    mapping (address => uint256) internal entryInsurances;
+    mapping(address => uint256) internal entryInsurances;
 
     address private _minter;
     address private _burner;
-
 
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
@@ -43,31 +42,47 @@ contract LPShareToken {
     }
 
     /// @notice A record of votes checkpoints for each account, by index
-    mapping (address => mapping (uint256 => Checkpoint)) public checkpoints;
+    mapping(address => mapping(uint256 => Checkpoint)) public checkpoints;
 
     /// @notice The number of checkpoints for each account
-    mapping (address => uint256) public numCheckpoints;
+    mapping(address => uint256) public numCheckpoints;
 
     /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,uint256 chainId,address verifyingContract)"
+    );
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
-    bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
+    bytes32 public constant DELEGATION_TYPEHASH = keccak256(
+        "Delegation(address delegatee,uint256 nonce,uint256 expiry)"
+    );
 
     /// @notice A record of states for signing / validating signatures
-    mapping (address => uint256) public nonces;
+    mapping(address => uint256) public nonces;
 
     /// @notice An event thats emitted when an account changes its delegate
-    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    event DelegateChanged(
+        address indexed delegator,
+        address indexed fromDelegate,
+        address indexed toDelegate
+    );
 
     /// @notice An event thats emitted when a delegate account's vote balance changes
-    event DelegateVotesChanged(address indexed delegate, uint256 previousBalance, uint256 newBalance);
+    event DelegateVotesChanged(
+        address indexed delegate,
+        uint256 previousBalance,
+        uint256 newBalance
+    );
 
     /// @notice The standard EIP-20 transfer event
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
     /// @notice The standard EIP-20 approval event
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 amount
+    );
 
     /**
      * @notice Construct a new Comp token
@@ -78,8 +93,15 @@ contract LPShareToken {
         _burner = account;
     }
 
-    function updateEntryInsurance(address account, uint256 entryInsurance, uint256 amount) internal {
-        entryInsurances[account] = entryInsurances[account].wmul(balances[account]).add(entryInsurance.wmul(amount)).wdiv(balances[account].add(amount));
+    function updateEntryInsurance(
+        address account,
+        uint256 entryInsurance,
+        uint256 amount
+    ) internal {
+        entryInsurances[account] = entryInsurances[account]
+            .wmul(balances[account])
+            .add(entryInsurance.wmul(amount))
+            .wdiv(balances[account].add(amount));
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -91,14 +113,20 @@ contract LPShareToken {
      *
      * - `to` cannot be the zero address.
      */
-    function mint(address account, uint256 amount, uint256 insurance) public {
+    function mint(
+        address account,
+        uint256 amount,
+        uint256 insurance
+    ) public {
         require(msg.sender == _minter, "Only minter can mint");
         require(account != address(0), "Mint to the zero address");
 
         totalSupply = totalSupply.add(amount);
         updateEntryInsurance(account, insurance, amount);
         balances[account] = balances[account].add(amount);
-        address delegatee = delegates[account] == address(0) ? account : delegates[account];
+        address delegatee = delegates[account] == address(0)
+            ? account
+            : delegates[account];
         _moveDelegates(address(0), delegatee, amount);
         emit Transfer(address(0), account, amount);
     }
@@ -118,9 +146,14 @@ contract LPShareToken {
         require(msg.sender == _burner, "Only burner can burn");
         require(account != address(0), "Burn from the zero address");
 
-        balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
+        balances[account] = balances[account].sub(
+            amount,
+            "Burn amount exceeds balance"
+        );
         totalSupply = totalSupply.sub(amount);
-        address delegatee = delegates[account] == address(0) ? account : delegates[account];
+        address delegatee = delegates[account] == address(0)
+            ? account
+            : delegates[account];
         _moveDelegates(delegatee, address(0), amount);
         emit Transfer(account, address(0), amount);
     }
@@ -131,7 +164,11 @@ contract LPShareToken {
      * @param spender The address of the account spending the funds
      * @return The number of tokens approved
      */
-    function allowance(address account, address spender) external view returns (uint256) {
+    function allowance(address account, address spender)
+        external
+        view
+        returns (uint256)
+    {
         return allowances[account][spender];
     }
 
@@ -148,7 +185,6 @@ contract LPShareToken {
      * @return Whether or not the approval succeeded
      */
     function approve(address spender, uint256 amount) external returns (bool) {
-
         allowances[msg.sender][spender] = amount;
 
         emit Approval(msg.sender, spender, amount);
@@ -182,7 +218,11 @@ contract LPShareToken {
      * @param amount The number of tokens to transfer
      * @return Whether or not the transfer succeeded
      */
-    function transferFrom(address src, address dst, uint256 amount) external returns (bool) {
+    function transferFrom(
+        address src,
+        address dst,
+        uint256 amount
+    ) external returns (bool) {
         address spender = msg.sender;
         uint256 spenderAllowance = allowances[src][spender];
 
@@ -214,10 +254,28 @@ contract LPShareToken {
      * @param r Half of the ECDSA signature pair
      * @param s Half of the ECDSA signature pair
      */
-    function delegateBySig(address delegatee, uint256 nonce, uint256 expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                DOMAIN_TYPEHASH,
+                keccak256(bytes(name)),
+                getChainId(),
+                address(this)
+            )
+        );
+        bytes32 structHash = keccak256(
+            abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry)
+        );
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "delegateBySig: invalid nonce");
@@ -232,7 +290,8 @@ contract LPShareToken {
      */
     function getCurrentVotes(address account) external view returns (uint256) {
         uint256 nCheckpoints = numCheckpoints[account];
-        return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
+        return
+            nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
     }
 
     /**
@@ -242,8 +301,15 @@ contract LPShareToken {
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
-    function getPriorVotes(address account, uint256 blockNumber) public view returns (uint256) {
-        require(blockNumber < block.number, "getPriorVotes: not yet determined");
+    function getPriorVotes(address account, uint256 blockNumber)
+        public
+        view
+        returns (uint256)
+    {
+        require(
+            blockNumber < block.number,
+            "getPriorVotes: not yet determined"
+        );
 
         uint256 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -277,7 +343,9 @@ contract LPShareToken {
     }
 
     function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator] == address(0) ? delegator : delegates[delegator];
+        address currentDelegate = delegates[delegator] == address(0)
+            ? delegator
+            : delegates[delegator];
         uint256 delegatorBalance = balances[delegator];
         delegates[delegator] = delegatee;
 
@@ -286,53 +354,88 @@ contract LPShareToken {
         _moveDelegates(currentDelegate, delegatee, delegatorBalance);
     }
 
-    function _transferTokens(address src, address dst, uint256 amount) internal {
-        require(src != address(0), "_transferTokens: cannot transfer from the zero address");
-        require(dst != address(0), "_transferTokens: cannot transfer to the zero address");
+    function _transferTokens(
+        address src,
+        address dst,
+        uint256 amount
+    ) internal {
+        require(
+            src != address(0),
+            "_transferTokens: cannot transfer from the zero address"
+        );
+        require(
+            dst != address(0),
+            "_transferTokens: cannot transfer to the zero address"
+        );
 
         updateEntryInsurance(dst, entryInsurances[src], amount);
         balances[src] = balances[src].sub(amount);
         balances[dst] = balances[dst].add(amount);
         emit Transfer(src, dst, amount);
-        address srcDelegatee = delegates[src] == address(0) ? src : delegates[src];
-        address dstDelegatee = delegates[dst] == address(0) ? dst : delegates[dst];
+        address srcDelegatee = delegates[src] == address(0)
+            ? src
+            : delegates[src];
+        address dstDelegatee = delegates[dst] == address(0)
+            ? dst
+            : delegates[dst];
         _moveDelegates(srcDelegatee, dstDelegatee, amount);
     }
 
-    function _moveDelegates(address srcRep, address dstRep, uint256 amount) internal {
+    function _moveDelegates(
+        address srcRep,
+        address dstRep,
+        uint256 amount
+    ) internal {
         if (srcRep != dstRep && amount > 0) {
             if (dstRep != address(0)) {
                 uint256 dstRepNum = numCheckpoints[dstRep];
-                uint256 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
+                uint256 dstRepOld = dstRepNum > 0
+                    ? checkpoints[dstRep][dstRepNum - 1].votes
+                    : 0;
                 uint256 dstRepNew = dstRepOld.add(amount);
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
 
             if (srcRep != address(0)) {
                 uint256 srcRepNum = numCheckpoints[srcRep];
-                uint256 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
+                uint256 srcRepOld = srcRepNum > 0
+                    ? checkpoints[srcRep][srcRepNum - 1].votes
+                    : 0;
                 uint256 srcRepNew = srcRepOld.sub(amount);
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
         }
     }
 
-    function _writeCheckpoint(address delegatee, uint256 nCheckpoints, uint256 oldVotes, uint256 newVotes) internal {
-      uint256 blockNumber = block.number;
+    function _writeCheckpoint(
+        address delegatee,
+        uint256 nCheckpoints,
+        uint256 oldVotes,
+        uint256 newVotes
+    ) internal {
+        uint256 blockNumber = block.number;
 
-      if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
-          checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-      } else {
-          checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
-          numCheckpoints[delegatee] = nCheckpoints + 1;
-      }
+        if (
+            nCheckpoints > 0 &&
+            checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
+        ) {
+            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
+        } else {
+            checkpoints[delegatee][nCheckpoints] = Checkpoint(
+                blockNumber,
+                newVotes
+            );
+            numCheckpoints[delegatee] = nCheckpoints + 1;
+        }
 
-      emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
+        emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
     function getChainId() internal pure returns (uint256) {
         uint256 chainId;
-        assembly { chainId := chainid() }
+        assembly {
+            chainId := chainid()
+        }
         return chainId;
     }
 }

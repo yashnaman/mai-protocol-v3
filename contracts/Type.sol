@@ -32,7 +32,7 @@ struct CoreParameter {
     int256 operatorFeeRate;
     int256 vaultFeeRate;
     int256 lpFeeRate;
-    int256 ReferRebateReeRate;
+    int256 referrerRebateRate;
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
 }
@@ -43,4 +43,29 @@ struct RiskParameter {
     Option beta2;
     Option fundingRateCoefficent;
     Option virtualLeverage;
+}
+
+enum ActionOnFailure {IGNORE, REVERT}
+enum OrderType {LIMIT, MARKET, STOP}
+
+struct Signature {
+    bytes32 config;
+    bytes32 r;
+    bytes32 s;
+}
+
+struct Order {
+    address trader;
+    address broker;
+    address perpetual;
+    address referrer;
+    int256 amount;
+    int256 priceLimit;
+    uint64 deadline;
+    uint32 version;
+    OrderType orderType;
+    bool closeOnly;
+    uint64 salt;
+    uint256 chainID;
+    Signature signature;
 }

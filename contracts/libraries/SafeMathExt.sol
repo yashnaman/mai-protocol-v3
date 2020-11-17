@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "./Constant.sol";
 
 library SafeMathExt {
-
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
@@ -19,7 +18,11 @@ library SafeMathExt {
         z = x.mul(Constant.UNSIGNED_ONE).add(y / 2).div(y);
     }
 
-    function wfrac(uint256 x, uint256 y, uint256 z) internal pure returns (uint256 r) {
+    function wfrac(
+        uint256 x,
+        uint256 y,
+        uint256 z
+    ) internal pure returns (uint256 r) {
         r = x.mul(y).div(z);
     }
 
@@ -35,7 +38,11 @@ library SafeMathExt {
         z = roundHalfUp(x.mul(Constant.SIGNED_ONE), y).div(y);
     }
 
-    function wfrac(int256 x, int256 y, int256 z) internal pure returns (int256 r) {
+    function wfrac(
+        int256 x,
+        int256 y,
+        int256 z
+    ) internal pure returns (int256 r) {
         int256 t = x.mul(y);
         if (z < 0) {
             z = neg(z);
@@ -45,7 +52,7 @@ library SafeMathExt {
     }
 
     function abs(int256 x) internal pure returns (int256) {
-        return x >= 0? x: neg(x);
+        return x >= 0 ? x : neg(x);
     }
 
     function neg(int256 a) internal pure returns (int256) {
@@ -70,5 +77,4 @@ library SafeMathExt {
     function min(int256 a, int256 b) internal pure returns (int256) {
         return a < b ? a : b;
     }
-
 }

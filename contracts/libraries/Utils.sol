@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "./SafeMathExt.sol";
 
 library Utils {
-
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
 
@@ -18,10 +17,14 @@ library Utils {
     }
 
     function extractSign(int256 x) internal pure returns (int256) {
-        return x >= 0? int256(1) : int256(-1);
+        return x >= 0 ? int256(1) : int256(-1);
     }
 
-    function splitAmount(int256 amount, int256 delta) internal pure returns (int256, int256) {
+    function splitAmount(int256 amount, int256 delta)
+        internal
+        pure
+        returns (int256, int256)
+    {
         if (Utils.hasSameSign(amount, delta)) {
             return (0, delta);
         } else if (amount.abs() >= delta.abs()) {

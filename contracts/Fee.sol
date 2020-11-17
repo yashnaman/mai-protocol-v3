@@ -15,6 +15,9 @@ contract Fee is Core {
     mapping(address => int256) internal _totalFee;
 
     function _increaseClaimableFee(address claimer, int256 amount) internal {
+        if (amount == 0) {
+            return;
+        }
         _claimableFee[claimer] = _claimableFee[claimer].add(amount);
         _totalFee[claimer] = _totalFee[claimer].add(amount);
     }
