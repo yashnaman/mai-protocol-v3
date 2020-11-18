@@ -23,32 +23,6 @@ contract Trade is Context, Funding, Fee {
     int256 internal _insuranceFund1;
     int256 internal _insuranceFund2;
 
-    event Deposit(address trader, int256 collateralAmount);
-    event Withdraw(address trader, int256 collateralAmount);
-    event AddLiquidatity(address trader, int256 collateralAmount);
-    event RemoveLiquidatity(address trader, int256 collateralAmount);
-
-    function _deposit(address trader, int256 amount) internal {
-        _updateCashBalance(trader, amount);
-        emit Deposit(trader, amount);
-    }
-
-    function _withdraw(address trader, int256 amount) internal {
-        _updateCashBalance(trader, amount.neg());
-        _isInitialMarginSafe(trader);
-        emit Withdraw(trader, amount);
-    }
-
-    function _donateInsuranceFund(int256 amount) internal {
-        _insuranceFund2 = _insuranceFund2.add(amount);
-    }
-
-    function _addLiquidity(address trader, int256 amount) internal {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        _updateCashBalance(_self(), amount);
-    }
-
     function _removeLiquidity(address trader, int256 amount) internal {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
@@ -94,7 +68,7 @@ contract Trade is Context, Funding, Fee {
             priceLimit,
             Constant.INVALID_ADDRESS
         );
-        int256 penaltyToLiquidator = _coreParameter.keeperGasReward;
+        int256 penaltyToKeeper = _coreParameter.keeperGasReward;
         int256 penaltyToFund = deltaMargin.wmul(
             _coreParameter.liquidationPenaltyRate
         );
@@ -104,7 +78,7 @@ contract Trade is Context, Funding, Fee {
             int256 newInsuraceFund2
         ) = _calculateLiquidationLoss(
             trader,
-            penaltyToLiquidator,
+            penaltyToKeeper,
             penaltyToFund,
             _insuranceFund1,
             _insuranceFund2
@@ -113,8 +87,11 @@ contract Trade is Context, Funding, Fee {
         _insuranceFund1 = newInsuraceFund1;
         _insuranceFund2 = newInsuraceFund2;
         liquidationLoss = newInsuraceFund2 < 0 ? newInsuraceFund2 : 0;
-        // fee
-        // to keeper
+
+        _increaseClaimableFee(_msgSender(), penaltyToKeeper);
+        if (liquidationLoss > 0) {
+            _enterEmergencyState();
+        }
     }
 
     function _liquidate2(
@@ -134,7 +111,7 @@ contract Trade is Context, Funding, Fee {
         } else {
             _isMaintenanceMarginSafe(taker);
         }
-        int256 penaltyToLiquidator = deltaMargin
+        int256 penaltyToKeeper = deltaMargin
             .wmul(_coreParameter.liquidationPenaltyRate)
             .add(_coreParameter.keeperGasReward);
         (
@@ -143,7 +120,7 @@ contract Trade is Context, Funding, Fee {
             int256 newInsuraceFund2
         ) = _calculateLiquidationLoss(
             maker,
-            penaltyToLiquidator,
+            penaltyToKeeper,
             0,
             _insuranceFund1,
             _insuranceFund2
@@ -152,8 +129,11 @@ contract Trade is Context, Funding, Fee {
         _insuranceFund1 = newInsuraceFund1;
         _insuranceFund2 = newInsuraceFund2;
         liquidationLoss = newInsuraceFund2 < 0 ? newInsuraceFund2 : 0;
-        // fee
-        // to keeper
+
+        _increaseClaimableFee(_msgSender(), penaltyToKeeper);
+        if (liquidationLoss > 0) {
+            _enterEmergencyState();
+        }
     }
 
     function _tradePosition(
@@ -170,7 +150,7 @@ contract Trade is Context, Funding, Fee {
         )
     {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
-        ( deltaMargin, ) = AMMTrade.trade(
+        (deltaMargin, ) = AMMTrade.trade(
             _fundingState,
             _riskParameter,
             _marginAccounts[_self()],

@@ -84,6 +84,7 @@ contract Settle is Funding {
         } else {
             _withdrawableMarginWithPosition = 0;
         }
+        _enterShuttingDownState();
     }
 
     function _settle(address trader) internal returns (int256 amount) {

@@ -4,90 +4,59 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
+import "../interface/IPerpetualGovernance.sol";
+
+interface IVoteToken {
+    function getPriorVotes(address account, uint256 blockNumber)
+        external
+        view
+        returns (uint256);
+
+    function totalSupply() external view returns (uint256);
+}
+
+/// @notice Possible states that a proposal may be in
+enum ProposalState {Pending, Active, Defeated, Succeeded, Expired, Executed}
+
+/// @notice Ballot receipt record for a voter
+struct Receipt {
+    // Whether or not a vote has been cast
+    bool hasVoted;
+    // Whether or not the voter supports the proposal
+    bool support;
+    // The number of votes the voter had, which were cast
+    uint256 votes;
+}
+
+struct Proposal {
+    // Unique id for looking up a proposal
+    uint256 id;
+    //  Creator of the proposal
+    address proposer;
+    // The ordered list of function signatures to be called
+    string signature;
+    // The ordered list of calldata to be passed to each call
+    bytes[] calldatas;
+    // The block at which voting begins: holders must delegate their votes prior to this block
+    uint256 startBlock;
+    // The block at which voting ends: votes must be cast prior to this block
+    uint256 endBlock;
+    // Current number of votes in favor of this proposal
+    uint256 forVotes;
+    // Current number of votes in opposition to this proposal
+    uint256 againstVotes;
+    // Flag marking whether the proposal has been executed
+    bool executed;
+    // Receipts of ballots for the entire set of voters
+    mapping(address => Receipt) receipts;
+}
+
 contract Governor {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
 
     /// @notice The name of this contract
     string public constant name = "MCDEX LP Governor";
-
-    /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    function quorumVoteRate() public pure returns (uint256) {
-        return 4e16;
-    } // 4%
-
-    /// @notice The threshold of votes ratio required in order for a voter to become a proposer
-    function proposalRateThreshold() public pure returns (uint256) {
-        return 1e16;
-    } // 1%
-
-    /// @notice The maximum number of actions that can be included in a proposal
-    function proposalMaxOperations() public pure returns (uint256) {
-        return 10;
-    } // 10 actions
-
-    /// @notice The delay before voting on a proposal may take place, once proposed
-    function votingDelay() public pure returns (uint256) {
-        return 1;
-    } // 1 block
-
-    /// @notice The duration of voting on a proposal, in blocks
-    function votingPeriod() public pure returns (uint256) {
-        return 17280;
-    } // ~3 days in blocks (assuming 15s blocks)
-
-    /// @notice The address of the Timelock
-    TimelockInterface public timelock;
-
-    /// @notice The address of the governance token
-    LPShareTokenInterface public lpToken;
-
-    /// @notice The total number of proposals
-    uint256 public proposalCount;
-
-    struct Proposal {
-        // Unique id for looking up a proposal
-        uint256 id;
-        //  Creator of the proposal
-        address proposer;
-        // the ordered list of target addresses for calls to be made
-        address[] targets;
-        // The ordered list of function signatures to be called
-        string[] signatures;
-        // The ordered list of calldata to be passed to each call
-        bytes[] calldatas;
-        // The block at which voting begins: holders must delegate their votes prior to this block
-        uint256 startBlock;
-        // The block at which voting ends: votes must be cast prior to this block
-        uint256 endBlock;
-        // Current number of votes in favor of this proposal
-        uint256 forVotes;
-        // Current number of votes in opposition to this proposal
-        uint256 againstVotes;
-        // Flag marking whether the proposal has been executed
-        bool executed;
-        // Receipts of ballots for the entire set of voters
-        mapping(address => Receipt) receipts;
-    }
-
-    /// @notice Ballot receipt record for a voter
-    struct Receipt {
-        // Whether or not a vote has been cast
-        bool hasVoted;
-        // Whether or not the voter supports the proposal
-        bool support;
-        // The number of votes the voter had, which were cast
-        uint256 votes;
-    }
-
-    /// @notice Possible states that a proposal may be in
-    enum ProposalState {Pending, Active, Defeated, Succeeded, Expired, Executed}
-
-    /// @notice The official record of all proposals ever proposed
-    mapping(uint256 => Proposal) public proposals;
-
-    /// @notice The latest proposal for each proposer
-    mapping(address => uint256) public latestProposalIds;
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256(
@@ -99,12 +68,34 @@ contract Governor {
         "Ballot(uint256 proposalId,bool support)"
     );
 
+    /// @notice The address of the governance token
+    IVoteToken public voteToken;
+
+    address public target;
+
+    /// @notice The total number of proposals
+    uint256 public proposalCount;
+
+    /// @notice The official record of all proposals ever proposed
+    mapping(uint256 => Proposal) public proposals;
+
+    /// @notice The latest proposal for each proposer
+    mapping(address => uint256) public latestProposalIds;
+
+    event ExecuteTransaction(
+        bytes32 indexed txHash,
+        address indexed target,
+        string signature,
+        bytes data,
+        uint256 eta
+    );
+
     /// @notice An event emitted when a new proposal is created
     event ProposalCreated(
         uint256 id,
         address proposer,
-        address[] targets,
-        string[] signatures,
+        address targets,
+        string signature,
         bytes[] calldatas,
         uint256 startBlock,
         uint256 endBlock,
@@ -122,36 +113,78 @@ contract Governor {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
 
-    constructor(address timelock_, address lpToken_) {
-        timelock = TimelockInterface(timelock_);
-        lpToken = LPShareTokenInterface(lpToken_);
+    // constructor(address _voteToken, address _target) {
+    //     voteToken = IVoteToken(_voteToken);
+    //     target = _target;
+    // }
+
+    /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
+    function quorumVoteRate() public virtual pure returns (uint256) {
+        return 4e16;
+    } // 4%
+
+    /// @notice The threshold of votes ratio required in order for a voter to become a proposer
+    function proposalRateThreshold() public virtual pure returns (uint256) {
+        return 1e16;
+    } // 1%
+
+    /// @notice The maximum number of actions that can be included in a proposal
+    function proposalMaxOperations() public virtual pure returns (uint256) {
+        return 10;
+    } // 10 actions
+
+    /// @notice The delay before voting on a proposal may take place, once proposed
+    function votingDelay() public virtual pure returns (uint256) {
+        return 1;
+    } // 1 block
+
+    /// @notice The duration of voting on a proposal, in blocks
+    function votingPeriod() public virtual pure returns (uint256) {
+        return 17280;
+    } // ~3 days in blocks (assuming 15s blocks)
+
+    function executingDelay() public virtual pure returns (uint256) {
+        return 86400;
     }
 
-    function propose(
-        address[] memory targets,
-        string[] memory signatures,
+    function executingTimeout() public virtual pure returns (uint256) {
+        return 86400 * 7;
+    }
+
+    function proposeCoreParameterUpdate(
+        bytes32[] memory keys,
+        int256[] memory values
+    ) public {
+        require(keys.length <= proposalMaxOperations(), "");
+        require(keys.length == values.length, "");
+
+        uint256 numEntries = keys.length;
+        bytes[] memory calldatas = new bytes[](numEntries);
+        for (uint256 i = 0; i < numEntries; i++) {
+            calldatas[i] = abi.encodePacked(keys[i], values[i]);
+        }
+        _propose(
+            "updateCoreParameter(bytes32,int256)",
+            calldatas,
+            "CoreParameterUpdate"
+        );
+    }
+
+    function _propose(
+        string memory signature,
         bytes[] memory calldatas,
         string memory description
-    ) public returns (uint256) {
+    ) internal returns (uint256) {
         require(
-            lpToken.getPriorVotes(msg.sender, block.number.sub(1)) >
-                proposalRateThreshold().wmul(lpToken.totalSupply()),
+            voteToken.getPriorVotes(msg.sender, block.number.sub(1)) >
+                proposalRateThreshold().wmul(voteToken.totalSupply()),
             "GovernorAlpha::propose: proposer votes below proposal threshold"
         );
+        require(calldatas.length != 0, "no actions");
         require(
-                targets.length == signatures.length &&
-                targets.length == calldatas.length,
-            "GovernorAlpha::propose: proposal function information arity mismatch"
+            calldatas.length <= proposalMaxOperations(),
+            "too many actions"
         );
-        require(
-            targets.length != 0,
-            "GovernorAlpha::propose: must provide actions"
-        );
-        require(
-            targets.length <= proposalMaxOperations(),
-            "GovernorAlpha::propose: too many actions"
-        );
-
         uint256 latestProposalId = latestProposalIds[msg.sender];
         if (latestProposalId != 0) {
             ProposalState proposersLatestProposalState = state(
@@ -173,8 +206,7 @@ contract Governor {
         proposalCount++;
         proposals[proposalCount].id = proposalCount;
         proposals[proposalCount].proposer = msg.sender;
-        proposals[proposalCount].targets = targets;
-        proposals[proposalCount].signatures = signatures;
+        proposals[proposalCount].signature = signature;
         proposals[proposalCount].calldatas = calldatas;
         proposals[proposalCount].startBlock = startBlock;
         proposals[proposalCount].endBlock = endBlock;
@@ -187,8 +219,8 @@ contract Governor {
         emit ProposalCreated(
             proposalCount,
             msg.sender,
-            targets,
-            signatures,
+            target,
+            signature,
             calldatas,
             startBlock,
             endBlock,
@@ -197,19 +229,18 @@ contract Governor {
         return proposalCount;
     }
 
-    function execute(uint256 proposalId) public payable {
+    function execute(uint256 proposalId) public {
         require(
             state(proposalId) == ProposalState.Succeeded,
-            "GovernorAlpha::execute: proposal can only be executed if it is succeeded"
+            "proposal failed"
         );
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
-        for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction(
-                proposal.targets[i],
-                proposal.signatures[i],
+        for (uint256 i = 0; i < proposal.calldatas.length; i++) {
+            _executeTransaction(
+                proposal.signature,
                 proposal.calldatas[i],
-                proposal.endBlock.add(timelock.delay())
+                proposal.endBlock.add(executingDelay())
             );
         }
         emit ProposalExecuted(proposalId);
@@ -218,14 +249,10 @@ contract Governor {
     function getActions(uint256 proposalId)
         public
         view
-        returns (
-            address[] memory targets,
-            string[] memory signatures,
-            bytes[] memory calldatas
-        )
+        returns (string memory signatures, bytes[] memory calldatas)
     {
         Proposal storage p = proposals[proposalId];
-        return (p.targets, p.signatures, p.calldatas);
+        return (p.signature, p.calldatas);
     }
 
     function getReceipt(uint256 proposalId, address voter)
@@ -237,10 +264,7 @@ contract Governor {
     }
 
     function state(uint256 proposalId) public view returns (ProposalState) {
-        require(
-            proposalCount >= proposalId && proposalId > 0,
-            "GovernorAlpha::state: invalid proposal id"
-        );
+        require(proposalCount >= proposalId && proposalId > 0, "invalid id");
         Proposal storage proposal = proposals[proposalId];
         if (block.number <= proposal.startBlock) {
             return ProposalState.Pending;
@@ -248,14 +272,14 @@ contract Governor {
             return ProposalState.Active;
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.forVotes < quorumVoteRate().wmul(lpToken.totalSupply())
+            proposal.forVotes < quorumVoteRate().wmul(voteToken.totalSupply())
         ) {
             return ProposalState.Defeated;
         } else if (proposal.executed) {
             return ProposalState.Executed;
         } else if (
             block.number >=
-            proposal.endBlock.add(timelock.delay()).add(timelock.GRACE_PERIOD())
+            proposal.endBlock.add(executingDelay()).add(executingTimeout())
         ) {
             return ProposalState.Expired;
         } else {
@@ -278,7 +302,7 @@ contract Governor {
             abi.encode(
                 DOMAIN_TYPEHASH,
                 keccak256(bytes(name)),
-                getChainId(),
+                _chainId(),
                 address(this)
             )
         );
@@ -289,10 +313,7 @@ contract Governor {
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
         address signatory = ecrecover(digest, v, r, s);
-        require(
-            signatory != address(0),
-            "GovernorAlpha::castVoteBySig: invalid signature"
-        );
+        require(signatory != address(0), "invalid signature");
         return _castVote(signatory, proposalId, support);
     }
 
@@ -301,17 +322,11 @@ contract Governor {
         uint256 proposalId,
         bool support
     ) internal {
-        require(
-            state(proposalId) == ProposalState.Active,
-            "GovernorAlpha::_castVote: voting is not active"
-        );
+        require(state(proposalId) == ProposalState.Active, "voting not active");
         Proposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
-        require(
-            receipt.hasVoted == false,
-            "GovernorAlpha::_castVote: voter already voted"
-        );
-        uint256 votes = lpToken.getPriorVotes(voter, proposal.startBlock);
+        require(receipt.hasVoted == false, "already voted");
+        uint256 votes = voteToken.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
             proposal.forVotes = proposal.forVotes.add(votes);
@@ -326,33 +341,34 @@ contract Governor {
         emit VoteCast(voter, proposalId, support, votes);
     }
 
-    function getChainId() internal pure returns (uint256) {
+    function _chainId() internal pure returns (uint256) {
         uint256 chainId;
         assembly {
             chainId := chainid()
         }
         return chainId;
     }
-}
 
-interface TimelockInterface {
-    function delay() external view returns (uint256);
-
-    function GRACE_PERIOD() external view returns (uint256);
-
-    function executeTransaction(
-        address target,
-        string calldata signature,
-        bytes calldata data,
+    function _executeTransaction(
+        string memory signature,
+        bytes memory data,
         uint256 eta
-    ) external payable returns (bytes memory);
-}
-
-interface LPShareTokenInterface {
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint256);
-
-    function totalSupply() external view returns (uint256);
+    ) public payable returns (bytes memory) {
+        bytes32 txHash = keccak256(abi.encode(target, signature, data, eta));
+        require(block.number >= eta, "tx is locked");
+        require(block.number <= eta.add(executingTimeout()), "tx is stale.");
+        bytes memory callData;
+        if (bytes(signature).length == 0) {
+            callData = data;
+        } else {
+            callData = abi.encodePacked(
+                bytes4(keccak256(bytes(signature))),
+                data
+            );
+        }
+        (bool success, bytes memory returnData) = target.call(callData);
+        require(success, "tx reverted");
+        emit ExecuteTransaction(txHash, target, signature, data, eta);
+        return returnData;
+    }
 }

@@ -6,13 +6,7 @@ import "./libraries/Validator.sol";
 import "./Context.sol";
 import "./Type.sol";
 
-interface IFactory {
-    function vault() external view returns (address);
-
-    function vaultFeeRate() external view returns (int256);
-
-    function registerUser(address user) external;
-}
+import "./interface/IFactory.sol";
 
 contract Core is Context {
     using Validator for CoreParameter;
@@ -23,12 +17,14 @@ contract Core is Context {
     address internal _operator;
     address internal _voter;
     address internal _vault;
+    address internal _shareToken;
 
     CoreParameter internal _coreParameter;
 
     function __CoreInitialize(
         address operator,
         address voter,
+        address shareToken,
         int256[CORE_PARAMETER_COUNT] calldata params
     ) internal {
         require(operator != address(0), "invalid operator");
@@ -36,6 +32,7 @@ contract Core is Context {
         _operator = operator;
         _voter = voter;
         _factory = _msgSender();
+        _shareToken = shareToken;
 
         _vault = IFactory(_factory).vault();
         _coreParameter.vaultFeeRate = IFactory(_factory).vaultFeeRate();

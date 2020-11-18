@@ -4,25 +4,7 @@ pragma solidity 0.7.4;
 import "./Context.sol";
 import "./Type.sol";
 
-// import "./module/ArgumentModule.sol";
-
-interface IPriceOracle {
-    function symbol() external view returns (uint256);
-
-    function collateral() external view returns (address);
-
-    function underlyingAsset() external view returns (address);
-
-    function priceTimeout() external view returns (uint256);
-
-    function priceTWAPLong()
-        external
-        returns (int256 newPrice, uint256 newTimestamp);
-
-    function priceTWAPShort()
-        external
-        returns (int256 newPrice, uint256 newTimestamp);
-}
+import "./interface/IOracle.sol";
 
 contract Oracle is Context {
     address internal _oracle;
@@ -30,7 +12,6 @@ contract Oracle is Context {
     OraclePriceData internal _marketPriceCache;
 
     function __OracleInitialize(address oracle) internal {
-        // ArgumentModule.validateOracleInterface(oracle);
         _oracle = oracle;
     }
 
@@ -44,8 +25,7 @@ contract Oracle is Context {
         returns (OraclePriceData memory)
     {
         if (_now() != _marketPriceCache.timestamp) {
-            (int256 price, uint256 time) = IPriceOracle(_oracle)
-                .priceTWAPLong();
+            (int256 price, uint256 time) = IOracle(_oracle).priceTWAPLong();
             _marketPriceCache = OraclePriceData({
                 price: price,
                 timestamp: time
@@ -64,8 +44,7 @@ contract Oracle is Context {
         returns (OraclePriceData memory)
     {
         if (_now() != _indexPriceCache.timestamp) {
-            (int256 price, uint256 time) = IPriceOracle(_oracle)
-                .priceTWAPShort();
+            (int256 price, uint256 time) = IOracle(_oracle).priceTWAPShort();
             _indexPriceCache = OraclePriceData({price: price, timestamp: time});
         }
         return _indexPriceCache;

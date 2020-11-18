@@ -9,7 +9,7 @@ contract ShareToken {
     using SafeMathExt for uint256;
 
     /// @notice EIP-20 token name for this token
-    string public constant name = "maiv3 share token";
+    string public constant name = "MAIv3 Share Token";
 
     /// @notice EIP-20 token symbol for this token
     string public constant symbol = "STK";
@@ -31,9 +31,6 @@ contract ShareToken {
 
     // A record of each accounts entryInsurance
     mapping(address => uint256) internal entryInsurances;
-
-    address private _minter;
-    address private _burner;
 
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
@@ -60,6 +57,8 @@ contract ShareToken {
     /// @notice A record of states for signing / validating signatures
     mapping(address => uint256) public nonces;
 
+    address private _owner;
+
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(
         address indexed delegator,
@@ -84,23 +83,27 @@ contract ShareToken {
         uint256 amount
     );
 
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "");
+        _;
+    }
+
     /**
      * @notice Construct a new Comp token
-     * @param account The initial account to grant all the tokens
+     * @param owner The initial account to grant all the tokens
      */
-    constructor(address account) public {
-        _minter = account;
-        _burner = account;
+    constructor(address owner) {
+        _owner = owner;
     }
 
     function updateEntryInsurance(
         address account,
-        uint256 entryInsurance,
+        uint256 _entryInsurance,
         uint256 amount
     ) internal {
         entryInsurances[account] = entryInsurances[account]
             .wmul(balances[account])
-            .add(entryInsurance.wmul(amount))
+            .add(_entryInsurance.wmul(amount))
             .wdiv(balances[account].add(amount));
     }
 
@@ -117,8 +120,7 @@ contract ShareToken {
         address account,
         uint256 amount,
         uint256 insurance
-    ) public {
-        require(msg.sender == _minter, "Only minter can mint");
+    ) public onlyOwner {
         require(account != address(0), "Mint to the zero address");
 
         totalSupply = totalSupply.add(amount);
@@ -142,8 +144,7 @@ contract ShareToken {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function burn(address account, uint256 amount) public {
-        require(msg.sender == _burner, "Only burner can burn");
+    function burn(address account, uint256 amount) public onlyOwner {
         require(account != address(0), "Burn from the zero address");
 
         balances[account] = balances[account].sub(

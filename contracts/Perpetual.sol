@@ -2,6 +2,8 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./libraries/Error.sol";
@@ -16,19 +18,7 @@ import "./State.sol";
 import "./Settle.sol";
 import "./AccessControl.sol";
 
-interface IOracle {
-    function collateral() external view returns (address);
-
-    function underlyingAsset() external view returns (string memory);
-
-    function priceTWAPLong()
-        external
-        returns (int256 newPrice, uint256 newTimestamp);
-
-    function priceTWAPShort()
-        external
-        returns (int256 newPrice, uint256 newTimestamp);
-}
+import "./interface/IOracle.sol";
 
 contract Perpetual is
     Context,
@@ -38,6 +28,16 @@ contract Perpetual is
     Collateral,
     ReentrancyGuard
 {
+    using SafeMath for uint256;
+    using SafeMathExt for int256;
+    using SignedSafeMath for int256;
+
+    event Deposit(address trader, int256 amount);
+    event Withdraw(address trader, int256 amount);
+    event Clear(address trader);
+    event AddLiquidatity(address trader, int256 amount);
+    event RemoveLiquidatity(address trader, int256 amount);
+    event DonateInsuranceFund(address trader, int256 amount);
     event TradePosition(
         address trader,
         int256 positionAmount,
@@ -70,6 +70,7 @@ contract Perpetual is
         address operator,
         address oracle,
         address voter,
+        address shareToken,
         int256[CORE_PARAMETER_COUNT] calldata coreParams,
         int256[RISK_PARAMETER_COUNT] calldata riskParams,
         int256[RISK_PARAMETER_COUNT] calldata minRiskParamValues,
@@ -78,9 +79,10 @@ contract Perpetual is
         _oracle = oracle;
         _factory = _msgSender();
 
-        __CoreInitialize(operator, voter, coreParams);
-        __CollateralInitialize(IOracle(_oracle).collateral());
+        __CoreInitialize(operator, voter, shareToken, coreParams);
+        __OracleInitialize(oracle);
         __FundingInitialize(riskParams, minRiskParamValues, maxRiskParamValues);
+        __CollateralInitialize(IOracle(_oracle).collateral());
     }
 
     modifier updateFunding() {
@@ -201,6 +203,7 @@ contract Perpetual is
         oracle = _oracle;
         operator = _operator;
         voter = _voter;
+        shareToken = _shareToken;
         vault = _vault;
     }
 
@@ -261,7 +264,14 @@ contract Perpetual is
         fundingTime = _fundingState.fundingTime;
     }
 
-    // trade
+    // actions
+    function shutdown() external whenNormal {
+        require(
+            _now().sub(_indexPriceData().timestamp) > 24 * 3600,
+            "index price timeout"
+        );
+        _enterEmergencyState();
+    }
 
     function claimFee(address claimer, int256 amount) external nonReentrant {
         require(amount != 0, "zero amount");
@@ -279,7 +289,15 @@ contract Perpetual is
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
         _transferFromUser(trader, amount);
-        _deposit(trader, amount);
+        _updateCashBalance(trader, amount);
+        emit Withdraw(trader, amount);
+    }
+
+    function donateInsuranceFund(int256 amount) internal {
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        _insuranceFund2 = _insuranceFund2.add(amount);
+        _transferFromUser(_msgSender(), amount);
+        emit DonateInsuranceFund(_msgSender(), amount);
     }
 
     function withdraw(address trader, int256 amount)
@@ -291,20 +309,39 @@ contract Perpetual is
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        _withdraw(trader, amount);
+        _updateCashBalance(trader, amount.neg());
+        _isInitialMarginSafe(trader);
         _transferFromUser(trader, amount);
+    }
+
+    function numTraderToClear() external view whenEmergency returns (uint256) {
+        return _numTraderToClear();
+    }
+
+    function listTraderToClear(uint256 begin, uint256 end)
+        external
+        view
+        whenEmergency
+        returns (address[] memory)
+    {
+        return _listTraderToClear(begin, end);
+    }
+
+    function clear(address trader) external whenEmergency {
+        _clear(trader);
+        emit Clear(trader);
     }
 
     function settle(address trader)
         external
-        updateFunding
         authRequired(trader, Constant.PRIVILEGE_WITHDRAW)
+        whenShuttingDown
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
 
         int256 withdrawable = _settle(trader);
-        _withdraw(trader, withdrawable);
+        _updateCashBalance(trader, withdrawable.neg());
         _transferFromUser(trader, withdrawable);
         emit Withdraw(trader, withdrawable);
     }
@@ -312,12 +349,13 @@ contract Perpetual is
     function addLiquidatity(address trader, int256 amount)
         external
         updateFunding
+        whenNormal
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
-        _deposit(address(this), amount);
+        _updateCashBalance(address(this), amount);
         _transferFromUser(trader, amount);
         emit AddLiquidatity(trader, amount);
     }
@@ -325,6 +363,7 @@ contract Perpetual is
     function removeLiquidatity(address trader, int256 amount)
         external
         updateFunding
+        whenNormal
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
