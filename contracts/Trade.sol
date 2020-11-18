@@ -23,6 +23,15 @@ contract Trade is Context, Funding, Fee {
     int256 internal _insuranceFund1;
     int256 internal _insuranceFund2;
 
+    event ClosePosition(
+        address trader,
+        int256 positionAmount,
+        int256 price,
+        int256 fundingLoss
+    );
+
+    event OpenPosition(address trader, int256 positionAmount, int256 price);
+
     function _removeLiquidity(address trader, int256 amount) internal {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
@@ -169,16 +178,14 @@ contract Trade is Context, Funding, Fee {
             int256 lpFee,
             int256 rebate
         ) = _tradingFee(deltaMargin, referrer);
-        (closingAmount, openingAmount) = _updatePosition(
+
+        (closingAmount, openingAmount) = _updateMarginAccount(
             trader,
-            positionAmount
+            positionAmount,
+            deltaMargin.neg(),
+            lpFee.add(vaultFee).add(operatorFee).neg()
         );
-        _updatePosition(_self(), positionAmount.neg());
-        _updateCashBalance(
-            trader,
-            deltaMargin.add(lpFee).add(vaultFee).add(operatorFee).neg()
-        );
-        _updateCashBalance(_self(), deltaMargin.add(lpFee));
+        _updateMarginAccount(_self(), positionAmount.neg(), deltaMargin, lpFee);
         // fee
         _increaseClaimableFee(_vault, vaultFee);
         _increaseClaimableFee(_operator, operatorFee);
@@ -229,10 +236,13 @@ contract Trade is Context, Funding, Fee {
         int256 markPrice = _markPrice();
         _validatePrice(positionAmount, markPrice, priceLimit);
         deltaMargin = markPrice.wmul(positionAmount);
-        (closingAmount, openingAmount) = _updatePosition(taker, positionAmount);
-        _updatePosition(maker, positionAmount.neg());
-        _updateCashBalance(taker, deltaMargin.neg());
-        _updateCashBalance(maker, deltaMargin);
+        (closingAmount, openingAmount) = _updateMarginAccount(
+            taker,
+            positionAmount,
+            deltaMargin.neg(),
+            0
+        );
+        _updateMarginAccount(maker, positionAmount.neg(), deltaMargin, 0);
     }
 
     function _validatePrice(
@@ -279,21 +289,30 @@ contract Trade is Context, Funding, Fee {
         }
     }
 
-    function _updatePosition(address trader, int256 amount)
-        internal
-        returns (int256 closingAmount, int256 openingAmount)
-    {
+    function _updateMarginAccount(
+        address trader,
+        int256 deltaPositionAmount,
+        int256 deltaMargin,
+        int256 fee
+    ) internal returns (int256 closingAmount, int256 openingAmount) {
         MarginAccount memory account = _marginAccounts[trader];
         (closingAmount, openingAmount) = Utils.splitAmount(
             account.positionAmount,
-            amount
+            deltaPositionAmount
         );
+        int256 price = deltaMargin.wdiv(deltaPositionAmount);
         if (closingAmount != 0) {
             _closePosition(account, closingAmount);
+            int256 fundingLoss = _marginAccounts[trader].cashBalance.sub(
+                account.cashBalance
+            );
+            emit ClosePosition(trader, deltaPositionAmount, price, fundingLoss);
         }
         if (openingAmount != 0) {
             _openPosition(account, openingAmount);
+            emit OpenPosition(trader, deltaPositionAmount, price);
         }
+        account.cashBalance = account.cashBalance.add(deltaMargin).add(fee);
         _marginAccounts[trader] = account;
     }
 
