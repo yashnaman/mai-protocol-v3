@@ -303,7 +303,7 @@ contract Perpetual is
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
 
-        int256 withdrawable = _settle();
+        int256 withdrawable = _settle(trader);
         _withdraw(trader, withdrawable);
         _transferFromUser(trader, withdrawable);
         emit Withdraw(trader, withdrawable);

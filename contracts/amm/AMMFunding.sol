@@ -34,7 +34,7 @@ library AMMFunding {
         int256 deltaUnitAccFundingLoss;
         int256 tmpUnitAccFundingLoss = fundingState.unitAccFundingLoss;
         // lastFundingTime => price time
-        if (indexPriceTimestamp > fundingState.lastFundingTime) {
+        if (indexPriceTimestamp > fundingState.fundingTime) {
             deltaUnitAccFundingLoss = deltaFundingLoss(
                 fundingState.fundingRate,
                 fundingState.indexPrice,
