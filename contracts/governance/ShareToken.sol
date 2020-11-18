@@ -4,15 +4,15 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
-contract LPShareToken {
+contract ShareToken {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
 
     /// @notice EIP-20 token name for this token
-    string public constant name = "LP_SHARE_TOKEN";
+    string public constant name = "maiv3 share token";
 
     /// @notice EIP-20 token symbol for this token
-    string public constant symbol = "LP";
+    string public constant symbol = "STK";
 
     /// @notice EIP-20 token decimals for this token
     uint8 public constant decimals = 18;

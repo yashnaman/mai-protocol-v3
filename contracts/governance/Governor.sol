@@ -4,12 +4,12 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
-contract GovernorAlpha {
+contract Governor {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
 
     /// @notice The name of this contract
-    string public constant name = "Mcdex LP Governor Alpha";
+    string public constant name = "MCDEX LP Governor";
 
     /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVoteRate() public pure returns (uint256) {
@@ -40,7 +40,7 @@ contract GovernorAlpha {
     TimelockInterface public timelock;
 
     /// @notice The address of the governance token
-    LPShareTokenInterface public lp;
+    LPShareTokenInterface public lpToken;
 
     /// @notice The total number of proposals
     uint256 public proposalCount;
@@ -52,8 +52,6 @@ contract GovernorAlpha {
         address proposer;
         // the ordered list of target addresses for calls to be made
         address[] targets;
-        // The ordered list of values (i.e. msg.value) to be passed to the calls to be made
-        uint256[] values;
         // The ordered list of function signatures to be called
         string[] signatures;
         // The ordered list of calldata to be passed to each call
@@ -106,7 +104,6 @@ contract GovernorAlpha {
         uint256 id,
         address proposer,
         address[] targets,
-        uint256[] values,
         string[] signatures,
         bytes[] calldatas,
         uint256 startBlock,
@@ -125,25 +122,23 @@ contract GovernorAlpha {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
 
-    constructor(address timelock_, address lp_) public {
+    constructor(address timelock_, address lpToken_) {
         timelock = TimelockInterface(timelock_);
-        lp = LPShareTokenInterface(lp_);
+        lpToken = LPShareTokenInterface(lpToken_);
     }
 
     function propose(
         address[] memory targets,
-        uint256[] memory values,
         string[] memory signatures,
         bytes[] memory calldatas,
         string memory description
     ) public returns (uint256) {
         require(
-            lp.getPriorVotes(msg.sender, block.number.sub(1)) >
-                proposalRateThreshold().wmul(lp.totalSupply()),
+            lpToken.getPriorVotes(msg.sender, block.number.sub(1)) >
+                proposalRateThreshold().wmul(lpToken.totalSupply()),
             "GovernorAlpha::propose: proposer votes below proposal threshold"
         );
         require(
-            targets.length == values.length &&
                 targets.length == signatures.length &&
                 targets.length == calldatas.length,
             "GovernorAlpha::propose: proposal function information arity mismatch"
@@ -179,7 +174,6 @@ contract GovernorAlpha {
         proposals[proposalCount].id = proposalCount;
         proposals[proposalCount].proposer = msg.sender;
         proposals[proposalCount].targets = targets;
-        proposals[proposalCount].values = values;
         proposals[proposalCount].signatures = signatures;
         proposals[proposalCount].calldatas = calldatas;
         proposals[proposalCount].startBlock = startBlock;
@@ -194,7 +188,6 @@ contract GovernorAlpha {
             proposalCount,
             msg.sender,
             targets,
-            values,
             signatures,
             calldatas,
             startBlock,
@@ -212,9 +205,8 @@ contract GovernorAlpha {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction{value: proposal.values[i]}(
+            timelock.executeTransaction(
                 proposal.targets[i],
-                proposal.values[i],
                 proposal.signatures[i],
                 proposal.calldatas[i],
                 proposal.endBlock.add(timelock.delay())
@@ -228,13 +220,12 @@ contract GovernorAlpha {
         view
         returns (
             address[] memory targets,
-            uint256[] memory values,
             string[] memory signatures,
             bytes[] memory calldatas
         )
     {
         Proposal storage p = proposals[proposalId];
-        return (p.targets, p.values, p.signatures, p.calldatas);
+        return (p.targets, p.signatures, p.calldatas);
     }
 
     function getReceipt(uint256 proposalId, address voter)
@@ -257,7 +248,7 @@ contract GovernorAlpha {
             return ProposalState.Active;
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.forVotes < quorumVoteRate().wmul(lp.totalSupply())
+            proposal.forVotes < quorumVoteRate().wmul(lpToken.totalSupply())
         ) {
             return ProposalState.Defeated;
         } else if (proposal.executed) {
@@ -320,7 +311,7 @@ contract GovernorAlpha {
             receipt.hasVoted == false,
             "GovernorAlpha::_castVote: voter already voted"
         );
-        uint256 votes = lp.getPriorVotes(voter, proposal.startBlock);
+        uint256 votes = lpToken.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
             proposal.forVotes = proposal.forVotes.add(votes);
@@ -351,7 +342,6 @@ interface TimelockInterface {
 
     function executeTransaction(
         address target,
-        uint256 value,
         string calldata signature,
         bytes calldata data,
         uint256 eta

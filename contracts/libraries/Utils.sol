@@ -33,4 +33,10 @@ library Utils {
             return (amount.neg(), amount.add(delta));
         }
     }
+
+    function chainID() public pure returns (uint256 id) {
+        assembly {
+            id := chainid()
+        }
+    }
 }

@@ -22,58 +22,55 @@ contract Settle is Funding {
     int256 internal _withdrawableMarginWithPosition;
     int256 internal _withdrawableMarginWithoutPosition;
 
-    EnumerableSet.AddressSet internal _registeredUsers;
-    EnumerableSet.AddressSet internal _clearedUsers;
+    EnumerableSet.AddressSet internal _registeredTraders;
+    EnumerableSet.AddressSet internal _clearedTraders;
 
-    function _registerUser(address user) internal {
-        _registeredUsers.add(user);
+    function _registerTrader(address trader) internal {
+        _registeredTraders.add(trader);
     }
 
-    function _deregisterUser(address user) internal {
-        _registeredUsers.remove(user);
+    function _deregisterTrader(address trader) internal {
+        _registeredTraders.remove(trader);
     }
 
-    function _numUserToClear() internal view returns (uint256) {
-        return _registeredUsers.length();
+    function _numTraderToClear() internal view returns (uint256) {
+        return _registeredTraders.length();
     }
 
-    function _listUserToClear(uint256 begin, uint256 end)
+    function _listTraderToClear(uint256 begin, uint256 end)
         internal
         view
         returns (address[] memory)
     {
-        require(end <= _registeredUsers.length(), "exceeded");
+        require(end <= _registeredTraders.length(), "exceeded");
         address[] memory result = new address[](end.sub(begin));
         for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = _registeredUsers.at(i);
+            result[i.sub(begin)] = _registeredTraders.at(i);
         }
         return result;
     }
 
     function _isCleared() internal view returns (bool) {
-        return _registeredUsers.length() == 0;
+        return _registeredTraders.length() == 0;
     }
 
-    function _clear(address user) internal {
-        int256 margin = _margin(user);
-        if (_marginAccounts[user].positionAmount != 0) {
+    function _clear(address trader) internal {
+        int256 margin = _margin(trader);
+        if (_marginAccounts[trader].positionAmount != 0) {
             _marginWithPosition = _marginWithPosition.add(margin);
         } else {
             _marginWithoutPosition = _marginWithoutPosition.add(margin);
         }
-        bool removed = _registeredUsers.remove(user);
+        bool removed = _registeredTraders.remove(trader);
         require(removed, "already cleared");
-        _clearedUsers.add(user);
+        _clearedTraders.add(trader);
 
         if (_isCleared()) {
             _setWithdrawableMargin();
         }
-
-        // _clearingPayout = _clearingPayout.add()
     }
 
     function _setWithdrawableMargin() internal {
-        // _collteral.balanceOf(aaa);
         int256 totalBalance;
         if (totalBalance < _marginWithoutPosition) {
             _withdrawableMarginWithoutPosition = totalBalance;
@@ -89,9 +86,9 @@ contract Settle is Funding {
         }
     }
 
-    function _settle(address user) internal returns (int256 amount) {
-        int256 margin = _margin(user);
-        if (_marginAccounts[user].positionAmount != 0) {
+    function _settle(address trader) internal returns (int256 amount) {
+        int256 margin = _margin(trader);
+        if (_marginAccounts[trader].positionAmount != 0) {
             amount = _withdrawableMarginWithPosition.wfrac(
                 margin,
                 _marginWithPosition

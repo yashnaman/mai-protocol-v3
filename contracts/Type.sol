@@ -10,9 +10,8 @@ struct Option {
 struct FundingState {
     int256 unitAccFundingLoss;
     int256 fundingRate;
-    int256 lastIndexPrice;
-    int256 lastFundingRate;
-    uint256 lastFundingTime;
+    int256 indexPrice;
+    uint256 fundingTime;
 }
 
 struct OraclePriceData {
@@ -41,8 +40,8 @@ struct RiskParameter {
     Option halfSpreadRate;
     Option beta1;
     Option beta2;
-    Option fundingRateCoefficent;
-    Option virtualLeverage;
+    Option fundingRateCoefficient;
+    Option targetLeverage;
 }
 
 enum ActionOnFailure {IGNORE, REVERT}

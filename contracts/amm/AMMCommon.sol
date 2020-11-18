@@ -20,17 +20,17 @@ library AMMCommon {
         int256 mc,
         int256 positionAmount,
         int256 indexPrice,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) internal pure returns (int256 mv, int256 m0) {
         if (positionAmount == 0) {
-            mv = virtualLeverage.sub(Constant.SIGNED_ONE).wmul(mc);
+            mv = targetLeverage.sub(Constant.SIGNED_ONE).wmul(mc);
         } else if (positionAmount > 0) {
             mv = longVirtualMargin(
                 mc,
                 positionAmount,
                 indexPrice,
-                virtualLeverage,
+                targetLeverage,
                 beta
             );
         } else {
@@ -38,30 +38,27 @@ library AMMCommon {
                 mc,
                 positionAmount,
                 indexPrice,
-                virtualLeverage,
+                targetLeverage,
                 beta
             );
         }
-        m0 = mv.wfrac(
-            virtualLeverage,
-            virtualLeverage.sub(Constant.SIGNED_ONE)
-        );
+        m0 = mv.wfrac(targetLeverage, targetLeverage.sub(Constant.SIGNED_ONE));
     }
 
     function longVirtualMargin(
         int256 mc,
         int256 positionAmount,
         int256 indexPrice,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) internal pure returns (int256 mv) {
-        int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
+        int256 t = targetLeverage.sub(Constant.SIGNED_ONE);
         int256 b = t.wmul(indexPrice.wmul(positionAmount)).add(
-            virtualLeverage.wmul(mc)
+            targetLeverage.wmul(mc)
         );
         int256 beforeSqrt = beta
             .wmul(indexPrice)
-            .wmul(virtualLeverage)
+            .wmul(targetLeverage)
             .wmul(mc)
             .mul(positionAmount)
             .mul(4);
@@ -75,21 +72,21 @@ library AMMCommon {
         int256 mc,
         int256 positionAmount,
         int256 indexPrice,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) internal pure returns (int256 mv) {
         int256 a = indexPrice.wmul(positionAmount).mul(2);
-        int256 b = virtualLeverage
+        int256 b = targetLeverage
             .add(Constant.SIGNED_ONE)
             .wmul(indexPrice)
             .wmul(positionAmount)
-            .add(virtualLeverage.wmul(mc));
+            .add(targetLeverage.wmul(mc));
         int256 beforeSqrt = b.mul(b).sub(
-            beta.wmul(virtualLeverage).wmul(a).mul(a)
+            beta.wmul(targetLeverage).wmul(a).mul(a)
         );
         mv = b.sub(a).add(beforeSqrt.sqrt());
         mv = mv
-            .wfrac(virtualLeverage.sub(Constant.SIGNED_ONE), virtualLeverage)
+            .wfrac(targetLeverage.sub(Constant.SIGNED_ONE), targetLeverage)
             .div(2);
     }
 
@@ -107,7 +104,7 @@ library AMMCommon {
         int256 mc,
         int256 positionAmount,
         int256 indexPrice,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) internal pure returns (bool) {
         if (positionAmount == 0 || (positionAmount > 0 && mc >= 0)) {
@@ -116,34 +113,24 @@ library AMMCommon {
         if (positionAmount > 0) {
             return
                 indexPrice >=
-                _indexLowerbound(
-                    mc,
-                    positionAmount,
-                    virtualLeverage,
-                    beta
-                );
+                _indexLowerbound(mc, positionAmount, targetLeverage, beta);
         } else {
             return
                 indexPrice <=
-                _indexUpperbound(
-                    mc,
-                    positionAmount,
-                    virtualLeverage,
-                    beta
-                );
+                _indexUpperbound(mc, positionAmount, targetLeverage, beta);
         }
     }
 
     function _indexLowerbound(
         int256 mc,
         int256 positionAmount,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) private pure returns (int256 lowerbound) {
-        int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
+        int256 t = targetLeverage.sub(Constant.SIGNED_ONE);
         lowerbound = t.add(beta).mul(beta);
         lowerbound = lowerbound.sqrt().mul(2).add(t).add(beta.mul(2));
-        lowerbound = lowerbound.wfrac(virtualLeverage, positionAmount).wfrac(
+        lowerbound = lowerbound.wfrac(targetLeverage, positionAmount).wfrac(
             mc.neg(),
             t.wmul(t)
         );
@@ -152,17 +139,17 @@ library AMMCommon {
     function _indexUpperbound(
         int256 mc,
         int256 positionAmount,
-        int256 virtualLeverage,
+        int256 targetLeverage,
         int256 beta
     ) private pure returns (int256 upperbound) {
         upperbound = beta
-            .mul(virtualLeverage)
+            .mul(targetLeverage)
             .sqrt()
             .mul(2)
-            .add(virtualLeverage)
+            .add(targetLeverage)
             .add(Constant.SIGNED_ONE);
-        upperbound = virtualLeverage
-            .wfrac(mc, positionAmount.neg())
-            .wdiv(upperbound);
+        upperbound = targetLeverage.wfrac(mc, positionAmount.neg()).wdiv(
+            upperbound
+        );
     }
 }

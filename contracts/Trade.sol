@@ -23,17 +23,20 @@ contract Trade is Context, Funding, Fee {
     int256 internal _insuranceFund1;
     int256 internal _insuranceFund2;
 
+    event Deposit(address trader, int256 collateralAmount);
+    event Withdraw(address trader, int256 collateralAmount);
+    event AddLiquidatity(address trader, int256 collateralAmount);
+    event RemoveLiquidatity(address trader, int256 collateralAmount);
+
     function _deposit(address trader, int256 amount) internal {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
         _updateCashBalance(trader, amount);
+        emit Deposit(trader, amount);
     }
 
     function _withdraw(address trader, int256 amount) internal {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
         _updateCashBalance(trader, amount.neg());
         _isInitialMarginSafe(trader);
+        emit Withdraw(trader, amount);
     }
 
     function _donateInsuranceFund(int256 amount) internal {
@@ -180,7 +183,6 @@ contract Trade is Context, Funding, Fee {
             deltaMargin.wdiv(positionAmount),
             priceLimit
         );
-
         (
             int256 vaultFee,
             int256 operatorFee,

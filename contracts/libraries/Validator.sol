@@ -54,10 +54,10 @@ library Validator {
                 param.beta2.value < param.beta1.value,
             ""
         );
-        require(param.fundingRateCoefficent.value >= 0, "");
+        require(param.fundingRateCoefficient.value >= 0, "");
         require(
-            param.virtualLeverage.value > Constant.SIGNED_ONE &&
-                param.virtualLeverage.value < Constant.SIGNED_ONE * 10,
+            param.targetLeverage.value > Constant.SIGNED_ONE &&
+                param.targetLeverage.value < Constant.SIGNED_ONE * 10,
             ""
         );
     }

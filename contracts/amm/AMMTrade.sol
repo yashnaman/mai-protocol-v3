@@ -58,7 +58,9 @@ library AMMTrade {
         deltaMargin = deltaMargin.add(openDeltaMargin);
         deltaPosition = closingAmount.add(openDeltaPosition);
         int256 spread = riskParameter.halfSpreadRate.value.wmul(deltaMargin);
-        deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
+        deltaMargin = deltaMargin > 0
+            ? deltaMargin.add(spread)
+            : deltaMargin.sub(spread);
     }
 
     function calculateRemovingLiquidityPenalty(
@@ -78,7 +80,7 @@ library AMMTrade {
                 cashBalance,
                 positionAmount,
                 indexPrice,
-                riskParameter.virtualLeverage.value,
+                riskParameter.targetLeverage.value,
                 riskParameter.beta1.value
             ),
             "unsafe before trade"
@@ -89,7 +91,7 @@ library AMMTrade {
                 newCashBalance,
                 positionAmount,
                 indexPrice,
-                riskParameter.virtualLeverage.value,
+                riskParameter.targetLeverage.value,
                 riskParameter.beta1.value
             ),
             "unsafe before trade"
@@ -98,18 +100,18 @@ library AMMTrade {
             cashBalance,
             positionAmount,
             indexPrice,
-            riskParameter.virtualLeverage.value,
+            riskParameter.targetLeverage.value,
             riskParameter.beta1.value
         );
         (, int256 newM0) = AMMCommon.regress(
             newCashBalance,
             positionAmount,
             indexPrice,
-            riskParameter.virtualLeverage.value,
+            riskParameter.targetLeverage.value,
             riskParameter.beta1.value
         );
         penalty = m0.sub(newM0).sub(
-            riskParameter.virtualLeverage.value.wmul(amount)
+            riskParameter.targetLeverage.value.wmul(amount)
         );
         penalty = penalty < 0 ? 0 : amount;
     }
@@ -125,15 +127,17 @@ library AMMTrade {
         if (tradingAmount == 0) {
             return (0, 0);
         }
-        int256 virtualLeverage = riskParameter.virtualLeverage.value;
+        int256 targetLeverage = riskParameter.targetLeverage.value;
         int256 beta1 = riskParameter.beta1.value;
-        if (! AMMCommon.isAMMMarginSafe(
-            mc,
-            positionAmount,
-            indexPrice,
-            virtualLeverage,
-            beta1
-        )) {
+        if (
+            !AMMCommon.isAMMMarginSafe(
+                mc,
+                positionAmount,
+                indexPrice,
+                targetLeverage,
+                beta1
+            )
+        ) {
             if (partialFill) {
                 return (0, 0);
             } else {
@@ -149,20 +153,33 @@ library AMMTrade {
                 mc,
                 positionAmount,
                 indexPrice,
-                virtualLeverage,
+                targetLeverage,
                 beta1
             );
-           ma1 = mc.add(mv);
+            ma1 = mc.add(mv);
         }
 
         int256 newPosition = positionAmount.add(tradingAmount);
         int256 maxPosition;
         if (newPosition > 0) {
-            maxPosition = _maxLongPosition(m0, indexPrice, beta1, virtualLeverage);
+            maxPosition = _maxLongPosition(
+                m0,
+                indexPrice,
+                beta1,
+                targetLeverage
+            );
         } else {
-            maxPosition = _maxShortPosition(m0, indexPrice, beta1, virtualLeverage);
+            maxPosition = _maxShortPosition(
+                m0,
+                indexPrice,
+                beta1,
+                targetLeverage
+            );
         }
-        if ((newPosition > maxPosition && newPosition > 0) || (newPosition < maxPosition && newPosition < 0)) {
+        if (
+            (newPosition > maxPosition && newPosition > 0) ||
+            (newPosition < maxPosition && newPosition < 0)
+        ) {
             if (partialFill) {
                 deltaPosition = maxPosition.sub(positionAmount);
                 newPosition = maxPosition;
@@ -181,7 +198,7 @@ library AMMTrade {
                 indexPrice,
                 beta1
             );
-       } else {
+        } else {
             deltaMargin = shortDeltaMargin(
                 m0,
                 positionAmount,
@@ -202,28 +219,31 @@ library AMMTrade {
         if (tradingAmount == 0) {
             return 0;
         }
-        require(positionAmount != 0, "Zero position amount before close position");
-        int256 virtualLeverage = riskParameter.virtualLeverage.value;
+        require(
+            positionAmount != 0,
+            "Zero position amount before close position"
+        );
+        int256 targetLeverage = riskParameter.targetLeverage.value;
         int256 closingBeta = riskParameter.beta2.value;
         if (
             AMMCommon.isAMMMarginSafe(
                 mc,
                 positionAmount,
                 indexPrice,
-                virtualLeverage,
+                targetLeverage,
                 closingBeta
             )
         ) {
             (int256 mv, int256 m0) = AMMCommon.regress(
                 indexPrice,
-                virtualLeverage,
+                targetLeverage,
                 mc,
                 positionAmount,
                 closingBeta
             );
             int256 newPositionAmount = positionAmount.add(tradingAmount);
             if (newPositionAmount == 0) {
-                return m0.wdiv(virtualLeverage).sub(mc);
+                return m0.wdiv(targetLeverage).sub(mc);
             } else {
                 if (positionAmount > 0) {
                     deltaMargin = longDeltaMargin(
@@ -291,9 +311,9 @@ library AMMTrade {
         int256 m0,
         int256 indexPrice,
         int256 beta,
-        int256 virtualLeverage
+        int256 targetLeverage
     ) private pure returns (int256 maxLongPosition) {
-        if (beta.wmul(virtualLeverage) == Constant.SIGNED_ONE.sub(beta)) {
+        if (beta.wmul(targetLeverage) == Constant.SIGNED_ONE.sub(beta)) {
             maxLongPosition = beta
                 .mul(2)
                 .neg()
@@ -302,14 +322,13 @@ library AMMTrade {
                 .wmul(indexPrice);
             maxLongPosition = m0.wdiv(maxLongPosition);
         } else {
-            int256 tmp1 = virtualLeverage.sub(Constant.SIGNED_ONE);
+            int256 tmp1 = targetLeverage.sub(Constant.SIGNED_ONE);
             int256 tmp2 = tmp1.add(beta);
             int256 tmp3 = beta.mul(2).sub(Constant.SIGNED_ONE);
             maxLongPosition = beta.mul(tmp2).sqrt();
-            maxLongPosition = beta
-                .add(tmp2)
-                .sub(Constant.SIGNED_ONE)
-                .wmul(maxLongPosition);
+            maxLongPosition = beta.add(tmp2).sub(Constant.SIGNED_ONE).wmul(
+                maxLongPosition
+            );
             maxLongPosition = tmp2
                 .wmul(tmp3)
                 .add(maxLongPosition)
@@ -322,14 +341,13 @@ library AMMTrade {
         int256 m0,
         int256 indexPrice,
         int256 beta,
-        int256 virtualLeverage
+        int256 targetLeverage
     ) private pure returns (int256 maxShortPosition) {
         maxShortPosition = beta
-            .mul(virtualLeverage)
+            .mul(targetLeverage)
             .sqrt()
             .add(Constant.SIGNED_ONE)
             .wmul(indexPrice);
         maxShortPosition = m0.wdiv(maxShortPosition).neg();
     }
 }
-

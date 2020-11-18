@@ -18,8 +18,48 @@ contract Funding is Context, Margin {
     using AMMFunding for FundingState;
     using Validator for RiskParameter;
 
+    uint256 internal constant RISK_PARAMETER_COUNT = 5;
+
     RiskParameter internal _riskParameter;
     FundingState internal _fundingState;
+
+    function __FundingInitialize(
+        int256[RISK_PARAMETER_COUNT] calldata riskParams,
+        int256[RISK_PARAMETER_COUNT] calldata minRiskParamValues,
+        int256[RISK_PARAMETER_COUNT] calldata maxRiskParamValues
+    ) internal {
+        _updateOption(
+            _riskParameter.halfSpreadRate,
+            riskParams[0],
+            minRiskParamValues[0],
+            maxRiskParamValues[0]
+        );
+        _updateOption(
+            _riskParameter.beta1,
+            riskParams[1],
+            minRiskParamValues[1],
+            maxRiskParamValues[1]
+        );
+        _updateOption(
+            _riskParameter.beta2,
+            riskParams[2],
+            minRiskParamValues[2],
+            maxRiskParamValues[2]
+        );
+        _updateOption(
+            _riskParameter.fundingRateCoefficient,
+            riskParams[3],
+            minRiskParamValues[3],
+            maxRiskParamValues[3]
+        );
+        _updateOption(
+            _riskParameter.targetLeverage,
+            riskParams[4],
+            minRiskParamValues[4],
+            maxRiskParamValues[4]
+        );
+        _riskParameter.validate();
+    }
 
     function _isFundingStateOutdated(uint256 priceTimestamp)
         internal
@@ -27,13 +67,13 @@ contract Funding is Context, Margin {
         returns (bool)
     {
         return
-            _fundingState.lastFundingTime != _now() ||
-            _fundingState.lastFundingTime != _indexPriceCache.timestamp ||
-            _fundingState.lastFundingTime < priceTimestamp;
+            _fundingState.fundingTime != _now() ||
+            _fundingState.fundingTime != _indexPriceCache.timestamp ||
+            _fundingState.fundingTime < priceTimestamp;
     }
 
     function _updateFundingState() internal {
-        if (_fundingState.lastFundingTime == 0) {
+        if (_fundingState.fundingTime == 0) {
             return;
         }
         OraclePriceData memory priceData = _indexPriceData();
@@ -107,10 +147,10 @@ contract Funding is Context, Margin {
             _adjustOption(_riskParameter.beta1, newValue);
         } else if (key == "beta2") {
             _adjustOption(_riskParameter.beta2, newValue);
-        } else if (key == "fundingRateCoefficent") {
-            _adjustOption(_riskParameter.fundingRateCoefficent, newValue);
-        } else if (key == "virtualLeverage") {
-            _adjustOption(_riskParameter.virtualLeverage, newValue);
+        } else if (key == "fundingRateCoefficient") {
+            _adjustOption(_riskParameter.fundingRateCoefficient, newValue);
+        } else if (key == "targetLeverage") {
+            _adjustOption(_riskParameter.targetLeverage, newValue);
         } else {
             revert("key not found");
         }
@@ -144,16 +184,16 @@ contract Funding is Context, Margin {
                 newMinValue,
                 newMaxValue
             );
-        } else if (key == "fundingRateCoefficent") {
+        } else if (key == "fundingRateCoefficient") {
             _updateOption(
-                _riskParameter.fundingRateCoefficent,
+                _riskParameter.fundingRateCoefficient,
                 newValue,
                 newMinValue,
                 newMaxValue
             );
-        } else if (key == "virtualLeverage") {
+        } else if (key == "targetLeverage") {
             _updateOption(
-                _riskParameter.virtualLeverage,
+                _riskParameter.targetLeverage,
                 newValue,
                 newMinValue,
                 newMaxValue

@@ -9,7 +9,6 @@ contract Timelock {
     event ExecuteTransaction(
         bytes32 indexed txHash,
         address indexed target,
-        uint256 value,
         string signature,
         bytes data,
         uint256 eta
@@ -38,13 +37,12 @@ contract Timelock {
 
     function executeTransaction(
         address target,
-        uint256 value,
         string memory signature,
         bytes memory data,
         uint256 eta
     ) public payable returns (bytes memory) {
         bytes32 txHash = keccak256(
-            abi.encode(target, value, signature, data, eta)
+            abi.encode(target, signature, data, eta)
         );
         require(
             block.number >= eta,
@@ -66,16 +64,13 @@ contract Timelock {
             );
         }
 
-        // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = target.call{value: value}(
-            callData
-        );
+        (bool success, bytes memory returnData) = target.call(callData);
         require(
             success,
             "Timelock::executeTransaction: Transaction execution reverted."
         );
 
-        emit ExecuteTransaction(txHash, target, value, signature, data, eta);
+        emit ExecuteTransaction(txHash, target, signature, data, eta);
 
         return returnData;
     }

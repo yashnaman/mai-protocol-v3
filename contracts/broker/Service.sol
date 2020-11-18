@@ -38,7 +38,7 @@ contract Service is Fee {
     event TradeSuccess(Order order, int256 amount, uint256 gasReward);
 
     // constructor() {
-    //     _chainID = _currentChainID();
+    //     _chainID = Utils.chainID();
     // }
 
     function batchTrade(
@@ -137,11 +137,5 @@ contract Service is Fee {
             }
         }
         return (true, "");
-    }
-
-    function _currentChainID() public pure returns (uint256 id) {
-        assembly {
-            id := chainid()
-        }
     }
 }

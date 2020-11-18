@@ -37,8 +37,8 @@ library AMMFunding {
         if (indexPriceTimestamp > fundingState.lastFundingTime) {
             deltaUnitAccFundingLoss = deltaFundingLoss(
                 fundingState.fundingRate,
-                fundingState.lastIndexPrice,
-                fundingState.lastFundingTime,
+                fundingState.indexPrice,
+                fundingState.fundingTime,
                 indexPriceTimestamp
             );
             tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
@@ -48,7 +48,7 @@ library AMMFunding {
                 fundingState,
                 riskParameter,
                 ammAccount,
-                fundingState.lastIndexPrice
+                fundingState.indexPrice
             );
         }
         // price time => now
@@ -67,8 +67,8 @@ library AMMFunding {
             ammAccount,
             indexPrice
         );
-        fundingState.lastIndexPrice = indexPrice;
-        fundingState.lastFundingTime = checkTimestamp;
+        fundingState.indexPrice = indexPrice;
+        fundingState.fundingTime = checkTimestamp;
         fundingState.fundingRate = tmpFundingRate;
         fundingState.unitAccFundingLoss = tmpUnitAccFundingLoss;
     }
@@ -123,7 +123,7 @@ library AMMFunding {
                     mc,
                     ammAccount.positionAmount,
                     indexPrice,
-                    riskParameter.virtualLeverage.value,
+                    riskParameter.targetLeverage.value,
                     riskParameter.beta1.value
                 ),
                 "amm unsafe"
@@ -132,7 +132,7 @@ library AMMFunding {
                 mc,
                 ammAccount.positionAmount,
                 indexPrice,
-                riskParameter.virtualLeverage.value,
+                riskParameter.targetLeverage.value,
                 riskParameter.beta1.value
             );
             if (ammAccount.positionAmount > 0) {
@@ -144,7 +144,7 @@ library AMMFunding {
                 );
             }
             newFundingRate = newFundingRate.wmul(
-                riskParameter.fundingRateCoefficent.value
+                riskParameter.fundingRateCoefficient.value
             );
         }
     }

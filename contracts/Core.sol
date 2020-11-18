@@ -17,9 +17,8 @@ interface IFactory {
 contract Core is Context {
     using Validator for CoreParameter;
 
-    int256 private constant BASIC_PARAMETER_LENGTH = 7;
+    int256 internal constant CORE_PARAMETER_COUNT = 7;
 
-    string internal _symbol;
     address internal _factory;
     address internal _operator;
     address internal _voter;
@@ -28,18 +27,16 @@ contract Core is Context {
     CoreParameter internal _coreParameter;
 
     function __CoreInitialize(
-        string calldata symbol,
         address operator,
         address voter,
-        int256[BASIC_PARAMETER_LENGTH] calldata params
+        int256[CORE_PARAMETER_COUNT] calldata params
     ) internal {
         require(operator != address(0), "invalid operator");
 
-        _symbol = symbol;
         _operator = operator;
         _voter = voter;
-
         _factory = _msgSender();
+
         _vault = IFactory(_factory).vault();
         _coreParameter.vaultFeeRate = IFactory(_factory).vaultFeeRate();
 
@@ -47,8 +44,9 @@ contract Core is Context {
         _coreParameter.maintenanceMarginRate = params[1];
         _coreParameter.operatorFeeRate = params[2];
         _coreParameter.lpFeeRate = params[3];
-        _coreParameter.liquidationPenaltyRate = params[4];
-        _coreParameter.keeperGasReward = params[5];
+        _coreParameter.referrerRebateRate = params[4];
+        _coreParameter.liquidationPenaltyRate = params[5];
+        _coreParameter.keeperGasReward = params[6];
 
         _coreParameter.validate();
     }
