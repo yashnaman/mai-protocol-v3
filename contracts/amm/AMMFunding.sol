@@ -24,53 +24,18 @@ library AMMFunding {
 
     function updateFundingState(
         FundingState storage fundingState,
-        RiskParameter storage riskParameter,
-        MarginAccount storage ammAccount,
-        int256 indexPrice,
-        uint256 indexPriceTimestamp,
         uint256 checkTimestamp
     ) internal {
-        int256 tmpFundingRate;
-        int256 deltaUnitAccFundingLoss;
-        int256 tmpUnitAccFundingLoss = fundingState.unitAccFundingLoss;
-        // lastFundingTime => price time
-        if (indexPriceTimestamp > fundingState.fundingTime) {
-            deltaUnitAccFundingLoss = deltaFundingLoss(
+        if (checkTimestamp > fundingState.fundingTime) {
+            int256 deltaUnitAccFundingLoss = deltaFundingLoss(
                 fundingState.fundingRate,
                 fundingState.indexPrice,
                 fundingState.fundingTime,
-                indexPriceTimestamp
+                checkTimestamp
             );
-            tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
-                deltaUnitAccFundingLoss
-            );
-            tmpFundingRate = fundingRate(
-                fundingState,
-                riskParameter,
-                ammAccount,
-                fundingState.indexPrice
-            );
+            fundingState.unitAccFundingLoss = fundingState.unitAccFundingLoss.add(deltaUnitAccFundingLoss);
+            fundingState.fundingTime = checkTimestamp;
         }
-        // price time => now
-        deltaUnitAccFundingLoss = deltaFundingLoss(
-            tmpFundingRate,
-            indexPrice,
-            indexPriceTimestamp,
-            checkTimestamp
-        );
-        tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
-            deltaUnitAccFundingLoss
-        );
-        tmpFundingRate = fundingRate(
-            fundingState,
-            riskParameter,
-            ammAccount,
-            indexPrice
-        );
-        fundingState.indexPrice = indexPrice;
-        fundingState.fundingTime = checkTimestamp;
-        fundingState.fundingRate = tmpFundingRate;
-        fundingState.unitAccFundingLoss = tmpUnitAccFundingLoss;
     }
 
     function updateFundingRate(
@@ -86,6 +51,7 @@ library AMMFunding {
             indexPrice
         );
         fundingState.fundingRate = newFundingRate;
+        fundingState.indexPrice = indexPrice;
     }
 
     function deltaFundingLoss(

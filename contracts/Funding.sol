@@ -81,10 +81,6 @@ contract Funding is Context, Margin {
             return;
         }
         _fundingState.updateFundingState(
-            _riskParameter,
-            _marginAccounts[_self()],
-            priceData.price,
-            priceData.timestamp,
             _now()
         );
     }
