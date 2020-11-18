@@ -17,25 +17,25 @@ library AMMCommon {
     using SignedSafeMath for int256;
 
     function regress(
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 indexPrice,
         int256 virtualLeverage,
         int256 beta
     ) internal pure returns (int256 mv, int256 m0) {
         if (positionAmount == 0) {
-            mv = virtualLeverage.sub(Constant.SIGNED_ONE).wmul(cashBalance);
+            mv = virtualLeverage.sub(Constant.SIGNED_ONE).wmul(mc);
         } else if (positionAmount > 0) {
-            mv = calculateLongVirtualMargin(
-                cashBalance,
+            mv = longVirtualMargin(
+                mc,
                 positionAmount,
                 indexPrice,
                 virtualLeverage,
                 beta
             );
         } else {
-            mv = calculateShortVirtualMargin(
-                cashBalance,
+            mv = shortVirtualMargin(
+                mc,
                 positionAmount,
                 indexPrice,
                 virtualLeverage,
@@ -48,8 +48,8 @@ library AMMCommon {
         );
     }
 
-    function calculateLongVirtualMargin(
-        int256 cashBalance,
+    function longVirtualMargin(
+        int256 mc,
         int256 positionAmount,
         int256 indexPrice,
         int256 virtualLeverage,
@@ -57,21 +57,22 @@ library AMMCommon {
     ) internal pure returns (int256 mv) {
         int256 t = virtualLeverage.sub(Constant.SIGNED_ONE);
         int256 b = t.wmul(indexPrice.wmul(positionAmount)).add(
-            virtualLeverage.wmul(cashBalance)
+            virtualLeverage.wmul(mc)
         );
         int256 beforeSqrt = beta
             .wmul(indexPrice)
-            .wmul(virtualLeverage.wmul(cashBalance))
+            .wmul(virtualLeverage)
+            .wmul(mc)
             .mul(positionAmount)
             .mul(4);
         beforeSqrt = beforeSqrt.add(b.mul(b));
-        mv = beta.sub(Constant.SIGNED_ONE).wmul(cashBalance).mul(2);
+        mv = beta.sub(Constant.SIGNED_ONE).wmul(mc).mul(2);
         mv = mv.add(beforeSqrt.sqrt()).add(b);
         mv = mv.wfrac(t, t.add(beta)).div(2);
     }
 
-    function calculateShortVirtualMargin(
-        int256 cashBalance,
+    function shortVirtualMargin(
+        int256 mc,
         int256 positionAmount,
         int256 indexPrice,
         int256 virtualLeverage,
@@ -80,8 +81,9 @@ library AMMCommon {
         int256 a = indexPrice.wmul(positionAmount).mul(2);
         int256 b = virtualLeverage
             .add(Constant.SIGNED_ONE)
-            .wmul(indexPrice.wmul(positionAmount))
-            .add(virtualLeverage.wmul(cashBalance));
+            .wmul(indexPrice)
+            .wmul(positionAmount)
+            .add(virtualLeverage.wmul(mc));
         int256 beforeSqrt = b.mul(b).sub(
             beta.wmul(virtualLeverage).wmul(a).mul(a)
         );
@@ -91,31 +93,31 @@ library AMMCommon {
             .div(2);
     }
 
-    function calculateCashBalance(
+    function availableCashBalance(
         MarginAccount storage account,
         int256 unitAccFundingLoss
     ) internal view returns (int256) {
         return
-            account.positionAmount.wmul(unitAccFundingLoss).sub(
-                account.cashBalance
+            account.cashBalance.sub(
+                account.positionAmount.wmul(unitAccFundingLoss)
             );
     }
 
     function isAMMMarginSafe(
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 indexPrice,
         int256 virtualLeverage,
         int256 beta
     ) internal pure returns (bool) {
-        if (positionAmount == 0 || (positionAmount > 0 && cashBalance < 0)) {
+        if (positionAmount == 0 || (positionAmount > 0 && mc >= 0)) {
             return true;
         }
         if (positionAmount > 0) {
             return
                 indexPrice >=
                 _indexLowerbound(
-                    cashBalance,
+                    mc,
                     positionAmount,
                     virtualLeverage,
                     beta
@@ -124,7 +126,7 @@ library AMMCommon {
             return
                 indexPrice <=
                 _indexUpperbound(
-                    cashBalance,
+                    mc,
                     positionAmount,
                     virtualLeverage,
                     beta
@@ -133,7 +135,7 @@ library AMMCommon {
     }
 
     function _indexLowerbound(
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 virtualLeverage,
         int256 beta
@@ -142,13 +144,13 @@ library AMMCommon {
         lowerbound = t.add(beta).mul(beta);
         lowerbound = lowerbound.sqrt().mul(2).add(t).add(beta.mul(2));
         lowerbound = lowerbound.wfrac(virtualLeverage, positionAmount).wfrac(
-            cashBalance.neg(),
+            mc.neg(),
             t.wmul(t)
         );
     }
 
     function _indexUpperbound(
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 virtualLeverage,
         int256 beta
@@ -160,7 +162,7 @@ library AMMCommon {
             .add(virtualLeverage)
             .add(Constant.SIGNED_ONE);
         upperbound = virtualLeverage
-            .wfrac(cashBalance, positionAmount.neg())
+            .wfrac(mc, positionAmount.neg())
             .wdiv(upperbound);
     }
 }

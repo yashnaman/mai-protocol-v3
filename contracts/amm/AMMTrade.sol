@@ -22,15 +22,16 @@ library AMMTrade {
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    function calculateDeltaMargin(
+    function trade(
         FundingState storage fundingState,
         RiskParameter storage riskParameter,
         MarginAccount storage ammAccount,
         int256 indexPrice,
-        int256 tradingAmount
-    ) internal view returns (int256 deltaMargin) {
-        require(tradingAmount != 0, "no zero trade amount");
-        int256 cashBalance = AMMCommon.calculateCashBalance(
+        int256 tradingAmount,
+        bool partialFill
+    ) internal view returns (int256 deltaMargin, int256 deltaPosition) {
+        require(tradingAmount != 0, "Zero trade amount");
+        int256 mc = AMMCommon.availableCashBalance(
             ammAccount,
             fundingState.unitAccFundingLoss
         );
@@ -39,27 +40,25 @@ library AMMTrade {
             positionAmount,
             tradingAmount
         );
-        // TC说这个不对
-        deltaMargin = deltaMargin.add(
-            closePosition(
-                riskParameter,
-                indexPrice,
-                cashBalance,
-                positionAmount,
-                closingAmount
-            )
+        deltaMargin = closePosition(
+            riskParameter,
+            indexPrice,
+            mc,
+            positionAmount,
+            closingAmount
         );
-        deltaMargin = deltaMargin.add(
-            openPosition(
-                riskParameter,
-                indexPrice,
-                cashBalance.add(deltaMargin),
-                positionAmount.add(closingAmount),
-                openingAmount
-            )
+        (int256 openDeltaMargin, int256 openDeltaPosition) = openPosition(
+            riskParameter,
+            indexPrice,
+            mc.add(deltaMargin),
+            positionAmount.add(closingAmount),
+            openingAmount,
+            partialFill
         );
+        deltaMargin = deltaMargin.add(openDeltaMargin);
+        deltaPosition = closingAmount.add(openDeltaPosition);
         int256 spread = riskParameter.halfSpreadRate.value.wmul(deltaMargin);
-        deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
+        deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
 
     function calculateRemovingLiquidityPenalty(
@@ -69,7 +68,7 @@ library AMMTrade {
         int256 indexPrice,
         int256 amount
     ) internal view returns (int256 penalty) {
-        int256 cashBalance = AMMCommon.calculateCashBalance(
+        int256 cashBalance = AMMCommon.availableCashBalance(
             ammAccount,
             fundingState.unitAccFundingLoss
         );
@@ -117,124 +116,140 @@ library AMMTrade {
 
     function openPosition(
         RiskParameter storage riskParameter,
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 indexPrice,
-        int256 tradingAmount
-    ) private view returns (int256 deltaMargin) {
+        int256 tradingAmount,
+        bool partialFill
+    ) private view returns (int256 deltaMargin, int256 deltaPosition) {
         if (tradingAmount == 0) {
-            return 0;
+            return (0, 0);
         }
-        require(
-            AMMCommon.isAMMMarginSafe(
-                cashBalance,
-                positionAmount,
-                indexPrice,
-                riskParameter.virtualLeverage.value,
-                riskParameter.beta1.value
-            ),
-            "unsafe before trade"
-        );
-        (int256 mv, int256 m0) = AMMCommon.regress(
-            cashBalance,
+        int256 virtualLeverage = riskParameter.virtualLeverage.value;
+        int256 beta1 = riskParameter.beta1.value;
+        if (! AMMCommon.isAMMMarginSafe(
+            mc,
             positionAmount,
             indexPrice,
-            riskParameter.virtualLeverage.value,
-            riskParameter.beta1.value
-        );
-        if (positionAmount > 0 || (positionAmount == 0 && tradingAmount > 0)) {
-            deltaMargin = calculateLongDeltaMargin(
-                m0,
-                cashBalance.add(mv),
+            virtualLeverage,
+            beta1
+        )) {
+            if (partialFill) {
+                return (0, 0);
+            } else {
+                revert("Unsafe before open position");
+            }
+        }
+
+        int256 m0;
+        int256 ma1;
+        {
+            int256 mv;
+            (mv, m0) = AMMCommon.regress(
+                mc,
                 positionAmount,
-                positionAmount.add(tradingAmount),
                 indexPrice,
-                riskParameter.beta1.value
+                virtualLeverage,
+                beta1
             );
+           ma1 = mc.add(mv);
+        }
+
+        int256 newPosition = positionAmount.add(tradingAmount);
+        int256 maxPosition;
+        if (newPosition > 0) {
+            maxPosition = _maxLongPosition(m0, indexPrice, beta1, virtualLeverage);
         } else {
-            deltaMargin = calculateShortDeltaMargin(
+            maxPosition = _maxShortPosition(m0, indexPrice, beta1, virtualLeverage);
+        }
+        if ((newPosition > maxPosition && newPosition > 0) || (newPosition < maxPosition && newPosition < 0)) {
+            if (partialFill) {
+                deltaPosition = maxPosition.sub(positionAmount);
+                newPosition = maxPosition;
+            } else {
+                revert("Trade amount exceeds max amount");
+            }
+        } else {
+            deltaPosition = tradingAmount;
+        }
+        if (newPosition > 0) {
+            deltaMargin = longDeltaMargin(
+                m0,
+                ma1,
+                positionAmount,
+                newPosition,
+                indexPrice,
+                beta1
+            );
+       } else {
+            deltaMargin = shortDeltaMargin(
                 m0,
                 positionAmount,
-                positionAmount.add(tradingAmount),
+                newPosition,
                 indexPrice,
-                riskParameter.beta1.value
+                beta1
             );
         }
-        // TODO: tc 说这个不对
-        int256 newCashBalance = cashBalance.add(deltaMargin);
-        int256 newPositionAmount = positionAmount.add(tradingAmount);
-        require(
-            AMMCommon.isAMMMarginSafe(
-                newCashBalance,
-                newPositionAmount,
-                indexPrice,
-                riskParameter.virtualLeverage.value,
-                riskParameter.beta1.value
-            ),
-            "unsafe before trade"
-        );
-        (int256 newMV, ) = AMMCommon.regress(
-            newCashBalance,
-            newPositionAmount,
-            indexPrice,
-            riskParameter.virtualLeverage.value,
-            riskParameter.beta1.value
-        );
-        require(newMV == mv, "unsafe after trade (origin margin change)");
     }
 
     function closePosition(
         RiskParameter storage riskParameter,
         int256 indexPrice,
-        int256 cashBalance,
+        int256 mc,
         int256 positionAmount,
         int256 tradingAmount
     ) private view returns (int256 deltaMargin) {
-        require(positionAmount != 0, "zero position before close");
         if (tradingAmount == 0) {
             return 0;
         }
+        require(positionAmount != 0, "Zero position amount before close position");
+        int256 virtualLeverage = riskParameter.virtualLeverage.value;
         int256 closingBeta = riskParameter.beta2.value;
         if (
             AMMCommon.isAMMMarginSafe(
-                cashBalance,
+                mc,
                 positionAmount,
                 indexPrice,
-                riskParameter.virtualLeverage.value,
+                virtualLeverage,
                 closingBeta
             )
         ) {
             (int256 mv, int256 m0) = AMMCommon.regress(
                 indexPrice,
-                riskParameter.virtualLeverage.value,
-                cashBalance,
+                virtualLeverage,
+                mc,
                 positionAmount,
                 closingBeta
             );
-            if (positionAmount > 0) {
-                deltaMargin = calculateLongDeltaMargin(
-                    m0,
-                    cashBalance.add(mv),
-                    positionAmount,
-                    positionAmount.add(tradingAmount),
-                    indexPrice,
-                    closingBeta
-                );
+            int256 newPositionAmount = positionAmount.add(tradingAmount);
+            if (newPositionAmount == 0) {
+                return m0.wdiv(virtualLeverage).sub(mc);
             } else {
-                deltaMargin = calculateShortDeltaMargin(
-                    m0,
-                    positionAmount,
-                    positionAmount.add(tradingAmount),
-                    indexPrice,
-                    closingBeta
-                );
+                if (positionAmount > 0) {
+                    deltaMargin = longDeltaMargin(
+                        m0,
+                        mc.add(mv),
+                        positionAmount,
+                        newPositionAmount,
+                        indexPrice,
+                        closingBeta
+                    );
+                } else {
+                    deltaMargin = shortDeltaMargin(
+                        m0,
+                        positionAmount,
+                        newPositionAmount,
+                        indexPrice,
+                        closingBeta
+                    );
+                }
             }
         } else {
-            deltaMargin = indexPrice.wmul(tradingAmount);
+            deltaMargin = indexPrice.wmul(tradingAmount).neg();
         }
     }
 
-    function calculateLongDeltaMargin(
+    function longDeltaMargin(
         int256 m0,
         int256 ma,
         int256 positionAmount1,
@@ -251,7 +266,7 @@ library AMMTrade {
         deltaMargin = beforeSqrt.sqrt().add(b).wdiv(a).sub(ma);
     }
 
-    function calculateShortDeltaMargin(
+    function shortDeltaMargin(
         int256 m0,
         int256 positionAmount1,
         int256 positionAmount2,
@@ -271,4 +286,50 @@ library AMMTrade {
             .wmul(positionAmount2.sub(positionAmount1))
             .neg();
     }
+
+    function _maxLongPosition(
+        int256 m0,
+        int256 indexPrice,
+        int256 beta,
+        int256 virtualLeverage
+    ) private pure returns (int256 maxLongPosition) {
+        if (beta.wmul(virtualLeverage) == Constant.SIGNED_ONE.sub(beta)) {
+            maxLongPosition = beta
+                .mul(2)
+                .neg()
+                .add(Constant.SIGNED_ONE)
+                .mul(2)
+                .wmul(indexPrice);
+            maxLongPosition = m0.wdiv(maxLongPosition);
+        } else {
+            int256 tmp1 = virtualLeverage.sub(Constant.SIGNED_ONE);
+            int256 tmp2 = tmp1.add(beta);
+            int256 tmp3 = beta.mul(2).sub(Constant.SIGNED_ONE);
+            maxLongPosition = beta.mul(tmp2).sqrt();
+            maxLongPosition = beta
+                .add(tmp2)
+                .sub(Constant.SIGNED_ONE)
+                .wmul(maxLongPosition);
+            maxLongPosition = tmp2
+                .wmul(tmp3)
+                .add(maxLongPosition)
+                .wdiv(tmp1)
+                .wdiv(beta.wmul(tmp1).add(tmp3));
+        }
+    }
+
+    function _maxShortPosition(
+        int256 m0,
+        int256 indexPrice,
+        int256 beta,
+        int256 virtualLeverage
+    ) private pure returns (int256 maxShortPosition) {
+        maxShortPosition = beta
+            .mul(virtualLeverage)
+            .sqrt()
+            .add(Constant.SIGNED_ONE)
+            .wmul(indexPrice);
+        maxShortPosition = m0.wdiv(maxShortPosition).neg();
+    }
 }
+

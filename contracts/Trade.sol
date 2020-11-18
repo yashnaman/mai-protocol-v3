@@ -167,12 +167,13 @@ contract Trade is Context, Funding, Fee {
         )
     {
         require(positionAmount != 0, Error.INVALID_POSITION_AMOUNT);
-        deltaMargin = AMMTrade.calculateDeltaMargin(
+        ( deltaMargin, ) = AMMTrade.trade(
             _fundingState,
             _riskParameter,
             _marginAccounts[_self()],
             _indexPrice(),
-            positionAmount
+            positionAmount,
+            false
         );
         _validatePrice(
             positionAmount,

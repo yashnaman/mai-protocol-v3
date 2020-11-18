@@ -35,7 +35,7 @@ library AMMFunding {
         int256 tmpUnitAccFundingLoss = fundingState.unitAccFundingLoss;
         // lastFundingTime => price time
         if (indexPriceTimestamp > fundingState.lastFundingTime) {
-            deltaUnitAccFundingLoss = calculateDeltaFundingLoss(
+            deltaUnitAccFundingLoss = deltaFundingLoss(
                 fundingState.fundingRate,
                 fundingState.lastIndexPrice,
                 fundingState.lastFundingTime,
@@ -44,7 +44,7 @@ library AMMFunding {
             tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
                 deltaUnitAccFundingLoss
             );
-            tmpFundingRate = calculateFundingRate(
+            tmpFundingRate = fundingRate(
                 fundingState,
                 riskParameter,
                 ammAccount,
@@ -52,7 +52,7 @@ library AMMFunding {
             );
         }
         // price time => now
-        deltaUnitAccFundingLoss = calculateDeltaFundingLoss(
+        deltaUnitAccFundingLoss = deltaFundingLoss(
             tmpFundingRate,
             indexPrice,
             indexPriceTimestamp,
@@ -61,7 +61,7 @@ library AMMFunding {
         tmpUnitAccFundingLoss = tmpUnitAccFundingLoss.add(
             deltaUnitAccFundingLoss
         );
-        tmpFundingRate = calculateFundingRate(
+        tmpFundingRate = fundingRate(
             fundingState,
             riskParameter,
             ammAccount,
@@ -79,7 +79,7 @@ library AMMFunding {
         MarginAccount storage ammAccount,
         int256 indexPrice
     ) internal {
-        int256 newFundingRate = calculateFundingRate(
+        int256 newFundingRate = fundingRate(
             fundingState,
             riskParameter,
             ammAccount,
@@ -88,7 +88,7 @@ library AMMFunding {
         fundingState.fundingRate = newFundingRate;
     }
 
-    function calculateDeltaFundingLoss(
+    function deltaFundingLoss(
         int256 fundingRate,
         int256 indexPrice,
         uint256 beginTimestamp,
@@ -105,7 +105,7 @@ library AMMFunding {
         );
     }
 
-    function calculateFundingRate(
+    function fundingRate(
         FundingState storage fundingState,
         RiskParameter storage riskParameter,
         MarginAccount storage ammAccount,
@@ -114,7 +114,7 @@ library AMMFunding {
         if (ammAccount.positionAmount == 0) {
             newFundingRate = 0;
         } else {
-            int256 mc = AMMCommon.calculateCashBalance(
+            int256 mc = AMMCommon.availableCashBalance(
                 ammAccount,
                 fundingState.unitAccFundingLoss
             );
