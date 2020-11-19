@@ -7,42 +7,69 @@ import "./VersionController.sol";
 
 contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
     address internal _vault;
+    address internal _latestGovernor;
+    address internal _latestPerpetualImp;
+    address internal _latestShareTokenImp;
 
     event CreatePerpetual(
-        address proxy,
+        address perpetual,
+        address governor,
+        address shareToken,
         address operator,
         address oracle,
-        address implementation,
-        int256[14] arguments
+        int256[7] coreParams,
+        int256[5] riskParams
     );
 
     function createPerpetual(
-        string calldata symbol,
         address implementation,
         address oracle,
-        int256[14] calldata arguments
+        int256[7] calldata coreParams,
+        int256[5] calldata riskParams,
+        int256[5] calldata minRiskParamValues,
+        int256[5] calldata maxRiskParamValues,
+        uint256 nonce
     ) external {
         require(_verifyVersion(implementation), "invalid implementation");
-        bytes memory initializeData = abi.encodeWithSignature(
-            "initialize(string,address,address,address,int256[])",
-            symbol,
-            oracle,
-            msg.sender,
-            _vault,
-            arguments
-        );
-        address newProxy = _createProxy(
-            implementation,
+
+        address perpetual = _deploymentAddress(implementation, nonce);
+        address shareToken = _createProxy(
+            _latestShareTokenImp,
             address(this),
-            initializeData
+            abi.encodeWithSignature("initialize(address)", perpetual)
         );
-        _registerInstance(newProxy, implementation);
-        emit CreatePerpetual(
-            newProxy,
+        address governor = _createProxy(
+            _latestShareTokenImp,
+            address(this),
+            abi.encodeWithSignature("initialize(address)", shareToken)
+        );
+        bytes memory initializeData = abi.encodeWithSignature(
+            "initialize(address,address,address,address,int256[7],int256[5],int256[5],int256[5])",
             msg.sender,
             oracle,
+            governor,
+            shareToken,
+            coreParams,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
+        address proxy = _createProxy2(
             implementation,
-            arguments
+            governor,
+            initializeData,
+            nonce
+        );
+        require(proxy == perpetual, "debug1");
+        _registerInstance(proxy, implementation);
+        emit CreatePerpetual(
+            perpetual,
+            governor,
+            shareToken,
+            msg.sender,
+            oracle,
+            coreParams,
+            riskParams
         );
     }
 }

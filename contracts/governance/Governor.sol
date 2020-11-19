@@ -170,6 +170,40 @@ contract Governor {
         );
     }
 
+    function proposeRiskParameterUpdate(
+        bytes32[] memory keys,
+        int256[] memory values,
+        int256[] memory minValues,
+        int256[] memory maxValues
+    ) public {
+        require(keys.length <= proposalMaxOperations(), "");
+        require(keys.length == values.length, "");
+        require(keys.length == minValues.length, "");
+        require(keys.length == maxValues.length, "");
+
+        uint256 numEntries = keys.length;
+        bytes[] memory calldatas = new bytes[](numEntries);
+        for (uint256 i = 0; i < numEntries; i++) {
+            calldatas[i] = abi.encodePacked(
+                keys[i],
+                values[i],
+                minValues[i],
+                maxValues[i]
+            );
+        }
+        _propose(
+            "updateRiskParameter(bytes32,int256,int256,int256)",
+            calldatas,
+            "updateRiskParameter"
+        );
+    }
+
+    function proposePerpetualUpgrade(address targetImplementation) public {
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encodePacked(targetImplementation);
+        _propose("upgradeTo(address)", calldatas, "upgradeTo");
+    }
+
     function _propose(
         string memory signature,
         bytes[] memory calldatas,
