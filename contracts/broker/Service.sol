@@ -44,13 +44,13 @@ contract Service is Fee {
 
     event TradeFailed(
         bytes32 orderHash,
-        OrderType orderType,
+        Order order,
         int256 amount,
         string message
     );
     event TradeSuccess(
         bytes32 orderHash,
-        OrderType orderType,
+        Order order,
         int256 amount,
         uint256 gasReward
     );
@@ -69,22 +69,21 @@ contract Service is Fee {
         uint256 orderCount = orders.length;
         OrderCache[] memory caches = new OrderCache[](orderCount);
         for (uint256 i = 0; i < orderCount; i++) {
-            bytes32 orderHash = OrderUtils.orderHash(orders[i]);
+            Order memory order = orders[i];
+            bytes32 orderHash = OrderUtils.orderHash(order);
             (bool success, string memory reason) = _validateOrderFields(
                 perpetual,
-                orders[i],
+                order,
                 orderHash,
                 amounts[i],
                 gasRewards[i]
             );
             if (!success) {
-                _handleFailedOrder(
-                    actionOnFailure,
-                    reason,
-                    orders[i].orderType,
-                    orderHash,
-                    amounts[i]
-                );
+                if (actionOnFailure == ActionOnFailure.IGNORE) {
+                    emit TradeFailed(orderHash, order, amounts[i], reason);
+                } else if (actionOnFailure == ActionOnFailure.REVERT) {
+                    revert(reason);
+                }
             }
             caches[i] = OrderCache({orderHash: orderHash, success: success});
         }
@@ -92,35 +91,25 @@ contract Service is Fee {
             if (!caches[i].success) {
                 continue;
             }
+            Order memory order = orders[i];
             bool success = _execute(
-                orders[i],
+                order,
                 caches[i].orderHash,
                 amounts[i],
                 gasRewards[i]
             );
             if (!success) {
-                _handleFailedOrder(
-                    actionOnFailure,
-                    "trade transaction failed",
-                    orders[i].orderType,
-                    caches[i].orderHash,
-                    amounts[i]
-                );
+                if (actionOnFailure == ActionOnFailure.IGNORE) {
+                    emit TradeFailed(
+                        caches[i].orderHash,
+                        order,
+                        amounts[i],
+                        "trading transaction failed"
+                    );
+                } else if (actionOnFailure == ActionOnFailure.REVERT) {
+                    revert("trading transaction failed");
+                }
             }
-        }
-    }
-
-    function _handleFailedOrder(
-        ActionOnFailure actionOnFailure,
-        string memory reason,
-        OrderType orderType,
-        bytes32 orderHash,
-        int256 amount
-    ) internal {
-        if (actionOnFailure == ActionOnFailure.IGNORE) {
-            emit TradeFailed(orderHash, orderType, amount, reason);
-        } else if (actionOnFailure == ActionOnFailure.REVERT) {
-            revert(reason);
         }
     }
 
@@ -144,7 +133,7 @@ contract Service is Fee {
             if (gasReward > 0) {
                 _transfer(order.trader, order.broker, gasReward);
             }
-            emit TradeSuccess(orderHash, order.orderType, amount, gasReward);
+            emit TradeSuccess(orderHash, order, amount, gasReward);
         }
     }
 
