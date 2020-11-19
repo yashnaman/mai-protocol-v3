@@ -128,14 +128,14 @@ library AMMTrade {
             return (0, 0);
         }
         int256 targetLeverage = riskParameter.targetLeverage.value;
-        int256 beta1 = riskParameter.beta1.value;
+        int256 openBeta = riskParameter.beta1.value;
         if (
             !AMMCommon.isAMMMarginSafe(
                 mc,
                 positionAmount,
                 indexPrice,
                 targetLeverage,
-                beta1
+                openBeta
             )
         ) {
             if (partialFill) {
@@ -154,7 +154,7 @@ library AMMTrade {
                 positionAmount,
                 indexPrice,
                 targetLeverage,
-                beta1
+                openBeta
             );
             ma1 = mc.add(mv);
         }
@@ -165,14 +165,14 @@ library AMMTrade {
             maxPosition = _maxLongPosition(
                 m0,
                 indexPrice,
-                beta1,
+                openBeta,
                 targetLeverage
             );
         } else {
             maxPosition = _maxShortPosition(
                 m0,
                 indexPrice,
-                beta1,
+                openBeta,
                 targetLeverage
             );
         }
@@ -196,7 +196,7 @@ library AMMTrade {
                 positionAmount,
                 newPosition,
                 indexPrice,
-                beta1
+                openBeta
             );
         } else {
             deltaMargin = shortDeltaMargin(
@@ -204,7 +204,7 @@ library AMMTrade {
                 positionAmount,
                 newPosition,
                 indexPrice,
-                beta1
+                openBeta
             );
         }
     }
@@ -350,4 +350,144 @@ library AMMTrade {
             .wmul(indexPrice);
         maxShortPosition = m0.wdiv(maxShortPosition).neg();
     }
+
+    function addLiquidity(
+        RiskParameter storage riskParameter,
+        int256 indexPrice,
+        int256 mc,
+        int256 positionAmount,
+        int256 totalShare,
+        int256 addedMargin
+    ) public view returns (int256 share) {
+        require(addedMargin > 0, "Must add positive liquidity");
+        int256 targetLeverage = riskParameter.targetLeverage.value;
+        int256 beta = riskParameter.beta1.value;
+        int256 m0;
+        int256 newM0;
+        if (
+            AMMCommon.isAMMMarginSafe(
+                mc,
+                positionAmount,
+                indexPrice,
+                targetLeverage,
+                beta
+            )
+        ) {
+            (, m0) = AMMCommon.regress(
+                indexPrice,
+                targetLeverage,
+                mc,
+                positionAmount,
+                beta
+            );
+        } else {
+            m0 = indexPrice.wmul(positionAmount).add(mc);
+        }
+        mc = mc.add(addedMargin);
+        if (
+            AMMCommon.isAMMMarginSafe(
+                mc,
+                positionAmount,
+                indexPrice,
+                targetLeverage,
+                beta
+            )
+        ) {
+            (, newM0) = AMMCommon.regress(
+                indexPrice,
+                targetLeverage,
+                mc,
+                positionAmount,
+                beta
+            );
+        } else {
+            newM0 = indexPrice.wmul(positionAmount).add(mc);
+        }
+        share = newM0.sub(m0).wdiv(m0).wmul(totalShare);
+    }
+
+    function removeLiquidity(
+        RiskParameter storage riskParameter,
+        int256 indexPrice,
+        int256 mc,
+        int256 positionAmount,
+        int256 totalShare,
+        int256 removeShare
+    ) public view returns (int256 removedMargin) {
+        int256 targetLeverage = riskParameter.targetLeverage.value;
+        int256 beta = riskParameter.beta1.value;
+        require(
+            AMMCommon.isAMMMarginSafe(
+                mc,
+                positionAmount,
+                indexPrice,
+                targetLeverage,
+                beta
+            ),
+            "Unsafe before remove liquidity"
+        );
+        int256 shareRatio = totalShare.sub(removeShare).wdiv(totalShare);
+        (, int256 m0) = AMMCommon.regress(
+            indexPrice,
+            targetLeverage,
+            mc,
+            positionAmount,
+            beta
+        );
+        m0 = m0.wmul(shareRatio);
+        if (positionAmount > 0) {
+            require(positionAmount <= _maxLongPosition(
+                m0,
+                indexPrice,
+                beta,
+                targetLeverage
+            ), "Unsafe after remove liquidity");
+        } else if (positionAmount < 0) {
+            require(positionAmount >= _maxShortPosition(
+                m0,
+                indexPrice,
+                beta,
+                targetLeverage
+            ), "Unsafe after remove liquidity");
+        }
+        removedMargin = _removedMargin(indexPrice, mc, m0, positionAmount, targetLeverage, beta);
+    }
+
+    function _removedMargin(
+        int256 indexPrice,
+        int256 mc,
+        int256 m0,
+        int256 positionAmount,
+        int256 targetLeverage,
+        int256 beta
+    ) private pure returns (int256 removedMargin) {
+        int256 positionValue = indexPrice.wmul(positionAmount);
+        if (positionAmount <= 0) {
+            int256 newMc = positionValue
+                .wmul(positionValue)
+                .wmul(beta)
+                .wdiv(positionValue.add(m0))
+                .sub(positionValue)
+                .add(m0.wdiv(targetLeverage));
+            removedMargin = mc.sub(newMc);
+        } else {
+            int256 beforeSqrt = m0
+                .sub(positionValue)
+                .mul(m0.sub(positionValue));
+            beforeSqrt = beta
+                .wmul(m0)
+                .mul(positionValue)
+                .mul(4)
+                .add(beforeSqrt);
+            int256 newMc = beforeSqrt
+                .sqrt()
+                .sub(positionValue)
+                .sub(m0)
+                .wdiv(Constant.SIGNED_ONE.sub(beta))
+                .div(2)
+                .add(m0.wdiv(targetLeverage));
+            removedMargin = mc.sub(newMc);
+        }
+    }
 }
+
