@@ -27,15 +27,33 @@ contract Service is Fee {
     using OrderUtils for Order;
     using SignatureValidator for Signature;
 
+    struct OrderCache {
+        bool success;
+        bytes32 orderHash;
+    }
+
     uint32 public constant SUPPORTED_MIN_ORDER_VERSION = 1;
     uint32 public constant SUPPORTED_MAX_ORDER_VERSION = 1;
+
+    int256 internal constant MIN_PRICE = 0;
+    int256 internal constant MAX_PRICE = type(int256).max;
 
     uint256 internal _chainID;
     mapping(bytes32 => int256) internal _filled;
     mapping(bytes32 => bool) internal _canceled;
 
-    event TradeFailed(Order order, int256 amount, string message);
-    event TradeSuccess(Order order, int256 amount, uint256 gasReward);
+    event TradeFailed(
+        bytes32 orderHash,
+        OrderType orderType,
+        int256 amount,
+        string message
+    );
+    event TradeSuccess(
+        bytes32 orderHash,
+        OrderType orderType,
+        int256 amount,
+        uint256 gasReward
+    );
 
     // constructor() {
     //     _chainID = Utils.chainID();
@@ -48,58 +66,112 @@ contract Service is Fee {
         uint256[] calldata gasRewards,
         ActionOnFailure actionOnFailure
     ) external {
-        uint256 numOrders = orders.length;
-        for (uint256 i = 0; i < numOrders; i++) {
-            Order memory order = orders[i];
-            int256 amount = amounts[i];
-            uint256 gasReward = gasRewards[i];
-
-            (bool valid, string memory reason) = _validateOrderFields(
+        uint256 orderCount = orders.length;
+        OrderCache[] memory caches = new OrderCache[](orderCount);
+        for (uint256 i = 0; i < orderCount; i++) {
+            bytes32 orderHash = OrderUtils.orderHash(orders[i]);
+            (bool success, string memory reason) = _validateOrderFields(
                 perpetual,
-                order,
-                amount
+                orders[i],
+                orderHash,
+                amounts[i],
+                gasRewards[i]
             );
-            if (!valid) {
-                if (actionOnFailure == ActionOnFailure.IGNORE) {
-                    continue;
-                } else {
-                    revert(reason);
-                }
+            if (!success) {
+                _handleFailedOrder(
+                    actionOnFailure,
+                    reason,
+                    orders[i].orderType,
+                    orderHash,
+                    amounts[i]
+                );
             }
-            (bool success, ) = perpetual.call(
-                abi.encodeWithSignature(
-                    "trade(address,int256,int256,uint256,address)",
-                    order.trader,
-                    amount,
-                    order.priceLimit,
-                    order.deadline,
-                    order.referrer
-                )
+            caches[i] = OrderCache({orderHash: orderHash, success: success});
+        }
+        for (uint256 i = 0; i < orderCount; i++) {
+            if (!caches[i].success) {
+                continue;
+            }
+            bool success = _execute(
+                orders[i],
+                caches[i].orderHash,
+                amounts[i],
+                gasRewards[i]
             );
-            if (success) {
-                emit TradeSuccess(order, amount, gasReward);
-                if (gasReward > 0) {
-                    _transfer(order.trader, order.broker, gasReward);
-                }
-            } else if (actionOnFailure == ActionOnFailure.IGNORE) {
-                emit TradeFailed(order, amount, "trade failed");
-            } else if (actionOnFailure == ActionOnFailure.REVERT) {
-                revert("trade failed");
+            if (!success) {
+                _handleFailedOrder(
+                    actionOnFailure,
+                    "trade transaction failed",
+                    orders[i].orderType,
+                    caches[i].orderHash,
+                    amounts[i]
+                );
             }
+        }
+    }
+
+    function _handleFailedOrder(
+        ActionOnFailure actionOnFailure,
+        string memory reason,
+        OrderType orderType,
+        bytes32 orderHash,
+        int256 amount
+    ) internal {
+        if (actionOnFailure == ActionOnFailure.IGNORE) {
+            emit TradeFailed(orderHash, orderType, amount, reason);
+        } else if (actionOnFailure == ActionOnFailure.REVERT) {
+            revert(reason);
+        }
+    }
+
+    function _execute(
+        Order memory order,
+        bytes32 orderHash,
+        int256 amount,
+        uint256 gasReward
+    ) internal returns (bool success) {
+        (success, ) = order.perpetual.call(
+            abi.encodeWithSignature(
+                "trade(address,int256,int256,uint256,address)",
+                order.trader,
+                amount,
+                _priceLimit(order),
+                order.deadline,
+                order.referrer
+            )
+        );
+        if (success) {
+            if (gasReward > 0) {
+                _transfer(order.trader, order.broker, gasReward);
+            }
+            emit TradeSuccess(orderHash, order.orderType, amount, gasReward);
+        }
+    }
+
+    function _priceLimit(Order memory order) internal pure returns (int256) {
+        if (order.orderType == OrderType.LIMIT) {
+            return order.priceLimit;
+        } else {
+            return order.amount > 0 ? MAX_PRICE : MIN_PRICE;
         }
     }
 
     function _validateOrderFields(
         address perpetual,
         Order memory order,
-        int256 amount
+        bytes32 orderHash,
+        int256 amount,
+        uint256 gasReward
     ) internal returns (bool, string memory) {
-        bytes32 orderHash = order.orderHash();
         if (
             order.version > SUPPORTED_MAX_ORDER_VERSION ||
             order.version < SUPPORTED_MIN_ORDER_VERSION
         ) {
             return (false, "unsupported order version");
+        }
+
+        if (gasReward > _balances[order.trader]) {
+            return (false, "insufficient gas");
         }
         if (order.trader != order.signature.getSigner(orderHash)) {
             return (false, "order signature mismatch");
@@ -113,7 +185,7 @@ contract Service is Fee {
         if (amount > order.amount.sub(_filled[orderHash])) {
             return (false, "exceed order fillable amount");
         }
-        if (order.broker != address(this)) {
+        if (order.broker != msg.sender) {
             return (false, "broker mismatch");
         }
         if (order.perpetual != perpetual) {
@@ -125,7 +197,7 @@ contract Service is Fee {
         if (order.deadline < block.timestamp) {
             return (false, "order expired");
         }
-        if (order.closeOnly) {
+        if (order.closeOnly || order.orderType == OrderType.STOP) {
             (, int256 positionAmount, ) = IPerpetual(perpetual).marginAccount(
                 order.trader
             );

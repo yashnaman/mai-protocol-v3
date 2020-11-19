@@ -80,9 +80,7 @@ contract Funding is Context, Margin {
         if (!_isFundingStateOutdated(priceData.timestamp)) {
             return;
         }
-        _fundingState.updateFundingState(
-            _now()
-        );
+        _fundingState.updateFundingState(_now());
     }
 
     function _updateFundingRate() internal {
