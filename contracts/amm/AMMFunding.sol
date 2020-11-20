@@ -25,7 +25,7 @@ library AMMFunding {
     function updateFundingState(
         FundingState storage fundingState,
         uint256 checkTimestamp
-    ) internal {
+    ) public {
         if (checkTimestamp > fundingState.fundingTime) {
             int256 deltaUnitAccFundingLoss = deltaFundingLoss(
                 fundingState.fundingRate,
@@ -33,7 +33,9 @@ library AMMFunding {
                 fundingState.fundingTime,
                 checkTimestamp
             );
-            fundingState.unitAccFundingLoss = fundingState.unitAccFundingLoss.add(deltaUnitAccFundingLoss);
+            fundingState.unitAccumulatedFundingLoss = fundingState
+                .unitAccumulatedFundingLoss
+                .add(deltaUnitAccFundingLoss);
             fundingState.fundingTime = checkTimestamp;
         }
     }
@@ -43,8 +45,8 @@ library AMMFunding {
         RiskParameter storage riskParameter,
         MarginAccount storage ammAccount,
         int256 indexPrice
-    ) internal {
-        int256 newFundingRate = fundingRate(
+    ) public {
+        int256 newFundingRate = nextFundingRate(
             fundingState,
             riskParameter,
             ammAccount,
@@ -59,19 +61,19 @@ library AMMFunding {
         int256 indexPrice,
         uint256 beginTimestamp,
         uint256 endTimestamp
-    ) internal pure returns (int256 deltaUnitAccumulatedFundingLoss) {
+    ) internal pure returns (int256 deltaUnitAccumulativeFundingLoss) {
         require(
             endTimestamp > beginTimestamp,
             "time steps (n) must be positive"
         );
         int256 timeElapsed = int256(endTimestamp.sub(beginTimestamp));
-        deltaUnitAccumulatedFundingLoss = indexPrice.wfrac(
+        deltaUnitAccumulativeFundingLoss = indexPrice.wfrac(
             fundingRate.wmul(timeElapsed),
             FUNDING_INTERVAL
         );
     }
 
-    function fundingRate(
+    function nextFundingRate(
         FundingState storage fundingState,
         RiskParameter storage riskParameter,
         MarginAccount storage ammAccount,
@@ -82,7 +84,7 @@ library AMMFunding {
         } else {
             int256 mc = AMMCommon.availableCashBalance(
                 ammAccount,
-                fundingState.unitAccFundingLoss
+                fundingState.unitAccumulatedFundingLoss
             );
             require(
                 AMMCommon.isAMMMarginSafe(

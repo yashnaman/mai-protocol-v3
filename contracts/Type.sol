@@ -8,7 +8,7 @@ struct Option {
 }
 
 struct FundingState {
-    int256 unitAccFundingLoss;
+    int256 unitAccumulatedFundingLoss;
     int256 fundingRate;
     int256 indexPrice;
     uint256 fundingTime;
@@ -56,6 +56,7 @@ struct Signature {
 struct Order {
     address trader;
     address broker;
+    address relayer;
     address perpetual;
     address referrer;
     int256 amount;

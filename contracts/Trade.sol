@@ -16,6 +16,8 @@ import "./Funding.sol";
 import "./Fee.sol";
 import "./amm/AMMTrade.sol";
 
+import "./interface/IShareToken.sol";
+
 contract Trade is Context, Funding, Fee {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
@@ -57,19 +59,6 @@ contract Trade is Context, Funding, Fee {
         int256 amount,
         int256 price
     );
-
-    function _removeLiquidity(address trader, int256 amount) internal {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        int256 penalty = AMMTrade.calculateRemovingLiquidityPenalty(
-            _fundingState,
-            _riskParameter,
-            _marginAccounts[_self()],
-            _indexPrice(),
-            amount
-        );
-        _updateCashBalance(_self(), amount.sub(penalty).neg());
-    }
 
     function _trade(
         address trader,

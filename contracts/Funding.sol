@@ -100,7 +100,7 @@ contract Funding is Context, Margin {
     {
         int256 fundingLoss = _marginAccounts[trader].entryFundingLoss.sub(
             _marginAccounts[trader].positionAmount.wmul(
-                _fundingState.unitAccFundingLoss
+                _fundingState.unitAccumulatedFundingLoss
             )
         );
         return _marginAccounts[trader].cashBalance.sub(fundingLoss);
@@ -116,9 +116,10 @@ contract Funding is Context, Margin {
             amount,
             account.positionAmount
         );
-        int256 actualLoss = _fundingState.unitAccFundingLoss.wmul(amount).sub(
-            partialLoss
-        );
+        int256 actualLoss = _fundingState
+            .unitAccumulatedFundingLoss
+            .wmul(amount)
+            .sub(partialLoss);
         account.cashBalance = account.cashBalance.sub(actualLoss);
         account.entryFundingLoss = account.entryFundingLoss.sub(partialLoss);
     }
@@ -130,7 +131,7 @@ contract Funding is Context, Margin {
     {
         super._openPosition(account, amount);
         account.entryFundingLoss = account.entryFundingLoss.add(
-            _fundingState.unitAccFundingLoss.wmul(amount)
+            _fundingState.unitAccumulatedFundingLoss.wmul(amount)
         );
     }
 

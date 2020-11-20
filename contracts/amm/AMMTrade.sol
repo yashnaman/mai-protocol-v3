@@ -29,11 +29,11 @@ library AMMTrade {
         int256 indexPrice,
         int256 tradingAmount,
         bool partialFill
-    ) internal view returns (int256 deltaMargin, int256 deltaPosition) {
+    ) public view returns (int256 deltaMargin, int256 deltaPosition) {
         require(tradingAmount != 0, "Zero trade amount");
         int256 mc = AMMCommon.availableCashBalance(
             ammAccount,
-            fundingState.unitAccFundingLoss
+            fundingState.unitAccumulatedFundingLoss
         );
         int256 positionAmount = ammAccount.positionAmount;
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
@@ -61,59 +61,6 @@ library AMMTrade {
         deltaMargin = deltaMargin > 0
             ? deltaMargin.add(spread)
             : deltaMargin.sub(spread);
-    }
-
-    function calculateRemovingLiquidityPenalty(
-        FundingState storage fundingState,
-        RiskParameter storage riskParameter,
-        MarginAccount storage ammAccount,
-        int256 indexPrice,
-        int256 amount
-    ) internal view returns (int256 penalty) {
-        int256 cashBalance = AMMCommon.availableCashBalance(
-            ammAccount,
-            fundingState.unitAccFundingLoss
-        );
-        int256 positionAmount = ammAccount.positionAmount;
-        require(
-            AMMCommon.isAMMMarginSafe(
-                cashBalance,
-                positionAmount,
-                indexPrice,
-                riskParameter.targetLeverage.value,
-                riskParameter.beta1.value
-            ),
-            "unsafe before trade"
-        );
-        int256 newCashBalance = cashBalance.sub(amount);
-        require(
-            AMMCommon.isAMMMarginSafe(
-                newCashBalance,
-                positionAmount,
-                indexPrice,
-                riskParameter.targetLeverage.value,
-                riskParameter.beta1.value
-            ),
-            "unsafe before trade"
-        );
-        (, int256 m0) = AMMCommon.regress(
-            cashBalance,
-            positionAmount,
-            indexPrice,
-            riskParameter.targetLeverage.value,
-            riskParameter.beta1.value
-        );
-        (, int256 newM0) = AMMCommon.regress(
-            newCashBalance,
-            positionAmount,
-            indexPrice,
-            riskParameter.targetLeverage.value,
-            riskParameter.beta1.value
-        );
-        penalty = m0.sub(newM0).sub(
-            riskParameter.targetLeverage.value.wmul(amount)
-        );
-        penalty = penalty < 0 ? 0 : amount;
     }
 
     function openPosition(
@@ -276,7 +223,7 @@ library AMMTrade {
         int256 positionAmount2,
         int256 indexPrice,
         int256 beta
-    ) public pure returns (int256 deltaMargin) {
+    ) internal pure returns (int256 deltaMargin) {
         int256 a = Constant.SIGNED_ONE.sub(beta).wmul(ma).mul(2);
         int256 b = positionAmount2.sub(positionAmount1).wmul(indexPrice);
         b = a.div(2).sub(b).wmul(ma);
@@ -292,7 +239,7 @@ library AMMTrade {
         int256 positionAmount2,
         int256 indexPrice,
         int256 beta
-    ) public pure returns (int256 deltaMargin) {
+    ) internal pure returns (int256 deltaMargin) {
         deltaMargin = beta.wmul(m0).wmul(m0);
         deltaMargin = deltaMargin.wdiv(
             positionAmount1.wmul(indexPrice).add(m0)
@@ -353,13 +300,18 @@ library AMMTrade {
 
     function addLiquidity(
         RiskParameter storage riskParameter,
+        FundingState storage fundingState,
+        MarginAccount storage ammAccount,
         int256 indexPrice,
-        int256 mc,
-        int256 positionAmount,
         int256 totalShare,
-        int256 addedMargin
+        int256 marginToAdd
     ) public view returns (int256 share) {
-        require(addedMargin > 0, "Must add positive liquidity");
+        require(marginToAdd > 0, "Must add positive liquidity");
+        int256 mc = AMMCommon.availableCashBalance(
+            ammAccount,
+            fundingState.unitAccumulatedFundingLoss
+        );
+        int256 positionAmount = ammAccount.positionAmount;
         int256 targetLeverage = riskParameter.targetLeverage.value;
         int256 beta = riskParameter.beta1.value;
         int256 m0;
@@ -383,7 +335,7 @@ library AMMTrade {
         } else {
             m0 = indexPrice.wmul(positionAmount).add(mc);
         }
-        mc = mc.add(addedMargin);
+        mc = mc.add(marginToAdd);
         if (
             AMMCommon.isAMMMarginSafe(
                 mc,
@@ -408,12 +360,17 @@ library AMMTrade {
 
     function removeLiquidity(
         RiskParameter storage riskParameter,
+        FundingState storage fundingState,
+        MarginAccount storage ammAccount,
         int256 indexPrice,
-        int256 mc,
-        int256 positionAmount,
         int256 totalShare,
-        int256 removeShare
+        int256 shareToRemove
     ) public view returns (int256 removedMargin) {
+        int256 mc = AMMCommon.availableCashBalance(
+            ammAccount,
+            fundingState.unitAccumulatedFundingLoss
+        );
+        int256 positionAmount = ammAccount.positionAmount;
         int256 targetLeverage = riskParameter.targetLeverage.value;
         int256 beta = riskParameter.beta1.value;
         require(
@@ -426,7 +383,7 @@ library AMMTrade {
             ),
             "Unsafe before remove liquidity"
         );
-        int256 shareRatio = totalShare.sub(removeShare).wdiv(totalShare);
+        int256 shareRatio = totalShare.sub(shareToRemove).wdiv(totalShare);
         (, int256 m0) = AMMCommon.regress(
             indexPrice,
             targetLeverage,
@@ -436,21 +393,26 @@ library AMMTrade {
         );
         m0 = m0.wmul(shareRatio);
         if (positionAmount > 0) {
-            require(positionAmount <= _maxLongPosition(
-                m0,
-                indexPrice,
-                beta,
-                targetLeverage
-            ), "Unsafe after remove liquidity");
+            require(
+                positionAmount <=
+                    _maxLongPosition(m0, indexPrice, beta, targetLeverage),
+                "Unsafe after remove liquidity"
+            );
         } else if (positionAmount < 0) {
-            require(positionAmount >= _maxShortPosition(
-                m0,
-                indexPrice,
-                beta,
-                targetLeverage
-            ), "Unsafe after remove liquidity");
+            require(
+                positionAmount >=
+                    _maxShortPosition(m0, indexPrice, beta, targetLeverage),
+                "Unsafe after remove liquidity"
+            );
         }
-        removedMargin = _removedMargin(indexPrice, mc, m0, positionAmount, targetLeverage, beta);
+        removedMargin = _removedMargin(
+            indexPrice,
+            mc,
+            m0,
+            positionAmount,
+            targetLeverage,
+            beta
+        );
     }
 
     function _removedMargin(
@@ -471,14 +433,12 @@ library AMMTrade {
                 .add(m0.wdiv(targetLeverage));
             removedMargin = mc.sub(newMc);
         } else {
-            int256 beforeSqrt = m0
-                .sub(positionValue)
-                .mul(m0.sub(positionValue));
-            beforeSqrt = beta
-                .wmul(m0)
-                .mul(positionValue)
-                .mul(4)
-                .add(beforeSqrt);
+            int256 beforeSqrt = m0.sub(positionValue).mul(
+                m0.sub(positionValue)
+            );
+            beforeSqrt = beta.wmul(m0).mul(positionValue).mul(4).add(
+                beforeSqrt
+            );
             int256 newMc = beforeSqrt
                 .sqrt()
                 .sub(positionValue)
@@ -490,4 +450,3 @@ library AMMTrade {
         }
     }
 }
-

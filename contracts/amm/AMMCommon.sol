@@ -52,8 +52,8 @@ library AMMCommon {
         int256 targetLeverage,
         int256 beta
     ) internal pure returns (int256 mv) {
-        int256 t = targetLeverage.sub(Constant.SIGNED_ONE);
-        int256 b = t.wmul(indexPrice.wmul(positionAmount)).add(
+        int256 tmp = targetLeverage.sub(Constant.SIGNED_ONE);
+        int256 b = tmp.wmul(indexPrice.wmul(positionAmount)).add(
             targetLeverage.wmul(mc)
         );
         int256 beforeSqrt = beta
@@ -65,7 +65,7 @@ library AMMCommon {
         beforeSqrt = beforeSqrt.add(b.mul(b));
         mv = beta.sub(Constant.SIGNED_ONE).wmul(mc).mul(2);
         mv = mv.add(beforeSqrt.sqrt()).add(b);
-        mv = mv.wfrac(t, t.add(beta)).div(2);
+        mv = mv.wfrac(tmp, tmp.add(beta)).div(2);
     }
 
     function shortVirtualMargin(
@@ -92,11 +92,11 @@ library AMMCommon {
 
     function availableCashBalance(
         MarginAccount storage account,
-        int256 unitAccFundingLoss
+        int256 unitAccumulatedFundingLoss
     ) internal view returns (int256) {
         return
             account.cashBalance.sub(
-                account.positionAmount.wmul(unitAccFundingLoss)
+                account.positionAmount.wmul(unitAccumulatedFundingLoss)
             );
     }
 

@@ -5,10 +5,13 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 
 import "./libraries/Error.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
+import "./libraries/OrderUtils.sol";
+import "./libraries/SignatureValidator.sol";
 
 import "./Type.sol";
 import "./Context.sol";
@@ -19,6 +22,7 @@ import "./Settle.sol";
 import "./AccessControl.sol";
 
 import "./interface/IOracle.sol";
+import "./interface/IShareToken.sol";
 
 contract Perpetual is
     Context,
@@ -28,9 +32,13 @@ contract Perpetual is
     Collateral,
     ReentrancyGuard
 {
+    using SafeCast for int256;
+    using SafeCast for uint256;
     using SafeMath for uint256;
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
+    using OrderUtils for Order;
+    using SignatureValidator for Signature;
 
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
@@ -258,12 +266,12 @@ contract Perpetual is
         external
         view
         returns (
-            int256 unitAccFundingLoss,
+            int256 unitAccumulatedFundingLoss,
             int256 fundingRate,
             uint256 fundingTime
         )
     {
-        unitAccFundingLoss = _fundingState.unitAccFundingLoss;
+        unitAccumulatedFundingLoss = _fundingState.unitAccumulatedFundingLoss;
         fundingRate = _fundingState.fundingRate;
         fundingTime = _fundingState.fundingTime;
     }
@@ -350,59 +358,105 @@ contract Perpetual is
         emit Withdraw(trader, withdrawable);
     }
 
-    function addLiquidatity(address trader, int256 amount)
+    function addLiquidatity(int256 marginToAdd)
         external
         updateFunding
         whenNormal
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        require(marginToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
-        _updateCashBalance(address(this), amount);
-        _transferFromUser(trader, amount);
-        emit AddLiquidatity(trader, amount);
+        int256 shareToMint = AMMTrade.addLiquidity(
+            _riskParameter,
+            _fundingState,
+            _marginAccounts[_self()],
+            _indexPrice(),
+            IShareToken(_shareToken).totalSupply().toInt256(),
+            marginToAdd
+        );
+        _transferFromUser(_msgSender(), marginToAdd);
+        _updateCashBalance(_self(), marginToAdd);
+        IShareToken(_shareToken).mint(
+            _msgSender(),
+            shareToMint.toUint256(),
+            _insuranceFund1.toUint256()
+        );
+
+        emit AddLiquidatity(_msgSender(), marginToAdd);
     }
 
-    function removeLiquidatity(address trader, int256 amount)
+    function removeLiquidatity(int256 shareToRemove)
         external
         updateFunding
         whenNormal
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        require(shareToRemove > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
-        _removeLiquidity(trader, amount);
-        _transferFromUser(trader, amount);
-        emit RemoveLiquidatity(trader, amount);
+        int256 cashToReturn = AMMTrade.removeLiquidity(
+            _riskParameter,
+            _fundingState,
+            _marginAccounts[_self()],
+            _indexPrice(),
+            IShareToken(_shareToken).totalSupply().toInt256(),
+            shareToRemove
+        );
+
+        _updateCashBalance(_self(), cashToReturn.neg());
+        _transferToUser(payable(_msgSender()), cashToReturn);
+        emit RemoveLiquidatity(_msgSender(), shareToRemove);
     }
 
     function trade(
         address trader,
-        int256 positionAmount,
+        int256 amount,
         int256 priceLimit,
         uint256 deadline,
         address referrer
-    )
+    ) external authRequired(trader, Constant.PRIVILEGE_TRADE) {
+        _trade(trader, amount, priceLimit, deadline, referrer);
+    }
+
+    function brokerTrade(Order calldata order, int256 amount)
         external
-        userTrace(trader)
+        userTrace(order.trader)
         updateFunding
         whenNormal
-        authRequired(trader, Constant.PRIVILEGE_TRADE)
     {
-        require(positionAmount > 0, Error.INVALID_POSITION_AMOUNT);
+        address signer = order.signature.getSigner(order.orderHash());
+        require(
+            signer == order.trader ||
+                _isGranted(order.trader, signer, Constant.PRIVILEGE_TRADE),
+            ""
+        );
+        (bool valid, string memory reason) = order.validateOrderFields(
+            _marginAccounts[order.trader],
+            amount
+        );
+        require(valid, reason);
+        _trade(
+            order.trader,
+            amount,
+            order.priceLimit,
+            order.deadline,
+            order.referrer
+        );
+    }
+
+    function _trade(
+        address trader,
+        int256 amount,
+        int256 priceLimit,
+        uint256 deadline,
+        address referrer
+    ) internal userTrace(trader) updateFunding whenNormal {
+        require(amount > 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
-        Receipt memory receipt = _trade(
-            trader,
-            positionAmount,
-            priceLimit,
-            referrer
-        );
+        Receipt memory receipt = _trade(trader, amount, priceLimit, referrer);
         emit TradePosition(
             trader,
-            positionAmount,
+            amount,
             priceLimit,
             deadline,
             receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(
