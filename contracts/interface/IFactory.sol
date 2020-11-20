@@ -6,5 +6,7 @@ interface IFactory {
 
     function vaultFeeRate() external view returns (int256);
 
-    function registerUser(address user) external;
+    function activeProxy(address trader, address proxy) external;
+
+    function deactiveProxy(address trader, address proxy) external;
 }

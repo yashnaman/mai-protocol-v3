@@ -61,7 +61,7 @@ contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
             nonce
         );
         require(proxy == perpetual, "debug1");
-        _registerInstance(proxy, implementation);
+        _registerInstance(proxy);
         emit CreatePerpetual(
             perpetual,
             governor,
@@ -71,5 +71,13 @@ contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
             coreParams,
             riskParams
         );
+    }
+
+    function activeProxy(address trader, address proxy) external {
+        _activeProxy(trader, proxy);
+    }
+
+    function deactiveProxy(address trader, address proxy) external {
+        _deactiveProxy(trader, proxy);
     }
 }

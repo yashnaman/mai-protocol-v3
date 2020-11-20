@@ -42,13 +42,15 @@ contract Perpetual is
         address trader,
         int256 positionAmount,
         int256 priceLimit,
-        uint256 deadline
+        uint256 deadline,
+        int256 fee
     );
     event Liquidate1(
         address trader,
         int256 positionAmount,
         int256 priceLimit,
-        uint256 deadline
+        uint256 deadline,
+        int256 fee
     );
     event Liquidate2(
         address trader,
@@ -106,8 +108,10 @@ contract Perpetual is
         int256 postAmount = _marginAccounts[trader].positionAmount;
         if (preAmount == 0 && postAmount != 0) {
             _registerTrader(trader);
+            IFactory(_factory).activeProxy(trader, address(this));
         } else if (preAmount != 0 && postAmount == 0) {
             _deregisterTrader(trader);
+            IFactory(_factory).deactiveProxy(trader, address(this));
         }
     }
 
@@ -390,9 +394,21 @@ contract Perpetual is
         require(positionAmount > 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
-
-        _trade(trader, positionAmount, priceLimit, referrer);
-        emit TradePosition(trader, positionAmount, priceLimit, deadline);
+        Receipt memory receipt = _trade(
+            trader,
+            positionAmount,
+            priceLimit,
+            referrer
+        );
+        emit TradePosition(
+            trader,
+            positionAmount,
+            priceLimit,
+            deadline,
+            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(
+                receipt.referrerFee
+            )
+        );
     }
 
     function liquidate(
@@ -406,8 +422,18 @@ contract Perpetual is
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= _now(), Error.EXCEED_DEADLINE);
 
-        _liquidate1(trader, positionAmount, priceLimit);
-        emit Liquidate1(trader, positionAmount, priceLimit, deadline);
+        Receipt memory receipt = _liquidate1(
+            trader,
+            positionAmount,
+            priceLimit
+        );
+        emit Liquidate1(
+            trader,
+            positionAmount,
+            priceLimit,
+            deadline,
+            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee)
+        );
     }
 
     function liquidate2(
