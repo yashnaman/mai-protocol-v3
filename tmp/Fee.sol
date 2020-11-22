@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 import "./libraries/SafeMathExt.sol";
 
-import "./Core.sol";
+import "./Type.sol";
 
 contract Fee is Core {
     using SafeMathExt for int256;

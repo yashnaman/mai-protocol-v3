@@ -5,59 +5,59 @@ import "./Constant.sol";
 import "../Type.sol";
 
 library Validator {
-    function validate(CoreParameter storage param) public view {
+    function isCoreParameterValid(Core storage core) public view {
         require(
-            param.initialMarginRate > 0 &&
-                param.initialMarginRate <= Constant.SIGNED_ONE,
+            core.initialMarginRate > 0 &&
+                core.initialMarginRate <= Constant.SIGNED_ONE,
             ""
         );
         require(
-            param.maintenanceMarginRate > 0 &&
-                param.maintenanceMarginRate <= Constant.SIGNED_ONE,
+            core.maintenanceMarginRate > 0 &&
+                core.maintenanceMarginRate <= Constant.SIGNED_ONE,
             ""
         );
-        require(param.maintenanceMarginRate <= param.initialMarginRate, "");
+        require(core.maintenanceMarginRate <= core.initialMarginRate, "");
         require(
-            param.operatorFeeRate >= 0 &&
-                param.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
+            core.operatorFeeRate >= 0 &&
+                core.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
             ""
         );
-        require(param.vaultFeeRate >= 0, "");
+        require(core.vaultFeeRate >= 0, "");
         require(
-            param.lpFeeRate >= 0 &&
-                param.lpFeeRate <= (Constant.SIGNED_ONE / 100),
+            core.lpFeeRate >= 0 &&
+                core.lpFeeRate <= (Constant.SIGNED_ONE / 100),
             ""
         );
         require(
-            param.liquidationPenaltyRate >= 0 &&
-                param.liquidationPenaltyRate < param.maintenanceMarginRate,
+            core.liquidationPenaltyRate >= 0 &&
+                core.liquidationPenaltyRate < core.maintenanceMarginRate,
             ""
         );
-        require(param.keeperGasReward >= 0, "");
+        require(core.keeperGasReward >= 0, "");
     }
 
-    function validate(RiskParameter storage param) public view {
-        require(param.halfSpreadRate.value >= 0, "");
+    function isRiskParameterValid(Core storage core) public view {
+        require(core.halfSpreadRate.value >= 0, "");
         require(
-            param.beta1.value > 0 && param.beta1.value < Constant.SIGNED_ONE,
+            core.beta1.value > 0 && core.beta1.value < Constant.SIGNED_ONE,
             ""
         );
         require(
-            param.beta2.value > 0 &&
-                param.beta2.value < Constant.SIGNED_ONE &&
-                param.beta2.value < param.beta1.value,
+            core.beta2.value > 0 &&
+                core.beta2.value < Constant.SIGNED_ONE &&
+                core.beta2.value < core.beta1.value,
             ""
         );
         require(
-            param.beta2.value > 0 &&
-                param.beta2.value < Constant.SIGNED_ONE &&
-                param.beta2.value < param.beta1.value,
+            core.beta2.value > 0 &&
+                core.beta2.value < Constant.SIGNED_ONE &&
+                core.beta2.value < core.beta1.value,
             ""
         );
-        require(param.fundingRateCoefficient.value >= 0, "");
+        require(core.fundingRateCoefficient.value >= 0, "");
         require(
-            param.targetLeverage.value > Constant.SIGNED_ONE &&
-                param.targetLeverage.value < Constant.SIGNED_ONE * 10,
+            core.targetLeverage.value > Constant.SIGNED_ONE &&
+                core.targetLeverage.value < Constant.SIGNED_ONE * 10,
             ""
         );
     }

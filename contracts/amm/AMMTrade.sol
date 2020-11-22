@@ -12,6 +12,10 @@ import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
 import "./AMMCommon.sol";
+import "../module/MarginModule.sol";
+import "../module/OracleModule.sol";
+
+import "../interface/IShareToken.sol";
 
 library AMMTrade {
     using Math for int256;
@@ -19,37 +23,27 @@ library AMMTrade {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
     using SafeMath for uint256;
+    using MarginModule for Core;
+    using OracleModule for Core;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
     function trade(
-        FundingState storage fundingState,
-        RiskParameter storage riskParameter,
-        MarginAccount storage ammAccount,
-        int256 indexPrice,
+        Core storage core,
         int256 tradingAmount,
         bool partialFill
     ) public view returns (int256 deltaMargin, int256 deltaPosition) {
         require(tradingAmount != 0, "Zero trade amount");
-        int256 mc = AMMCommon.availableCashBalance(
-            ammAccount,
-            fundingState.unitAccumulatedFundingLoss
-        );
-        int256 positionAmount = ammAccount.positionAmount;
+        int256 mc = core.cashBalance(address(this));
+        int256 positionAmount = core.marginAccounts[address(this)]
+            .positionAmount;
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
             positionAmount,
             tradingAmount
         );
-        deltaMargin = closePosition(
-            riskParameter,
-            indexPrice,
-            mc,
-            positionAmount,
-            closingAmount
-        );
+        deltaMargin = closePosition(core, mc, positionAmount, closingAmount);
         (int256 openDeltaMargin, int256 openDeltaPosition) = openPosition(
-            riskParameter,
-            indexPrice,
+            core,
             mc.add(deltaMargin),
             positionAmount.add(closingAmount),
             openingAmount,
@@ -57,25 +51,25 @@ library AMMTrade {
         );
         deltaMargin = deltaMargin.add(openDeltaMargin);
         deltaPosition = closingAmount.add(openDeltaPosition);
-        int256 spread = riskParameter.halfSpreadRate.value.wmul(deltaMargin);
+        int256 spread = core.halfSpreadRate.value.wmul(deltaMargin);
         deltaMargin = deltaMargin > 0
             ? deltaMargin.add(spread)
             : deltaMargin.sub(spread);
     }
 
     function openPosition(
-        RiskParameter storage riskParameter,
+        Core storage core,
         int256 mc,
         int256 positionAmount,
-        int256 indexPrice,
         int256 tradingAmount,
         bool partialFill
     ) private view returns (int256 deltaMargin, int256 deltaPosition) {
         if (tradingAmount == 0) {
             return (0, 0);
         }
-        int256 targetLeverage = riskParameter.targetLeverage.value;
-        int256 openBeta = riskParameter.beta1.value;
+        int256 targetLeverage = core.targetLeverage.value;
+        int256 openBeta = core.beta1.value;
+        int256 indexPrice = core.indexPrice();
         if (
             !AMMCommon.isAMMMarginSafe(
                 mc,
@@ -157,8 +151,7 @@ library AMMTrade {
     }
 
     function closePosition(
-        RiskParameter storage riskParameter,
-        int256 indexPrice,
+        Core storage core,
         int256 mc,
         int256 positionAmount,
         int256 tradingAmount
@@ -170,8 +163,9 @@ library AMMTrade {
             positionAmount != 0,
             "Zero position amount before close position"
         );
-        int256 targetLeverage = riskParameter.targetLeverage.value;
-        int256 closingBeta = riskParameter.beta2.value;
+        int256 targetLeverage = core.targetLeverage.value;
+        int256 closingBeta = core.beta2.value;
+        int256 indexPrice = core.indexPrice();
         if (
             AMMCommon.isAMMMarginSafe(
                 mc,
@@ -299,21 +293,17 @@ library AMMTrade {
     }
 
     function addLiquidity(
-        RiskParameter storage riskParameter,
-        FundingState storage fundingState,
-        MarginAccount storage ammAccount,
-        int256 indexPrice,
+        Core storage core,
         int256 totalShare,
         int256 marginToAdd
     ) public view returns (int256 share) {
         require(marginToAdd > 0, "Must add positive liquidity");
-        int256 mc = AMMCommon.availableCashBalance(
-            ammAccount,
-            fundingState.unitAccumulatedFundingLoss
-        );
-        int256 positionAmount = ammAccount.positionAmount;
-        int256 targetLeverage = riskParameter.targetLeverage.value;
-        int256 beta = riskParameter.beta1.value;
+        int256 mc = core.cashBalance(address(this));
+        int256 positionAmount = core.marginAccounts[address(this)]
+            .positionAmount;
+        int256 targetLeverage = core.targetLeverage.value;
+        int256 beta = core.beta1.value;
+        int256 indexPrice = core.indexPrice();
         int256 m0;
         int256 newM0;
         if (
@@ -358,21 +348,17 @@ library AMMTrade {
         share = newM0.sub(m0).wdiv(m0).wmul(totalShare);
     }
 
-    function removeLiquidity(
-        RiskParameter storage riskParameter,
-        FundingState storage fundingState,
-        MarginAccount storage ammAccount,
-        int256 indexPrice,
-        int256 totalShare,
-        int256 shareToRemove
-    ) public view returns (int256 removedMargin) {
-        int256 mc = AMMCommon.availableCashBalance(
-            ammAccount,
-            fundingState.unitAccumulatedFundingLoss
-        );
-        int256 positionAmount = ammAccount.positionAmount;
-        int256 targetLeverage = riskParameter.targetLeverage.value;
-        int256 beta = riskParameter.beta1.value;
+    function removeLiquidity(Core storage core, int256 shareToRemove)
+        public
+        view
+        returns (int256 removedMargin)
+    {
+        int256 mc = core.cashBalance(address(this));
+        int256 positionAmount = core.marginAccounts[address(this)]
+            .positionAmount;
+        int256 targetLeverage = core.targetLeverage.value;
+        int256 beta = core.beta1.value;
+        int256 indexPrice = core.indexPrice();
         require(
             AMMCommon.isAMMMarginSafe(
                 mc,
@@ -383,7 +369,10 @@ library AMMTrade {
             ),
             "Unsafe before remove liquidity"
         );
-        int256 shareRatio = totalShare.sub(shareToRemove).wdiv(totalShare);
+        int256 totalSupply = IShareToken(core.shareToken)
+            .totalSupply()
+            .toInt256();
+        int256 shareRatio = totalSupply.sub(shareToRemove).wdiv(totalSupply);
         (, int256 m0) = AMMCommon.regress(
             indexPrice,
             targetLeverage,

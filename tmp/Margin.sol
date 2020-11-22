@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "./libraries/SafeMathExt.sol";
 import "./Context.sol";
 import "./Type.sol";
-import "./Core.sol";
+import "./Type.sol";
 import "./State.sol";
 import "./Oracle.sol";
 
