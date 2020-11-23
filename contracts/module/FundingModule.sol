@@ -2,29 +2,75 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "../libraries/SafeMathExt.sol";
-import "../libraries/Validator.sol";
-import "../amm/AMMFunding.sol";
+
 import "../Type.sol";
+import "../module/MarginModule.sol";
+import "../module/OracleModule.sol";
+import "./AMMCommon.sol";
 
 library FundingModule {
-    using SafeMathExt for int256;
-    using SignedSafeMath for int256;
-    using AMMFunding for Core;
-    using Validator for Core;
+	using SafeMath for uint256;
+	using SafeMathExt for int256;
+	using SignedSafeMath for int256;
+	using MarginModule for Core;
+	using OracleModule for Core;
 
-    function updateFundingState(Core storage core) internal {
-        if (core.fundingTime == 0) {
-            return;
-        }
-        if (core.fundingTime != block.timestamp) {
-            return;
-        }
-        core.updateFundingState();
-    }
+	int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    function updateFundingRate(Core storage core) internal {
-        core.updateFundingRate();
-    }
+	function updateFundingState(Core storage core) public {
+		if (core.fundingTime == 0) {
+			return;
+		}
+		uint256 currentTime = block.timestamp;
+		if (core.fundingTime >= currentTime) {
+			return;
+		}
+		int256 timeElapsed = int256(currentTime.sub(core.fundingTime));
+		int256 deltaUnitLoss = core.indexPrice().wfrac(
+			core.fundingRate.wmul(timeElapsed),
+			FUNDING_INTERVAL
+		);
+		core.unitAccumulativeFunding = core.unitAccumulativeFunding.add(deltaUnitLoss);
+		core.fundingTime = currentTime;
+	}
+
+	function updateFundingRate(Core storage core) public {
+		core.fundingRate = nextFundingRate(core);
+	}
+
+	function nextFundingRate(Core storage core) internal view returns (int256) {
+		int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
+		if (positionAmount == 0) {
+			return 0;
+		}
+		int256 indexPrice = core.indexPrice();
+		int256 mc = core.cashBalance(address(this));
+		require(
+			AMMCommon.isAMMMarginSafe(
+				mc,
+				positionAmount,
+				indexPrice,
+				core.targetLeverage.value,
+				core.beta1.value
+			),
+			"amm unsafe"
+		);
+		(int256 mv, int256 m0) = AMMCommon.regress(
+			mc,
+			positionAmount,
+			indexPrice,
+			core.targetLeverage.value,
+			core.beta1.value
+		);
+		int256 fundingRate;
+		if (positionAmount > 0) {
+			fundingRate = mc.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
+		} else {
+			fundingRate = indexPrice.neg().wfrac(positionAmount, m0);
+		}
+		return fundingRate.wmul(core.fundingRateCoefficient.value);
+	}
 }

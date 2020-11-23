@@ -6,47 +6,33 @@ import "../interface/IOracle.sol";
 import "./StateModule.sol";
 
 library OracleModule {
-    using StateModule for Core;
+	using StateModule for Core;
 
-    function markPrice(Core storage core) internal view returns (int256) {
-        return
-            core.isNormal()
-                ? core.marketPriceData.price
-                : core.settlePriceData.price;
-    }
+	function markPrice(Core storage core) internal view returns (int256) {
+		return core.isNormal() ? core.marketPriceData.price : core.settlePriceData.price;
+	}
 
-    function updateMarkPrice(Core storage core) internal {
-        if (block.timestamp != core.marketPriceData.updateTime) {
-            (int256 price, uint256 priceTime) = IOracle(core.oracle)
-                .priceTWAPLong();
-            _updatePrice(core.marketPriceData, price, priceTime);
-        }
-    }
+	function updatePrice(Core storage core) internal {
+		if (block.timestamp != core.priceUpdateTime) {
+			updatePriceData(core.marketPriceData, IOracle(core.oracle).priceTWAPLong);
+			updatePriceData(core.indexPriceData, IOracle(core.oracle).priceTWAPShort);
+			core.priceUpdateTime = block.timestamp;
+		}
+	}
 
-    function indexPrice(Core storage core) internal view returns (int256) {
-        return
-            core.isNormal()
-                ? core.indexPriceData.price
-                : core.settlePriceData.price;
-    }
+	function indexPrice(Core storage core) internal view returns (int256) {
+		return core.isNormal() ? core.indexPriceData.price : core.settlePriceData.price;
+	}
 
-    function updateIndexPrice(Core storage core) internal {
-        if (block.timestamp != core.indexPriceData.updateTime) {
-            (int256 price, uint256 priceTime) = IOracle(core.oracle)
-                .priceTWAPShort();
-            _updatePrice(core.indexPriceData, price, priceTime);
-        }
-    }
-
-    function _updatePrice(
+	// prettier-ignore
+	function updatePriceData(
         OraclePriceData storage priceData,
-        int256 newPrice,
-        uint256 newPriceTime
-    ) private {
-        if (newPriceTime != priceData.priceTime) {
-            priceData.price = newPrice;
-            priceData.priceTime = newPriceTime;
-            priceData.updateTime = block.timestamp;
+        function() external returns (int256, uint256) priceGetter
+    ) internal {
+        (int256 price, uint256 time) = priceGetter();
+        if (time != priceData.time) {
+            priceData.price = price;
+            priceData.time = time;
         }
     }
 }
