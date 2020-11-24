@@ -22,15 +22,12 @@ export async function createContract(path: string, args: any[] = [], libraries =
 export async function deployTestEnviron() {
     const collateral = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
     const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [collateral.address]);
-
-    const OrderUtils = await createContract("contracts/libraries/OrderUtils.sol:OrderUtils");
     const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
     const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
     const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
     const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], { AMMTradeModule: AMMTradeModule.address });
 
     const perpetual = await createContract("contracts/Perpetual.sol:Perpetual", [], {
-        OrderUtils: OrderUtils.address,
         AMMTradeModule: AMMTradeModule.address,
         FundingModule: FundingModule.address,
         ParameterModule: ParameterModule.address,

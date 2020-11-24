@@ -25,6 +25,10 @@ contract BrokerRelay is ReentrancyGuard {
 	uint32 public constant SUPPORTED_MAX_ORDER_VERSION = 1;
 
 	uint256 internal _chainID;
+
+	event Deposit(address trader, uint256 amount);
+	event Withdraw(address trader, uint256 amount);
+	event Transfer(address sender, address recipient, uint256 amount);
 	event TradeFailed(bytes32 orderHash, Order order, int256 amount);
 	event TradeSuccess(bytes32 orderHash, Order order, int256 amount, uint256 gasReward);
 
@@ -32,26 +36,37 @@ contract BrokerRelay is ReentrancyGuard {
 	//     _chainID = Utils.chainID();
 	// }
 
-	function deposit() external payable nonReentrant {
-		_balances[msg.sender] = _balances[msg.sender].add(msg.value);
+	receive() external payable {
+		deposit();
 	}
 
-	function withdraw(uint256 amount) external nonReentrant {
+	function balanceOf(address trader) public view returns (uint256) {
+		return _balances[trader];
+	}
+
+	function deposit() public payable nonReentrant {
+		_balances[msg.sender] = _balances[msg.sender].add(msg.value);
+		emit Deposit(msg.sender, msg.value);
+	}
+
+	function withdraw(uint256 amount) public nonReentrant {
 		_balances[msg.sender] = _balances[msg.sender].sub(amount);
 		Address.sendValue(payable(msg.sender), amount);
+		emit Withdraw(msg.sender, amount);
 	}
 
 	function _transfer(
-		address spender,
+		address sender,
 		address recipient,
-		uint256 gasAmount
+		uint256 amount
 	) internal {
-		if (gasAmount == 0) {
+		if (amount == 0) {
 			return;
 		}
-		require(_balances[spender] >= gasAmount, "");
-		_balances[spender] = _balances[spender].sub(gasAmount);
-		_balances[recipient] = _balances[recipient].add(gasAmount);
+		require(_balances[sender] >= amount, "insufficient fee");
+		_balances[sender] = _balances[sender].sub(amount);
+		_balances[recipient] = _balances[recipient].add(amount);
+		emit Transfer(sender, recipient, amount);
 	}
 
 	function batchTrade(
@@ -61,20 +76,11 @@ contract BrokerRelay is ReentrancyGuard {
 		uint256[] calldata gasRewards
 	) external {
 		uint256 orderCount = orders.length;
-		uint256 currentTime = block.timestamp;
 		for (uint256 i = 0; i < orderCount; i++) {
-			require(orders[i].chainID == _chainID, "");
-			require(orders[i].broker == address(this), "");
-			require(orders[i].relayer == msg.sender, "");
-			require(orders[i].deadline >= currentTime, "");
-			require(amounts[i] != 0, "");
-			require(gasRewards[i] > _balances[orders[i].trader], "");
-		}
-
-		for (uint256 i = 0; i < orderCount; i++) {
+			uint256 gasReward = gasRewards[i];
+			require(gasRewards[i] > balanceOf(orders[i].trader), "insufficient fee");
 			Order memory order = orders[i];
 			int256 amount = amounts[i];
-			uint256 gasReward = gasRewards[i];
 			bytes32 orderHash = order.orderHash();
 			(bool success, ) = order.perpetual.call(
 				abi.encodeWithSignature(
@@ -84,7 +90,6 @@ contract BrokerRelay is ReentrancyGuard {
 					signatures
 				)
 			);
-
 			if (success) {
 				_transfer(order.trader, order.broker, gasReward);
 				emit TradeSuccess(orderHash, order, amount, gasReward);

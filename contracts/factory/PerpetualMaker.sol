@@ -8,8 +8,14 @@ import "./VersionController.sol";
 contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
     address internal _vault;
     address internal _latestGovernor;
-    address internal _latestPerpetualImp;
     address internal _latestShareTokenImp;
+    address internal _latestPerpetualImp;
+
+    constructor(address governor, address shareToken, address perpetual) {
+        _latestGovernor = governor;
+        _latestShareTokenImp = shareToken;
+        _latestPerpetualImp = perpetual;
+    }
 
     event CreatePerpetual(
         address perpetual,
@@ -71,6 +77,10 @@ contract PerpetualMaker is ProxyBuilder, ProxyTracer, VersionController {
             coreParams,
             riskParams
         );
+    }
+
+    function vault() public view returns (address) {
+        return _vault;
     }
 
     function activeProxy(address trader, address proxy) external {
