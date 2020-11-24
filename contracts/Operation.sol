@@ -11,8 +11,6 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "./libraries/Error.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
-import "./libraries/OrderUtils.sol";
-import "./libraries/SignatureValidator.sol";
 
 import "./interface/IFactory.sol";
 import "./interface/IShareToken.sol";
@@ -24,6 +22,7 @@ import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
 import "./module/SettleModule.sol";
 import "./module/StateModule.sol";
+import "./module/OrderModule.sol";
 import "./module/FeeModule.sol";
 
 import "./Events.sol";
@@ -36,8 +35,8 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 	using SafeMath for uint256;
 	using SafeMathExt for int256;
 	using SignedSafeMath for int256;
-	using OrderUtils for Order;
-	using SignatureValidator for Signature;
+	using OrderModule for Order;
+	using OrderModule for Core;
 
 	using AMMTradeModule for Core;
 	using SettleModule for Core;
@@ -147,7 +146,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 			shareToMint.toUint256(),
 			_core.insuranceFund.toUint256()
 		);
-		emit AddLiquidatity(msg.sender, cashToAdd);
+		emit AddLiquidatity(msg.sender, cashToAdd, shareToMint);
 	}
 
 	function removeLiquidatity(int256 shareToRemove) external syncState nonReentrant {
@@ -159,7 +158,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 
 		_core.updateCashBalance(address(this), cashToReturn.neg());
 		_transferToUser(payable(msg.sender), cashToReturn);
-		emit RemoveLiquidatity(msg.sender, shareToRemove);
+		emit RemoveLiquidatity(msg.sender, cashToReturn, shareToRemove);
 	}
 
 	function trade(
@@ -172,25 +171,23 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		_trade(trader, amount, priceLimit, deadline, referrer);
 	}
 
-	function brokerTrade(Order calldata order, int256 amount)
-		external
-		userTrace(order.trader)
-		syncState
-	{
-		address signer = order.signature.getSigner(order.orderHash());
+	function brokerTrade(
+		Order memory order,
+		int256 amount,
+		bytes memory signature
+	) external userTrace(order.trader) syncState {
+		// signer
+		address signer = order.signer(signature);
 		require(signer == order.trader || isGranted(order.trader, signer, PRIVILEGE_TRADE), "");
-		(bool valid, string memory reason) = order.validateOrderFields(
-			_core.marginAccounts[order.trader],
-			amount
-		);
-		require(valid, reason);
+		// validate
+		_core.validateOrder(order, amount);
+		// do trade
 		_trade(order.trader, amount, order.priceLimit, order.deadline, order.referrer);
 	}
 
 	function liquidateByAMM(address trader, uint256 deadline) external userTrace(trader) syncState {
 		require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
 		require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-
 		Receipt memory receipt = _core.liquidateByAMM(trader);
 		emit LiquidateByAMM(
 			trader,
@@ -247,7 +244,6 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		require(amount > 0, Error.INVALID_POSITION_AMOUNT);
 		require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
 		require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-
 		Receipt memory receipt = _core.trade(trader, amount, priceLimit, referrer);
 		emit Trade(
 			trader,

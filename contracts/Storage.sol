@@ -38,8 +38,8 @@ contract Storage {
 		_core.operator = operator;
 		_core.oracle = oracle;
 		_core.factory = msg.sender;
-		_core.vault = IFactory(_core.factory).vault();
-		_core.vaultFeeRate = IFactory(_core.factory).vaultFeeRate();
+		// _core.vault = IFactory(_core.factory).vault();
+		// _core.vaultFeeRate = IFactory(_core.factory).vaultFeeRate();
 
 		_core.initialMarginRate = coreParams[0];
 		_core.maintenanceMarginRate = coreParams[1];
@@ -77,11 +77,11 @@ contract Storage {
 		return _governor;
 	}
 
-	function shareToken() internal view returns (address) {
+	function shareToken() public view returns (address) {
 		return _shareToken;
 	}
 
-	function infomation()
+	function information()
 		public
 		view
 		returns (

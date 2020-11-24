@@ -77,6 +77,7 @@ library ParameterModule {
 		} else {
 			revert("key not found");
 		}
+		isRiskParameterValid(core);
 	}
 
 	function adjustOption(Option storage option, int256 newValue) internal {

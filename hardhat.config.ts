@@ -14,35 +14,40 @@ task("accounts", "Prints the list of accounts", async (args, hre) => {
 });
 
 module.exports = {
-    defaultNetwork: "hardhat",
-    networks: {
-      hardhat: {
-      },
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
     },
-    solidity: {
-      version: "0.7.4",
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200
-        }
-      }
-    },
-    paths: {
-        sources: "./contracts",
-        tests: "./test",
-        cache: "./cache",
-        artifacts: "./artifacts"
-    },
-    contractSizer: {
-      alphaSort: true,
-      runOnCompile: false,
-      disambiguatePaths: false,
-    },
-    abiExporter: {
-      path: './abi',
-      clear: false,
-      flat: true,
-      only: ['PereptualMaker', 'Perpetual'],
+    s10: {
+      url: "http://server10.jy.mcarlo.com:8747",
+      gasPrice: "auto",
+      blockGasLimit: "8000000"
     }
+  },
+  solidity: {
+    version: "0.7.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: false,
+    disambiguatePaths: false,
+  },
+  abiExporter: {
+    path: './abi',
+    clear: false,
+    flat: true,
+    only: ['PereptualMaker', 'Perpetual'],
+  }
 };

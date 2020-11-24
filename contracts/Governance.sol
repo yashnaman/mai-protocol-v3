@@ -3,12 +3,12 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./Events.sol";
-import "./Storage.sol";
-import "./Type.sol";
-
 import "./module/ParameterModule.sol";
 import "./module/StateModule.sol";
+
+import "./Type.sol";
+import "./Events.sol";
+import "./Storage.sol";
 
 // @title Goovernance is the contract to maintain perpetual parameters.
 contract Governance is Storage, Events {
@@ -16,13 +16,15 @@ contract Governance is Storage, Events {
 	using ParameterModule for Core;
 	using StateModule for Core;
 
+	uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
+
 	modifier voteOnly() {
-		require(msg.sender == _governor, "");
+		require(msg.sender == _governor, "only vote is allowed");
 		_;
 	}
 
 	modifier operatorOnly() {
-		require(msg.sender == _core.operator, "");
+		require(msg.sender == _core.operator, "only operator is allowed");
 		_;
 	}
 
@@ -47,7 +49,10 @@ contract Governance is Storage, Events {
 	}
 
 	function shutdown() external {
-		require(block.timestamp.sub(_core.indexPriceData.time) > 24 * 3600, "index price timeout");
+		require(
+			block.timestamp.sub(_core.indexPriceData.time) > INDEX_PRICE_TIMEOUT,
+			"index price is out of date"
+		);
 		_core.enterEmergencyState();
 	}
 

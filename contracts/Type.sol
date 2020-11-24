@@ -40,10 +40,9 @@ struct Order {
 	uint64 deadline;
 	uint32 version;
 	OrderType orderType;
-	bool closeOnly;
+	bool isCloseOnly;
 	uint64 salt;
 	uint256 chainID;
-	Signature signature;
 }
 
 struct Receipt {
@@ -110,4 +109,7 @@ struct Core {
 	int256 withdrawableMarginWithoutPosition;
 	EnumerableSet.AddressSet registeredTraders;
 	EnumerableSet.AddressSet clearedTraders;
+	// filled
+	mapping(bytes32 => int256) orderFilled;
+	mapping(bytes32 => bool) orderCanceled;
 }

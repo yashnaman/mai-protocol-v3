@@ -39,10 +39,10 @@ contract Collateral {
 	//  * @param   collateral   Address of collateral, 0x0 if using ether.
 	//  */
 	function _collateralInitialize(address collateral) internal {
-		require(collateral != address(0), "0 address not support");
+		require(collateral != address(0), "collateral is invalid");
 		(uint8 decimals, bool ok) = _retrieveDecimals(collateral);
-		require(ok, "fail to read decimals");
-		require(decimals <= MAX_COLLATERAL_DECIMALS, "decimals out of range");
+		require(ok, "cannot read decimals");
+		require(decimals <= MAX_COLLATERAL_DECIMALS, "decimals is out of range");
 		_collateral = collateral;
 		_scaler = uint256(10**(MAX_COLLATERAL_DECIMALS.sub(uint256(decimals))));
 	}
@@ -51,8 +51,8 @@ contract Collateral {
 	 * @notice  Try to retreive decimals from an erc20 contract.
 	 * @return  Decimals and true if success or 0 and false.ww
 	 */
-	function _retrieveDecimals(address tokenAddress) internal view returns (uint8, bool) {
-		(bool success, bytes memory result) = tokenAddress.staticcall(
+	function _retrieveDecimals(address token) internal view returns (uint8, bool) {
+		(bool success, bytes memory result) = token.staticcall(
 			abi.encodeWithSignature("decimals()")
 		);
 		if (success && result.length >= 32) {
