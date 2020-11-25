@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "../module/AMMTradeModule.sol";
 import "../module/AMMCommon.sol";
 
-contract TestAMMTradeModule {
+contract TestAMM {
     using SignedSafeMath for int256;
 	using MarginModule for Core;
 	using OracleModule for Core;

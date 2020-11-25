@@ -81,8 +81,8 @@ const amm6 = {
   // available cash = -653.74080722289376 - 21.81 = -675.55080722289376
 }
 
-describe('AMMTradeModule', () => {
-  let AMMTradeModule;
+describe('AMM', () => {
+  let AMM;
 
 	let createFromFactory = async (path, libraries = {}) => {
 		const factory = await ethers.getContractFactory(path, { libraries: libraries });
@@ -91,8 +91,8 @@ describe('AMMTradeModule', () => {
 	}
 
   beforeEach(async () => {
-    const LibAMMTradeModule = await createFromFactory("contracts/module/AMMTradeModule.sol:AMMTradeModule")
-    AMMTradeModule = await createFromFactory("contracts/test/TestAMMTradeModule.sol:TestAMMTradeModule", {AMMTradeModule: LibAMMTradeModule.address});
+    const AMMTradeModule = await createFromFactory("contracts/module/AMMTradeModule.sol:AMMTradeModule")
+    AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", {AMMTradeModule: AMMTradeModule.address});
   });
 
   describe('isAMMSafe', function () {
@@ -101,36 +101,36 @@ describe('AMMTradeModule', () => {
       const indexPrice = toWad('11.026192936488206')
       const cashBalance = toWad('-70.81710610832608')
       const positionAmount = toWad('11')
-      await AMMTradeModule.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
-      expect(await AMMTradeModule.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
+      await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
+      expect(await AMM.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
     })
     it(`long - fail`, async () => {
       const indexPrice = toWad('11.026192936488204')
       const cashBalance = toWad('-70.81710610832608')
       const positionAmount = toWad('11')
-      await AMMTradeModule.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
-      expect(await AMMTradeModule.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.false
+      await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
+      expect(await AMM.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.false
     })
     it(`long - positive cash is always safe`, async () => {
       const indexPrice = toWad('0')
       const cashBalance = toWad('0')
       const positionAmount = toWad('11')
-      await AMMTradeModule.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
-      expect(await AMMTradeModule.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
+      await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
+      expect(await AMM.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
     })
     it(`short - ok`, async () => {
       const indexPrice = toWad('130.647439610301681')
       const cashBalance = toWad('2131.0256410256410')
       const positionAmount = toWad('-11')
-      await AMMTradeModule.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
-      expect(await AMMTradeModule.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
+      await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
+      expect(await AMM.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.true
     })
     it(`short - fail`, async () => {
       const indexPrice = toWad('130.647439610301682')
       const cashBalance = toWad('2131.0256410256410')
       const positionAmount = toWad('-11')
-      await AMMTradeModule.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
-      expect(await AMMTradeModule.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.false
+      await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, cashBalance, positionAmount, _0, indexPrice)
+      expect(await AMM.isAMMMarginSafe(toWad('0.1') /* beta */)).to.be.false
     })
   })
 
@@ -166,8 +166,8 @@ describe('AMMTradeModule', () => {
 
     successCases.forEach((element, index) => {
       it(`${index}`, async () => {
-        await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
-        const context = await AMMTradeModule.regress(toWad('0.1') /* beta */)
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        const context = await AMM.regress(toWad('0.1') /* beta */)
         expect(context.mv).approximateBigNumber(element.mv)
         expect(context.m0).approximateBigNumber(element.m0)
       })
@@ -176,55 +176,55 @@ describe('AMMTradeModule', () => {
 
   describe('computeDeltaMargin', function () {
     it(`0 -> +5`, async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.longDeltaMargin(toWad('5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('-494.570984085309081'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.longDeltaMargin(toWad('5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('-494.570984085309081'))
     })
     it(`0 -> -5`, async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.shortDeltaMargin(toWad('-5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('505.555555555555556'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.shortDeltaMargin(toWad('-5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('505.555555555555556'))
     })
   })
 
   describe('safePosition', function () {
     it('shorts from 0', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
     })
     it('longs from 0', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('37.2594670356232003'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('37.2594670356232003'))
     })
     it('short: √ (beta lev) < 1', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxShortPosition(toWad('0.1'))).approximateBigNumber(toWad('-29.28932188134524756'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxShortPosition(toWad('0.1'))).approximateBigNumber(toWad('-29.28932188134524756'))
     })
     it('short: √ (beta lev) = 1', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
     })
     it('short: √ (beta lev) > 1', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxShortPosition(toWad('0.99'))).approximateBigNumber(toWad('-15.50455121681897322'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxShortPosition(toWad('0.99'))).approximateBigNumber(toWad('-15.50455121681897322'))
     })
     it('long: (-1 + beta + beta lev) = 0, implies beta < 0.5', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('4'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('31.7977502570247453'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('4'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('31.7977502570247453'))
     })
     it('long: (-1 + beta + beta lev) < 0 && lev < 2 && beta < (2 - lev)/2', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('17.689313632528408'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('17.689313632528408'))
     })
     it('long: (-1 + beta + beta lev) < 0 && beta >= (2 - lev)/2', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.3'))).approximateBigNumber(toWad('15.875912065096235'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.3'))).approximateBigNumber(toWad('15.875912065096235'))
     })
     it('long: (-1 + beta + beta lev) < 0 && lev >= 2', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('21.2517072860587530'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('21.2517072860587530'))
     })
     it('long: (-1 + beta + beta lev) > 0', async () => {
-      await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
-      expect(await AMMTradeModule.maxLongPosition(toWad('0.99'))).approximateBigNumber(toWad('18.2026549289986863'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      expect(await AMM.maxLongPosition(toWad('0.99'))).approximateBigNumber(toWad('18.2026549289986863'))
     })
 
   })
@@ -316,8 +316,8 @@ describe('AMMTradeModule', () => {
 
     successCases.forEach(element => {
       it(element.name, async () => {
-        await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
-        const context = await AMMTradeModule.tradeWithAMM(element.amount, element.partialFill)
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        const context = await AMM.tradeWithAMM(element.amount, element.partialFill)
         expect(context.deltaMargin).approximateBigNumber(element.deltaMargin)
         expect(context.deltaPosition).approximateBigNumber(element.deltaPosition)
       })
@@ -373,8 +373,8 @@ describe('AMMTradeModule', () => {
 
     failCases.forEach(element => {
       it(element.name, async () => {
-        await AMMTradeModule.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
-        await expect(AMMTradeModule.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await expect(AMM.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
       })
     })
   })
