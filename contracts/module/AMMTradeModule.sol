@@ -257,7 +257,15 @@ library AMMTradeModule {
         } else {
             newM0 = indexPrice.wmul(positionAmount).add(mc);
         }
-        share = newM0.sub(m0).wdiv(m0).wmul(shareTotalSupply);
+        if (m0 == 0) {
+            if (shareTotalSupply == 0) {
+                share = newM0;
+            } else {
+                revert("share has no value");
+            }
+        } else {
+            share = newM0.sub(m0).wdiv(m0).wmul(shareTotalSupply);
+        }
     }
 
     function removeLiquidity(
