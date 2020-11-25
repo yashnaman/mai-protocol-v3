@@ -38,8 +38,8 @@ contract Storage {
 		_core.operator = operator;
 		_core.oracle = oracle;
 		_core.factory = msg.sender;
-		// _core.vault = IFactory(_core.factory).vault();
-		// _core.vaultFeeRate = IFactory(_core.factory).vaultFeeRate();
+		_core.vault = IFactory(_core.factory).vault();
+		_core.vaultFeeRate = IFactory(_core.factory).vaultFeeRate();
 
 		_core.initialMarginRate = coreParams[0];
 		_core.maintenanceMarginRate = coreParams[1];

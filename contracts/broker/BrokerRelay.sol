@@ -72,7 +72,7 @@ contract BrokerRelay is ReentrancyGuard {
 	function batchTrade(
 		Order[] calldata orders,
 		int256[] calldata amounts,
-		bytes32[] calldata signatures,
+		bytes[] calldata signatures,
 		uint256[] calldata gasRewards
 	) external {
 		uint256 orderCount = orders.length;
@@ -84,7 +84,7 @@ contract BrokerRelay is ReentrancyGuard {
 			bytes32 orderHash = order.orderHash();
 			(bool success, ) = order.perpetual.call(
 				abi.encodeWithSignature(
-					"brokerTrade(Order,int256,bytes32)",
+					"brokerTrade(Order,int256,bytes)",
 					order,
 					amount,
 					signatures

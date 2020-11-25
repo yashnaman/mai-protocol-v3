@@ -30,42 +30,6 @@ async function deployPerpetual() {
         ParameterModule: ParameterModule.address,
         TradeModule: TradeModule.address,
     });
-    // await perpetual.initialize(
-    //     operator,
-    //     oracle.address,
-    //     "0x0000000000000000000000000000000000000000",
-    //     "0x0000000000000000000000000000000000000000",
-    //     [
-    //         toWei("0.1"),
-    //         toWei("0.05"),
-    //         toWei("0.001"),
-    //         toWei("0.001"),
-    //         toWei("0.2"),
-    //         toWei("0.02"),
-    //         toWei("0.00000002"),
-    //     ],
-    //     [
-    //         toWei("0.01"),
-    //         toWei("0.1"),
-    //         toWei("0.06"),
-    //         toWei("0.1"),
-    //         toWei("5"),
-    //     ],
-    //     [
-    //         toWei("0"),
-    //         toWei("0"),
-    //         toWei("0"),
-    //         toWei("0"),
-    //         toWei("0"),
-    //     ],
-    //     [
-    //         toWei("0.1"),
-    //         toWei("0.2"),
-    //         toWei("0.2"),
-    //         toWei("0.5"),
-    //         toWei("10"),
-    //     ],
-    // )
     return perpetual;
 }
 
@@ -83,6 +47,7 @@ async function deployGovernor() {
 
 
 async function deployPerpetualMaker() {
+    // s10
     // perpetual deployed to: 0x938c74cDffc1b744fF4519543af2C9d99cF143E5
     // shareToken deployed to: 0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8
     // governor deployed to: 0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3
@@ -94,14 +59,27 @@ async function deployPerpetualMaker() {
             "0x938c74cDffc1b744fF4519543af2C9d99cF143E5"
         ]
     );
+
+    // // local
+    // const perpetual = await deployPerpetual();
+    // const shareToken = await deployShareToken();
+    // const governor = await deployGovernor();
+    // return await createContract(
+    //     "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
+    //     [
+    //         governor.address,
+    //         shareToken.address,
+    //         perpetual.address,
+    //     ]
+    // );
 }
 
 async function main(accounts: any[]) {
     // ===== mock
-    // const collateral = await deployCollateral("collateral", "CTK", 18);
-    // console.log("collateral deployed to:", collateral.address);
-    // const oracle = await deployOracle(collateral);
-    // console.log("oracle deployed to:", oracle.address);
+    const collateral = await deployCollateral("collateral", "CTK", 18);
+    console.log("collateral deployed to:", collateral.address);
+    const oracle = await deployOracle(collateral);
+    console.log("oracle deployed to:", oracle.address);
 
     // ===== template
     // const perpetual = await deployPerpetual();
@@ -116,8 +94,53 @@ async function main(accounts: any[]) {
     // console.log("brokerRelay deployed to:", brokerRelay.address);
 
     // ===== maker
-    const perpetualMaker = deployPerpetualMaker();
-    console.log("perpetualMaker deployed to:", perpetualMaker.address);
+    const perpetualMaker = await deployPerpetualMaker();
+
+    const tx = await perpetualMaker.createPerpetual(
+        // accounts[0].address,
+        oracle.address,
+        [
+            toWei("0.1"),
+            toWei("0.05"),
+            toWei("0.001"),
+            toWei("0.001"),
+            toWei("0.2"),
+            toWei("0.02"),
+            toWei("0.00000002"),
+        ],
+        [
+            toWei("0.01"),
+            toWei("0.1"),
+            toWei("0.06"),
+            toWei("0.1"),
+            toWei("5"),
+        ],
+        [
+            toWei("0"),
+            toWei("0"),
+            toWei("0"),
+            toWei("0"),
+            toWei("0"),
+        ],
+        [
+            toWei("0.1"),
+            toWei("0.2"),
+            toWei("0.2"),
+            toWei("0.5"),
+            toWei("10"),
+        ],
+        998,
+    )
+    console.log(await tx.wait());
+    console.log("perpetualMaker deployed to :", perpetualMaker.address);
+
+    const n = await perpetualMaker.totalPerpetualCount();
+    console.log("totalPerpetualCount        :", n.toString());
+
+    const allPerpetuals = await perpetualMaker.listPerpetuals(0, n.toString());
+    allPerpetuals.forEach(element => {
+        console.log("address                :", element);
+    });
 }
 
 ethers.getSigners()

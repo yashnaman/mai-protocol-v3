@@ -12,31 +12,44 @@ export async function getAccounts(): Promise<any[]> {
     });
     return accounts;
 }
-
 export async function createContract(path: string, args: any[] = [], libraries = {}): Promise<any> {
     const factory = await ethers.getContractFactory(path, { libraries: libraries });
     const deployed = await factory.deploy(...args);
     return deployed;
 }
 
-export async function deployTestEnviron() {
-    const collateral = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-    const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [collateral.address]);
+export async function getLinkedPerpetualFactory() {
     const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
     const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
+    const OrderModule = await createContract("contracts/module/OrderModule.sol:OrderModule");
     const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
     const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], { AMMTradeModule: AMMTradeModule.address });
-
-    const perpetual = await createContract("contracts/Perpetual.sol:Perpetual", [], {
-        AMMTradeModule: AMMTradeModule.address,
-        FundingModule: FundingModule.address,
-        ParameterModule: ParameterModule.address,
-        TradeModule: TradeModule.address,
+    return await ethers.getContractFactory("contracts/Perpetual.sol:Perpetual", {
+        libraries: {
+            AMMTradeModule: AMMTradeModule.address,
+            FundingModule: FundingModule.address,
+            ParameterModule: ParameterModule.address,
+            TradeModule: TradeModule.address,
+            OrderModule: OrderModule.address,
+        }
     });
+}
 
-    return {
-        collateral,
-        oracle,
-        perpetual
-    }
+export async function createTestPerpetual() {
+    const factory = await getLinkedPerpetualFactory();
+    const deployed = await factory.deploy();
+    return deployed;
+}
+
+export async function createPerpetualMaker(governor, shareToken, perpetual, vault, vaultFeeRate) {
+    return await createContract(
+        "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
+        [
+            governor.address,
+            shareToken.address,
+            perpetual.address,
+            vault.address,
+            vaultFeeRate,
+        ]
+    );
 }
