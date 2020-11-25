@@ -60,7 +60,7 @@ library AMMTradeModule {
         int256 positionAmount,
         int256 tradingAmount,
         bool partialFill
-    ) private view returns (int256 deltaMargin, int256 deltaPosition) {
+    ) internal view returns (int256 deltaMargin, int256 deltaPosition) {
         if (tradingAmount == 0) {
             return (0, 0);
         }
@@ -122,7 +122,7 @@ library AMMTradeModule {
         int256 mc,
         int256 positionAmount,
         int256 tradingAmount
-    ) private view returns (int256 deltaMargin) {
+    ) internal view returns (int256 deltaMargin) {
         if (tradingAmount == 0) {
             return 0;
         }
@@ -247,13 +247,13 @@ library AMMTradeModule {
         int256 m0;
         int256 newM0;
         if (AMMCommon.isAMMMarginSafe(mc, positionAmount, indexPrice, targetLeverage, beta)) {
-            (, m0) = AMMCommon.regress(indexPrice, targetLeverage, mc, positionAmount, beta);
+            (, m0) = AMMCommon.regress(mc, positionAmount, indexPrice, targetLeverage, beta);
         } else {
             m0 = indexPrice.wmul(positionAmount).add(mc);
         }
         mc = mc.add(marginToAdd);
         if (AMMCommon.isAMMMarginSafe(mc, positionAmount, indexPrice, targetLeverage, beta)) {
-            (, newM0) = AMMCommon.regress(indexPrice, targetLeverage, mc, positionAmount, beta);
+            (, newM0) = AMMCommon.regress(mc, positionAmount, indexPrice, targetLeverage, beta);
         } else {
             newM0 = indexPrice.wmul(positionAmount).add(mc);
         }
@@ -264,7 +264,7 @@ library AMMTradeModule {
         Core storage core,
         int256 shareTotalSupply,
         int256 shareToRemove
-    ) public view returns (int256 removedMargin) {
+    ) public view returns (int256 marginToRemove) {
         int256 mc = core.cashBalance(address(this));
         int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
         int256 targetLeverage = core.targetLeverage.value;
@@ -275,7 +275,7 @@ library AMMTradeModule {
             "Unsafe before remove liquidity"
         );
         int256 shareRatio = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply);
-        (, int256 m0) = AMMCommon.regress(indexPrice, targetLeverage, mc, positionAmount, beta);
+        (, int256 m0) = AMMCommon.regress(mc, positionAmount, indexPrice, targetLeverage, beta);
         m0 = m0.wmul(shareRatio);
         if (positionAmount > 0) {
             require(
@@ -288,17 +288,17 @@ library AMMTradeModule {
                 "Unsafe after remove liquidity"
             );
         }
-        removedMargin = _removedMargin(indexPrice, mc, m0, positionAmount, targetLeverage, beta);
+        marginToRemove = _marginToRemove(indexPrice, mc, m0, positionAmount, targetLeverage, beta);
     }
 
-    function _removedMargin(
+    function _marginToRemove(
         int256 indexPrice,
         int256 mc,
         int256 m0,
         int256 positionAmount,
         int256 targetLeverage,
         int256 beta
-    ) private pure returns (int256 removedMargin) {
+    ) internal pure returns (int256 marginToRemove) {
         int256 positionValue = indexPrice.wmul(positionAmount);
         if (positionAmount <= 0) {
             int256 newMc = positionValue
@@ -307,7 +307,7 @@ library AMMTradeModule {
                 .wdiv(positionValue.add(m0))
                 .sub(positionValue)
                 .add(m0.wdiv(targetLeverage));
-            removedMargin = mc.sub(newMc);
+            marginToRemove = mc.sub(newMc);
         } else {
             int256 beforeSqrt = m0.sub(positionValue).mul(m0.sub(positionValue));
             beforeSqrt = beta.wmul(m0).mul(positionValue).mul(4).add(beforeSqrt);
@@ -318,7 +318,7 @@ library AMMTradeModule {
                 .wdiv(Constant.SIGNED_ONE.sub(beta))
                 .div(2)
                 .add(m0.wdiv(targetLeverage));
-            removedMargin = mc.sub(newMc);
+            marginToRemove = mc.sub(newMc);
         }
     }
 }

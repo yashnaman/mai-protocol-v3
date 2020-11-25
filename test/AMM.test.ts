@@ -9,7 +9,7 @@ use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {
-    return new BigNumber(x).times(weis).toFixed();
+    return new BigNumber(x).times(weis).toFixed(0);
 }
 const _0 = toWad('0')
 const params = {
@@ -378,4 +378,43 @@ describe('AMM', () => {
       })
     })
   })
+
+  describe('add liquidity', function () {
+    const cases = [
+      {
+          name: 'normal',
+          amm: amm1,
+          totalShare: toWad('100'),
+          marginToAdd: toWad('1000'),
+          share: toWad('107.408041859396039759')
+      }
+    ]
+
+    cases.forEach(element => {
+      it(element.name, async () => {
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        expect(await AMM.addLiquidity(element.totalShare, element.marginToAdd)).approximateBigNumber(element.share)
+      })
+    })
+  })
+
+  describe('remove liquidity', function () {
+    const cases = [
+      {
+          name: 'normal',
+          amm: amm1,
+          totalShare: toWad('100'),
+          shareToRemove: toWad('10'),
+          marginToRemove: toWad('86.96765668805676924')
+      }
+    ]
+
+    cases.forEach(element => {
+      it(element.name, async () => {
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        expect(await AMM.removeLiquidity(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove)
+      })
+    })
+  })
+
 });

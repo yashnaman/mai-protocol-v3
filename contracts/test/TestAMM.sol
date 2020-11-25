@@ -90,5 +90,19 @@ contract TestAMM {
         (deltaMargin, deltaPosition) = AMMTradeModule.tradeWithAMM(core, tradingAmount, partialFill);
     }
 
+    function addLiquidity(
+        int256 shareTotalSupply,
+        int256 marginToAdd
+    ) public view returns (int256 share) {
+        share = AMMTradeModule.addLiquidity(core, shareTotalSupply, marginToAdd);
+    }
+
+    function removeLiquidity(
+        int256 shareTotalSupply,
+        int256 shareToRemove
+    ) public view returns (int256 marginToRemove) {
+        marginToRemove = AMMTradeModule.removeLiquidity(core, shareTotalSupply, shareToRemove);
+    }
+
 }
 
