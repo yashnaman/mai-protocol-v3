@@ -13,7 +13,7 @@ import {
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
 import { PerpetualFactory } from "../typechain/PerpetualFactory"
-import { Perpetual } from "../typechain/Perpetual";
+import { BrokerRelayFactory } from "../typechain/BrokerRelayFactory";
 
 describe("integration", () => {
 
@@ -36,14 +36,19 @@ describe("integration", () => {
     }
 
     it("broker", async () => {
-        var broker = await createContract("contracts/broker/BrokerRelay.sol:BrokerRelay");
+        const accounts = await ethers.getSigners();
+        const user1 = accounts[1];
+        const user2 = accounts[2];
+        const user3 = accounts[3];
+        const vault = accounts[9];
 
+        var broker = await createContract("contracts/broker/BrokerRelay.sol:BrokerRelay");
         const order = {
-            trader: "0x0000000000000000000000000000000000000001", // trader
-            broker: "0x0000000000000000000000000000000000000002", // broker
-            relayer: "0x0000000000000000000000000000000000000003", // relayer
-            perpetual: "0x0000000000000000000000000000000000000004", // perpetual
-            referrer: "0x0000000000000000000000000000000000000005", // referrer
+            trader: user1.address, // trader
+            broker: broker.address, // broker
+            relayer: user1.address, // relayer
+            perpetual: "0x0000000000000000000000000000000000000000", // perpetual
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
             amount: 1000,
             priceLimit: 2000,
             deadline: 1606217568,
@@ -54,7 +59,12 @@ describe("integration", () => {
             chainID: 1,
         };
 
-        await broker.batchTrade([order], [100], [""], [100]);
+        const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
+        await brokerUser1.deposit({ value: 10000 });
+        console.log((await brokerUser1.balanceOf(user1.address)).toString());
+
+
+        await broker.batchTrade([order], [100], ["0x"], [100]);
     });
 
     it("main", async () => {

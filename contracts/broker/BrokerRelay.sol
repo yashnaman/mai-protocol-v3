@@ -78,7 +78,7 @@ contract BrokerRelay is ReentrancyGuard {
 		uint256 orderCount = orders.length;
 		for (uint256 i = 0; i < orderCount; i++) {
 			uint256 gasReward = gasRewards[i];
-			require(gasRewards[i] > balanceOf(orders[i].trader), "insufficient fee");
+			require(gasRewards[i] <= balanceOf(orders[i].trader), "insufficient fee");
 			Order memory order = orders[i];
 			int256 amount = amounts[i];
 			bytes32 orderHash = order.orderHash();
