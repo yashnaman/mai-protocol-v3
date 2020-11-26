@@ -140,6 +140,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 
 	function addLiquidatity(int256 cashToAdd) external syncState nonReentrant {
 		require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
 		_transferFromUser(msg.sender, cashToAdd);
 		int256 shareTotalSupply = IShareToken(_shareToken).totalSupply().toInt256();
 		int256 shareToMint = _core.addLiquidity(shareTotalSupply, cashToAdd);
@@ -148,6 +149,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 			: 0;
 		_core.updateCashBalance(address(this), cashToAdd);
 		IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256(), unitInsuranceFund);
+
 		emit AddLiquidatity(msg.sender, cashToAdd, shareToMint);
 	}
 
@@ -157,9 +159,9 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		int256 shareTotalSupply = IShareToken(_shareToken).totalSupply().toInt256();
 		int256 cashToReturn = _core.removeLiquidity(shareTotalSupply, shareToRemove);
 		IShareToken(_shareToken).burn(msg.sender, shareToRemove.toUint256());
-
 		_core.updateCashBalance(address(this), cashToReturn.neg());
 		_transferToUser(payable(msg.sender), cashToReturn);
+
 		emit RemoveLiquidatity(msg.sender, cashToReturn, shareToRemove);
 	}
 
@@ -207,7 +209,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		uint256 deadline
 	) external userTrace(msg.sender) userTrace(trader) syncState {
 		require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-		require(amount > 0, Error.INVALID_POSITION_AMOUNT);
+		require(amount != 0, Error.INVALID_POSITION_AMOUNT);
 		require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
 		require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
 
@@ -243,7 +245,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		address referrer
 	) internal userTrace(trader) syncState {
 		require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-		require(amount > 0, Error.INVALID_POSITION_AMOUNT);
+		require(amount != 0, Error.INVALID_POSITION_AMOUNT);
 		require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
 		require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
 		Receipt memory receipt = _core.trade(trader, amount, priceLimit, referrer);

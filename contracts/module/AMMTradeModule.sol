@@ -17,6 +17,8 @@ import "../module/OracleModule.sol";
 
 import "./AMMCommon.sol";
 
+import "hardhat/console.sol";
+
 library AMMTradeModule {
 	using Math for int256;
 	using Math for uint256;

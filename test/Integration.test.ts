@@ -17,7 +17,7 @@ import { BrokerRelayFactory } from "../typechain/BrokerRelayFactory";
 
 type Pair = Array<string>
 
-class GasState {
+class GasStat {
     collection: Array<Pair> = [];
 
     format(x) {
@@ -57,6 +57,7 @@ describe("integration", () => {
     }
 
     it("broker", async () => {
+        var gs = new GasStat();
         const accounts = await ethers.getSigners();
         const user1 = accounts[1];
         const user2 = accounts[2];
@@ -72,23 +73,20 @@ describe("integration", () => {
             referrer: "0x0000000000000000000000000000000000000000", // referrer
             amount: 1000,
             priceLimit: 2000,
-            deadline: 1606217568,
-            version: 1,
-            orderType: 1,
-            isCloseOnly: true,
-            salt: 123456,
+            data: ethers.utils.solidityPack(["uint64", "uint32", "uint8", "uint8", "uint64"], [1606217568, 1, 1, 1, 123456]).padEnd(66, "0"),
             chainID: 1,
         };
 
         const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
         await brokerUser1.deposit({ value: 10000 });
         console.log((await brokerUser1.balanceOf(user1.address)).toString());
-        const tx = await broker.batchTrade([order], [100], ["0x"], [100]);
-        console.log(tx);
+        await gs.collect("batchTrade 1", broker.batchTrade([order], [100], ["0x"], [100]));
+
+        gs.summary()
     });
 
     it("main", async () => {
-        var gs = new GasState();
+        var gs = new GasStat();
         // users
         const accounts = await ethers.getSigners();
         const user1 = accounts[1];
@@ -141,21 +139,37 @@ describe("integration", () => {
         print(await perpUser1.marginAccount(user1.address));
 
         // lp
-        const perpUser2 = await PerpetualFactory.connect(perp.address, user1);
+        const perpUser2 = await PerpetualFactory.connect(perp.address, user2);
         await gs.collect("addLiquidatity", perpUser2.addLiquidatity(toWei("1000")));
+        const shareUser2 = await CustomErc20Factory.connect(await perp.shareToken(), user2);
+        console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
+        console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
         // trade 1
-        await gs.collect("trade 1", perpUser1.trade(user1.address, toWei("0.1"), toWei("506"), now + 999999, none));
+        await gs.collect("trade 1 - open", perpUser1.trade(user1.address, toWei("0.1"), toWei("506"), now + 999999, none));
         print(await perpUser1.marginAccount(user1.address));
 
         // trade 2
-        await gs.collect("trade 2", perpUser1.trade(user1.address, toWei("0.05"), toWei("550"), now + 999999, none));
+        await gs.collect("trade 2 - open", perpUser1.trade(user1.address, toWei("0.05"), toWei("550"), now + 999999, none));
+        print(await perpUser1.marginAccount(user1.address));
+
+        // trade 3
+        await gs.collect("trade 3 - revert", perpUser1.trade(user1.address, toWei("-0.2"), toWei("400"), now + 999999, none));
+        print(await perpUser1.marginAccount(user1.address));
+
+        // trade 4
+        await gs.collect("trade 4 - close all", perpUser1.trade(user1.address, toWei("0.05"), toWei("510"), now + 999999, none));
         print(await perpUser1.marginAccount(user1.address));
 
         // withdraw
         await gs.collect("withdraw", perpUser1.withdraw(user1.address, toWei("10")));
         console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
         print(await perpUser1.marginAccount(user1.address));
+
+        // remove lp
+        await gs.collect("removeLiquidatity", perpUser2.removeLiquidatity(await shareUser2.balanceOf(user2.address)));
+        console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
+        console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
         gs.summary();
     })
