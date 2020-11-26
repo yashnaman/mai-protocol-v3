@@ -15,6 +15,27 @@ import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
 import { PerpetualFactory } from "../typechain/PerpetualFactory"
 import { BrokerRelayFactory } from "../typechain/BrokerRelayFactory";
 
+type Pair = Array<string>
+
+class GasState {
+    collection: Array<Pair> = [];
+
+    format(x) {
+        return x.split('').reverse().map(function (a, i) { return a + ((i || 1) % 3 || a == '-' ? '' : ','); }).reverse().join('');
+    }
+
+    async collect(name, f) {
+        const tx = await f;
+        const receipt = await tx.wait();
+        this.collection.push([name.padEnd(24), this.format(receipt.gasUsed.toString()).padStart(10)]);
+        // console.log("[", name, "] gas used:", receipt.gasUsed.toString());
+    }
+
+    summary() {
+        console.table(this.collection)
+    }
+}
+
 describe("integration", () => {
 
     function toString(n) {
@@ -62,18 +83,19 @@ describe("integration", () => {
         const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
         await brokerUser1.deposit({ value: 10000 });
         console.log((await brokerUser1.balanceOf(user1.address)).toString());
-
-
-        await broker.batchTrade([order], [100], ["0x"], [100]);
+        const tx = await broker.batchTrade([order], [100], ["0x"], [100]);
+        console.log(tx);
     });
 
     it("main", async () => {
+        var gs = new GasState();
         // users
         const accounts = await ethers.getSigners();
         const user1 = accounts[1];
         const user2 = accounts[2];
         const user3 = accounts[3];
         const vault = accounts[9];
+        const none = "0x0000000000000000000000000000000000000000";
 
         // create components
         var ctk = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
@@ -95,14 +117,14 @@ describe("integration", () => {
         const perpetualFactory = await getLinkedPerpetualFactory();
         const perp = await perpetualFactory.attach(allPerpetuals[allPerpetuals.length - 1]);
 
-        // overview
-        print(await perp.callStatic.information());
-        print(await perp.callStatic.state());
-
         // oracle
         var now = Math.floor(Date.now() / 1000);
         await oracle.setMarkPrice(toWei("500"), now);
         await oracle.setIndexPrice(toWei("500"), now);
+
+        // overview
+        print(await perp.callStatic.information());
+        print(await perp.callStatic.state());
 
         // get initial coins
         await ctk.mint(user1.address, toWei("10000"));
@@ -114,14 +136,27 @@ describe("integration", () => {
 
         // deposit
         const perpUser1 = await PerpetualFactory.connect(perp.address, user1);
-        await perpUser1.deposit(user1.address, toWei("100"));
+        await gs.collect("deposit", perpUser1.deposit(user1.address, toWei("100")));
         console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
         print(await perpUser1.marginAccount(user1.address));
 
         // lp
         const perpUser2 = await PerpetualFactory.connect(perp.address, user1);
-        await perpUser2.addLiquidatity(toWei("1000"));
+        await gs.collect("addLiquidatity", perpUser2.addLiquidatity(toWei("1000")));
 
+        // trade 1
+        await gs.collect("trade 1", perpUser1.trade(user1.address, toWei("0.1"), toWei("506"), now + 999999, none));
+        print(await perpUser1.marginAccount(user1.address));
+
+        // trade 2
+        await gs.collect("trade 2", perpUser1.trade(user1.address, toWei("0.05"), toWei("550"), now + 999999, none));
+        print(await perpUser1.marginAccount(user1.address));
+
+        // withdraw
+        await gs.collect("withdraw", perpUser1.withdraw(user1.address, toWei("10")));
+        console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
+        print(await perpUser1.marginAccount(user1.address));
+
+        gs.summary();
     })
-
 })

@@ -9,14 +9,14 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
-import "../libraries/OrderHash.sol";
+import "../libraries/OrderData.sol";
 import "../Type.sol";
 
 contract BrokerRelay is ReentrancyGuard {
 	using SafeMath for uint256;
 	using SafeMathExt for int256;
 	using SignedSafeMath for int256;
-	using OrderHash for Order;
+	using OrderData for Order;
 
 	uint256 internal _claimableFee;
 	mapping(address => uint256) internal _balances;

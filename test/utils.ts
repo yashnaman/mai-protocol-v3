@@ -12,6 +12,7 @@ export async function getAccounts(): Promise<any[]> {
     });
     return accounts;
 }
+
 export async function createContract(path: string, args: any[] = [], libraries = {}): Promise<any> {
     const factory = await ethers.getContractFactory(path, { libraries: libraries });
     const deployed = await factory.deploy(...args);

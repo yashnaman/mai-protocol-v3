@@ -17,7 +17,7 @@ contract Events {
 	event Trade(
 		address indexed trader,
 		int256 positionAmount,
-		int256 priceLimit,
+		int256 price,
 		int256 fee,
 		uint256 deadline
 	);

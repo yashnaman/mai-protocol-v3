@@ -15,6 +15,8 @@ import "./MarginModule.sol";
 import "./StateModule.sol";
 import "./OracleModule.sol";
 
+import "hardhat/console.sol";
+
 library TradeModule {
 	using SafeMathExt for int256;
 	using SignedSafeMath for int256;
@@ -48,11 +50,23 @@ library TradeModule {
 		require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
 		require(amount != 0, Error.INVALID_POSITION_AMOUNT);
 		// 0. price / amount
-		(receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(amount, false);
+		(receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(amount.neg(), false);
+		console.log(
+			"DEBUG-1: %s %s",
+			uint256(receipt.tradingValue),
+			uint256(receipt.tradingAmount)
+		);
 		int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
-		validatePrice(receipt.tradingAmount, tradingPrice, priceLimit);
+		console.log("DEBUG-2: %s", uint256(tradingPrice));
+		validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
 		// 1. fee
 		setTradingFee(core, receipt, referrer);
+		console.log(
+			"DEBUG-3: %s %s %s",
+			uint256(receipt.lpFee),
+			uint256(receipt.vaultFee),
+			uint256(receipt.operatorFee)
+		);
 		// 2. execute
 		executeTrading(core, receipt, trader, address(this), referrer);
 		// 3. safe
@@ -131,13 +145,10 @@ library TradeModule {
 		(receipt.takerFundingLoss, receipt.takerClosingAmount, receipt.takerOpeningAmount) = core
 			.updateMarginAccount(
 			taker,
-			receipt.tradingAmount,
-			receipt
-				.tradingValue
-				.add(receipt.lpFee)
-				.add(receipt.vaultFee)
-				.add(receipt.operatorFee)
-				.neg()
+			receipt.tradingAmount.neg(),
+			receipt.tradingValue.neg().sub(receipt.lpFee).sub(receipt.vaultFee).sub(
+				receipt.operatorFee
+			)
 		);
 		(receipt.makerFundingLoss, receipt.makerClosingAmount, receipt.makerOpeningAmount) = core
 			.updateMarginAccount(
@@ -155,7 +166,7 @@ library TradeModule {
 		Receipt memory receipt,
 		address referrer
 	) internal view {
-		int256 tradingValue = receipt.tradingValue;
+		int256 tradingValue = receipt.tradingValue.abs();
 		receipt.lpFee = tradingValue.wmul(core.lpFeeRate);
 		receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);
 		receipt.operatorFee = tradingValue.wmul(core.operatorFeeRate);

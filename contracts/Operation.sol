@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "./libraries/Error.sol";
+import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
@@ -29,13 +30,17 @@ import "./Events.sol";
 import "./AccessControl.sol";
 import "./Collateral.sol";
 
+// import "hardhat/console.sol";
+
 contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuard {
 	using SafeCast for int256;
 	using SafeCast for uint256;
 	using SafeMath for uint256;
 	using SafeMathExt for int256;
+	using SafeMathExt for uint256;
 	using SignedSafeMath for int256;
-	using OrderModule for Order;
+
+	using OrderData for Order;
 	using OrderModule for Core;
 
 	using AMMTradeModule for Core;
@@ -52,10 +57,10 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		int256 postAmount = _core.marginAccounts[trader].positionAmount;
 		if (preAmount == 0 && postAmount != 0) {
 			_core.registerTrader(trader);
-			IFactory(_core.factory).activeProxy(trader, address(this));
+			// IFactory(_core.factory).activeProxy(trader);
 		} else if (preAmount != 0 && postAmount == 0) {
 			_core.deregisterTrader(trader);
-			IFactory(_core.factory).deactiveProxy(trader, address(this));
+			// IFactory(_core.factory).deactiveProxy(trader);
 		}
 	}
 
@@ -135,17 +140,14 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 
 	function addLiquidatity(int256 cashToAdd) external syncState nonReentrant {
 		require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
-
 		_transferFromUser(msg.sender, cashToAdd);
-		_core.updateCashBalance(address(this), cashToAdd);
-
 		int256 shareTotalSupply = IShareToken(_shareToken).totalSupply().toInt256();
 		int256 shareToMint = _core.addLiquidity(shareTotalSupply, cashToAdd);
-		IShareToken(_shareToken).mint(
-			msg.sender,
-			shareToMint.toUint256(),
-			_core.insuranceFund.toUint256()
-		);
+		uint256 unitInsuranceFund = shareTotalSupply > 0
+			? _core.insuranceFund.wdiv(shareTotalSupply).toUint256()
+			: 0;
+		_core.updateCashBalance(address(this), cashToAdd);
+		IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256(), unitInsuranceFund);
 		emit AddLiquidatity(msg.sender, cashToAdd, shareToMint);
 	}
 
@@ -182,7 +184,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		// validate
 		_core.validateOrder(order, amount);
 		// do trade
-		_trade(order.trader, amount, order.priceLimit, order.deadline, order.referrer);
+		_trade(order.trader, amount, order.priceLimit, order.deadline(), order.referrer);
 	}
 
 	function liquidateByAMM(address trader, uint256 deadline) external userTrace(trader) syncState {

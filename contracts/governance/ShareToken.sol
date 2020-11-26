@@ -30,7 +30,7 @@ contract ShareToken {
 	mapping(address => address) public delegates;
 
 	// A record of each accounts entryInsurance
-	mapping(address => uint256) internal entryInsurances;
+	mapping(address => uint256) public unitEntryInsurances;
 
 	/// @notice A checkpoint for marking number of votes from a given block
 	struct Checkpoint {
@@ -92,14 +92,14 @@ contract ShareToken {
 		_owner = owner;
 	}
 
-	function updateEntryInsurance(
+	function _updateEntryInsurance(
 		address account,
-		uint256 _entryInsurance,
-		uint256 amount
+		uint256 amount,
+		uint256 newUnitEntryInsurance
 	) internal {
-		entryInsurances[account] = entryInsurances[account]
+		unitEntryInsurances[account] = unitEntryInsurances[account]
 			.wmul(balances[account])
-			.add(_entryInsurance.wmul(amount))
+			.add(newUnitEntryInsurance.wmul(amount))
 			.wdiv(balances[account].add(amount));
 	}
 
@@ -115,12 +115,12 @@ contract ShareToken {
 	function mint(
 		address account,
 		uint256 amount,
-		uint256 insurance
+		uint256 newUnitEntryInsurance
 	) public onlyOwner {
 		require(account != address(0), "Mint to the zero address");
 
+		_updateEntryInsurance(account, amount, newUnitEntryInsurance);
 		totalSupply = totalSupply.add(amount);
-		updateEntryInsurance(account, insurance, amount);
 		balances[account] = balances[account].add(amount);
 		address delegatee = delegates[account] == address(0) ? account : delegates[account];
 		_moveDelegates(address(0), delegatee, amount);
@@ -156,10 +156,6 @@ contract ShareToken {
 	 */
 	function allowance(address account, address spender) external view returns (uint256) {
 		return allowances[account][spender];
-	}
-
-	function entryInsurance(address account) external view returns (uint256) {
-		return entryInsurances[account];
 	}
 
 	/**
@@ -331,7 +327,7 @@ contract ShareToken {
 		require(src != address(0), "_transferTokens: cannot transfer from the zero address");
 		require(dst != address(0), "_transferTokens: cannot transfer to the zero address");
 
-		updateEntryInsurance(dst, entryInsurances[src], amount);
+		_updateEntryInsurance(dst, unitEntryInsurances[src], amount);
 		balances[src] = balances[src].sub(amount);
 		balances[dst] = balances[dst].add(amount);
 		emit Transfer(src, dst, amount);

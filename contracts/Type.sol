@@ -37,11 +37,12 @@ struct Order {
 	address referrer;
 	int256 amount;
 	int256 priceLimit;
-	uint64 deadline;
-	uint32 version;
-	OrderType orderType;
-	bool isCloseOnly;
-	uint64 salt;
+	// uint64 deadline;
+	// uint32 version;
+	// OrderType orderType;
+	// bool isCloseOnly;
+	// uint64 salt;
+	bytes32 data;
 	uint256 chainID;
 }
 

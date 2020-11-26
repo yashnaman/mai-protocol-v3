@@ -39,6 +39,7 @@ library FundingModule {
 
 	function updateFundingRate(Core storage core) public {
 		core.fundingRate = nextFundingRate(core);
+		core.fundingTime = block.timestamp;
 	}
 
 	function nextFundingRate(Core storage core) internal view returns (int256) {
