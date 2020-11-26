@@ -48,7 +48,7 @@ contract Storage {
         _core.referrerRebateRate = coreParams[4];
         _core.liquidationPenaltyRate = coreParams[5];
         _core.keeperGasReward = coreParams[6];
-        _core.isCoreParameterValid();
+        _core.validateCoreParameters();
 
         _core.halfSpreadRate.updateOption(
             riskParams[0],
@@ -67,7 +67,7 @@ contract Storage {
             minRiskParamValues[4],
             maxRiskParamValues[4]
         );
-        _core.isRiskParameterValid();
+        _core.validateRiskParameters();
 
         _governor = governor_;
         _shareToken = shareToken_;

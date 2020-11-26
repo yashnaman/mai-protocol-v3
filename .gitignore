@@ -3,3 +3,5 @@ build
 typechain
 artifacts
 cache
+coverage
+coverage.json

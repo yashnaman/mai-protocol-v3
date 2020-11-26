@@ -3,6 +3,8 @@ import { getDefaultProvider, Signer } from "ethers";
 
 export function toWei(n) { return ethers.utils.parseEther(n) };
 export function fromWei(n) { return ethers.utils.formatEther(n); }
+export function toBytes32(s) { return ethers.utils.formatBytes32String(s); }
+export function fromBytes32(s) { return ethers.utils.parseBytes32String(s); }
 
 export async function getAccounts(): Promise<any[]> {
     const accounts = await ethers.getSigners();

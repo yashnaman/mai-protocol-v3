@@ -27,13 +27,12 @@ library ParameterModule {
         } else if (key == "lpFeeRate") {
             core.lpFeeRate = newValue;
         } else if (key == "liquidationPenaltyRate") {
-            core.lpFeeRate = newValue;
+            core.liquidationPenaltyRate = newValue;
         } else if (key == "keeperGasReward") {
             core.keeperGasReward = newValue;
         } else {
             revert("key not found");
         }
-        isCoreParameterValid(core);
     }
 
     function adjustRiskParameter(
@@ -54,7 +53,6 @@ library ParameterModule {
         } else {
             revert("key not found");
         }
-        isRiskParameterValid(core);
     }
 
     function updateRiskParameter(
@@ -77,7 +75,6 @@ library ParameterModule {
         } else {
             revert("key not found");
         }
-        isRiskParameterValid(core);
     }
 
     function adjustOption(Option storage option, int256 newValue) internal {
@@ -96,28 +93,36 @@ library ParameterModule {
         option.maxValue = newMaxValue;
     }
 
-    function isCoreParameterValid(Core storage core) public view {
-        require(core.initialMarginRate > 0 && core.initialMarginRate <= Constant.SIGNED_ONE, "");
+    function validateCoreParameters(Core storage core) public view {
+        require(
+            core.initialMarginRate > 0 && core.initialMarginRate <= Constant.SIGNED_ONE,
+            "imr should be within (0, 1]"
+        );
         require(
             core.maintenanceMarginRate > 0 && core.maintenanceMarginRate <= Constant.SIGNED_ONE,
-            ""
+            "mmr should be within (0, 1]"
         );
-        require(core.maintenanceMarginRate <= core.initialMarginRate, "");
+        require(
+            core.maintenanceMarginRate <= core.initialMarginRate,
+            "mmr should be lower than imr"
+        );
         require(
             core.operatorFeeRate >= 0 && core.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
-            ""
+            "ofr should be within [0, 0.01]"
         );
-        require(core.vaultFeeRate >= 0, "");
-        require(core.lpFeeRate >= 0 && core.lpFeeRate <= (Constant.SIGNED_ONE / 100), "");
+        require(
+            core.lpFeeRate >= 0 && core.lpFeeRate <= (Constant.SIGNED_ONE / 100),
+            "lp should be within [0, 0.01]"
+        );
         require(
             core.liquidationPenaltyRate >= 0 &&
                 core.liquidationPenaltyRate < core.maintenanceMarginRate,
-            ""
+            "lpr should be non-negative and lower than mmr"
         );
-        require(core.keeperGasReward >= 0, "");
+        require(core.keeperGasReward >= 0, "kgr should be non-negative");
     }
 
-    function isRiskParameterValid(Core storage core) public view {
+    function validateRiskParameters(Core storage core) public view {
         require(core.halfSpreadRate.value >= 0, "");
         require(core.beta1.value > 0 && core.beta1.value < Constant.SIGNED_ONE, "");
         require(

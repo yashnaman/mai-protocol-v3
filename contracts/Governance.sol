@@ -30,6 +30,7 @@ contract Governance is Storage, Events {
 
     function updateCoreParameter(bytes32 key, int256 newValue) external voteOnly {
         _core.updateCoreParameter(key, newValue);
+        _core.validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
     }
 
@@ -40,11 +41,13 @@ contract Governance is Storage, Events {
         int256 maxValue
     ) external voteOnly {
         _core.updateRiskParameter(key, newValue, minValue, maxValue);
+        _core.validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
     }
 
     function adjustRiskParameter(bytes32 key, int256 newValue) external operatorOnly {
         _core.adjustRiskParameter(key, newValue);
+        _core.validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }
 
