@@ -9,12 +9,12 @@ library OracleModule {
 	using StateModule for Core;
 
 	function markPrice(Core storage core) internal view returns (int256) {
-		return core.isNormal() ? core.marketPriceData.price : core.settlePriceData.price;
+		return core.isNormal() ? core.markPriceData.price : core.settlePriceData.price;
 	}
 
 	function updatePrice(Core storage core) internal {
 		if (block.timestamp != core.priceUpdateTime) {
-			updatePriceData(core.marketPriceData, IOracle(core.oracle).priceTWAPLong);
+			updatePriceData(core.markPriceData, IOracle(core.oracle).priceTWAPLong);
 			updatePriceData(core.indexPriceData, IOracle(core.oracle).priceTWAPShort);
 			core.priceUpdateTime = block.timestamp;
 		}

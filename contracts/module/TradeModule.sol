@@ -103,7 +103,7 @@ library TradeModule {
 		emitTradeEvent(receipt, trader, address(this));
 	}
 
-	function liquidateToTrader(
+	function liquidateByTrader(
 		Core storage core,
 		address taker,
 		address maker,

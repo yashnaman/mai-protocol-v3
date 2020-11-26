@@ -46,32 +46,34 @@ async function deployGovernor() {
 }
 
 
-async function deployPerpetualMaker() {
+async function deployPerpetualMaker(vault, vaultFeeRate) {
     // s10
     // perpetual deployed to: 0x938c74cDffc1b744fF4519543af2C9d99cF143E5
     // shareToken deployed to: 0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8
     // governor deployed to: 0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3
-    return await createContract(
-        "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
-        [
-            "0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3",
-            "0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8",
-            "0x938c74cDffc1b744fF4519543af2C9d99cF143E5"
-        ]
-    );
-
-    // // local
-    // const perpetual = await deployPerpetual();
-    // const shareToken = await deployShareToken();
-    // const governor = await deployGovernor();
     // return await createContract(
     //     "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
     //     [
-    //         governor.address,
-    //         shareToken.address,
-    //         perpetual.address,
+    //         "0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3",
+    //         "0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8",
+    //         "0x938c74cDffc1b744fF4519543af2C9d99cF143E5"
     //     ]
     // );
+
+    // // local
+    const perpetual = await deployPerpetual();
+    const shareToken = await deployShareToken();
+    const governor = await deployGovernor();
+    return await createContract(
+        "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
+        [
+            governor.address,
+            shareToken.address,
+            perpetual.address,
+            vault.address,
+            vaultFeeRate,
+        ]
+    );
 }
 
 async function main(accounts: any[]) {
@@ -90,11 +92,11 @@ async function main(accounts: any[]) {
     // console.log("governor deployed to:", governor.address);
 
     // ===== broker
-    // const brokerRelay = await deployBrokerRelay();
-    // console.log("brokerRelay deployed to:", brokerRelay.address);
+    const brokerRelay = await deployBrokerRelay();
+    console.log("brokerRelay deployed to:", brokerRelay.address);
 
     // ===== maker
-    const perpetualMaker = await deployPerpetualMaker();
+    const perpetualMaker = await deployPerpetualMaker(accounts[0], toWei("0.001"));
 
     const tx = await perpetualMaker.createPerpetual(
         // accounts[0].address,

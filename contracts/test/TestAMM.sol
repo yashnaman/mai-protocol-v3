@@ -23,7 +23,7 @@ contract TestAMM {
 		int256 targetLeverage,
 		int256 cashBalance,
 		int256 positionAmount,
-		int256 entryFundingLoss,
+		int256 entryFunding,
 		int256 _indexPrice
 	) public {
 		core.unitAccumulativeFunding = unitAccumulativeFunding;
@@ -33,7 +33,7 @@ contract TestAMM {
 		core.targetLeverage.value = targetLeverage;
 		core.marginAccounts[address(this)].cashBalance = cashBalance;
 		core.marginAccounts[address(this)].positionAmount = positionAmount;
-		core.marginAccounts[address(this)].entryFundingLoss = entryFundingLoss;
+		core.marginAccounts[address(this)].entryFunding = entryFunding;
 		core.indexPriceData.price = _indexPrice;
 	}
 

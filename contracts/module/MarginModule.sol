@@ -44,7 +44,7 @@ library MarginModule {
 		int256 fundingLoss = core.marginAccounts[trader]
 			.positionAmount
 			.wmul(core.unitAccumulativeFunding)
-			.sub(core.marginAccounts[trader].entryFundingLoss);
+			.sub(core.marginAccounts[trader].entryFunding);
 		return core.marginAccounts[trader].cashBalance.sub(fundingLoss);
 	}
 
@@ -119,13 +119,13 @@ library MarginModule {
 		MarginAccount memory account,
 		int256 amount
 	) internal view {
-		int256 closingEntryFunding = account.entryFundingLoss.wfrac(amount, account.positionAmount);
+		int256 closingEntryFunding = account.entryFunding.wfrac(amount, account.positionAmount);
 		int256 funding = core.unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
 		int256 previousAmount = account.positionAmount;
 		account.positionAmount = previousAmount.add(amount);
 		require(account.positionAmount.abs() <= previousAmount.abs(), "not closing");
 		account.cashBalance = account.cashBalance.sub(funding);
-		account.entryFundingLoss = account.entryFundingLoss.sub(closingEntryFunding);
+		account.entryFunding = account.entryFunding.sub(closingEntryFunding);
 	}
 
 	function openPosition(
@@ -136,8 +136,6 @@ library MarginModule {
 		int256 previousAmount = account.positionAmount;
 		account.positionAmount = previousAmount.add(amount);
 		require(account.positionAmount.abs() >= previousAmount.abs(), "not opening");
-		account.entryFundingLoss = account.entryFundingLoss.add(
-			core.unitAccumulativeFunding.wmul(amount)
-		);
+		account.entryFunding = account.entryFunding.add(core.unitAccumulativeFunding.wmul(amount));
 	}
 }

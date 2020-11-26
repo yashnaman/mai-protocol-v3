@@ -50,7 +50,6 @@ describe("integration", () => {
     function print(obj) {
         var props = []
         for (var n in obj) {
-
             props.push([n, toString(obj[n])]);
         }
         console.table(props)
@@ -167,9 +166,9 @@ describe("integration", () => {
         print(await perpUser1.marginAccount(user1.address));
 
         // remove lp
-        await gs.collect("removeLiquidatity", perpUser2.removeLiquidatity(await shareUser2.balanceOf(user2.address)));
-        console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
-        console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
+        // await gs.collect("removeLiquidatity", perpUser2.removeLiquidatity(await shareUser2.balanceOf(user2.address)));
+        // console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
+        // console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
         gs.summary();
     })

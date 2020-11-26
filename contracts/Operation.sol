@@ -57,10 +57,10 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		int256 postAmount = _core.marginAccounts[trader].positionAmount;
 		if (preAmount == 0 && postAmount != 0) {
 			_core.registerTrader(trader);
-			// IFactory(_core.factory).activeProxy(trader);
+			IFactory(_core.factory).activeProxy(trader);
 		} else if (preAmount != 0 && postAmount == 0) {
 			_core.deregisterTrader(trader);
-			// IFactory(_core.factory).deactiveProxy(trader);
+			IFactory(_core.factory).deactiveProxy(trader);
 		}
 	}
 
@@ -70,12 +70,12 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		returns (
 			int256 positionAmount,
 			int256 cashBalance,
-			int256 entryFundingLoss
+			int256 entryFunding
 		)
 	{
 		positionAmount = _core.marginAccounts[trader].positionAmount;
 		cashBalance = _core.marginAccounts[trader].cashBalance;
-		entryFundingLoss = _core.marginAccounts[trader].entryFundingLoss;
+		entryFunding = _core.marginAccounts[trader].entryFunding;
 	}
 
 	function margin(address trader) public syncState returns (int256) {
@@ -213,7 +213,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
 		require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
 		require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
 
-		Receipt memory receipt = _core.liquidateToTrader(msg.sender, trader, amount, priceLimit);
+		Receipt memory receipt = _core.liquidateByTrader(msg.sender, trader, amount, priceLimit);
 		emit LiquidateByTrader(
 			msg.sender,
 			trader,

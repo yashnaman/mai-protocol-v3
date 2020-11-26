@@ -17,7 +17,7 @@ struct OraclePriceData {
 struct MarginAccount {
 	int256 cashBalance;
 	int256 positionAmount;
-	int256 entryFundingLoss;
+	int256 entryFunding;
 }
 
 enum ActionOnFailure { IGNORE, REVERT }
@@ -37,11 +37,6 @@ struct Order {
 	address referrer;
 	int256 amount;
 	int256 priceLimit;
-	// uint64 deadline;
-	// uint32 version;
-	// OrderType orderType;
-	// bool isCloseOnly;
-	// uint64 salt;
 	bytes32 data;
 	uint256 chainID;
 }
@@ -70,7 +65,7 @@ struct Core {
 	address oracle;
 	uint256 priceUpdateTime;
 	OraclePriceData indexPriceData;
-	OraclePriceData marketPriceData;
+	OraclePriceData markPriceData;
 	OraclePriceData settlePriceData;
 	// state
 	bool emergency;

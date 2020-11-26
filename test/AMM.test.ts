@@ -9,29 +9,29 @@ use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {
-    return new BigNumber(x).times(weis).toFixed(0);
+  return new BigNumber(x).times(weis).toFixed(0);
 }
 const _0 = toWad('0')
 const params = {
-    unitAccumulatedFundingLoss: toWad('1.9'),
-    halfSpreadRate: toWad('0.001'),
-    beta1: toWad('0.2'),
-    beta2: toWad('0.1'),
-    targetLeverage: toWad('5')
+  unitAccumulatedFundingLoss: toWad('1.9'),
+  halfSpreadRate: toWad('0.001'),
+  beta1: toWad('0.2'),
+  beta2: toWad('0.1'),
+  targetLeverage: toWad('5')
 }
 
 // empty
 const amm0 = {
   cashBalance: toWad('1000'),
   positionAmount: _0,
-  entryFundingLoss: _0,
+  entryFunding: _0,
 }
 
 // short 1: normal
 const amm1 = {
   cashBalance: toWad('2109.21564102564103'),
   positionAmount: toWad('-11'),
-  entryFundingLoss: toWad('0.91'),
+  entryFunding: toWad('0.91'),
   // fundingLoss = 1.9 * (-11) - 0.91 = -21.81
   // available cash = 2109.21564102564103 - (-21.81) = 2131.02564102564103
 }
@@ -40,7 +40,7 @@ const amm1 = {
 const amm2 = {
   cashBalance: toWad('1819.492395209580838'),
   positionAmount: toWad('-11'),
-  entryFundingLoss: toWad('0.91'),
+  entryFunding: toWad('0.91'),
   // fundingLoss = 1.9 * (-11) - 0.91 = -21.81
   // available cash = 1819.492395209580838 - (-21.81) = 1841.302395209580838
 }
@@ -49,7 +49,7 @@ const amm2 = {
 const amm3 = {
   cashBalance: toWad('1534.987752808988764'),
   positionAmount: toWad('-11'),
-  entryFundingLoss: toWad('0.91'),
+  entryFunding: toWad('0.91'),
   // fundingLoss = 1.9 * (-11) - 0.91 = -21.81
   // available cash = 1534.987752808988764 - (-21.81) = 1556.797752808988764
 }
@@ -58,7 +58,7 @@ const amm3 = {
 const amm4 = {
   cashBalance: toWad('-49.007106108326075085'),
   positionAmount: toWad('11'),
-  entryFundingLoss: toWad('-0.91'),
+  entryFunding: toWad('-0.91'),
   // funding = 1.9 * 11 -(-0.91) = 21.81
   // available cash = -49.007106108326075085 - 21.81 = -70.817106108326075085
 }
@@ -67,7 +67,7 @@ const amm4 = {
 const amm5 = {
   cashBalance: toWad('-355.79900789632941'),
   positionAmount: toWad('11'),
-  entryFundingLoss: toWad('-0.91'),
+  entryFunding: toWad('-0.91'),
   // funding = 1.9 * 11 -(-0.91) = 21.81
   // available cash = -355.79900789632941 - 21.81 = -377.60900789632941
 }
@@ -76,7 +76,7 @@ const amm5 = {
 const amm6 = {
   cashBalance: toWad('-653.74080722289376'),
   positionAmount: toWad('11'),
-  entryFundingLoss: toWad('-0.91'),
+  entryFunding: toWad('-0.91'),
   // funding = 1.9 * 11 -(-0.91) = 21.81
   // available cash = -653.74080722289376 - 21.81 = -675.55080722289376
 }
@@ -84,15 +84,15 @@ const amm6 = {
 describe('AMM', () => {
   let AMM;
 
-	let createFromFactory = async (path, libraries = {}) => {
-		const factory = await ethers.getContractFactory(path, { libraries: libraries });
-		const deployed = await factory.deploy();
-		return deployed;
-	}
+  let createFromFactory = async (path, libraries = {}) => {
+    const factory = await ethers.getContractFactory(path, { libraries: libraries });
+    const deployed = await factory.deploy();
+    return deployed;
+  }
 
   beforeEach(async () => {
     const AMMTradeModule = await createFromFactory("contracts/module/AMMTradeModule.sol:AMMTradeModule")
-    AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", {AMMTradeModule: AMMTradeModule.address});
+    AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", { AMMTradeModule: AMMTradeModule.address });
   });
 
   describe('isAMMSafe', function () {
@@ -166,7 +166,7 @@ describe('AMM', () => {
 
     successCases.forEach((element, index) => {
       it(`${index}`, async () => {
-        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFunding, toWad('100'))
         const context = await AMM.regress(toWad('0.1') /* beta */)
         expect(context.mv).approximateBigNumber(element.mv)
         expect(context.m0).approximateBigNumber(element.m0)
@@ -176,54 +176,54 @@ describe('AMM', () => {
 
   describe('computeDeltaMargin', function () {
     it(`0 -> +5`, async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.longDeltaMargin(toWad('5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('-494.570984085309081'))
     })
     it(`0 -> -5`, async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.shortDeltaMargin(toWad('-5'), toWad('0.1') /* beta */)).approximateBigNumber(toWad('505.555555555555556'))
     })
   })
 
   describe('safePosition', function () {
     it('shorts from 0', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
     })
     it('longs from 0', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('37.2594670356232003'))
     })
     it('short: √ (beta lev) < 1', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.maxShortPosition(toWad('0.1'))).approximateBigNumber(toWad('-29.28932188134524756'))
     })
     it('short: √ (beta lev) = 1', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.maxShortPosition(toWad('0.2'))).approximateBigNumber(toWad('-25'))
     })
     it('short: √ (beta lev) > 1', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, amm0.cashBalance, amm0.positionAmount, amm0.entryFunding, toWad('100'))
       expect(await AMM.maxShortPosition(toWad('0.99'))).approximateBigNumber(toWad('-15.50455121681897322'))
     })
     it('long: (-1 + beta + beta lev) = 0, implies beta < 0.5', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('4'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('4'), amm4.cashBalance, amm4.positionAmount, amm4.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.2'))).approximateBigNumber(toWad('31.7977502570247453'))
     })
     it('long: (-1 + beta + beta lev) < 0 && lev < 2 && beta < (2 - lev)/2', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('17.689313632528408'))
     })
     it('long: (-1 + beta + beta lev) < 0 && beta >= (2 - lev)/2', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('1.5'), amm4.cashBalance, amm4.positionAmount, amm4.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.3'))).approximateBigNumber(toWad('15.875912065096235'))
     })
     it('long: (-1 + beta + beta lev) < 0 && lev >= 2', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.1'))).approximateBigNumber(toWad('21.2517072860587530'))
     })
     it('long: (-1 + beta + beta lev) > 0', async () => {
-      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFundingLoss, toWad('100'))
+      await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, toWad('2'), amm4.cashBalance, amm4.positionAmount, amm4.entryFunding, toWad('100'))
       expect(await AMM.maxLongPosition(toWad('0.99'))).approximateBigNumber(toWad('18.2026549289986863'))
     })
 
@@ -316,7 +316,7 @@ describe('AMM', () => {
 
     successCases.forEach(element => {
       it(element.name, async () => {
-        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFunding, toWad('100'))
         const context = await AMM.tradeWithAMM(element.amount, element.partialFill)
         expect(context.deltaMargin).approximateBigNumber(element.deltaMargin)
         expect(context.deltaPosition).approximateBigNumber(element.deltaPosition)
@@ -373,7 +373,7 @@ describe('AMM', () => {
 
     failCases.forEach(element => {
       it(element.name, async () => {
-        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFunding, toWad('100'))
         await expect(AMM.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
       })
     })
@@ -382,17 +382,17 @@ describe('AMM', () => {
   describe('add liquidity', function () {
     const cases = [
       {
-          name: 'normal',
-          amm: amm1,
-          totalShare: toWad('100'),
-          marginToAdd: toWad('1000'),
-          share: toWad('107.408041859396039759')
+        name: 'normal',
+        amm: amm1,
+        totalShare: toWad('100'),
+        marginToAdd: toWad('1000'),
+        share: toWad('107.408041859396039759')
       }
     ]
 
     cases.forEach(element => {
       it(element.name, async () => {
-        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFunding, toWad('100'))
         expect(await AMM.addLiquidity(element.totalShare, element.marginToAdd)).approximateBigNumber(element.share)
       })
     })
@@ -401,17 +401,17 @@ describe('AMM', () => {
   describe('remove liquidity', function () {
     const cases = [
       {
-          name: 'normal',
-          amm: amm1,
-          totalShare: toWad('100'),
-          shareToRemove: toWad('10'),
-          marginToRemove: toWad('86.96765668805676924')
+        name: 'normal',
+        amm: amm1,
+        totalShare: toWad('100'),
+        shareToRemove: toWad('10'),
+        marginToRemove: toWad('86.96765668805676924')
       }
     ]
 
     cases.forEach(element => {
       it(element.name, async () => {
-        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+        await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFunding, toWad('100'))
         expect(await AMM.removeLiquidity(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove)
       })
     })
