@@ -48,7 +48,7 @@ library FundingModule {
 			return 0;
 		}
 		int256 indexPrice = core.indexPrice();
-		int256 mc = core.cashBalance(address(this));
+		int256 mc = core.availableCashBalance(address(this));
 		require(
 			AMMCommon.isAMMMarginSafe(
 				mc,

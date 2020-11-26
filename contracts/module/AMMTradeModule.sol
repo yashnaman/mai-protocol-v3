@@ -36,7 +36,7 @@ library AMMTradeModule {
 		bool partialFill
 	) public view returns (int256 deltaMargin, int256 deltaPosition) {
 		require(tradingAmount != 0, "Zero trade amount");
-		int256 mc = core.cashBalance(address(this));
+		int256 mc = core.availableCashBalance(address(this));
 		int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
 		(int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
 			positionAmount,
@@ -241,7 +241,7 @@ library AMMTradeModule {
 		int256 marginToAdd
 	) public view returns (int256 share) {
 		require(marginToAdd > 0, "Must add positive liquidity");
-		int256 mc = core.cashBalance(address(this));
+		int256 mc = core.availableCashBalance(address(this));
 		int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
 		int256 targetLeverage = core.targetLeverage.value;
 		int256 beta = core.beta1.value;
@@ -275,7 +275,7 @@ library AMMTradeModule {
 		int256 shareTotalSupply,
 		int256 shareToRemove
 	) public view returns (int256 marginToRemove) {
-		int256 mc = core.cashBalance(address(this));
+		int256 mc = core.availableCashBalance(address(this));
 		int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
 		int256 targetLeverage = core.targetLeverage.value;
 		int256 beta = core.beta1.value;

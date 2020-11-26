@@ -36,7 +36,11 @@ library MarginModule {
 				.max(core.keeperGasReward);
 	}
 
-	function cashBalance(Core storage core, address trader) internal view returns (int256) {
+	function availableCashBalance(Core storage core, address trader)
+		internal
+		view
+		returns (int256)
+	{
 		int256 fundingLoss = core.marginAccounts[trader]
 			.positionAmount
 			.wmul(core.unitAccumulativeFunding)
@@ -51,7 +55,7 @@ library MarginModule {
 	function margin(Core storage core, address trader) internal view returns (int256) {
 		return
 			core.marginAccounts[trader].positionAmount.wmul(core.markPrice()).add(
-				cashBalance(core, trader)
+				availableCashBalance(core, trader)
 			);
 	}
 
