@@ -35,7 +35,10 @@ contract VersionController {
     function _revokeVersion(address implementation) internal {
         require(implementation != address(0), "invalid implementation");
 
-        bool notExist = _versions.set(implementation.toBytes32(), _toBytes32(VersionState.DEPRECATED));
+        bool notExist = _versions.set(
+            implementation.toBytes32(),
+            _toBytes32(VersionState.DEPRECATED)
+        );
         require(!notExist, "not exist");
 
         emit RevokeVersion(implementation);
@@ -46,10 +49,11 @@ contract VersionController {
         return state == VersionState.READY;
     }
 
-    function _retrieveVersionList(
-        uint256 begin,
-        uint256 end
-    ) internal view returns (address[] memory) {
+    function _retrieveVersionList(uint256 begin, uint256 end)
+        internal
+        view
+        returns (address[] memory)
+    {
         address[] memory slice = new address[](end.sub(begin));
         for (uint256 i = begin; i < end; i++) {
             slice[i.sub(begin)] = _versions.keyAt(i).toAddress();

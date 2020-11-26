@@ -31,15 +31,15 @@ contract OracleWrapper is IOracle {
         return _collateral;
     }
 
-	function underlyingAsset() external view override returns (string memory) {
+    function underlyingAsset() external view override returns (string memory) {
         return "MTK";
     }
 
-	function priceTWAPLong() external override returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPLong() external override returns (int256 newPrice, uint256 newTimestamp) {
         return (_markPrice, _markPriceTimestamp);
     }
 
-	function priceTWAPShort() external override returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPShort() external override returns (int256 newPrice, uint256 newTimestamp) {
         return (_indexPrice, _indexPriceTimestamp);
     }
 

@@ -4,7 +4,6 @@ pragma solidity 0.7.4;
 import "./OracleUniswapV2.sol";
 
 contract OracleUniswapV2Wapper is OracleUniswapV2 {
-
     using FixedPoint for *;
 
     string internal _symbol;
@@ -26,7 +25,7 @@ contract OracleUniswapV2Wapper is OracleUniswapV2 {
         return _symbol;
     }
 
-	function asset() public view returns (address) {
+    function asset() public view returns (address) {
         return _asset;
     }
 
@@ -34,16 +33,16 @@ contract OracleUniswapV2Wapper is OracleUniswapV2 {
         return _collateral;
     }
 
-	function priceTimeout() public view returns (uint256) {
+    function priceTimeout() public view returns (uint256) {
         return _priceTimeout;
     }
 
-	function priceTWAPLong() public returns (uint256 newPrice, uint256 newTimestamp) {
+    function priceTWAPLong() public returns (uint256 newPrice, uint256 newTimestamp) {
         _update();
         return (_slowAveragePrice.decode(), _lastPriceTimestamp);
     }
 
-	function priceTWAPShort() public returns (uint256 newPrice, uint256 newTimestamp) {
+    function priceTWAPShort() public returns (uint256 newPrice, uint256 newTimestamp) {
         _update();
         return (_fastAveragePrice.decode(), _lastPriceTimestamp);
     }

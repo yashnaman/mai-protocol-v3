@@ -6,26 +6,26 @@ import "../interface/IOracle.sol";
 import "./StateModule.sol";
 
 library OracleModule {
-	using StateModule for Core;
+    using StateModule for Core;
 
-	function markPrice(Core storage core) internal view returns (int256) {
-		return core.isNormal() ? core.markPriceData.price : core.settlePriceData.price;
-	}
+    function markPrice(Core storage core) internal view returns (int256) {
+        return core.isNormal() ? core.markPriceData.price : core.settlePriceData.price;
+    }
 
-	function updatePrice(Core storage core) internal {
-		if (block.timestamp != core.priceUpdateTime) {
-			updatePriceData(core.markPriceData, IOracle(core.oracle).priceTWAPLong);
-			updatePriceData(core.indexPriceData, IOracle(core.oracle).priceTWAPShort);
-			core.priceUpdateTime = block.timestamp;
-		}
-	}
+    function updatePrice(Core storage core) internal {
+        if (block.timestamp != core.priceUpdateTime) {
+            updatePriceData(core.markPriceData, IOracle(core.oracle).priceTWAPLong);
+            updatePriceData(core.indexPriceData, IOracle(core.oracle).priceTWAPShort);
+            core.priceUpdateTime = block.timestamp;
+        }
+    }
 
-	function indexPrice(Core storage core) internal view returns (int256) {
-		return core.isNormal() ? core.indexPriceData.price : core.settlePriceData.price;
-	}
+    function indexPrice(Core storage core) internal view returns (int256) {
+        return core.isNormal() ? core.indexPriceData.price : core.settlePriceData.price;
+    }
 
-	// prettier-ignore
-	function updatePriceData(
+    // prettier-ignore
+    function updatePriceData(
         OraclePriceData storage priceData,
         function() external returns (int256, uint256) priceGetter
     ) internal {

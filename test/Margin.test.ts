@@ -14,17 +14,19 @@ describe('MarginModule', () => {
     var accounts;
     var testMargin;
 
-    before(async () => {
-        accounts = await getAccounts();
-        const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-        const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-        testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [], {
-            FundingModule: FundingModule.address,
-            ParameterModule: ParameterModule.address,
-        });
-    })
-
     describe('getter', async () => {
+
+        before(async () => {
+            accounts = await getAccounts();
+            const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
+            const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
+            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [], {
+                FundingModule: FundingModule.address,
+                ParameterModule: ParameterModule.address,
+            });
+        })
+
+        console.log(testMargin);
         await testMargin.updateMarkPrice(toWei("500"));
         const testCases = [
             {
@@ -42,6 +44,8 @@ describe('MarginModule', () => {
         ]
         testCases.forEach((testCase) => {
             it(testCase.method, async () => {
+                console.log(testMargin);
+
                 await testMargin.updateMarkPrice(testCase.markPrice);
                 await testMargin.updateMarginAccount(
                     testCase.trader,
