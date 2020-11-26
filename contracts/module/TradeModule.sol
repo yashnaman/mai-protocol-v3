@@ -92,10 +92,15 @@ library TradeModule {
         // 2. execute
         executeTrading(core, receipt, trader, address(this), INVALID_ADDRESS);
         // 3. penalty
-        int256 penaltyToKeeper = core.keeperGasReward;
-        int256 penaltyToFund = receipt.tradingValue.wmul(core.liquidationPenaltyRate);
-        updateLiquidationPenalty(core, trader, penaltyToKeeper, penaltyToFund);
-        core.increaseClaimableFee(msg.sender, penaltyToKeeper);
+        (int256 traderPenalty, int256 liquidatorReward) = calculatePenalty(
+            core,
+            trader,
+            receipt.tradingValue,
+            core.keeperGasReward
+        );
+        core.updateCashBalance(trader, traderPenalty.neg());
+        updateInsuranceFund(core, liquidatorReward);
+        // 4. settle?
         if (core.donatedInsuranceFund < 0) {
             core.enterEmergencyState();
         }
@@ -116,22 +121,21 @@ library TradeModule {
         (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
         // 1. execute
         executeTrading(core, receipt, taker, maker, INVALID_ADDRESS);
-        // 2. safe
+        // 2. penalty
+        (int256 traderPenalty, ) = calculatePenalty(core, maker, receipt.tradingValue, 0);
+        core.updateCashBalance(taker, traderPenalty);
+        core.updateCashBalance(maker, traderPenalty.neg());
+        // 3. safe
         if (receipt.takerOpeningAmount > 0) {
             core.isInitialMarginSafe(taker);
         } else {
             core.isMaintenanceMarginSafe(taker);
         }
-        // 3. penalty
-        int256 penaltyToKeeper = receipt.tradingValue.wmul(core.liquidationPenaltyRate).add(
-            core.keeperGasReward
-        );
-        updateLiquidationPenalty(core, maker, penaltyToKeeper, 0);
-        core.increaseClaimableFee(msg.sender, penaltyToKeeper);
+        // 4. settle?
         if (core.donatedInsuranceFund < 0) {
             core.enterEmergencyState();
         }
-        // 4. events
+        // 6. events
         emitLiquidationEvent(receipt, taker, maker);
     }
 
@@ -192,27 +196,30 @@ library TradeModule {
         }
     }
 
-    function updateLiquidationPenalty(
+    function calculatePenalty(
         Core storage core,
         address trader,
-        int256 penaltyToLiquidator,
-        int256 penaltyToFund
-    ) internal {
-        int256 penalty = penaltyToLiquidator.add(penaltyToFund);
-        int256 margin = core.margin(trader);
-        int256 penaltyFromTrader;
-        if (margin >= penalty) {
-            penaltyFromTrader = penalty;
-            core.insuranceFund = core.insuranceFund.add(penaltyToFund);
-        } else {
-            penaltyFromTrader = margin;
-            core.insuranceFund = core.insuranceFund.sub(penaltyToLiquidator.sub(margin));
-            if (core.insuranceFund < 0) {
-                core.donatedInsuranceFund = core.donatedInsuranceFund.add(core.insuranceFund);
-                core.insuranceFund = 0;
-            }
+        int256 liquidationValue,
+        int256 keeperReward
+    ) internal view returns (int256 traderPenalty, int256 liquidatorReward) {
+        int256 penalty = liquidationValue.wmul(core.liquidationPenaltyRate);
+        traderPenalty = penalty.add(keeperReward);
+        liquidatorReward = penalty;
+        int256 traderMargin = core.margin(trader);
+        if (traderMargin < traderPenalty) {
+            traderPenalty = traderMargin;
+            liquidatorReward = traderMargin.sub(traderPenalty);
         }
-        core.updateCashBalance(trader, penaltyFromTrader.neg());
+    }
+
+    function updateInsuranceFund(Core storage core, int256 fund) internal {
+        core.insuranceFund = core.insuranceFund.add(fund);
+        // but fundGain could be negative in worst case
+        if (core.insuranceFund < 0) {
+            // then donatedInsuranceFund will cover such loss
+            core.donatedInsuranceFund = core.donatedInsuranceFund.add(core.insuranceFund);
+            core.insuranceFund = 0;
+        }
     }
 
     function emitTradeEvent(

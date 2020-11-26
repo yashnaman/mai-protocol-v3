@@ -51,19 +51,6 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
     using MarginModule for Core;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    modifier userTrace(address trader) {
-        int256 preAmount = _core.marginAccounts[trader].positionAmount;
-        _;
-        int256 postAmount = _core.marginAccounts[trader].positionAmount;
-        if (preAmount == 0 && postAmount != 0) {
-            _core.registerTrader(trader);
-            IFactory(_core.factory).activeProxy(trader);
-        } else if (preAmount != 0 && postAmount == 0) {
-            _core.deregisterTrader(trader);
-            IFactory(_core.factory).deactiveProxy(trader);
-        }
-    }
-
     function marginAccount(address trader)
         public
         view
@@ -113,16 +100,15 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
+        bool isNewTrader = _core.isEmptyAccount(trader);
         _transferFromUser(trader, amount);
         _core.updateCashBalance(trader, amount);
-        emit Withdraw(trader, amount);
-    }
-
-    function donateInsuranceFund(int256 amount) external nonReentrant {
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        _transferFromUser(msg.sender, amount);
-        _core.donatedInsuranceFund = _core.donatedInsuranceFund.add(amount);
-        emit DonateInsuranceFund(msg.sender, amount);
+        if (isNewTrader) {
+            _core.registerTrader(trader);
+            IFactory(_core.factory).activeProxy(trader);
+        }
+        emit Deposit(trader, amount);
     }
 
     function withdraw(address trader, int256 amount)
@@ -133,9 +119,22 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+
         _core.updateCashBalance(trader, amount.neg());
         _core.isInitialMarginSafe(trader);
         _transferFromUser(trader, amount);
+        if (_core.isEmptyAccount(trader)) {
+            _core.deregisterTrader(trader);
+            IFactory(_core.factory).deactiveProxy(trader);
+        }
+        emit Withdraw(trader, amount);
+    }
+
+    function donateInsuranceFund(int256 amount) external nonReentrant {
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        _transferFromUser(msg.sender, amount);
+        _core.donatedInsuranceFund = _core.donatedInsuranceFund.add(amount);
+        emit DonateInsuranceFund(msg.sender, amount);
     }
 
     function addLiquidatity(int256 cashToAdd) external syncState nonReentrant {
@@ -179,7 +178,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
         Order memory order,
         int256 amount,
         bytes memory signature
-    ) external userTrace(order.trader) syncState {
+    ) external syncState {
         // signer
         address signer = order.signer(signature);
         require(signer == order.trader || isGranted(order.trader, signer, PRIVILEGE_TRADE), "");
@@ -189,10 +188,12 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
         _trade(order.trader, amount, order.priceLimit, order.deadline(), order.referrer);
     }
 
-    function liquidateByAMM(address trader, uint256 deadline) external userTrace(trader) syncState {
+    function liquidateByAMM(address trader, uint256 deadline) external syncState nonReentrant {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+
         Receipt memory receipt = _core.liquidateByAMM(trader);
+        _transferToUser(msg.sender, _core.keeperGasReward);
         emit LiquidateByAMM(
             trader,
             receipt.tradingAmount,
@@ -207,13 +208,14 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
         int256 amount,
         int256 priceLimit,
         uint256 deadline
-    ) external userTrace(msg.sender) userTrace(trader) syncState {
+    ) external syncState nonReentrant {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
 
         Receipt memory receipt = _core.liquidateByTrader(msg.sender, trader, amount, priceLimit);
+        // 4.send penalty to margin of keeper
         emit LiquidateByTrader(
             msg.sender,
             trader,
@@ -243,7 +245,7 @@ contract Operation is Storage, Events, AccessControl, Collateral, ReentrancyGuar
         int256 priceLimit,
         uint256 deadline,
         address referrer
-    ) internal userTrace(trader) syncState {
+    ) internal syncState {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);

@@ -3,6 +3,8 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "../interface/IOracle.sol";
+
 import "./ProxyBuilder.sol";
 import "./PerpetualTracer.sol";
 import "./VersionController.sol";
@@ -31,6 +33,7 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController {
         address governor,
         address shareToken,
         address operator,
+        address collateral,
         address oracle,
         int256[7] coreParams,
         int256[5] riskParams
@@ -79,6 +82,7 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController {
             shareToken,
             msg.sender,
             oracle,
+            IOracle(oracle).collateral(),
             coreParams,
             riskParams
         );

@@ -24,6 +24,7 @@ library MarginModule {
                 .positionAmount
                 .wmul(core.markPrice())
                 .wmul(core.initialMarginRate)
+                .abs()
                 .max(core.keeperGasReward);
     }
 
@@ -33,6 +34,7 @@ library MarginModule {
                 .positionAmount
                 .wmul(core.markPrice())
                 .wmul(core.maintenanceMarginRate)
+                .abs()
                 .max(core.keeperGasReward);
     }
 
@@ -75,6 +77,13 @@ library MarginModule {
         return margin(core, trader) >= maintenanceMargin(core, trader);
     }
 
+    function isEmptyAccount(Core storage core, address trader) internal view returns (bool) {
+        return
+            core.marginAccounts[trader].cashBalance == 0 &&
+            core.marginAccounts[trader].positionAmount == 0 &&
+            core.marginAccounts[trader].entryFunding == 0;
+    }
+
     function updateCashBalance(
         Core storage core,
         address trader,
@@ -104,38 +113,38 @@ library MarginModule {
             deltaPositionAmount
         );
         if (closingAmount != 0) {
-            closePosition(core, account, closingAmount);
+            closePosition(account, closingAmount, core.unitAccumulativeFunding);
             fundingLoss = core.marginAccounts[trader].cashBalance.sub(account.cashBalance);
         }
         if (openingAmount != 0) {
-            openPosition(core, account, openingAmount);
+            openPosition(account, openingAmount, core.unitAccumulativeFunding);
         }
         account.cashBalance = account.cashBalance.add(deltaMargin);
         core.marginAccounts[trader] = account;
     }
 
     function closePosition(
-        Core storage core,
         MarginAccount memory account,
-        int256 amount
-    ) internal view {
+        int256 amount,
+        int256 unitAccumulativeFunding
+    ) internal pure {
         int256 closingEntryFunding = account.entryFunding.wfrac(amount, account.positionAmount);
-        int256 funding = core.unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
+        int256 funding = unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
         require(account.positionAmount.abs() <= previousAmount.abs(), "not closing");
-        account.cashBalance = account.cashBalance.sub(funding);
-        account.entryFunding = account.entryFunding.sub(closingEntryFunding);
+        account.cashBalance = account.cashBalance.add(funding);
+        account.entryFunding = account.entryFunding.add(closingEntryFunding);
     }
 
     function openPosition(
-        Core storage core,
         MarginAccount memory account,
-        int256 amount
-    ) internal view {
+        int256 amount,
+        int256 unitAccumulativeFunding
+    ) internal pure {
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
         require(account.positionAmount.abs() >= previousAmount.abs(), "not opening");
-        account.entryFunding = account.entryFunding.add(core.unitAccumulativeFunding.wmul(amount));
+        account.entryFunding = account.entryFunding.add(unitAccumulativeFunding.wmul(amount));
     }
 }

@@ -15,7 +15,7 @@ contract TestMargin is Storage {
         _core.markPriceData.price = price;
     }
 
-    function updateMarginAccount(
+    function initializeMarginAccount(
         address trader,
         int256 cashBalance,
         int256 positionAmount,
@@ -32,6 +32,20 @@ contract TestMargin is Storage {
 
     function updateCoreParameter(bytes32 key, int256 newValue) external {
         _core.updateCoreParameter(key, newValue);
+    }
+
+    function marginAccount(address trader)
+        external
+        view
+        returns (
+            int256 cashBalance,
+            int256 positionAmount,
+            int256 entryFunding
+        )
+    {
+        cashBalance = _core.marginAccounts[trader].cashBalance;
+        positionAmount = _core.marginAccounts[trader].positionAmount;
+        entryFunding = _core.marginAccounts[trader].entryFunding;
     }
 
     function initialMargin(address trader) external view returns (int256) {
@@ -54,11 +68,46 @@ contract TestMargin is Storage {
         return _core.availableMargin(trader);
     }
 
+    function positionAmount(address trader) external view returns (int256) {
+        return _core.positionAmount(trader);
+    }
+
     function isInitialMarginSafe(address trader) external view returns (bool) {
         return _core.isInitialMarginSafe(trader);
     }
 
     function isMaintenanceMarginSafe(address trader) external view returns (bool) {
         return _core.isMaintenanceMarginSafe(trader);
+    }
+
+    function isEmptyAccount(address trader) external view returns (bool) {
+        return _core.isEmptyAccount(trader);
+    }
+
+    function updateMarginAccount(
+        address trader,
+        int256 deltaPositionAmount,
+        int256 deltaMargin
+    )
+        external
+        returns (
+            int256 fundingLoss,
+            int256 closingAmount,
+            int256 openingAmount
+        )
+    {
+        return _core.updateMarginAccount(trader, deltaPositionAmount, deltaMargin);
+    }
+
+    function closePosition(address trader, int256 amount) external {
+        MarginAccount memory account = _core.marginAccounts[trader];
+        MarginModule.closePosition(account, amount, _core.unitAccumulativeFunding);
+        _core.marginAccounts[trader] = account;
+    }
+
+    function openPosition(address trader, int256 amount) external {
+        MarginAccount memory account = _core.marginAccounts[trader];
+        MarginModule.openPosition(account, amount, _core.unitAccumulativeFunding);
+        _core.marginAccounts[trader] = account;
     }
 }
