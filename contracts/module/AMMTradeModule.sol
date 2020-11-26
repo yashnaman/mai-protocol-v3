@@ -14,10 +14,7 @@ import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 import "../module/MarginModule.sol";
 import "../module/OracleModule.sol";
-
 import "./AMMCommon.sol";
-
-import "hardhat/console.sol";
 
 library AMMTradeModule {
     using Math for int256;
@@ -28,14 +25,12 @@ library AMMTradeModule {
     using MarginModule for Core;
     using OracleModule for Core;
 
-    int256 constant FUNDING_INTERVAL = 3600 * 8;
-
     function tradeWithAMM(
         Core storage core,
         int256 tradingAmount,
         bool partialFill
     ) public view returns (int256 deltaMargin, int256 deltaPosition) {
-        require(tradingAmount != 0, "Zero trade amount");
+        require(tradingAmount != 0, "trade amount is zero");
         int256 mc = core.availableCashBalance(address(this));
         int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
@@ -54,6 +49,57 @@ library AMMTradeModule {
         deltaPosition = closingAmount.add(openDeltaPosition);
         int256 spread = core.halfSpreadRate.value.wmul(deltaMargin);
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
+    }
+
+    function closePosition(
+        Core storage core,
+        int256 mc,
+        int256 positionAmount,
+        int256 tradingAmount
+    ) internal view returns (int256 deltaMargin) {
+        if (tradingAmount == 0) {
+            return 0;
+        }
+        require(positionAmount != 0, "Zero position amount before close position");
+        int256 targetLeverage = core.targetLeverage.value;
+        int256 closingBeta = core.beta2.value;
+        int256 indexPrice = core.indexPrice();
+        if (
+            AMMCommon.isAMMMarginSafe(mc, positionAmount, indexPrice, targetLeverage, closingBeta)
+        ) {
+            (int256 mv, int256 m0) = AMMCommon.regress(
+                mc,
+                positionAmount,
+                indexPrice,
+                targetLeverage,
+                closingBeta
+            );
+            int256 newPositionAmount = positionAmount.add(tradingAmount);
+            if (newPositionAmount == 0) {
+                return m0.wdiv(targetLeverage).sub(mc);
+            } else {
+                if (positionAmount > 0) {
+                    deltaMargin = longDeltaMargin(
+                        m0,
+                        mc.add(mv),
+                        positionAmount,
+                        newPositionAmount,
+                        indexPrice,
+                        closingBeta
+                    );
+                } else {
+                    deltaMargin = shortDeltaMargin(
+                        m0,
+                        positionAmount,
+                        newPositionAmount,
+                        indexPrice,
+                        closingBeta
+                    );
+                }
+            }
+        } else {
+            deltaMargin = indexPrice.wmul(tradingAmount).neg();
+        }
     }
 
     function openPosition(
@@ -116,57 +162,6 @@ library AMMTradeModule {
             );
         } else {
             deltaMargin = shortDeltaMargin(m0, positionAmount, newPosition, indexPrice, openBeta);
-        }
-    }
-
-    function closePosition(
-        Core storage core,
-        int256 mc,
-        int256 positionAmount,
-        int256 tradingAmount
-    ) internal view returns (int256 deltaMargin) {
-        if (tradingAmount == 0) {
-            return 0;
-        }
-        require(positionAmount != 0, "Zero position amount before close position");
-        int256 targetLeverage = core.targetLeverage.value;
-        int256 closingBeta = core.beta2.value;
-        int256 indexPrice = core.indexPrice();
-        if (
-            AMMCommon.isAMMMarginSafe(mc, positionAmount, indexPrice, targetLeverage, closingBeta)
-        ) {
-            (int256 mv, int256 m0) = AMMCommon.regress(
-                mc,
-                positionAmount,
-                indexPrice,
-                targetLeverage,
-                closingBeta
-            );
-            int256 newPositionAmount = positionAmount.add(tradingAmount);
-            if (newPositionAmount == 0) {
-                return m0.wdiv(targetLeverage).sub(mc);
-            } else {
-                if (positionAmount > 0) {
-                    deltaMargin = longDeltaMargin(
-                        m0,
-                        mc.add(mv),
-                        positionAmount,
-                        newPositionAmount,
-                        indexPrice,
-                        closingBeta
-                    );
-                } else {
-                    deltaMargin = shortDeltaMargin(
-                        m0,
-                        positionAmount,
-                        newPositionAmount,
-                        indexPrice,
-                        closingBeta
-                    );
-                }
-            }
-        } else {
-            deltaMargin = indexPrice.wmul(tradingAmount).neg();
         }
     }
 
