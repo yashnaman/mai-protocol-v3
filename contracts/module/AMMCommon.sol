@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../libraries/Constant.sol";
 import "../libraries/Math.sol";
 import "../libraries/SafeMathExt.sol";
-
 import "../Type.sol";
 
 library AMMCommon {

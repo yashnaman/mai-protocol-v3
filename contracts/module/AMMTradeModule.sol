@@ -301,34 +301,39 @@ library AMMTradeModule {
 		marginToRemove = _marginToRemove(indexPrice, mc, m0, positionAmount, targetLeverage, beta);
 	}
 
-	function _marginToRemove(
-		int256 indexPrice,
-		int256 mc,
-		int256 m0,
-		int256 positionAmount,
-		int256 targetLeverage,
-		int256 beta
-	) internal pure returns (int256 marginToRemove) {
-		int256 positionValue = indexPrice.wmul(positionAmount);
-		if (positionAmount <= 0) {
-			int256 newMc = positionValue
-				.wmul(positionValue)
-				.wmul(beta)
-				.wdiv(positionValue.add(m0))
-				.sub(positionValue)
-				.add(m0.wdiv(targetLeverage));
-			marginToRemove = mc.sub(newMc);
-		} else {
-			int256 beforeSqrt = m0.sub(positionValue).mul(m0.sub(positionValue));
-			beforeSqrt = beta.wmul(m0).mul(positionValue).mul(4).add(beforeSqrt);
-			int256 newMc = beforeSqrt
-				.sqrt()
-				.sub(positionValue)
-				.sub(m0)
-				.wdiv(Constant.SIGNED_ONE.sub(beta))
-				.div(2)
-				.add(m0.wdiv(targetLeverage));
-			marginToRemove = mc.sub(newMc);
-		}
-	}
+    function _marginToRemove(
+        int256 indexPrice,
+        int256 mc,
+        int256 m0,
+        int256 positionAmount,
+        int256 targetLeverage,
+        int256 beta
+    ) internal pure returns (int256 marginToRemove) {
+        int256 positionValue = indexPrice.wmul(positionAmount);
+        if (positionAmount <= 0) {
+            int256 newMc;
+            if (m0 == 0) {
+                newMc = 0;
+            } else {
+                newMc = positionValue
+                    .wmul(positionValue)
+                    .wmul(beta)
+                    .wdiv(positionValue.add(m0))
+                    .sub(positionValue)
+                    .add(m0.wdiv(targetLeverage));
+            }
+            marginToRemove = mc.sub(newMc);
+        } else {
+            int256 beforeSqrt = m0.sub(positionValue).mul(m0.sub(positionValue));
+            beforeSqrt = beta.wmul(m0).mul(positionValue).mul(4).add(beforeSqrt);
+            int256 newMc = beforeSqrt
+                .sqrt()
+                .sub(positionValue)
+                .sub(m0)
+                .wdiv(Constant.SIGNED_ONE.sub(beta))
+                .div(2)
+                .add(m0.wdiv(targetLeverage));
+            marginToRemove = mc.sub(newMc);
+        }
+    }
 }
