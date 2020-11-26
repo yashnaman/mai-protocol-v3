@@ -173,13 +173,14 @@ library AMMTradeModule {
         int256 indexPrice,
         int256 beta
     ) internal pure returns (int256 deltaMargin) {
-        int256 a = Constant.SIGNED_ONE.sub(beta).wmul(ma).mul(2);
-        int256 b = positionAmount2.sub(positionAmount1).wmul(indexPrice);
-        b = a.div(2).sub(b).wmul(ma);
-        b = b.sub(beta.wmul(m0).wmul(m0));
-        int256 beforeSqrt = beta.wmul(a).wmul(ma).wmul(m0).mul(m0).mul(2);
-        beforeSqrt = beforeSqrt.add(b.mul(b));
-        deltaMargin = beforeSqrt.sqrt().add(b).wdiv(a).sub(ma);
+        require(ma > 0 && m0 > 0, "long condition is not satisfied");
+        int256 tmpA = Constant.SIGNED_ONE.sub(beta).wmul(ma).mul(2);
+        int256 tmpB = positionAmount2.sub(positionAmount1).wmul(indexPrice);
+        tmpB = tmpA.div(2).sub(tmpB).wmul(ma);
+        tmpB = tmpB.sub(beta.wmul(m0).wmul(m0));
+        int256 beforeSqrt = beta.wmul(tmpA).wmul(ma).wmul(m0).mul(m0).mul(2);
+        beforeSqrt = beforeSqrt.add(tmpB.mul(tmpB));
+        deltaMargin = beforeSqrt.sqrt().add(tmpB).wdiv(tmpA).sub(ma);
     }
 
     function shortDeltaMargin(
@@ -189,11 +190,14 @@ library AMMTradeModule {
         int256 indexPrice,
         int256 beta
     ) internal pure returns (int256 deltaMargin) {
+        int256 tmpA = indexPrice.wmul(positionAmount1).add(m0);
+        int256 tmpB = indexPrice.wmul(positionAmount2).add(m0);
+        require(m0 > 0 && tmpA > 0 && tmpB > 0, "short condition is not satisfied");
         deltaMargin = beta.wmul(m0).wmul(m0);
-        deltaMargin = deltaMargin.wdiv(positionAmount1.wmul(indexPrice).add(m0));
-        deltaMargin = deltaMargin.wdiv(positionAmount2.wmul(indexPrice).add(m0));
+        deltaMargin = deltaMargin.wdiv(tmpA);
+        deltaMargin = deltaMargin.wdiv(tmpB);
         deltaMargin = deltaMargin.add(Constant.SIGNED_ONE).sub(beta);
-        deltaMargin = deltaMargin.wmul(indexPrice).wmul(positionAmount2.sub(positionAmount1)).neg();
+        deltaMargin = deltaMargin.wmul(indexPrice).wmul(positionAmount1.sub(positionAmount2));
     }
 
     function _maxLongPosition(
@@ -202,19 +206,24 @@ library AMMTradeModule {
         int256 beta,
         int256 targetLeverage
     ) internal pure returns (int256 maxLongPosition) {
-        if (beta.wmul(targetLeverage) == Constant.SIGNED_ONE.sub(beta)) {
-            maxLongPosition = beta.mul(2).neg().add(Constant.SIGNED_ONE).mul(2).wmul(indexPrice);
-            maxLongPosition = m0.wdiv(maxLongPosition);
+        if (indexPrice == 0) {
+            maxLongPosition = type(int256).max;
         } else {
-            int256 tmp1 = targetLeverage.sub(Constant.SIGNED_ONE);
-            int256 tmp2 = tmp1.add(beta);
-            int256 tmp3 = beta.mul(2).sub(Constant.SIGNED_ONE);
-            maxLongPosition = beta.mul(tmp2).sqrt();
-            maxLongPosition = beta.add(tmp2).sub(Constant.SIGNED_ONE).wmul(maxLongPosition);
-            maxLongPosition = tmp2.wmul(tmp3).add(maxLongPosition).wdiv(tmp1).wdiv(
-                beta.wmul(tmp1).add(tmp3)
-            );
-            maxLongPosition = maxLongPosition.wfrac(m0, indexPrice);
+            if (beta.wmul(targetLeverage) == Constant.SIGNED_ONE.sub(beta)) {
+                require(beta.mul(2) < Constant.SIGNED_ONE, "invalid beta");
+                maxLongPosition = beta.mul(2).neg().add(Constant.SIGNED_ONE).mul(2).wmul(indexPrice);
+                maxLongPosition = m0.wdiv(maxLongPosition);
+            } else {
+                int256 tmp1 = targetLeverage.sub(Constant.SIGNED_ONE);
+                int256 tmp2 = tmp1.add(beta);
+                int256 tmp3 = beta.mul(2).sub(Constant.SIGNED_ONE);
+                maxLongPosition = beta.mul(tmp2).sqrt();
+                maxLongPosition = beta.add(tmp2).sub(Constant.SIGNED_ONE).wmul(maxLongPosition);
+                maxLongPosition = tmp2.wmul(tmp3).add(maxLongPosition).wdiv(tmp1).wdiv(
+                    beta.wmul(tmp1).add(tmp3)
+                );
+                maxLongPosition = maxLongPosition.wfrac(m0, indexPrice);
+            }
         }
     }
 
@@ -224,10 +233,14 @@ library AMMTradeModule {
         int256 beta,
         int256 targetLeverage
     ) internal pure returns (int256 maxShortPosition) {
-        maxShortPosition = beta.mul(targetLeverage).sqrt().add(Constant.SIGNED_ONE).wmul(
-            indexPrice
-        );
-        maxShortPosition = m0.wdiv(maxShortPosition).neg();
+        if (indexPrice == 0) {
+            maxShortPosition = type(int256).min;
+        } else {
+            maxShortPosition = beta.mul(targetLeverage).sqrt().add(Constant.SIGNED_ONE).wmul(
+                indexPrice
+            );
+            maxShortPosition = m0.wdiv(maxShortPosition).neg();
+        }
     }
 
     function addLiquidity(
