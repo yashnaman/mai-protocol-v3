@@ -620,6 +620,17 @@ describe('MarginModule', () => {
             expect(entryFunding).to.equal(toWei("0"));
         })
 
+        it("wrong side", async () => {
+            let trader = accounts[0].address;
+            await testMargin.updateMarkPrice(toWei("500"));
+            await testMargin.updateUnitAccumulativeFunding(toWei("100"));
+            await testMargin.initializeMarginAccount(trader, toWei("1000"), toWei("0"), toWei("0"));
+
+            await testMargin.openPosition(trader, toWei("-2"));
+            await expect(testMargin.openPosition(trader, toWei("2"))).to.be.revertedWith("must open position");
+            await expect(testMargin.closePosition(trader, toWei("-2"))).to.be.revertedWith("must close position");
+        })
+
         it("updateMarginAccount", async () => {
             let trader = accounts[0].address;
             await testMargin.updateMarkPrice(toWei("500"));

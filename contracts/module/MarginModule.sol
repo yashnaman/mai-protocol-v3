@@ -132,7 +132,7 @@ library MarginModule {
         int256 funding = unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
-        require(account.positionAmount.abs() <= previousAmount.abs(), "not closing");
+        require(account.positionAmount.abs() <= previousAmount.abs(), "must close position");
         account.cashBalance = account.cashBalance.add(funding);
         account.entryFunding = account.entryFunding.add(closingEntryFunding);
     }
@@ -144,7 +144,7 @@ library MarginModule {
     ) internal pure {
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
-        require(account.positionAmount.abs() >= previousAmount.abs(), "not opening");
+        require(account.positionAmount.abs() >= previousAmount.abs(), "must open position");
         account.entryFunding = account.entryFunding.add(unitAccumulativeFunding.wmul(amount));
     }
 }
