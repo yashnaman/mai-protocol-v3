@@ -220,6 +220,52 @@ describe('AMM', () => {
         })
     })
 
+    describe('virtualM0', function () {
+
+        const successCases = [
+            {
+                name: 'short ok',
+                amm: amm3,
+                virtualM0: toWad('1691.99438202247191')
+            },
+            {
+                name: 'long ok',
+                amm: amm6,
+                virtualM0: toWad('1251.861461572715009523')
+            }
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+                expect(await AMM.virtualM0()).approximateBigNumber(element.virtualM0)
+            })
+        })
+
+        const failCases = [
+            {
+                name: 'short fail',
+                cashBalance: toWad('879'),
+                positionAmount: toWad('-11'),
+                errorMsg: 'short virtual m0 is not position'
+            },
+            {
+                name: 'long fail',
+                cashBalance: toWad('-1295'),
+                positionAmount: toWad('11'),
+                errorMsg: 'long virtual m0 is not position'
+            }
+        ]
+
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.cashBalance, element.positionAmount, _0, toWad('100'))
+                await expect(AMM.virtualM0()).to.be.revertedWith(element.errorMsg)
+            })
+        })
+    })
+
+
     describe('computeDeltaMargin', function () {
 
         const cases = [
@@ -544,7 +590,7 @@ describe('AMM', () => {
 
         const successCases = [
             {
-                name: 'initial state',
+                name: 'initial state(old m0 = 0)',
                 amm: ammInit,
                 totalShare: _0,
                 marginToAdd: toWad('1000'),
@@ -560,31 +606,21 @@ describe('AMM', () => {
                 share: toWad('107.408041859396039759')
             },
             {
-                name: 'before unsafe, after safe',
-                amm: amm1,
+                name: 'before unsafe, after unsafe',
+                amm: amm3,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('1000'),
+                marginToAdd: toWad('203'),
                 unitAccumulatedFundingLoss: params.unitAccumulatedFundingLoss,
-                share: toWad('107.408041859396039759')
-            },
-            /*
-            {
-                name: 'before unsafe, after safe',
-                amm: amm1,
-                totalShare: toWad('100'),
-                marginToAdd: toWad('1000'),
-                unitAccumulatedFundingLoss: params.unitAccumulatedFundingLoss,
-                share: toWad('107.408041859396039759')
+                share: toWad('29.994189424753050553')
             },
             {
-                name: 'old m0 = 0',
-                amm: amm1,
+                name: 'before unsafe, after safe',
+                amm: amm3,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('1000'),
+                marginToAdd: toWad('204'),
                 unitAccumulatedFundingLoss: params.unitAccumulatedFundingLoss,
-                share: toWad('107.408041859396039759')
+                share: toWad('34.058581410041613024')
             }
-            */
         ]
 
         successCases.forEach(element => {
@@ -594,25 +630,110 @@ describe('AMM', () => {
             })
         })
 
-        const failCases = []
-    })
-
-    describe('remove liquidity', function () {
-        const cases = [
+        const failCases = [
             {
-                name: 'normal',
-                amm: amm1,
+                name: 'invalid margin to add',
                 totalShare: toWad('100'),
-                shareToRemove: toWad('10'),
-                marginToRemove: toWad('86.96765668805676924')
+                marginToAdd: _0,
+                errorMsg: 'margin to add must be positive'
+            },
+            {
+                name: 'm0 = 0 && totalShare != 0',
+                totalShare: toWad('100'),
+                marginToAdd: toWad('100'),
+                errorMsg: 'share has no value'
             }
         ]
 
-        cases.forEach(element => {
+        failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+                await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, ammInit.cashBalance, ammInit.positionAmount, _0, toWad('100'))
+                await expect(AMM.addLiquidity(element.totalShare, element.marginToAdd)).to.be.revertedWith(element.errorMsg)
+            })
+        })
+
+    })
+
+    describe('remove liquidity', function () {
+
+        const successCases = [
+            {
+                name: 'no position',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                unitAccumulatedFundingLoss: _0,
+                marginToRemove: toWad('100')
+            },
+            {
+                name: 'short',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                unitAccumulatedFundingLoss: params.unitAccumulatedFundingLoss,
+                marginToRemove: toWad('86.967656688056717601')
+            },
+            {
+                name: 'long',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                unitAccumulatedFundingLoss: params.unitAccumulatedFundingLoss,
+                marginToRemove: toWad('89.952448465310273482')
+            }
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await AMM.setParams(element.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
                 expect(await AMM.removeLiquidity(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove)
             })
         })
+
+        const failCases = [
+            {
+                name: 'invalid share',
+                amm: amm0,
+                totalShare: _0,
+                shareToRemove: toWad('10'),
+                errorMsg: 'invalid share when remove liquidity',
+            },
+            {
+                name: 'invalid share',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: _0,
+                errorMsg: 'invalid share when remove liquidity',
+            },
+            {
+                name: 'invalid share',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('100.1'),
+                errorMsg: 'invalid share when remove liquidity',
+            },
+            {
+                name: 'before unsafe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                errorMsg: 'amm is unsafe before remove liquidity',
+            },
+            {
+                name: 'after unsafe',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('54.459'),
+                errorMsg: 'amm is unsafe after remove liquidity',
+            }
+        ]
+
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+                await expect(AMM.removeLiquidity(element.totalShare, element.shareToRemove)).to.be.revertedWith(element.errorMsg)
+            })
+        })
+
     })
 });

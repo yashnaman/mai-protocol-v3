@@ -60,6 +60,28 @@ contract TestAMM {
         );
     }
 
+    function virtualM0() public view returns (int256) {
+        int256 mc = core.availableCashBalance(address(this));
+        int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
+        if (positionAmount > 0) {
+            return AMMCommon.longVirtualM0(
+                mc,
+                positionAmount,
+                core.indexPrice(),
+                core.targetLeverage.value,
+                core.beta1.value
+            );
+        } else {
+            return AMMCommon.shortVirtualM0(
+                mc,
+                positionAmount,
+                core.indexPrice(),
+                core.targetLeverage.value,
+                core.beta1.value
+            );
+        }
+    }
+
     function longDeltaMargin(int256 positionAmount2, int256 beta)
         public
         view

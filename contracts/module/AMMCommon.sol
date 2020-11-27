@@ -112,4 +112,35 @@ library AMMCommon {
         );
         upperbound = targetLeverage.wfrac(mc, positionAmount.neg()).wdiv(upperbound);
     }
+
+    function longVirtualM0(
+        int256 mc,
+        int256 positionAmount,
+        int256 indexPrice,
+        int256 targetLeverage,
+        int256 beta
+    ) internal pure returns (int256 virtualM0) {
+        int256 tmp = targetLeverage.sub(Constant.SIGNED_ONE);
+        virtualM0 = tmp.wmul(indexPrice).wmul(positionAmount);
+        virtualM0 = beta.mul(2).sub(Constant.SIGNED_ONE).add(tmp).wmul(mc).add(virtualM0);
+        virtualM0 = virtualM0.wmul(targetLeverage).div(2).wdiv(tmp.add(beta));
+        require(virtualM0 > 0, "long virtual m0 is not position");
+    }
+
+    function shortVirtualM0(
+        int256 mc,
+        int256 positionAmount,
+        int256 indexPrice,
+        int256 targetLeverage,
+        int256 beta
+    ) internal pure returns (int256 virtualM0) {
+        virtualM0 = targetLeverage
+            .sub(Constant.SIGNED_ONE)
+            .wmul(indexPrice)
+            .wmul(positionAmount)
+            .add(targetLeverage.wmul(mc))
+            .div(2);
+        require(virtualM0 > 0, "short virtual m0 is not position");
+    }
+
 }
