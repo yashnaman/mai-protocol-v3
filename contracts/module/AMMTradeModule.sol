@@ -37,8 +37,8 @@ library AMMTradeModule {
             positionAmount,
             tradingAmount
         );
-        deltaMargin = closePosition(core, mc, positionAmount, closingAmount);
-        (int256 openDeltaMargin, int256 openDeltaPosition) = openPosition(
+        deltaMargin = _closePosition(core, mc, positionAmount, closingAmount);
+        (int256 openDeltaMargin, int256 openDeltaPosition) = _openPosition(
             core,
             mc.add(deltaMargin),
             positionAmount.add(closingAmount),
@@ -51,16 +51,16 @@ library AMMTradeModule {
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
 
-    function closePosition(
+    function _closePosition(
         Core storage core,
         int256 mc,
         int256 positionAmount,
         int256 tradingAmount
-    ) internal view returns (int256 deltaMargin) {
+    ) private view returns (int256 deltaMargin) {
         if (tradingAmount == 0) {
             return 0;
         }
-        require(positionAmount != 0, "Zero position amount before close position");
+        require(positionAmount != 0, "position is zero when close");
         int256 targetLeverage = core.targetLeverage.value;
         int256 closingBeta = core.beta2.value;
         int256 indexPrice = core.indexPrice();
@@ -102,13 +102,13 @@ library AMMTradeModule {
         }
     }
 
-    function openPosition(
+    function _openPosition(
         Core storage core,
         int256 mc,
         int256 positionAmount,
         int256 tradingAmount,
         bool partialFill
-    ) internal view returns (int256 deltaMargin, int256 deltaPosition) {
+    ) private view returns (int256 deltaMargin, int256 deltaPosition) {
         if (tradingAmount == 0) {
             return (0, 0);
         }
@@ -119,12 +119,13 @@ library AMMTradeModule {
             if (partialFill) {
                 return (0, 0);
             } else {
-                revert("Unsafe before open position");
+                revert("amm is unsafe when open");
             }
         }
 
         int256 m0;
         int256 ma1;
+
         {
             int256 mv;
             (mv, m0) = AMMCommon.regress(mc, positionAmount, indexPrice, targetLeverage, openBeta);
@@ -132,6 +133,7 @@ library AMMTradeModule {
         }
 
         int256 newPosition = positionAmount.add(tradingAmount);
+        require(newPosition != 0, "new position is zero when open");
         int256 maxPosition;
         if (newPosition > 0) {
             maxPosition = _maxLongPosition(m0, indexPrice, openBeta, targetLeverage);
@@ -146,7 +148,7 @@ library AMMTradeModule {
                 deltaPosition = maxPosition.sub(positionAmount);
                 newPosition = maxPosition;
             } else {
-                revert("Trade amount exceeds max amount");
+                revert("trade amount exceeds max amount");
             }
         } else {
             deltaPosition = tradingAmount;
