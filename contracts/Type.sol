@@ -20,6 +20,7 @@ struct MarginAccount {
     int256 entryFunding;
 }
 
+enum State { NORMAL, EMERGENCY, CLEARED }
 enum ActionOnFailure { IGNORE, REVERT }
 enum OrderType { LIMIT, MARKET, STOP }
 
@@ -61,6 +62,10 @@ struct Core {
     address factory;
     address vault;
     address operator;
+    // collateral
+    bool isWrapped;
+    uint256 scaler;
+    address collateral;
     // prices
     address oracle;
     uint256 priceUpdateTime;
@@ -68,8 +73,7 @@ struct Core {
     OraclePriceData markPriceData;
     OraclePriceData settlePriceData;
     // state
-    bool emergency;
-    bool shuttingdown;
+    State state;
     // insurance fund
     int256 insuranceFund;
     int256 donatedInsuranceFund;
@@ -99,13 +103,15 @@ struct Core {
     mapping(address => int256) claimableFee;
     // users
     int256 clearingPayout;
-    int256 marginWithPosition;
-    int256 marginWithoutPosition;
-    int256 withdrawableMarginWithPosition;
-    int256 withdrawableMarginWithoutPosition;
+    int256 totalMarginWithoutPosition;
+    int256 totalMarginWithPosition;
+    int256 redemptionRateWithoutPosition;
+    int256 redemptionRateWithPosition;
     EnumerableSet.AddressSet registeredTraders;
     EnumerableSet.AddressSet clearedTraders;
     // filled
     mapping(bytes32 => int256) orderFilled;
     mapping(bytes32 => bool) orderCanceled;
+    // access control
+    mapping(address => mapping(address => uint256)) accessControls;
 }

@@ -10,9 +10,10 @@ import "./Storage.sol";
 
 import "./Events.sol";
 import "./Governance.sol";
-import "./Operation.sol";
+import "./Trade.sol";
+import "./Settlement.sol";
 
-contract Perpetual is Storage, Operation, Governance {
+contract Perpetual is Storage, Trade, Settlement, Governance {
     function initialize(
         address operator,
         address oracle,
@@ -23,7 +24,7 @@ contract Perpetual is Storage, Operation, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        _storageInitialize(
+        _initialize(
             operator,
             oracle,
             governor,
@@ -33,6 +34,5 @@ contract Perpetual is Storage, Operation, Governance {
             minRiskParamValues,
             maxRiskParamValues
         );
-        _collateralInitialize(IOracle(_core.oracle).collateral());
     }
 }

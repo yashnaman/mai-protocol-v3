@@ -12,7 +12,6 @@ import "../Type.sol";
 import "./AMMTradeModule.sol";
 import "./FeeModule.sol";
 import "./MarginModule.sol";
-import "./StateModule.sol";
 import "./OracleModule.sol";
 
 import "hardhat/console.sol";
@@ -23,7 +22,6 @@ library TradeModule {
     using AMMTradeModule for Core;
     using FeeModule for Core;
     using MarginModule for Core;
-    using StateModule for Core;
     using OracleModule for Core;
     using MarginModule for MarginAccount;
 
@@ -51,29 +49,17 @@ library TradeModule {
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         // 0. price / amount
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(amount.neg(), false);
-        console.log(
-            "DEBUG-1: %s %s",
-            uint256(receipt.tradingValue),
-            uint256(receipt.tradingAmount)
-        );
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
-        console.log("DEBUG-2: %s", uint256(tradingPrice));
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
         // 1. fee
-        setTradingFee(core, receipt, referrer);
-        console.log(
-            "DEBUG-3: %s %s %s",
-            uint256(receipt.lpFee),
-            uint256(receipt.vaultFee),
-            uint256(receipt.operatorFee)
-        );
+        updateTradingFees(core, receipt, referrer);
         // 2. execute
-        executeTrading(core, receipt, trader, address(this), referrer);
+        updateTradingResult(core, receipt, trader, address(this), referrer);
         // 3. safe
         if (receipt.takerOpeningAmount != 0) {
-            core.isInitialMarginSafe(trader);
+            require(core.isInitialMarginSafe(trader), "trader initial margin is unsafe");
         } else {
-            core.isMaintenanceMarginSafe(trader);
+            require(core.isMarginSafe(trader), "trader margin is unsafe");
         }
         // 4. event
         emitTradeEvent(receipt, trader, address(this));
@@ -88,22 +74,17 @@ library TradeModule {
         // 0. price / amount
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(maxAmount, false);
         // 1. fee
-        setTradingFee(core, receipt, INVALID_ADDRESS);
+        updateTradingFees(core, receipt, INVALID_ADDRESS);
         // 2. execute
-        executeTrading(core, receipt, trader, address(this), INVALID_ADDRESS);
+        updateTradingResult(core, receipt, trader, address(this), INVALID_ADDRESS);
         // 3. penalty
-        (int256 traderPenalty, int256 liquidatorReward) = calculatePenalty(
-            core,
-            trader,
-            receipt.tradingValue,
-            core.keeperGasReward
-        );
-        core.updateCashBalance(trader, traderPenalty.neg());
-        updateInsuranceFund(core, liquidatorReward);
-        // 4. settle?
-        if (core.donatedInsuranceFund < 0) {
-            core.enterEmergencyState();
-        }
+        int256 penalty = receipt
+            .tradingValue
+            .wmul(core.liquidationPenaltyRate)
+            .add(core.keeperGasReward)
+            .max(core.margin(trader));
+        core.updateCashBalance(trader, penalty.neg());
+        updateInsuranceFund(core, penalty);
         // 4. events
         emitTradeEvent(receipt, trader, address(this));
     }
@@ -120,26 +101,43 @@ library TradeModule {
         validatePrice(amount, tradingPrice, priceLimit);
         (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
         // 1. execute
-        executeTrading(core, receipt, taker, maker, INVALID_ADDRESS);
+        updateTradingResult(core, receipt, taker, maker, INVALID_ADDRESS);
         // 2. penalty
-        (int256 traderPenalty, ) = calculatePenalty(core, maker, receipt.tradingValue, 0);
-        core.updateCashBalance(taker, traderPenalty);
-        core.updateCashBalance(maker, traderPenalty.neg());
+        int256 penalty = receipt.tradingValue.wmul(core.liquidationPenaltyRate).max(
+            core.margin(maker)
+        );
+        core.updateCashBalance(maker, penalty.neg());
+        core.updateCashBalance(taker, penalty);
         // 3. safe
         if (receipt.takerOpeningAmount > 0) {
-            core.isInitialMarginSafe(taker);
+            require(core.isInitialMarginSafe(taker), "trader initial margin unsafe");
         } else {
-            core.isMaintenanceMarginSafe(taker);
-        }
-        // 4. settle?
-        if (core.donatedInsuranceFund < 0) {
-            core.enterEmergencyState();
+            require(core.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
         }
         // 6. events
         emitLiquidationEvent(receipt, taker, maker);
     }
 
-    function executeTrading(
+    function updateTradingFees(
+        Core storage core,
+        Receipt memory receipt,
+        address referrer
+    ) internal view {
+        int256 tradingValue = receipt.tradingValue.abs();
+        receipt.lpFee = tradingValue.wmul(core.lpFeeRate);
+        receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);
+        receipt.operatorFee = tradingValue.wmul(core.operatorFeeRate);
+
+        if (core.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
+            int256 lpFeeRebate = receipt.lpFee.wmul(core.referrerRebateRate);
+            int256 operatorFeeRabate = receipt.operatorFee.wmul(core.referrerRebateRate);
+            receipt.lpFee = receipt.lpFee.sub(lpFeeRebate);
+            receipt.operatorFee = receipt.operatorFee.sub(operatorFeeRabate);
+            receipt.referrerFee = lpFeeRebate.add(operatorFeeRabate);
+        }
+    }
+
+    function updateTradingResult(
         Core storage core,
         Receipt memory receipt,
         address taker,
@@ -150,9 +148,13 @@ library TradeModule {
             .updateMarginAccount(
             taker,
             receipt.tradingAmount.neg(),
-            receipt.tradingValue.neg().sub(receipt.lpFee).sub(receipt.vaultFee).sub(
-                receipt.operatorFee
-            )
+            receipt
+                .tradingValue
+                .neg()
+                .sub(receipt.lpFee)
+                .sub(receipt.vaultFee)
+                .sub(receipt.operatorFee)
+                .sub(receipt.referrerFee)
         );
         (receipt.makerFundingLoss, receipt.makerClosingAmount, receipt.makerOpeningAmount) = core
             .updateMarginAccount(
@@ -165,50 +167,16 @@ library TradeModule {
         core.increaseClaimableFee(core.vault, receipt.vaultFee);
     }
 
-    function setTradingFee(
-        Core storage core,
-        Receipt memory receipt,
-        address referrer
-    ) internal view {
-        int256 tradingValue = receipt.tradingValue.abs();
-        receipt.lpFee = tradingValue.wmul(core.lpFeeRate);
-        receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);
-        receipt.operatorFee = tradingValue.wmul(core.operatorFeeRate);
-        if (core.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
-            int256 lpFeeRebate = receipt.lpFee.wmul(core.referrerRebateRate);
-            int256 operatorFeeRabate = receipt.operatorFee.wmul(core.referrerRebateRate);
-            receipt.lpFee = receipt.lpFee.sub(lpFeeRebate);
-            receipt.operatorFee = receipt.operatorFee.sub(operatorFeeRabate);
-            receipt.referrerFee = lpFeeRebate.add(operatorFeeRabate);
-        }
-    }
-
     function validatePrice(
         int256 amount,
         int256 price,
         int256 priceLimit
     ) internal pure {
-        require(price > 0, Error.INVALID_TRADING_PRICE);
+        require(price > 0, "price is 0");
         if (amount > 0) {
-            require(price <= priceLimit, "price too high");
+            require(price <= priceLimit, "price is too high");
         } else if (amount < 0) {
-            require(price >= priceLimit, "price too low");
-        }
-    }
-
-    function calculatePenalty(
-        Core storage core,
-        address trader,
-        int256 liquidationValue,
-        int256 keeperReward
-    ) internal view returns (int256 traderPenalty, int256 liquidatorReward) {
-        int256 penalty = liquidationValue.wmul(core.liquidationPenaltyRate);
-        traderPenalty = penalty.add(keeperReward);
-        liquidatorReward = penalty;
-        int256 traderMargin = core.margin(trader);
-        if (traderMargin < traderPenalty) {
-            traderPenalty = traderMargin;
-            liquidatorReward = traderMargin.sub(traderPenalty);
+            require(price >= priceLimit, "price is too low");
         }
     }
 

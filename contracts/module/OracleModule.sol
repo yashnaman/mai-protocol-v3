@@ -3,13 +3,10 @@ pragma solidity 0.7.4;
 
 import "../Type.sol";
 import "../interface/IOracle.sol";
-import "./StateModule.sol";
 
 library OracleModule {
-    using StateModule for Core;
-
     function markPrice(Core storage core) internal view returns (int256) {
-        return core.isNormal() ? core.markPriceData.price : core.settlePriceData.price;
+        return core.state == State.NORMAL ? core.markPriceData.price : core.settlePriceData.price;
     }
 
     function updatePrice(Core storage core) internal {
@@ -21,7 +18,7 @@ library OracleModule {
     }
 
     function indexPrice(Core storage core) internal view returns (int256) {
-        return core.isNormal() ? core.indexPriceData.price : core.settlePriceData.price;
+        return core.state == State.NORMAL ? core.indexPriceData.price : core.settlePriceData.price;
     }
 
     // prettier-ignore

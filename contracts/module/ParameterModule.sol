@@ -30,6 +30,8 @@ library ParameterModule {
             core.liquidationPenaltyRate = newValue;
         } else if (key == "keeperGasReward") {
             core.keeperGasReward = newValue;
+        } else if (key == "referrerRebateRate") {
+            core.referrerRebateRate = newValue;
         } else {
             revert("key not found");
         }

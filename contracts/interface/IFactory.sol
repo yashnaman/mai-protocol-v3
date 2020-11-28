@@ -9,4 +9,6 @@ interface IFactory {
     function activeProxy(address trader) external;
 
     function deactiveProxy(address trader) external;
+
+    function weth() external view returns (address);
 }

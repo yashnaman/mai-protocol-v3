@@ -13,7 +13,9 @@ contract Events {
     // trade
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
+    // settle
     event Clear(address trader);
+
     event Trade(
         address indexed trader,
         int256 positionAmount,

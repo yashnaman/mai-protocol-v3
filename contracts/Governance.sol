@@ -4,7 +4,6 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./module/ParameterModule.sol";
-import "./module/StateModule.sol";
 
 import "./Type.sol";
 import "./Events.sol";
@@ -14,7 +13,6 @@ import "./Storage.sol";
 contract Governance is Storage, Events {
     using SafeMath for uint256;
     using ParameterModule for Core;
-    using StateModule for Core;
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
 
@@ -50,14 +48,4 @@ contract Governance is Storage, Events {
         _core.validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }
-
-    function shutdown() external {
-        require(
-            block.timestamp.sub(_core.indexPriceData.time) > INDEX_PRICE_TIMEOUT,
-            "index price is out of date"
-        );
-        _core.enterEmergencyState();
-    }
-
-    bytes[50] private __gap;
 }

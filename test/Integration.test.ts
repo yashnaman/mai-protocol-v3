@@ -48,6 +48,7 @@ describe("integration", () => {
     }
 
     function print(obj) {
+        return;
         var props = []
         for (var n in obj) {
             props.push([n, toString(obj[n])]);

@@ -11,6 +11,10 @@ contract TestMargin is Storage {
     using MarginModule for Core;
     using ParameterModule for Core;
 
+    constructor(address oracle) {
+        _core.oracle = oracle;
+    }
+
     function updateMarkPrice(int256 price) external {
         _core.markPriceData.price = price;
     }
@@ -58,14 +62,6 @@ contract TestMargin is Storage {
 
     function availableCashBalance(address trader) external view returns (int256) {
         return _core.availableCashBalance(trader);
-    }
-
-    function margin(address trader) external view returns (int256) {
-        return _core.margin(trader);
-    }
-
-    function availableMargin(address trader) external view returns (int256) {
-        return _core.availableMargin(trader);
     }
 
     function positionAmount(address trader) external view returns (int256) {

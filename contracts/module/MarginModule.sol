@@ -8,8 +8,6 @@ import "../libraries/Utils.sol";
 
 import "../Type.sol";
 import "./OracleModule.sol";
-import "./StateModule.sol";
-
 import "hardhat/console.sol";
 
 library MarginModule {
@@ -75,6 +73,10 @@ library MarginModule {
         returns (bool)
     {
         return margin(core, trader) >= maintenanceMargin(core, trader);
+    }
+
+    function isMarginSafe(Core storage core, address trader) internal view returns (bool) {
+        return margin(core, trader) >= 0;
     }
 
     function isEmptyAccount(Core storage core, address trader) internal view returns (bool) {

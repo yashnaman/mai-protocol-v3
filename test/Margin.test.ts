@@ -23,9 +23,11 @@ describe('MarginModule', () => {
         let testMargin;
 
         beforeEach(async () => {
+            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
             const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
             const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [], {
+            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [oracle.address], {
                 FundingModule: FundingModule.address,
                 ParameterModule: ParameterModule.address,
             });
@@ -465,10 +467,10 @@ describe('MarginModule', () => {
                 }
                 await testMargin.updateUnitAccumulativeFunding(testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
-                    const result = await testMargin[testCase.method](accounts[testCase.trader].address);
+                    const result = await testMargin.callStatic[testCase.method](accounts[testCase.trader].address);
                     expect(result).to.equal(testCase["expect"])
                 } else {
-                    const result = await testMargin[testCase.method](accounts[testCase.trader].address);
+                    const result = await testMargin.callStatic[testCase.method](accounts[testCase.trader].address);
                     expect(result).to.be.revertedWith(testCase["expectError"])
                 }
             })
@@ -480,9 +482,11 @@ describe('MarginModule', () => {
         let testMargin;
 
         before(async () => {
+            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
             const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
             const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [], {
+            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [oracle.address], {
                 FundingModule: FundingModule.address,
                 ParameterModule: ParameterModule.address,
             });

@@ -11,8 +11,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 
-import "./libraries/Constant.sol";
-import "./Type.sol";
+import "../interface/IFactory.sol";
+import "../interface/IWETH.sol";
+
+import "../Type.sol";
 
 /**
  * @title   Collateral Module
@@ -22,36 +24,23 @@ import "./Type.sol";
  *              - [rawAmount] means amount in decimals of underlying collateral
  *
  */
-contract Collateral {
+library CollateralModule {
     using SafeMath for uint256;
     using SafeCast for int256;
+    using SafeCast for uint256;
     using SignedSafeMath for int256;
     using SafeERC20 for IERC20;
-
-    uint256 internal constant MAX_COLLATERAL_DECIMALS = 18;
-
-    // collateral
-    uint256 internal _scaler;
-    address internal _collateral;
 
     // /**
     //  * @dev     Initialize collateral and decimals.
     //  * @param   collateral   Address of collateral, 0x0 if using ether.
     //  */
-    function _collateralInitialize(address collateral) internal {
-        require(collateral != address(0), "collateral is invalid");
-        (uint8 decimals, bool ok) = _retrieveDecimals(collateral);
-        require(ok, "cannot read decimals");
-        require(decimals <= MAX_COLLATERAL_DECIMALS, "decimals is out of range");
-        _collateral = collateral;
-        _scaler = uint256(10**(MAX_COLLATERAL_DECIMALS.sub(uint256(decimals))));
-    }
 
     /**
      * @notice  Try to retreive decimals from an erc20 contract.
      * @return  Decimals and true if success or 0 and false.ww
      */
-    function _retrieveDecimals(address token) internal view returns (uint8, bool) {
+    function retrieveDecimals(address token) internal view returns (uint8, bool) {
         (bool success, bytes memory result) = token.staticcall(
             abi.encodeWithSignature("decimals()")
         );
@@ -66,8 +55,8 @@ contract Collateral {
      * @param   account     Address of account.
      * @return  Raw repesentation of collateral balance.
      */
-    function _collateralBalance(address account) internal view returns (uint256) {
-        return IERC20(_collateral).balanceOf(account);
+    function collateralBalance(Core storage core, address account) internal view returns (int256) {
+        return IERC20(core.collateral).balanceOf(account).toInt256();
     }
 
     /**
@@ -75,10 +64,18 @@ contract Collateral {
      * @param   account     Address of account owner.
      * @param   amount   Amount of token to be transferred into contract.
      */
-    function _transferFromUser(address account, int256 amount) internal {
+    function transferFromUser(
+        Core storage core,
+        address account,
+        int256 amount,
+        uint256 value
+    ) internal {
         require(amount > 0, "amount is 0");
-        uint256 rawAmount = _toRawAmount(amount.toUint256());
-        IERC20(_collateral).safeTransferFrom(account, address(this), rawAmount);
+        uint256 rawAmount = _toRawAmount(core, amount.toUint256());
+        if (core.isWrapped && value > 0) {
+            IWETH(IFactory(core.factory).weth()).deposit();
+        }
+        IERC20(core.collateral).safeTransferFrom(account, address(this), rawAmount);
     }
 
     /**
@@ -86,10 +83,19 @@ contract Collateral {
      * @param   account     Address of account owner.
      * @param   amount   Amount of token to be transferred to user.
      */
-    function _transferToUser(address payable account, int256 amount) internal {
+    function transferToUser(
+        Core storage core,
+        address payable account,
+        int256 amount
+    ) internal {
         require(amount > 0, "amount is 0");
-        uint256 rawAmount = _toRawAmount(amount.toUint256());
-        IERC20(_collateral).safeTransfer(account, rawAmount);
+        uint256 rawAmount = _toRawAmount(core, amount.toUint256());
+        if (core.isWrapped) {
+            IWETH(IFactory(core.factory).weth()).withdraw(rawAmount);
+            Address.sendValue(account, rawAmount);
+        } else {
+            IERC20(core.collateral).safeTransfer(account, rawAmount);
+        }
     }
 
     /**
@@ -97,9 +103,7 @@ contract Collateral {
      * @param   amount  Amount with internal decimals.
      * @return  Amount  with decimals of token.
      */
-    function _toRawAmount(uint256 amount) private view returns (uint256) {
-        return amount.div(_scaler);
+    function _toRawAmount(Core storage core, uint256 amount) private view returns (uint256) {
+        return amount.div(core.scaler);
     }
-
-    bytes32[50] private __gap;
 }
