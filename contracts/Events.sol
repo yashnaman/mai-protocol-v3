@@ -10,12 +10,12 @@ contract Events {
     // privilege
     event GrantPrivilege(address indexed owner, address indexed trader, uint256 privilege);
     event RevokePrivilege(address indexed owner, address indexed trader, uint256 privilege);
+
+    // settle
+    event Clear(address trader);
     // trade
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
-    // settle
-    event Clear(address trader);
-
     event Trade(
         address indexed trader,
         int256 positionAmount,
@@ -37,7 +37,6 @@ contract Events {
         int256 price,
         uint256 deadline
     );
-    // amm
     event AddLiquidatity(address trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidatity(address trader, int256 returnedCash, int256 burnedShare);
     event DonateInsuranceFund(address trader, int256 amount);
