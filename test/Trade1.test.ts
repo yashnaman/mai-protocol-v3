@@ -1,6 +1,5 @@
-import { expect, use, util } from "chai";
-import { waffleChai } from "@ethereum-waffle/chai";
-import { ethers } from "hardhat";
+import { expect } from "chai";
+const { ethers } = require("hardhat");
 import {
     toWei,
     fromWei,
@@ -8,13 +7,11 @@ import {
     toBytes32,
     getAccounts,
     createContract,
-} from './utils';
+} from '../scripts/utils';
 
 import "./helper";
 
-use(waffleChai);
-
-describe('TradeModule', () => {
+describe('TradeModule1', () => {
     let accounts;
 
     before(async () => {
@@ -32,19 +29,13 @@ describe('TradeModule', () => {
         let testTrade;
 
         beforeEach(async () => {
-            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-            const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
-            const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], {
-                AMMTradeModule: AMMTradeModule.address,
-            });
-            testTrade = await createContract("contracts/test/TestTrade.sol:TestTrade", [oracle.address], {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address,
-                TradeModule: TradeModule.address,
-            });
+            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const FundingModule = await createContract("FundingModule");
+            const ParameterModule = await createContract("ParameterModule");
+            const AMMTradeModule = await createContract("AMMTradeModule");
+            const TradeModule = await createContract("TradeModule", [], { AMMTradeModule });
+            testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
 
             user1 = accounts[1];
             user2 = accounts[2];
@@ -245,19 +236,13 @@ describe('TradeModule', () => {
         let testTrade;
 
         beforeEach(async () => {
-            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-            const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
-            const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], {
-                AMMTradeModule: AMMTradeModule.address,
-            });
-            testTrade = await createContract("contracts/test/TestTrade.sol:TestTrade", [oracle.address], {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address,
-                TradeModule: TradeModule.address,
-            });
+            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const FundingModule = await createContract("FundingModule");
+            const ParameterModule = await createContract("ParameterModule");
+            const AMMTradeModule = await createContract("AMMTradeModule");
+            const TradeModule = await createContract("TradeModule", [], { AMMTradeModule });
+            testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
 
             user1 = accounts[1];
             user2 = accounts[2];

@@ -1,5 +1,5 @@
+const { ethers } = require("hardhat");
 import BigNumber from 'bignumber.js'
-import { ethers } from "hardhat";
 import { waffleChai } from "@ethereum-waffle/chai";
 import { expect, use } from "chai";
 
@@ -9,16 +9,16 @@ use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {
-  return new BigNumber(x).times(weis).toFixed(0);
+    return new BigNumber(x).times(weis).toFixed(0);
 }
 const _0 = toWad('0')
 
 const params = {
-  unitAccumulatedFundingLoss: toWad('1.9'),
-  halfSpreadRate: toWad('0.001'),
-  beta1: toWad('0.2'),
-  beta2: toWad('0.1'),
-  targetLeverage: toWad('5')
+    unitAccumulatedFundingLoss: toWad('1.9'),
+    halfSpreadRate: toWad('0.001'),
+    beta1: toWad('0.2'),
+    beta2: toWad('0.1'),
+    targetLeverage: toWad('5')
 }
 
 // empty
@@ -100,7 +100,7 @@ describe('AMM', () => {
 
     beforeEach(async () => {
         const AMMTradeModule = await createFromFactory("contracts/module/AMMTradeModule.sol:AMMTradeModule")
-        AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", {AMMTradeModule: AMMTradeModule.address});
+        AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", { AMMTradeModule: AMMTradeModule.address });
     });
 
     describe('isAMMSafe', function () {

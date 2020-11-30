@@ -90,6 +90,8 @@ struct Core {
     int256 referrerRebateRate;
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
+    int256 insuranceFundCap; // 到达cap之后，分给lp
+    int256 insuranceFundRate; // 每一笔罚金都要抽这么多到fund
     // ris parameters
     Option halfSpreadRate;
     Option beta1;

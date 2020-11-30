@@ -40,12 +40,12 @@ contract PerpetualTracer {
     }
 
     function activeProxy(address trader) external instanceOnly returns (bool) {
-        require(trader != address(0), "");
+        require(trader != address(0), "invalid trader");
         return _traderActiveProxies[trader].add(msg.sender);
     }
 
     function deactiveProxy(address trader) external instanceOnly returns (bool) {
-        require(trader != address(0), "");
+        require(trader != address(0), "invalid trader");
         return _traderActiveProxies[trader].remove(msg.sender);
     }
 

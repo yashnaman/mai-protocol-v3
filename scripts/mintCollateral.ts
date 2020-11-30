@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+const { ethers } = require("hardhat");
 
 const toWei = ethers.utils.parseEther;
 const fromWei = ethers.utils.formatEther;

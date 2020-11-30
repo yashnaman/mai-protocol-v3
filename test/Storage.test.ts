@@ -6,8 +6,8 @@ import {
     toBytes32,
     getAccounts,
     createContract,
-    createContractFactory,
-} from './utils';
+    createFactory,
+} from '../scripts/utils';
 
 describe('Storage', () => {
     let accounts;
@@ -23,55 +23,49 @@ describe('Storage', () => {
 
         const ParameterModule = await createContract("ParameterModule")
         const FundingModule = await createContract("FundingModule")
-        TestStorage = await createContractFactory(
-            "TestStorage",
-            {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address
-            }
-        );
+        TestStorage = await createFactory("TestStorage", { FundingModule, ParameterModule });
         storage = await TestStorage.deploy();
     })
 
     it("initialize", async () => {
-        const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-        const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
-        await storage.initialize(
-            user0.address,
-            oracle.address,
-            user1.address,
-            user1.address,
-            [
-                toWei("0.1"),
-                toWei("0.05"),
-                toWei("0.001"),
-                toWei("0.001"),
-                toWei("0.2"),
-                toWei("0.02"),
-                toWei("1"),
-            ],
-            [
-                toWei("0.01"),
-                toWei("0.1"),
-                toWei("0.06"),
-                toWei("0.1"),
-                toWei("5"),
-            ],
-            [
-                toWei("0"),
-                toWei("0"),
-                toWei("0"),
-                toWei("0"),
-                toWei("0"),
-            ],
-            [
-                toWei("0.1"),
-                toWei("0.2"),
-                toWei("0.2"),
-                toWei("0.5"),
-                toWei("10"),
-            ],
-        )
+        const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        const oracle = await createContract("OracleWrapper", [erc20.address]);
+        // await storage.initialize(
+        //     user0.address,
+        //     oracle.address,
+        //     user1.address,
+        //     user1.address,
+        //     [
+        //         toWei("0.1"),
+        //         toWei("0.05"),
+        //         toWei("0.001"),
+        //         toWei("0.001"),
+        //         toWei("0.2"),
+        //         toWei("0.02"),
+        //         toWei("1"),
+        //     ],
+        //     [
+        //         toWei("0.01"),
+        //         toWei("0.1"),
+        //         toWei("0.06"),
+        //         toWei("0.1"),
+        //         toWei("5"),
+        //     ],
+        //     [
+        //         toWei("0"),
+        //         toWei("0"),
+        //         toWei("0"),
+        //         toWei("0"),
+        //         toWei("0"),
+        //     ],
+        //     [
+        //         toWei("0.1"),
+        //         toWei("0.2"),
+        //         toWei("0.2"),
+        //         toWei("0.5"),
+        //         toWei("10"),
+        //     ],
+        // )
     })
 
 });

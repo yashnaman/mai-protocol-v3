@@ -1,16 +1,12 @@
-import { expect, use, util } from "chai";
-import { waffleChai } from "@ethereum-waffle/chai";
-import { ethers } from "hardhat";
+const { ethers } = require("hardhat");
+import { expect } from "chai";
 import {
     toWei,
-    fromWei,
-    fromBytes32,
     toBytes32,
     getAccounts,
     createContract,
-} from './utils';
+} from '../scripts/utils';
 
-use(waffleChai);
 
 describe('MarginModule', () => {
     let accounts;
@@ -23,14 +19,11 @@ describe('MarginModule', () => {
         let testMargin;
 
         beforeEach(async () => {
-            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-            const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [oracle.address], {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address,
-            });
+            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const FundingModule = await createContract("FundingModule");
+            const ParameterModule = await createContract("ParameterModule");
+            testMargin = await createContract("TestMargin", [oracle.address], { FundingModule, ParameterModule });
         })
         const testCases = [
             {
@@ -482,14 +475,11 @@ describe('MarginModule', () => {
         let testMargin;
 
         before(async () => {
-            const erc20 = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-            const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
-            testMargin = await createContract("contracts/test/TestMargin.sol:TestMargin", [oracle.address], {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address,
-            });
+            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const FundingModule = await createContract("FundingModule");
+            const ParameterModule = await createContract("ParameterModule");
+            testMargin = await createContract("TestMargin", [oracle.address], { FundingModule, ParameterModule, });
         })
 
         it("openPosition - 0 => long", async () => {

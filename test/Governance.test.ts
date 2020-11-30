@@ -6,8 +6,8 @@ import {
     toBytes32,
     getAccounts,
     createContract,
-    createContractFactory,
-} from './utils';
+    createFactory,
+} from '../scripts/utils';
 
 describe('Governance', () => {
     let accounts;
@@ -40,12 +40,9 @@ describe('Governance', () => {
 
         const FundingModule = await createContract("FundingModule")
         const ParameterModule = await createContract("ParameterModule")
-        TestGovernance = await createContractFactory(
+        TestGovernance = await createFactory(
             "TestGovernance",
-            {
-                FundingModule: FundingModule.address,
-                ParameterModule: ParameterModule.address
-            }
+            { FundingModule, ParameterModule }
         );
     })
 

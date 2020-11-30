@@ -55,7 +55,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
         return _core.registeredTraders.length();
     }
 
-    function listUnclearedTrader(uint256 start, uint256 count)
+    function listUnclearedTraders(uint256 start, uint256 count)
         internal
         view
         returns (address[] memory result)

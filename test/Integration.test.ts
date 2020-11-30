@@ -1,15 +1,13 @@
-import { ethers } from "hardhat";
-import { expect, use, util } from "chai";
-import { waffleChai } from "@ethereum-waffle/chai";
-import { Signer, utils, BigNumber as BN } from "ethers";
+const { ethers } = require("hardhat");
+const { expect } = require("chai");
+import { BigNumber as BN } from "ethers";
 import {
     toWei,
     fromWei,
+    createFactory,
     createContract,
-    createTestPerpetual,
-    getLinkedPerpetualFactory,
-    createPerpetualMaker
-} from "./utils";
+    createPerpetualFactory
+} from "../scripts/utils";
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
 import { PerpetualFactory } from "../typechain/PerpetualFactory"
@@ -28,7 +26,6 @@ class GasStat {
         const tx = await f;
         const receipt = await tx.wait();
         this.collection.push([name.padEnd(24), this.format(receipt.gasUsed.toString()).padStart(10)]);
-        // console.log("[", name, "] gas used:", receipt.gasUsed.toString());
     }
 
     summary() {
@@ -96,12 +93,23 @@ describe("integration", () => {
         const none = "0x0000000000000000000000000000000000000000";
 
         // create components
-        var ctk = await createContract("contracts/test/CustomERC20.sol:CustomERC20", ["collateral", "CTK", 18]);
-        var oracle = await createContract("contracts/oracle/mock/OracleWrapper.sol:OracleWrapper", [ctk.address]);
-        var lpTokenTemplate = await createContract("contracts/governance/ShareToken.sol:ShareToken");
-        var govTemplate = await createContract("contracts/governance/Governor.sol:Governor");
-        var perpTemplate = await createTestPerpetual();
-        var maker = await createPerpetualMaker(govTemplate, lpTokenTemplate, perpTemplate, vault, toWei("0.001"));
+        var weth = await createContract("WETH9");
+        var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        var oracle = await createContract("OracleWrapper", [ctk.address]);
+        var lpTokenTemplate = await createContract("ShareToken");
+        var govTemplate = await createContract("Governor");
+        var maker = await createContract(
+            "PerpetualMaker",
+            [
+                govTemplate.address,
+                lpTokenTemplate.address,
+                weth.address,
+                vault.address,
+                toWei("0.001")
+            ]
+        );
+        var perpTemplate = await (await createPerpetualFactory()).deploy();
+        await maker.addVersion(perpTemplate.address, 0, "initial version");
         await maker.createPerpetual(
             oracle.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002")],
@@ -110,9 +118,10 @@ describe("integration", () => {
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
             998,
         );
+
         const n = await maker.totalPerpetualCount();
         const allPerpetuals = await maker.listPerpetuals(0, n.toString());
-        const perpetualFactory = await getLinkedPerpetualFactory();
+        const perpetualFactory = await createPerpetualFactory();
         const perp = await perpetualFactory.attach(allPerpetuals[allPerpetuals.length - 1]);
 
         // oracle

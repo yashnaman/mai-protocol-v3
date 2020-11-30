@@ -1,71 +1,100 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
-import "../libraries/EnumerableMap.sol";
 import "../libraries/SafeCastExt.sol";
+import "../libraries/SafeMathExt.sol";
 
-contract VersionController {
+contract VersionController is Ownable {
+    using Address for address;
     using SafeMath for uint256;
+    using SafeMathExt for uint256;
     using SafeCastExt for address;
     using SafeCastExt for bytes32;
-    using EnumerableMap for EnumerableMap.GenericEnumerableMap;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
-    enum VersionState { NULL, READY, DEPRECATED }
+    struct VersionDescription {
+        address creator;
+        uint256 creationTime;
+        uint256 compatibility;
+        string note;
+    }
 
-    EnumerableMap.GenericEnumerableMap internal _versions;
-
-    // struct VersionInfo {
-    //     bool deprecated;
-    // }
+    EnumerableSet.AddressSet internal _versions;
+    mapping(address => VersionDescription) internal _descriptions;
 
     event AddVersion(address implementation);
-    event RevokeVersion(address implementation);
 
-    function _addVersion(address implementation) internal {
+    constructor() Ownable() {}
+
+    function addVersion(
+        address implementation,
+        uint256 compatibility,
+        string calldata note
+    ) external onlyOwner {
         require(implementation != address(0), "invalid implementation");
+        require(implementation.isContract(), "implementation must be contract");
+        require(!_versions.contains(implementation), "implementation is already existed");
 
-        bool notExist = _versions.set(implementation.toBytes32(), _toBytes32(VersionState.READY));
-        require(notExist, "duplicated");
-
+        _versions.add(implementation);
+        _descriptions[implementation] = VersionDescription({
+            creator: msg.sender,
+            creationTime: block.timestamp,
+            compatibility: compatibility,
+            note: note
+        });
         emit AddVersion(implementation);
     }
 
-    function _revokeVersion(address implementation) internal {
-        require(implementation != address(0), "invalid implementation");
-
-        bool notExist = _versions.set(
-            implementation.toBytes32(),
-            _toBytes32(VersionState.DEPRECATED)
-        );
-        require(!notExist, "not exist");
-
-        emit RevokeVersion(implementation);
+    function latestVersion() public view returns (address) {
+        require(_versions.length() > 0, "no version");
+        return _versions.at(_versions.length() - 1);
     }
 
-    function _verifyVersion(address implementation) internal view returns (bool) {
-        VersionState state = _toVersionState(_versions.get(implementation.toBytes32()));
-        return state == VersionState.READY;
+    function describe(address implementation)
+        public
+        view
+        returns (
+            address creator,
+            uint256 creationTime,
+            uint256 compatibility,
+            string memory note
+        )
+    {
+        require(isVersionValid(implementation), "implementation is invalid");
+        creator = _descriptions[implementation].creator;
+        creationTime = _descriptions[implementation].creationTime;
+        compatibility = _descriptions[implementation].compatibility;
+        note = _descriptions[implementation].note;
     }
 
-    function _retrieveVersionList(uint256 begin, uint256 end)
+    function isVersionValid(address implementation) public view returns (bool) {
+        return _versions.contains(implementation);
+    }
+
+    function isVersionCompatibleWith(address base, address target) public view returns (bool) {
+        require(isVersionValid(base), "base version is invalid");
+        require(isVersionValid(target), "target version is invalid");
+        return _descriptions[target].compatibility >= _descriptions[base].compatibility;
+    }
+
+    function listAvailableVersions(uint256 start, uint256 count)
         internal
         view
-        returns (address[] memory)
+        returns (address[] memory result)
     {
-        address[] memory slice = new address[](end.sub(begin));
-        for (uint256 i = begin; i < end; i++) {
-            slice[i.sub(begin)] = _versions.keyAt(i).toAddress();
+        uint256 total = _versions.length();
+        if (start >= total) {
+            return result;
         }
-        return slice;
-    }
-
-    function _toVersionState(bytes32 value) private pure returns (VersionState) {
-        return VersionState(uint256(value));
-    }
-
-    function _toBytes32(VersionState state) private pure returns (bytes32) {
-        return bytes32(uint256(state));
+        uint256 stop = start.add(count).min(total);
+        result = new address[](stop.sub(start));
+        for (uint256 i = start; i < stop; i++) {
+            result[i.sub(start)] = _versions.at(i);
+        }
     }
 }

@@ -6,8 +6,8 @@ import {
     toBytes32,
     getAccounts,
     createContract,
-    createContractFactory,
-} from './utils';
+    createFactory,
+} from '../scripts/utils';
 
 describe('AccessControl', () => {
     let accounts;
@@ -22,7 +22,7 @@ describe('AccessControl', () => {
         user1 = accounts[1];
 
         const FundingModule = await createContract("FundingModule")
-        TestAccessControl = await createContractFactory("TestAccessControl", { FundingModule: FundingModule.address });
+        TestAccessControl = await createFactory("TestAccessControl", { FundingModule });
         accessControl = await TestAccessControl.deploy();
     })
 

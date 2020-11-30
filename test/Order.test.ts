@@ -5,7 +5,7 @@ import {
     toWei,
     createContract,
     getAccounts,
-} from "./utils";
+} from "../scripts/utils";
 
 describe("Order", () => {
     var testOrder;
