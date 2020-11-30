@@ -16,8 +16,8 @@ contract Governance is Storage, Events {
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
 
-    modifier voteOnly() {
-        require(msg.sender == _governor, "only vote is allowed");
+    modifier governorOnly() {
+        require(msg.sender == _governor, "only governor is allowed");
         _;
     }
 
@@ -26,7 +26,7 @@ contract Governance is Storage, Events {
         _;
     }
 
-    function updateCoreParameter(bytes32 key, int256 newValue) external voteOnly {
+    function updateCoreParameter(bytes32 key, int256 newValue) external governorOnly {
         _core.updateCoreParameter(key, newValue);
         _core.validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
@@ -37,7 +37,7 @@ contract Governance is Storage, Events {
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external voteOnly {
+    ) external governorOnly {
         _core.updateRiskParameter(key, newValue, minValue, maxValue);
         _core.validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);

@@ -22,6 +22,7 @@ async function deployPerpetual() {
     const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
     const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
     const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
+    const SettlementModule = await createContract("contracts/module/SettlementModule.sol:SettlementModule");
     const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], { AMMTradeModule: AMMTradeModule.address });
     const perpetual = await createContract("contracts/Perpetual.sol:Perpetual", [], {
         OrderModule: OrderModule.address,
@@ -29,6 +30,7 @@ async function deployPerpetual() {
         FundingModule: FundingModule.address,
         ParameterModule: ParameterModule.address,
         TradeModule: TradeModule.address,
+        SettlementModule: SettlementModule.address,
     });
     return perpetual;
 }
@@ -47,20 +49,6 @@ async function deployGovernor() {
 
 
 async function deployPerpetualMaker(vault, vaultFeeRate) {
-    // s10
-    // perpetual deployed to: 0x938c74cDffc1b744fF4519543af2C9d99cF143E5
-    // shareToken deployed to: 0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8
-    // governor deployed to: 0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3
-    // return await createContract(
-    //     "contracts/factory/PerpetualMaker.sol:PerpetualMaker",
-    //     [
-    //         "0x56720Bd590cE768B13E07fF047B3c5fB9e7952e3",
-    //         "0x0F4CBdCc847e0cd4f6eb3A69f615859D8c5D71E8",
-    //         "0x938c74cDffc1b744fF4519543af2C9d99cF143E5"
-    //     ]
-    // );
-
-    // // local
     const perpetual = await deployPerpetual();
     const shareToken = await deployShareToken();
     const governor = await deployGovernor();
@@ -108,7 +96,7 @@ async function main(accounts: any[]) {
             toWei("0.001"),
             toWei("0.2"),
             toWei("0.02"),
-            toWei("0.00000002"),
+            toWei("1"),
         ],
         [
             toWei("0.01"),

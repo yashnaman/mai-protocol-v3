@@ -38,20 +38,6 @@ contract TestMargin is Storage {
         _core.updateCoreParameter(key, newValue);
     }
 
-    function marginAccount(address trader)
-        external
-        view
-        returns (
-            int256 cashBalance,
-            int256 positionAmount,
-            int256 entryFunding
-        )
-    {
-        cashBalance = _core.marginAccounts[trader].cashBalance;
-        positionAmount = _core.marginAccounts[trader].positionAmount;
-        entryFunding = _core.marginAccounts[trader].entryFunding;
-    }
-
     function initialMargin(address trader) external view returns (int256) {
         return _core.initialMargin(trader);
     }

@@ -60,7 +60,7 @@ describe("Order", () => {
             priceLimit: toWei("500"),
             data: ethers.utils.solidityPack(
                 ["uint64", "uint32", "uint8", "uint8", "uint64"],
-                [now + 100, 3, 1, 0, 123456]
+                [now + 10000, 3, 1, 0, 123456]
             ).padEnd(66, "0"),
             chainID: 31337,
         };
@@ -103,28 +103,28 @@ describe("Order", () => {
         order.data = tmp;
         order.data = ethers.utils.solidityPack(
             ["uint64", "uint32", "uint8", "uint8", "uint64"],
-            [now + 100, 1, 1, 0, 123456]
+            [now + 10000, 1, 1, 0, 123456]
         ).padEnd(66, "0")
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("order version is not supported");
 
         // order.data = tmp;
         // order.data = ethers.utils.solidityPack(
         //     ["uint64", "uint32", "uint8", "uint8", "uint64"],
-        //     [now + 100, 3, 3, 0, 123456]
+        //     [now + 10000, 3, 3, 0, 123456]
         // ).padEnd(66, "0")
         // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("invalid opcode");
 
         order.data = tmp;
         order.data = ethers.utils.solidityPack(
             ["uint64", "uint32", "uint8", "uint8", "uint64"],
-            [now + 100, 3, 2, 0, 123456]
+            [now + 10000, 3, 2, 0, 123456]
         ).padEnd(66, "0")
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
 
         order.data = tmp;
         order.data = ethers.utils.solidityPack(
             ["uint64", "uint32", "uint8", "uint8", "uint64"],
-            [now + 100, 3, 1, 1, 123456]
+            [now + 10000, 3, 1, 1, 123456]
         ).padEnd(66, "0")
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
 

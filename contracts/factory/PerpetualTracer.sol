@@ -39,12 +39,12 @@ contract PerpetualTracer {
         return slice;
     }
 
-    function activeProxy(address trader) public instanceOnly returns (bool) {
+    function activeProxy(address trader) external instanceOnly returns (bool) {
         require(trader != address(0), "");
         return _traderActiveProxies[trader].add(msg.sender);
     }
 
-    function deactiveProxy(address trader) public instanceOnly returns (bool) {
+    function deactiveProxy(address trader) external instanceOnly returns (bool) {
         require(trader != address(0), "");
         return _traderActiveProxies[trader].remove(msg.sender);
     }

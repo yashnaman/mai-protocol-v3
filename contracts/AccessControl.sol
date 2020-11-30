@@ -7,6 +7,8 @@ import "./libraries/Constant.sol";
 import "./Events.sol";
 import "./Storage.sol";
 
+import "hardhat/console.sol";
+
 contract AccessControl is Storage, Events {
     using Bitwise for uint256;
 
@@ -25,24 +27,22 @@ contract AccessControl is Storage, Events {
         _;
     }
 
-    function grantPrivilege(
-        address owner,
-        address trader,
-        uint256 privilege
-    ) external {
+    function grantPrivilege(address trader, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        _core.accessControls[owner][trader] = _core.accessControls[owner][trader].set(privilege);
-        emit GrantPrivilege(owner, trader, privilege);
+        require(!isGranted(msg.sender, trader, privilege), "privilege is already granted");
+        _core.accessControls[msg.sender][trader] = _core.accessControls[msg.sender][trader].set(
+            privilege
+        );
+        emit GrantPrivilege(msg.sender, trader, privilege);
     }
 
-    function revokePrivilege(
-        address owner,
-        address trader,
-        uint256 privilege
-    ) external {
+    function revokePrivilege(address trader, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        _core.accessControls[owner][trader] = _core.accessControls[owner][trader].clean(privilege);
-        emit RevokePrivilege(owner, trader, privilege);
+        require(isGranted(msg.sender, trader, privilege), "privilege is not granted");
+        _core.accessControls[msg.sender][trader] = _core.accessControls[msg.sender][trader].clean(
+            privilege
+        );
+        emit RevokePrivilege(msg.sender, trader, privilege);
     }
 
     function isGranted(
@@ -50,12 +50,11 @@ contract AccessControl is Storage, Events {
         address trader,
         uint256 privilege
     ) public view returns (bool) {
-        if (_isValid(privilege)) {
+        if (!_isValid(privilege)) {
             return false;
         }
-        return
-            _core.accessControls[owner][trader] > 0 &&
-            _core.accessControls[owner][trader].test(privilege);
+        uint256 granted = _core.accessControls[owner][trader];
+        return granted > 0 && granted.test(privilege);
     }
 
     function _isValid(uint256 privilege) private pure returns (bool) {

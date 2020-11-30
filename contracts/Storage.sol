@@ -128,6 +128,20 @@ contract Storage {
         fundingTime = _core.fundingTime;
     }
 
+    function marginAccount(address trader)
+        public
+        view
+        returns (
+            int256 cashBalance,
+            int256 positionAmount,
+            int256 entryFunding
+        )
+    {
+        cashBalance = _core.marginAccounts[trader].cashBalance;
+        positionAmount = _core.marginAccounts[trader].positionAmount;
+        entryFunding = _core.marginAccounts[trader].entryFunding;
+    }
+
     function margin(address trader) public syncState returns (int256) {
         return _core.margin(trader);
     }
@@ -152,7 +166,6 @@ contract Storage {
     ) internal {
         _core.operator = operator;
         _core.factory = msg.sender;
-
         _core.vault = IFactory(_core.factory).vault();
         _core.vaultFeeRate = IFactory(_core.factory).vaultFeeRate();
 

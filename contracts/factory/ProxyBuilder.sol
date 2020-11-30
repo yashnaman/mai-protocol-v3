@@ -18,6 +18,7 @@ contract ProxyBuilder {
         uint256 nonce
     ) internal returns (address instance) {
         require(implementation != address(0), "invalid implementation");
+        require(Address.isContract(implementation), "implementation must be contract");
         bytes memory deploymentData = abi.encodePacked(
             type(AdminUpgradeabilityProxy).creationCode,
             abi.encode(implementation, admin, "")

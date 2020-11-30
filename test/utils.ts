@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+const { ethers } = require("hardhat");
 import { getDefaultProvider, Signer } from "ethers";
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
@@ -25,11 +25,16 @@ export async function createContract(path: string, args: any[] = [], libraries =
     return deployed;
 }
 
+export async function createContractFactory(path, libraries = {}) {
+    return await ethers.getContractFactory(path, { libraries: libraries })
+}
+
 export async function getLinkedPerpetualFactory() {
     const AMMTradeModule = await createContract("contracts/module/AMMTradeModule.sol:AMMTradeModule");
     const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
     const OrderModule = await createContract("contracts/module/OrderModule.sol:OrderModule");
     const ParameterModule = await createContract("contracts/module/ParameterModule.sol:ParameterModule");
+    const SettlementModule = await createContract("contracts/module/SettlementModule.sol:SettlementModule");
     const TradeModule = await createContract("contracts/module/TradeModule.sol:TradeModule", [], { AMMTradeModule: AMMTradeModule.address });
     return await ethers.getContractFactory("contracts/Perpetual.sol:Perpetual", {
         libraries: {
@@ -38,6 +43,7 @@ export async function getLinkedPerpetualFactory() {
             ParameterModule: ParameterModule.address,
             TradeModule: TradeModule.address,
             OrderModule: OrderModule.address,
+            SettlementModule: SettlementModule.address,
         }
     });
 }

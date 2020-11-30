@@ -52,7 +52,6 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController {
         address governor = _createStaticProxy(_latestGovernor);
         address shareToken = _createStaticProxy(_latestShareTokenImp);
         address perpetual = _createPerpetualProxy(_latestPerpetualImp, governor, nonce);
-
         shareToken.functionCall(
             abi.encodeWithSignature("initialize(address)", perpetual),
             "fail to init share token"
@@ -96,5 +95,11 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController {
     function vaultFeeRate() public view returns (int256) {
         return _vaultFeeRate;
     }
+
+    function weth() public view returns (address) {
+        return address(0x0);
+    }
 }
+
+
 
