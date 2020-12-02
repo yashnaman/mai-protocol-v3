@@ -31,7 +31,7 @@ contract Storage {
     address internal _shareToken;
 
     modifier syncState() {
-        _core.updateFundingState();
+        _core.updateFundingState(block.timestamp);
         _core.updatePrice();
         _;
         _core.updateFundingRate();

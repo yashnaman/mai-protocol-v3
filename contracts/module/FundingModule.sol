@@ -20,11 +20,7 @@ library FundingModule {
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    function updateFundingState(Core storage core) public {
-        if (core.fundingTime == 0) {
-            return;
-        }
-        uint256 currentTime = block.timestamp;
+    function updateFundingState(Core storage core, uint256 currentTime) public {
         if (core.fundingTime >= currentTime) {
             return;
         }
@@ -49,29 +45,36 @@ library FundingModule {
         }
         int256 indexPrice = core.indexPrice();
         int256 mc = core.availableCashBalance(address(this));
-        require(
+        if (
             AMMCommon.isAMMMarginSafe(
                 mc,
                 positionAmount,
                 indexPrice,
                 core.targetLeverage.value,
                 core.beta1.value
-            ),
-            "amm unsafe"
-        );
-        (int256 mv, int256 m0) = AMMCommon.regress(
-            mc,
-            positionAmount,
-            indexPrice,
-            core.targetLeverage.value,
-            core.beta1.value
-        );
-        int256 fundingRate;
-        if (positionAmount > 0) {
-            fundingRate = mc.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
-        } else {
-            fundingRate = indexPrice.neg().wfrac(positionAmount, m0);
+            )
+        ) {
+            (int256 mv, int256 m0) = AMMCommon.regress(
+                mc,
+                positionAmount,
+                indexPrice,
+                core.targetLeverage.value,
+                core.beta1.value
+            );
+            if (m0 != 0) {
+                int256 fundingRate;
+                if (positionAmount > 0) {
+                    fundingRate = mc.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
+                } else {
+                    fundingRate = indexPrice.wfrac(positionAmount, m0).neg();
+                }
+                return fundingRate.wmul(core.fundingRateCoefficient.value);
+            }
         }
-        return fundingRate.wmul(core.fundingRateCoefficient.value);
+        if (positionAmount > 0) {
+            return core.fundingRateCoefficient.value.neg();
+        } else {
+            return core.fundingRateCoefficient.value;
+        }
     }
 }

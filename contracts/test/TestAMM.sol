@@ -24,7 +24,7 @@ contract TestAMM {
         int256 cashBalance,
         int256 positionAmount,
         int256 entryFunding,
-        int256 _indexPrice
+        int256 indexPrice
     ) public {
         core.unitAccumulativeFunding = unitAccumulativeFunding;
         core.halfSpreadRate.value = halfSpreadRate;
@@ -34,7 +34,7 @@ contract TestAMM {
         core.marginAccounts[address(this)].cashBalance = cashBalance;
         core.marginAccounts[address(this)].positionAmount = positionAmount;
         core.marginAccounts[address(this)].entryFunding = entryFunding;
-        core.indexPriceData.price = _indexPrice;
+        core.indexPriceData.price = indexPrice;
     }
 
     function isAMMMarginSafe(int256 beta) public view returns (bool) {
