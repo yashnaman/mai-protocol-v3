@@ -64,21 +64,23 @@ contract TestAMM {
         int256 mc = core.availableCashBalance(address(this));
         int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
         if (positionAmount > 0) {
-            return AMMCommon.longVirtualM0(
-                mc,
-                positionAmount,
-                core.indexPrice(),
-                core.targetLeverage.value,
-                core.beta1.value
-            );
+            return
+                AMMCommon.longVirtualM0(
+                    mc,
+                    positionAmount,
+                    core.indexPrice(),
+                    core.targetLeverage.value,
+                    core.beta1.value
+                );
         } else {
-            return AMMCommon.shortVirtualM0(
-                mc,
-                positionAmount,
-                core.indexPrice(),
-                core.targetLeverage.value,
-                core.beta1.value
-            );
+            return
+                AMMCommon.shortVirtualM0(
+                    mc,
+                    positionAmount,
+                    core.indexPrice(),
+                    core.targetLeverage.value,
+                    core.beta1.value
+                );
         }
     }
 

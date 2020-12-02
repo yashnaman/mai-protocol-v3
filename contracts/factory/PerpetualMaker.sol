@@ -34,8 +34,8 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController, Glo
         address governor,
         address shareToken,
         address operator,
-        address collateral,
         address oracle,
+        address collateral,
         int256[7] coreParams,
         int256[5] riskParams
     );

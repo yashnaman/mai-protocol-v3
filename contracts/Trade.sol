@@ -183,6 +183,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+        require(!_core.isMaintenanceMarginSafe(trader), "trader is safe");
 
         Receipt memory receipt = _core.liquidateByAMM(trader);
         _core.transferToUser(msg.sender, _core.keeperGasReward);
@@ -192,7 +193,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         emit LiquidateByAMM(
             trader,
             receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount),
+            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
             receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee),
             deadline
         );
@@ -208,6 +209,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+        require(!_core.isMaintenanceMarginSafe(trader), "trader is safe");
 
         Receipt memory receipt = _core.liquidateByTrader(msg.sender, trader, amount, priceLimit);
         if (_core.donatedInsuranceFund < 0) {
@@ -219,7 +221,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
             msg.sender,
             trader,
             receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount),
+            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
             deadline
         );
     }
@@ -239,7 +241,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         emit Trade(
             trader,
             receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount),
+            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
             receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee),
             deadline
         );

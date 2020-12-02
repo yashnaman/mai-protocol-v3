@@ -18,8 +18,8 @@ library FeeModule {
         if (amount == 0) {
             return;
         }
-        core.claimableFee[claimer] = core.claimableFee[claimer].add(amount);
-        core.totalFee = core.totalFee.add(amount);
+        core.claimableFees[claimer] = core.claimableFees[claimer].add(amount);
+        core.totalClaimableFee = core.totalClaimableFee.add(amount);
     }
 
     function claimFee(
@@ -27,8 +27,8 @@ library FeeModule {
         address claimer,
         int256 amount
     ) internal {
-        require(core.claimableFee[claimer].sub(amount) >= 0, "");
-        core.claimableFee[claimer] = core.claimableFee[claimer].sub(amount);
-        core.totalFee = core.totalFee.sub(amount);
+        require(core.claimableFees[claimer].sub(amount) >= 0, "");
+        core.claimableFees[claimer] = core.claimableFees[claimer].sub(amount);
+        core.totalClaimableFee = core.totalClaimableFee.sub(amount);
     }
 }

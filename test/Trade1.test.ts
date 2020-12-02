@@ -122,9 +122,9 @@ describe('TradeModule1', () => {
             await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
             var result = await testTrade.tempReceipt();
 
-            expect(await testTrade.claimableFee(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFee(user5.address)).to.equal(toWei("4"));
+            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
+            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
+            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
 
             var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
             expect(cashBalance).to.equal(toWei("-10010"));
@@ -162,9 +162,9 @@ describe('TradeModule1', () => {
             await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
             var result = await testTrade.tempReceipt();
 
-            expect(await testTrade.claimableFee(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFee(user5.address)).to.equal(toWei("4"));
+            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
+            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
+            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
 
             var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
             expect(cashBalance).to.equal(toWei("9990"));
@@ -206,9 +206,9 @@ describe('TradeModule1', () => {
             await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
             var result = await testTrade.tempReceipt();
 
-            expect(await testTrade.claimableFee(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFee(user5.address)).to.equal(toWei("4"));
+            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
+            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
+            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
 
             var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
             expect(cashBalance).to.equal(toWei("-4610")); // 5000 - 10000(cash) - 10(fee) - (100 * -4)

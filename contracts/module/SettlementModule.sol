@@ -68,7 +68,7 @@ library SettlementModule {
     function updateWithdrawableMargin(Core storage core) public {
         int256 totalBalance = core.collateralBalance(address(this));
         // 1. exclude fees
-        totalBalance = totalBalance.sub(core.totalFee);
+        totalBalance = totalBalance.sub(core.totalClaimableFee);
         // 2. cover margin without position
         if (totalBalance < core.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin

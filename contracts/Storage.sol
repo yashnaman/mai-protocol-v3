@@ -151,7 +151,7 @@ contract Storage {
     }
 
     function claimableFee(address claimer) public view returns (int256) {
-        return _core.claimableFee[claimer];
+        return _core.claimableFees[claimer];
     }
 
     function _initialize(
@@ -225,6 +225,7 @@ contract Storage {
 
     function _enterEmergencyState() internal onlyWhen(State.NORMAL) {
         _core.state = State.EMERGENCY;
+        _core.freezeOraclePrice();
     }
 
     function _enterClearedState() internal onlyWhen(State.EMERGENCY) {

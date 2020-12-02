@@ -195,28 +195,28 @@ library TradeModule {
         address taker,
         address maker
     ) internal {
-        int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
+        int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount).abs();
         if (receipt.takerClosingAmount != 0) {
             emit ClosePositionByTrade(
                 taker,
-                receipt.tradingAmount,
+                receipt.takerClosingAmount,
                 tradingPrice,
                 receipt.takerFundingLoss
             );
         }
         if (receipt.takerOpeningAmount != 0) {
-            emit OpenPositionByTrade(taker, receipt.tradingAmount, tradingPrice);
+            emit OpenPositionByTrade(taker, receipt.takerOpeningAmount, tradingPrice);
         }
         if (receipt.makerClosingAmount != 0) {
             emit ClosePositionByTrade(
                 maker,
-                receipt.tradingAmount,
+                receipt.makerClosingAmount,
                 tradingPrice,
                 receipt.makerFundingLoss
             );
         }
         if (receipt.makerOpeningAmount != 0) {
-            emit OpenPositionByTrade(maker, receipt.tradingAmount, tradingPrice);
+            emit OpenPositionByTrade(maker, receipt.makerOpeningAmount, tradingPrice);
         }
     }
 
@@ -225,28 +225,28 @@ library TradeModule {
         address taker,
         address maker
     ) internal {
-        int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
+        int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount).abs();
         if (receipt.takerClosingAmount != 0) {
             emit ClosePositionByLiquidation(
                 taker,
-                receipt.tradingAmount,
+                receipt.takerClosingAmount,
                 tradingPrice,
                 receipt.takerFundingLoss
             );
         }
         if (receipt.takerOpeningAmount != 0) {
-            emit OpenPositionByLiquidation(taker, receipt.tradingAmount, tradingPrice);
+            emit OpenPositionByLiquidation(taker, receipt.takerOpeningAmount, tradingPrice);
         }
         if (receipt.makerClosingAmount != 0) {
             emit ClosePositionByLiquidation(
                 maker,
-                receipt.tradingAmount,
+                receipt.makerClosingAmount,
                 tradingPrice,
                 receipt.makerFundingLoss
             );
         }
         if (receipt.makerOpeningAmount != 0) {
-            emit OpenPositionByLiquidation(maker, receipt.tradingAmount, tradingPrice);
+            emit OpenPositionByLiquidation(maker, receipt.makerOpeningAmount, tradingPrice);
         }
     }
 }

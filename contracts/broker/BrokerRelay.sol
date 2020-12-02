@@ -18,7 +18,7 @@ contract BrokerRelay is ReentrancyGuard {
     using SignedSafeMath for int256;
     using OrderData for Order;
 
-    uint256 internal _claimableFee;
+    uint256 internal _claimableFees;
     mapping(address => uint256) internal _balances;
 
     uint32 public constant SUPPORTED_MIN_ORDER_VERSION = 1;
@@ -32,9 +32,9 @@ contract BrokerRelay is ReentrancyGuard {
     event TradeFailed(bytes32 orderHash, Order order, int256 amount);
     event TradeSuccess(bytes32 orderHash, Order order, int256 amount, uint256 gasReward);
 
-    // constructor() {
-    //     _chainID = Utils.chainID();
-    // }
+    constructor() {
+        _chainID = Utils.chainID();
+    }
 
     receive() external payable {
         deposit();

@@ -11,13 +11,15 @@ async function createContract(path, args = [], libraries = {}) {
 
 async function main() {
 
-    const factory = await ethers.getContractFactory("contracts/test/CustomERC20.sol:CustomERC20");
-    const collateral = await factory.attach("0x12307970883E730472e79Ea5bC7d62a318A0740b");
+    const factory = await ethers.getContractFactory("CustomERC20");
+    // const collateral = await factory.attach("0x010b7D4b32bB7D3cd8F75F01F403Db9b4bC2c671");
+    const collateral = await factory.attach("0x9056992a4DCd5e28E6A5FFE4B02af31Ac8d74b37");
+
 
     const accounts = await ethers.getSigners();
     const user1 = await accounts[0].getAddress();
 
-    await collateral.mint("0x31Ebd457b999Bf99759602f5Ece5AA5033CB56B3", toWei("1000000"));
+    await collateral.mint("0xd595F7c2C071d3FD8f5587931EdF34E92f9ad39F", toWei("1000000000"));
 
     console.log("done");
 }

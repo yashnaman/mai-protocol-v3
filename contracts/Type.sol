@@ -101,8 +101,8 @@ struct Core {
     // accounts
     mapping(address => MarginAccount) marginAccounts;
     // fee
-    int256 totalFee;
-    mapping(address => int256) claimableFee;
+    int256 totalClaimableFee;
+    mapping(address => int256) claimableFees;
     // users
     int256 clearingPayout;
     int256 totalMarginWithoutPosition;

@@ -13,12 +13,9 @@ describe("Order", () => {
 
     before(async () => {
         accounts = await getAccounts();
-        const FundingModule = await createContract("contracts/module/FundingModule.sol:FundingModule");
-        const OrderModule = await createContract("contracts/module/OrderModule.sol:OrderModule");
-        testOrder = await createContract("contracts/test/TestOrder.sol:TestOrder", [], {
-            OrderModule: OrderModule.address,
-            FundingModule: FundingModule.address,
-        });
+        const FundingModule = await createContract("FundingModule");
+        const OrderModule = await createContract("OrderModule");
+        testOrder = await createContract("TestOrder", [], { OrderModule, FundingModule });
     })
 
     it("signature", async () => {
