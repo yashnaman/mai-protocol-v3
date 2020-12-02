@@ -154,6 +154,8 @@ describe("integration", () => {
         console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
         console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
+        await gs.collect("updateIndex", perpUser1.updateIndex());
+
         // trade 1
         await gs.collect("trade 1 - open", perpUser1.trade(user1.address, toWei("0.1"), toWei("506"), now + 999999, none));
         print(await perpUser1.marginAccount(user1.address));

@@ -224,12 +224,27 @@ contract Storage {
     }
 
     function _enterEmergencyState() internal onlyWhen(State.NORMAL) {
+        _core.updatePrice();
         _core.state = State.EMERGENCY;
         _core.freezeOraclePrice();
     }
 
     function _enterClearedState() internal onlyWhen(State.EMERGENCY) {
         _core.state = State.CLEARED;
+    }
+
+    function updateIndex()
+        public
+        returns (
+            int256,
+            int256,
+            int256
+        )
+    {
+        _core.updateFundingState(block.timestamp);
+        _core.updatePrice();
+        _core.updateFundingRate();
+        return marginAccount(address(this));
     }
 
     bytes[50] private __gap;

@@ -31,31 +31,28 @@ describe('Settlement', () => {
         settlement = await TestSettlement.deploy(oracle.address);
     })
 
-    it("clear / no index update", async () => {
+    it("freeze price", async () => {
         var now = Math.floor(Date.now() / 1000);
 
-        // await settlement.initializeMarginAccount(user1.address, toWei("0"), toWei("1"), toWei("0"));
-        // await oracle.setIndexPrice(toWei("500"), now);
-        // await oracle.setMarkPrice(toWei("500"), now);
-        // expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("500"));
+        await settlement.initializeMarginAccount(user1.address, toWei("0"), toWei("1"), toWei("0"));
+        await oracle.setIndexPrice(toWei("500"), now);
+        await oracle.setMarkPrice(toWei("500"), now);
+        expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("500"));
 
-        // await oracle.setIndexPrice(toWei("400"), now);
-        // await oracle.setMarkPrice(toWei("400"), now);
-        // expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("400"));
+        await oracle.setIndexPrice(toWei("400"), now);
+        await oracle.setMarkPrice(toWei("400"), now);
+        expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("400"));
 
-        // await oracle.setIndexPrice(toWei("600"), now);
-        // await oracle.setMarkPrice(toWei("600"), now);
-        // expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
+        await oracle.setIndexPrice(toWei("600"), now);
+        await oracle.setMarkPrice(toWei("600"), now);
+        expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
 
-        // await settlement.setEmergency();
-
-        // await console.log(await settlement.callStatic.state());
-
-        // expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
-
-        // await oracle.setIndexPrice(toWei("500"), now);
-        // await oracle.setMarkPrice(toWei("500"), now);
-        // expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
-
+        await settlement.setEmergency();
+        expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
+        await oracle.setIndexPrice(toWei("500"), now);
+        await oracle.setMarkPrice(toWei("500"), now);
+        expect(await settlement.callStatic.margin(user1.address)).to.equal(toWei("600"));
     })
+
+    it("clear account")
 });
