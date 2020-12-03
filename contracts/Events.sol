@@ -37,8 +37,8 @@ contract Events {
         int256 price,
         uint256 deadline
     );
-    event AddLiquidatity(address trader, int256 addedCash, int256 mintedShare);
-    event RemoveLiquidatity(address trader, int256 returnedCash, int256 burnedShare);
+    event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
+    event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
     event DonateInsuranceFund(address trader, int256 amount);
     // fee
     event ClaimFee(address claimer, int256 amount);

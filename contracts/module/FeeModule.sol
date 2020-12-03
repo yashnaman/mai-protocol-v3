@@ -4,17 +4,22 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 import "../libraries/SafeMathExt.sol";
+
 import "../Type.sol";
+import "../module/CollateralModule.sol";
 
 library FeeModule {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
+    using CollateralModule for Core;
+
+    event ClaimFee(address claimer, int256 amount);
 
     function increaseClaimableFee(
         Core storage core,
         address claimer,
         int256 amount
-    ) internal {
+    ) public {
         if (amount == 0) {
             return;
         }
@@ -26,9 +31,12 @@ library FeeModule {
         Core storage core,
         address claimer,
         int256 amount
-    ) internal {
-        require(core.claimableFees[claimer].sub(amount) >= 0, "");
+    ) public {
+        require(amount != 0, "zero amount");
+        require(core.claimableFees[claimer].sub(amount) >= 0, "insufficient fee");
         core.claimableFees[claimer] = core.claimableFees[claimer].sub(amount);
         core.totalClaimableFee = core.totalClaimableFee.sub(amount);
+        core.transferToUser(payable(claimer), amount);
+        emit ClaimFee(claimer, amount);
     }
 }

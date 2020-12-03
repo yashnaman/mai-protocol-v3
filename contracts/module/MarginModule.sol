@@ -2,18 +2,31 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 
+import "../libraries/Error.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
+import "../interface/IFactory.sol";
+
 import "../Type.sol";
 import "./OracleModule.sol";
-import "hardhat/console.sol";
+import "./CollateralModule.sol";
+import "./SettlementModule.sol";
+import "./CollateralModule.sol";
 
 library MarginModule {
+    using SafeCast for uint256;
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
+
     using OracleModule for Core;
+    using CollateralModule for Core;
+    using SettlementModule for Core;
+
+    event Deposit(address trader, int256 amount);
+    event Withdraw(address trader, int256 amount);
 
     // atribute
     function initialMargin(Core storage core, address trader) internal view returns (int256) {
@@ -84,6 +97,38 @@ library MarginModule {
             core.marginAccounts[trader].cashBalance == 0 &&
             core.marginAccounts[trader].positionAmount == 0 &&
             core.marginAccounts[trader].entryFunding == 0;
+    }
+
+    function deposit(
+        Core storage core,
+        address trader,
+        int256 amount
+    ) public {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        bool isNewTrader = isEmptyAccount(core, trader);
+        updateCashBalance(core, trader, amount.add(msg.value.toInt256()));
+        if (isNewTrader) {
+            core.registerTrader(trader);
+            IFactory(core.factory).activeProxy(trader);
+        }
+        emit Deposit(trader, amount);
+    }
+
+    function withdraw(
+        Core storage core,
+        address trader,
+        int256 amount
+    ) public {
+        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        updateCashBalance(core, trader, amount.neg());
+        require(isInitialMarginSafe(core, trader), "margin is unsafe");
+        if (isEmptyAccount(core, trader)) {
+            core.deregisterTrader(trader);
+            IFactory(core.factory).deactiveProxy(trader);
+        }
+        emit Withdraw(trader, amount);
     }
 
     function updateCashBalance(

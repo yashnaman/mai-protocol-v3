@@ -52,11 +52,8 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     using CollateralModule for Core;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    function claimFee(address claimer, int256 amount) external nonReentrant {
-        require(amount != 0, "zero amount");
-        _core.claimFee(claimer, amount);
-        _core.transferToUser(payable(claimer), amount);
-        emit ClaimFee(claimer, amount);
+    function claimFee(int256 amount) external nonReentrant {
+        _core.claimFee(msg.sender, amount);
     }
 
     function deposit(address trader, int256 amount)
@@ -66,17 +63,8 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         onlyWhen(State.NORMAL)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-
-        bool isNewTrader = _core.isEmptyAccount(trader);
         _core.transferFromUser(trader, amount, msg.value);
-        _core.updateCashBalance(trader, amount.add(msg.value.toInt256()));
-        if (isNewTrader) {
-            _core.registerTrader(trader);
-            IFactory(_core.factory).activeProxy(trader);
-        }
-        emit Deposit(trader, amount);
+        _core.deposit(trader, amount.add(msg.value.toInt256()));
     }
 
     function withdraw(address trader, int256 amount)
@@ -86,17 +74,8 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         onlyWhen(State.NORMAL)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-
-        _core.updateCashBalance(trader, amount.neg());
-        _core.isInitialMarginSafe(trader);
+        _core.withdraw(trader, amount);
         _core.transferToUser(payable(trader), amount);
-        if (_core.isEmptyAccount(trader)) {
-            _core.deregisterTrader(trader);
-            IFactory(_core.factory).deactiveProxy(trader);
-        }
-        emit Withdraw(trader, amount);
     }
 
     function donateInsuranceFund(int256 amount)
@@ -114,7 +93,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         emit DonateInsuranceFund(msg.sender, amount);
     }
 
-    function addLiquidatity(int256 cashToAdd)
+    function addLiquidity(int256 cashToAdd)
         external
         payable
         syncState
@@ -131,10 +110,10 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         _core.updateCashBalance(address(this), cashToAdd);
         IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256(), unitInsuranceFund);
 
-        emit AddLiquidatity(msg.sender, cashToAdd, shareToMint);
+        emit AddLiquidity(msg.sender, cashToAdd, shareToMint);
     }
 
-    function removeLiquidatity(int256 shareToRemove)
+    function removeLiquidity(int256 shareToRemove)
         external
         syncState
         onlyWhen(State.NORMAL)
@@ -148,7 +127,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         _core.updateCashBalance(address(this), cashToReturn.neg());
         _core.transferToUser(payable(msg.sender), cashToReturn);
 
-        emit RemoveLiquidatity(msg.sender, cashToReturn, shareToRemove);
+        emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
 
     function trade(

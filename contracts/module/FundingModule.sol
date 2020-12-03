@@ -38,7 +38,7 @@ library FundingModule {
         core.fundingTime = block.timestamp;
     }
 
-    function nextFundingRate(Core storage core) internal view returns (int256) {
+    function nextFundingRate(Core storage core) public view returns (int256) {
         int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
         if (positionAmount == 0) {
             return 0;

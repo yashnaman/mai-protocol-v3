@@ -29,7 +29,8 @@ library SettlementModule {
     }
 
     function clearMarginAccount(Core storage core, address trader) public {
-        require(core.clearedTraders.contains(trader), "trader is already cleared");
+        require(core.registeredTraders.contains(trader), "trader is not registered");
+        require(!core.clearedTraders.contains(trader), "trader is already cleared");
         int256 margin = core.margin(trader);
         // into 3 types:
         // 1. margin < 0

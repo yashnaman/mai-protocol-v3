@@ -1,30 +1,43 @@
 const { ethers } = require("hardhat");
+import { Perpetual } from "../typechain/Perpetual";
+import {
+    toWei,
+    createPerpetualFactory
+} from "./utils";
 
-const toWei = ethers.utils.parseEther;
-const fromWei = ethers.utils.formatEther;
+async function main(accounts) {
 
-async function createContract(path, args = [], libraries = {}) {
-    const factory = await ethers.getContractFactory(path, { libraries: libraries });
-    const deployed = await factory.deploy(...args);
-    return deployed;
+    const user = accounts[0];
+    const amount = toWei("10000000")
+
+    await mint(user, amount)
+    await addLiquidity(user, amount)
+
 }
 
-async function main() {
+async function addLiquidity(user, amount) {
+    {
+        const factory = await ethers.getContractFactory("CustomERC20");
+        const collateral = await factory.attach("0x97d50C08e9b93e416c2CE4b2E3Ab059012cfdE94")
+        await collateral.approve("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2", amount);
+    }
+    {
+        const factory = await createPerpetualFactory();
+        const perpetual = await factory.attach("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2");
+        await perpetual.addLiquidity(amount)
+    }
+    console.log("add done");
+}
 
+async function mint(user, amount) {
     const factory = await ethers.getContractFactory("CustomERC20");
-    // const collateral = await factory.attach("0x010b7D4b32bB7D3cd8F75F01F403Db9b4bC2c671");
-    const collateral = await factory.attach("0x9056992a4DCd5e28E6A5FFE4B02af31Ac8d74b37");
-
-
-    const accounts = await ethers.getSigners();
-    const user1 = await accounts[0].getAddress();
-
-    await collateral.mint("0xd595F7c2C071d3FD8f5587931EdF34E92f9ad39F", toWei("1000000000"));
-
-    console.log("done");
+    const collateral = await factory.attach("0x97d50C08e9b93e416c2CE4b2E3Ab059012cfdE94");
+    await collateral.mint(user.address, amount);
+    console.log("mint done");
 }
 
-main()
+ethers.getSigners()
+    .then(accounts => main(accounts))
     .then(() => process.exit(0))
     .catch(error => {
         console.error(error);

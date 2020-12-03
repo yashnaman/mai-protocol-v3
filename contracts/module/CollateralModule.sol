@@ -40,7 +40,7 @@ library CollateralModule {
      * @notice  Try to retreive decimals from an erc20 contract.
      * @return  Decimals and true if success or 0 and false.ww
      */
-    function retrieveDecimals(address token) internal view returns (uint8, bool) {
+    function retrieveDecimals(address token) public view returns (uint8, bool) {
         (bool success, bytes memory result) = token.staticcall(
             abi.encodeWithSignature("decimals()")
         );
@@ -69,7 +69,7 @@ library CollateralModule {
         address account,
         int256 amount,
         uint256 value
-    ) internal {
+    ) public {
         require(amount > 0, "amount is 0");
         uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         if (core.isWrapped && value > 0) {
@@ -87,7 +87,7 @@ library CollateralModule {
         Core storage core,
         address payable account,
         int256 amount
-    ) internal {
+    ) public {
         require(amount > 0, "amount is 0");
         uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         if (core.isWrapped) {

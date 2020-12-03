@@ -122,7 +122,7 @@ library TradeModule {
         Core storage core,
         Receipt memory receipt,
         address referrer
-    ) internal view {
+    ) public view {
         int256 tradingValue = receipt.tradingValue.abs();
         receipt.lpFee = tradingValue.wmul(core.lpFeeRate);
         receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);

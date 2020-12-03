@@ -56,7 +56,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
     }
 
     function listUnclearedTraders(uint256 start, uint256 count)
-        internal
+        public
         view
         returns (address[] memory result)
     {
@@ -71,10 +71,12 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
         }
     }
 
-    function clearMarginAccount(address trader) external onlyWhen(State.EMERGENCY) nonReentrant {
+    function clearMarginAccount(address trader) public onlyWhen(State.EMERGENCY) nonReentrant {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         _core.clearMarginAccount(trader);
-        _core.transferToUser(msg.sender, _core.keeperGasReward);
+        if (_core.keeperGasReward > 0) {
+            _core.transferToUser(msg.sender, _core.keeperGasReward);
+        }
         if (unclearedTraderCount() == 0) {
             _core.updateWithdrawableMargin();
             _enterClearedState();
@@ -83,7 +85,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
     }
 
     function settle(address trader)
-        external
+        public
         auth(trader, PRIVILEGE_WITHDRAW)
         onlyWhen(State.CLEARED)
         nonReentrant
