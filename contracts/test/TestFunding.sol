@@ -44,4 +44,3 @@ contract TestFunding {
         return FundingModule.nextFundingRate(core);
     }
 }
-

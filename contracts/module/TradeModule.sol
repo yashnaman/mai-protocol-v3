@@ -29,7 +29,6 @@ library TradeModule {
 
     event ClosePositionByTrade(address trader, int256 amount, int256 price, int256 fundingLoss);
     event OpenPositionByTrade(address trader, int256 amount, int256 price);
-
     event ClosePositionByLiquidation(
         address trader,
         int256 amount,
@@ -37,6 +36,13 @@ library TradeModule {
         int256 fundingLoss
     );
     event OpenPositionByLiquidation(address trader, int256 amount, int256 price);
+    event Trade(address indexed trader, int256 positionAmount, int256 price, int256 fee);
+    event Liquidate(
+        address indexed liquidator,
+        address indexed trader,
+        int256 amount,
+        int256 price
+    );
 
     function trade(
         Core storage core,
@@ -44,10 +50,11 @@ library TradeModule {
         int256 amount,
         int256 priceLimit,
         address referrer
-    ) public returns (Receipt memory receipt) {
+    ) public {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         // 0. price / amount
+        Receipt memory receipt;
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(amount.neg(), false);
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
@@ -65,10 +72,8 @@ library TradeModule {
         emitTradeEvent(receipt, trader, address(this));
     }
 
-    function liquidateByAMM(Core storage core, address trader)
-        public
-        returns (Receipt memory receipt)
-    {
+    function liquidateByAMM(Core storage core, address trader) public {
+        Receipt memory receipt;
         int256 maxAmount = core.marginAccounts[trader].positionAmount;
         require(maxAmount != 0, Error.INVALID_POSITION_AMOUNT);
         // 0. price / amount
@@ -86,7 +91,7 @@ library TradeModule {
         core.updateCashBalance(trader, penalty.neg());
         updateInsuranceFund(core, penalty);
         // 4. events
-        emitTradeEvent(receipt, trader, address(this));
+        emitLiquidationEvent(receipt, trader, address(this));
     }
 
     function liquidateByTrader(
@@ -95,8 +100,9 @@ library TradeModule {
         address maker,
         int256 amount,
         int256 priceLimit
-    ) public returns (Receipt memory receipt) {
-        // 0. price / amount
+    ) public {
+        Receipt memory receipt;
+        // 0. price / amountyo
         int256 tradingPrice = core.markPrice();
         validatePrice(amount, tradingPrice, priceLimit);
         (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
@@ -218,6 +224,12 @@ library TradeModule {
         if (receipt.makerOpeningAmount != 0) {
             emit OpenPositionByTrade(maker, receipt.makerOpeningAmount, tradingPrice);
         }
+        emit Trade(
+            taker,
+            receipt.tradingAmount,
+            tradingPrice,
+            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee)
+        );
     }
 
     function emitLiquidationEvent(
@@ -248,5 +260,6 @@ library TradeModule {
         if (receipt.makerOpeningAmount != 0) {
             emit OpenPositionByLiquidation(maker, receipt.makerOpeningAmount, tradingPrice);
         }
+        emit Liquidate(taker, maker, receipt.tradingAmount, tradingPrice.abs());
     }
 }

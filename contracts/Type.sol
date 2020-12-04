@@ -58,6 +58,7 @@ struct Receipt {
 }
 
 struct Core {
+    // ========================== SHARED PART
     // addresses
     address factory;
     address vault;

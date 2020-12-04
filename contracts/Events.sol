@@ -16,26 +16,12 @@ contract Events {
     // trade
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
-    event Trade(
-        address indexed trader,
-        int256 positionAmount,
-        int256 price,
-        int256 fee,
-        uint256 deadline
-    );
-    event LiquidateByAMM(
-        address indexed trader,
-        int256 amount,
-        int256 price,
-        int256 fee,
-        uint256 deadline
-    );
-    event LiquidateByTrader(
+    event Trade(address indexed trader, int256 positionAmount, int256 price, int256 fee);
+    event Liquidate(
         address indexed liquidator,
         address indexed trader,
         int256 amount,
-        int256 price,
-        uint256 deadline
+        int256 price
     );
     event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);

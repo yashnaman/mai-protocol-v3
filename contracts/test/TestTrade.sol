@@ -42,12 +42,12 @@ contract TestTrade is Storage, TestMargin {
         int256 amount,
         int256 priceLimit,
         address referrer
-    ) public returns (Receipt memory receipt) {
-        return _core.trade(trader, amount, priceLimit, referrer);
+    ) public {
+        _core.trade(trader, amount, priceLimit, referrer);
     }
 
-    function liquidateByAMM(address trader) public returns (Receipt memory receipt) {
-        return _core.liquidateByAMM(trader);
+    function liquidateByAMM(address trader) public {
+        _core.liquidateByAMM(trader);
     }
 
     function liquidateByTrader(
@@ -55,8 +55,8 @@ contract TestTrade is Storage, TestMargin {
         address maker,
         int256 amount,
         int256 priceLimit
-    ) public returns (Receipt memory receipt) {
-        return _core.liquidateByTrader(taker, maker, amount, priceLimit);
+    ) public {
+        _core.liquidateByTrader(taker, maker, amount, priceLimit);
     }
 
     function updateTradingResult(

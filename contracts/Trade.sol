@@ -164,18 +164,11 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
         require(!_core.isMaintenanceMarginSafe(trader), "trader is safe");
 
-        Receipt memory receipt = _core.liquidateByAMM(trader);
+        _core.liquidateByAMM(trader);
         _core.transferToUser(msg.sender, _core.keeperGasReward);
         if (_core.donatedInsuranceFund < 0) {
             _enterEmergencyState();
         }
-        emit LiquidateByAMM(
-            trader,
-            receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
-            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee),
-            deadline
-        );
     }
 
     function liquidateByTrader(
@@ -190,19 +183,11 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
         require(!_core.isMaintenanceMarginSafe(trader), "trader is safe");
 
-        Receipt memory receipt = _core.liquidateByTrader(msg.sender, trader, amount, priceLimit);
+        _core.liquidateByTrader(msg.sender, trader, amount, priceLimit);
         if (_core.donatedInsuranceFund < 0) {
             _enterEmergencyState();
         }
-        // 4.send penalty to margin of keeper
         _core.transferToUser(msg.sender, _core.keeperGasReward);
-        emit LiquidateByTrader(
-            msg.sender,
-            trader,
-            receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
-            deadline
-        );
     }
 
     function _trade(
@@ -216,14 +201,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-        Receipt memory receipt = _core.trade(trader, amount, priceLimit, referrer);
-        emit Trade(
-            trader,
-            receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount).abs(),
-            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee),
-            deadline
-        );
+        _core.trade(trader, amount, priceLimit, referrer);
     }
 
     bytes[50] private __gap;
