@@ -21,128 +21,135 @@ library MarginModule {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
 
-    using OracleModule for Core;
-    using CollateralModule for Core;
-    using SettlementModule for Core;
+    using OracleModule for Market;
+    using CollateralModule for Market;
+    using SettlementModule for Market;
 
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
 
     // atribute
-    function initialMargin(Core storage core, address trader) internal view returns (int256) {
+    function initialMargin(Market storage market, address trader) internal view returns (int256) {
         return
-            core.marginAccounts[trader]
+            market.marginAccounts[trader]
                 .positionAmount
-                .wmul(core.markPrice())
-                .wmul(core.initialMarginRate)
+                .wmul(market.markPrice())
+                .wmul(market.initialMarginRate)
                 .abs()
-                .max(core.keeperGasReward);
+                .max(market.keeperGasReward);
     }
 
-    function maintenanceMargin(Core storage core, address trader) internal view returns (int256) {
-        return
-            core.marginAccounts[trader]
-                .positionAmount
-                .wmul(core.markPrice())
-                .wmul(core.maintenanceMarginRate)
-                .abs()
-                .max(core.keeperGasReward);
-    }
-
-    function availableCashBalance(Core storage core, address trader)
+    function maintenanceMargin(Market storage market, address trader)
         internal
         view
         returns (int256)
     {
-        int256 fundingLoss = core.marginAccounts[trader]
-            .positionAmount
-            .wmul(core.unitAccumulativeFunding)
-            .sub(core.marginAccounts[trader].entryFunding);
-        return core.marginAccounts[trader].cashBalance.sub(fundingLoss);
-    }
-
-    function positionAmount(Core storage core, address trader) internal view returns (int256) {
-        return core.marginAccounts[trader].positionAmount;
-    }
-
-    function margin(Core storage core, address trader) internal view returns (int256) {
         return
-            core.marginAccounts[trader].positionAmount.wmul(core.markPrice()).add(
-                availableCashBalance(core, trader)
+            market.marginAccounts[trader]
+                .positionAmount
+                .wmul(market.markPrice())
+                .wmul(market.maintenanceMarginRate)
+                .abs()
+                .max(market.keeperGasReward);
+    }
+
+    function availableCashBalance(Market storage market, address trader)
+        internal
+        view
+        returns (int256)
+    {
+        int256 fundingLoss = market.marginAccounts[trader]
+            .positionAmount
+            .wmul(market.unitAccumulativeFunding)
+            .sub(market.marginAccounts[trader].entryFunding);
+        return market.marginAccounts[trader].cashBalance.sub(fundingLoss);
+    }
+
+    function positionAmount(Market storage market, address trader) internal view returns (int256) {
+        return market.marginAccounts[trader].positionAmount;
+    }
+
+    function margin(Market storage market, address trader) internal view returns (int256) {
+        return
+            market.marginAccounts[trader].positionAmount.wmul(market.markPrice()).add(
+                availableCashBalance(market, trader)
             );
     }
 
-    function availableMargin(Core storage core, address trader) internal view returns (int256) {
-        return margin(core, trader).sub(initialMargin(core, trader));
+    function availableMargin(Market storage market, address trader) internal view returns (int256) {
+        return margin(market, trader).sub(initialMargin(market, trader));
     }
 
-    function isInitialMarginSafe(Core storage core, address trader) internal view returns (bool) {
-        return margin(core, trader) >= initialMargin(core, trader);
-    }
-
-    function isMaintenanceMarginSafe(Core storage core, address trader)
+    function isInitialMarginSafe(Market storage market, address trader)
         internal
         view
         returns (bool)
     {
-        return margin(core, trader) >= maintenanceMargin(core, trader);
+        return margin(market, trader) >= initialMargin(market, trader);
     }
 
-    function isMarginSafe(Core storage core, address trader) internal view returns (bool) {
-        return margin(core, trader) >= 0;
+    function isMaintenanceMarginSafe(Market storage market, address trader)
+        internal
+        view
+        returns (bool)
+    {
+        return margin(market, trader) >= maintenanceMargin(market, trader);
     }
 
-    function isEmptyAccount(Core storage core, address trader) internal view returns (bool) {
+    function isMarginSafe(Market storage market, address trader) internal view returns (bool) {
+        return margin(market, trader) >= 0;
+    }
+
+    function isEmptyAccount(Market storage market, address trader) internal view returns (bool) {
         return
-            core.marginAccounts[trader].cashBalance == 0 &&
-            core.marginAccounts[trader].positionAmount == 0 &&
-            core.marginAccounts[trader].entryFunding == 0;
+            market.marginAccounts[trader].cashBalance == 0 &&
+            market.marginAccounts[trader].positionAmount == 0 &&
+            market.marginAccounts[trader].entryFunding == 0;
     }
 
     function deposit(
-        Core storage core,
+        Market storage market,
         address trader,
         int256 amount
-    ) public {
+    ) public returns (bool isInitial) {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        bool isNewTrader = isEmptyAccount(core, trader);
-        updateCashBalance(core, trader, amount.add(msg.value.toInt256()));
-        if (isNewTrader) {
-            core.registerTrader(trader);
-            IFactory(core.factory).activeProxy(trader);
+        isInitial = isEmptyAccount(market, trader);
+        updateCashBalance(market, trader, amount.add(msg.value.toInt256()));
+        if (isInitial) {
+            market.registerTrader(trader);
         }
         emit Deposit(trader, amount);
     }
 
     function withdraw(
-        Core storage core,
+        Market storage market,
         address trader,
         int256 amount
-    ) public {
+    ) public returns (bool isDrained) {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        updateCashBalance(core, trader, amount.neg());
-        require(isInitialMarginSafe(core, trader), "margin is unsafe");
-        if (isEmptyAccount(core, trader)) {
-            core.deregisterTrader(trader);
-            IFactory(core.factory).deactiveProxy(trader);
+        updateCashBalance(market, trader, amount.neg());
+        require(isInitialMarginSafe(market, trader), "margin is unsafe");
+        isDrained = isEmptyAccount(market, trader);
+        if (isDrained) {
+            market.deregisterTrader(trader);
         }
         emit Withdraw(trader, amount);
     }
 
     function updateCashBalance(
-        Core storage core,
+        Market storage market,
         address trader,
         int256 amount
     ) internal {
-        core.marginAccounts[trader].cashBalance = core.marginAccounts[trader].cashBalance.add(
+        market.marginAccounts[trader].cashBalance = market.marginAccounts[trader].cashBalance.add(
             amount
         );
     }
 
     function updateMarginAccount(
-        Core storage core,
+        Market storage market,
         address trader,
         int256 deltaPositionAmount,
         int256 deltaMargin
@@ -154,20 +161,20 @@ library MarginModule {
             int256 openingAmount
         )
     {
-        MarginAccount memory account = core.marginAccounts[trader];
+        MarginAccount memory account = market.marginAccounts[trader];
         (closingAmount, openingAmount) = Utils.splitAmount(
             account.positionAmount,
             deltaPositionAmount
         );
         if (closingAmount != 0) {
-            closePosition(account, closingAmount, core.unitAccumulativeFunding);
-            fundingLoss = core.marginAccounts[trader].cashBalance.sub(account.cashBalance);
+            closePosition(account, closingAmount, market.unitAccumulativeFunding);
+            fundingLoss = market.marginAccounts[trader].cashBalance.sub(account.cashBalance);
         }
         if (openingAmount != 0) {
-            openPosition(account, openingAmount, core.unitAccumulativeFunding);
+            openPosition(account, openingAmount, market.unitAccumulativeFunding);
         }
         account.cashBalance = account.cashBalance.add(deltaMargin);
-        core.marginAccounts[trader] = account;
+        market.marginAccounts[trader] = account;
     }
 
     function closePosition(

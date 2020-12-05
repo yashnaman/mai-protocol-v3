@@ -24,7 +24,7 @@ contract Perpetual is Storage, Trade, Settlement, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        _initialize(
+        Storage.initialize(
             operator,
             oracle,
             governor,

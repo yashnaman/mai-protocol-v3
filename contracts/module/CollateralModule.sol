@@ -37,20 +37,6 @@ library CollateralModule {
     //  */
 
     /**
-     * @notice  Try to retreive decimals from an erc20 contract.
-     * @return  Decimals and true if success or 0 and false.ww
-     */
-    function retrieveDecimals(address token) public view returns (uint8, bool) {
-        (bool success, bytes memory result) = token.staticcall(
-            abi.encodeWithSignature("decimals()")
-        );
-        if (success && result.length >= 32) {
-            return (abi.decode(result, (uint8)), success);
-        }
-        return (0, false);
-    }
-
-    /**
      * @dev     Get collateral balance in account.
      * @param   account     Address of account.
      * @return  Raw repesentation of collateral balance.
@@ -70,7 +56,6 @@ library CollateralModule {
         int256 amount,
         uint256 value
     ) public {
-        require(amount > 0, "amount is 0");
         uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         if (core.isWrapped && value > 0) {
             IWETH(IFactory(core.factory).weth()).deposit();
@@ -88,7 +73,6 @@ library CollateralModule {
         address payable account,
         int256 amount
     ) public {
-        require(amount > 0, "amount is 0");
         uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         if (core.isWrapped) {
             IWETH(IFactory(core.factory).weth()).withdraw(rawAmount);

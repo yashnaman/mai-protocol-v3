@@ -1,25 +1,38 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "../Type.sol";
 import "../interface/IOracle.sol";
 
-library OracleModule {
-    function markPrice(Core storage core) internal view returns (int256) {
-        return core.state == State.NORMAL ? core.markPriceData.price : core.settlePriceData.price;
-    }
+import "../Type.sol";
 
-    function updatePrice(Core storage core) internal {
-        // no longer update price after emergency
-        if (block.timestamp != core.priceUpdateTime && core.state == State.NORMAL) {
-            updatePriceData(core.markPriceData, IOracle(core.oracle).priceTWAPLong);
-            updatePriceData(core.indexPriceData, IOracle(core.oracle).priceTWAPShort);
-            core.priceUpdateTime = block.timestamp;
+library OracleModule {
+    function updatePrice(Core storage core, uint256 currentTime) internal {
+        uint256 count = core.markets.length;
+        for (uint256 i = 0; i < count; i++) {
+            updatePrice(core.markets[i], currentTime);
         }
     }
 
-    function indexPrice(Core storage core) internal view returns (int256) {
-        return core.state == State.NORMAL ? core.indexPriceData.price : core.settlePriceData.price;
+    function updatePrice(Market storage market, uint256 currentTime) internal {
+        // no longer update price after emergency
+        if (currentTime != market.priceUpdateTime && market.state == MarketState.NORMAL) {
+            updatePriceData(market.markPriceData, IOracle(market.oracle).priceTWAPLong);
+            updatePriceData(market.indexPriceData, IOracle(market.oracle).priceTWAPShort);
+        }
+    }
+
+    function markPrice(Market storage market) internal view returns (int256) {
+        return
+            market.state == MarketState.NORMAL
+                ? market.markPriceData.price
+                : market.settlePriceData.price;
+    }
+
+    function indexPrice(Market storage market) internal view returns (int256) {
+        return
+            market.state == MarketState.NORMAL
+                ? market.indexPriceData.price
+                : market.settlePriceData.price;
     }
 
     // prettier-ignore
@@ -34,9 +47,9 @@ library OracleModule {
         }
     }
 
-    function freezeOraclePrice(Core storage core) internal {
-        require(core.state != State.NORMAL, "not in normal state");
-        core.settlePriceData = core.indexPriceData;
-        core.priceUpdateTime = block.timestamp;
+    function freezeOraclePrice(Market storage market, uint256 currentTime) public {
+        require(market.state != MarketState.NORMAL, "market must be in normal state");
+        market.settlePriceData = market.indexPriceData;
+        market.priceUpdateTime = currentTime;
     }
 }

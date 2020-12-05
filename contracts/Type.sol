@@ -20,7 +20,7 @@ struct MarginAccount {
     int256 entryFunding;
 }
 
-enum State { NORMAL, EMERGENCY, CLEARED }
+enum MarketState { INVALID, NORMAL, EMERGENCY, CLEARED }
 enum ActionOnFailure { IGNORE, REVERT }
 enum OrderType { LIMIT, MARKET, STOP }
 
@@ -58,26 +58,45 @@ struct Receipt {
 }
 
 struct Core {
-    // ========================== SHARED PART
+    // ========================== SHARED PART ==========================
+    bool isFinalized;
     // addresses
     address factory;
-    address vault;
     address operator;
+    address governor;
+    address shareToken;
+    // vault
+    address vault;
+    int256 vaultFeeRate;
     // collateral
     bool isWrapped;
     uint256 scaler;
     address collateral;
-    // prices
-    address oracle;
-    uint256 priceUpdateTime;
-    OraclePriceData indexPriceData;
-    OraclePriceData markPriceData;
-    OraclePriceData settlePriceData;
-    // state
-    State state;
     // insurance fund
     int256 insuranceFund;
     int256 donatedInsuranceFund;
+    // fee
+    int256 totalClaimableFee;
+    mapping(address => int256) claimableFees;
+    // markets
+    Market[] markets;
+    mapping(bytes32 => uint256) marketIndex;
+    // access control
+    mapping(address => mapping(address => uint256)) accessControls;
+    // funding
+}
+
+struct Market {
+    bytes32 id;
+    MarketState state;
+    // prices
+    address oracle;
+    OraclePriceData indexPriceData;
+    OraclePriceData markPriceData;
+    OraclePriceData settlePriceData;
+    uint256 priceUpdateTime;
+    // amm account
+    MarginAccount ammAccount;
     // funding state
     int256 fundingRate;
     int256 unitAccumulativeFunding;
@@ -86,7 +105,6 @@ struct Core {
     int256 initialMarginRate;
     int256 maintenanceMarginRate;
     int256 operatorFeeRate;
-    int256 vaultFeeRate;
     int256 lpFeeRate;
     int256 referrerRebateRate;
     int256 liquidationPenaltyRate;
@@ -94,18 +112,12 @@ struct Core {
     int256 insuranceFundCap; // 到达cap之后，分给lp
     int256 insuranceFundRate; // 每一笔罚金都要抽这么多到fund
     // ris parameters
-    Option halfSpreadRate;
-    Option beta1;
-    Option beta2;
+    Option spread;
+    Option openSlippage;
+    Option closeSlippage;
     Option fundingRateCoefficient;
-    Option targetLeverage;
-    // accounts
-    mapping(address => MarginAccount) marginAccounts;
-    // fee
-    int256 totalClaimableFee;
-    mapping(address => int256) claimableFees;
+    Option maxLeverage;
     // users
-    int256 clearingPayout;
     int256 totalMarginWithoutPosition;
     int256 totalMarginWithPosition;
     int256 redemptionRateWithoutPosition;
@@ -115,6 +127,6 @@ struct Core {
     // filled
     mapping(bytes32 => int256) orderFilled;
     mapping(bytes32 => bool) orderCanceled;
-    // access control
-    mapping(address => mapping(address => uint256)) accessControls;
+    // accounts
+    mapping(address => MarginAccount) marginAccounts;
 }

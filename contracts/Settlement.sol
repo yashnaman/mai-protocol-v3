@@ -71,7 +71,11 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
         }
     }
 
-    function clearMarginAccount(address trader) public onlyWhen(State.EMERGENCY) nonReentrant {
+    function clearMarginAccount(address trader)
+        public
+        onlyWhen(MarketState.EMERGENCY)
+        nonReentrant
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         _core.clearMarginAccount(trader);
         if (_core.keeperGasReward > 0) {
@@ -87,7 +91,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
     function settle(address trader)
         public
         auth(trader, PRIVILEGE_WITHDRAW)
-        onlyWhen(State.CLEARED)
+        onlyWhen(MarketState.CLEARED)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);

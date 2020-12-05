@@ -56,38 +56,57 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         _core.claimFee(msg.sender, amount);
     }
 
-    function deposit(address trader, int256 amount)
+    function deposit(
+        bytes32 marketID,
+        address trader,
+        int256 amount
+    )
         external
         payable
         auth(trader, PRIVILEGE_DEPOSTI)
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
+        onlyValidMarket(marketID)
         nonReentrant
     {
         _core.transferFromUser(trader, amount, msg.value);
-        _core.deposit(trader, amount.add(msg.value.toInt256()));
+        bool isInitial = _core.markets[_core.marketIndex[marketID]].deposit(
+            trader,
+            amount.add(msg.value.toInt256())
+        );
+        if (isInitial) {
+            IFactory(_core.factory).activeProxy(trader);
+        }
     }
 
-    function withdraw(address trader, int256 amount)
+    function withdraw(
+        bytes32 marketID,
+        address trader,
+        int256 amount
+    )
         external
         syncState
         auth(trader, PRIVILEGE_WITHDRAW)
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
+        onlyValidMarket(marketID)
         nonReentrant
     {
         _core.withdraw(trader, amount);
-        _core.transferToUser(payable(trader), amount);
+        bool isDrained = _core.markets[_core.marketIndex[marketID]].transferToUser(
+            payable(trader),
+            amount
+        );
+        if (isDrained) {
+            IFactory(_core.factory).deactiveProxy(trader);
+        }
     }
 
     function donateInsuranceFund(int256 amount)
         external
         payable
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
         nonReentrant
     {
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        if (_core.isWrapped && msg.value > 0) {
-            IWETH(IFactory(_core.factory).weth()).deposit();
-        }
+        require(amount > 0, "amount is 0");
         _core.transferFromUser(msg.sender, amount, msg.value);
         _core.donatedInsuranceFund = _core.donatedInsuranceFund.add(amount);
         emit DonateInsuranceFund(msg.sender, amount);
@@ -97,7 +116,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         external
         payable
         syncState
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
         nonReentrant
     {
         require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
@@ -116,7 +135,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     function removeLiquidity(int256 shareToRemove)
         external
         syncState
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
         nonReentrant
     {
         require(shareToRemove > 0, Error.INVALID_COLLATERAL_AMOUNT);
@@ -157,7 +176,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     function liquidateByAMM(address trader, uint256 deadline)
         external
         syncState
-        onlyWhen(State.NORMAL)
+        onlyWhen(MarketState.NORMAL)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
@@ -176,7 +195,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         int256 amount,
         int256 priceLimit,
         uint256 deadline
-    ) external syncState onlyWhen(State.NORMAL) nonReentrant {
+    ) external syncState onlyWhen(MarketState.NORMAL) nonReentrant {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
@@ -191,17 +210,19 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     }
 
     function _trade(
+        bytes32 marketID,
         address trader,
         int256 amount,
         int256 priceLimit,
         uint256 deadline,
         address referrer
-    ) internal syncState onlyWhen(State.NORMAL) {
+    ) internal syncState onlyWhen(MarketState.NORMAL) onlyValidMarket(marketID) {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-        _core.trade(trader, amount, priceLimit, referrer);
+
+        _core.trade(marketID, trader, amount, priceLimit, referrer);
     }
 
     bytes[50] private __gap;

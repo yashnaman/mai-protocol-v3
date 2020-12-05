@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/Constant.sol";
 import "../libraries/SafeMathExt.sol";
+
 import "./MarginModule.sol";
 import "./CollateralModule.sol";
 
@@ -17,72 +18,70 @@ library SettlementModule {
     using SignedSafeMath for int256;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    using MarginModule for Core;
-    using CollateralModule for Core;
+    using MarginModule for Market;
+    using CollateralModule for Market;
 
-    function registerTrader(Core storage core, address trader) internal {
-        core.registeredTraders.add(trader);
+    function registerTrader(Market storage market, address trader) internal {
+        market.registeredTraders.add(trader);
     }
 
-    function deregisterTrader(Core storage core, address trader) internal {
-        core.registeredTraders.remove(trader);
+    function deregisterTrader(Market storage market, address trader) internal {
+        market.registeredTraders.remove(trader);
     }
 
-    function clearMarginAccount(Core storage core, address trader) public {
-        require(core.registeredTraders.contains(trader), "trader is not registered");
-        require(!core.clearedTraders.contains(trader), "trader is already cleared");
-        int256 margin = core.margin(trader);
+    function clearMarginAccount(Market storage market, address trader) public {
+        require(market.registeredTraders.contains(trader), "trader is not registered");
+        require(!market.clearedTraders.contains(trader), "trader is already cleared");
+        int256 margin = market.margin(trader);
         // into 3 types:
         // 1. margin < 0
         // 2. margin > 0 && position amount > 0
         // 3. margin > 0 && position amount == 0
         if (margin > 0) {
-            if (core.marginAccounts[trader].positionAmount != 0) {
-                core.totalMarginWithPosition = core.totalMarginWithPosition.add(margin);
+            if (market.marginAccounts[trader].positionAmount != 0) {
+                market.totalMarginWithPosition = market.totalMarginWithPosition.add(margin);
             } else {
-                core.totalMarginWithoutPosition = core.totalMarginWithoutPosition.add(margin);
+                market.totalMarginWithoutPosition = market.totalMarginWithoutPosition.add(margin);
             }
         }
-        core.clearingPayout.add(core.keeperGasReward);
-        core.registeredTraders.remove(trader);
-        core.clearedTraders.add(trader);
+        market.registeredTraders.remove(trader);
+        market.clearedTraders.add(trader);
     }
 
-    function settledMarginAccount(Core storage core, address trader)
+    function settledMarginAccount(Market storage market, address trader)
         public
         returns (int256 amount)
     {
-        int256 margin = core.margin(trader);
-        int256 positionAmount = core.positionAmount(trader);
+        int256 margin = market.margin(trader);
+        int256 positionAmount = market.positionAmount(trader);
         // nothing to withdraw
         if (margin < 0) {
             return 0;
         }
         int256 rate = positionAmount == 0
-            ? core.redemptionRateWithoutPosition
-            : core.redemptionRateWithPosition;
+            ? market.redemptionRateWithoutPosition
+            : market.redemptionRateWithPosition;
         int256 withdrawable = margin.wmul(rate);
-        core.updateCashBalance(trader, margin.neg());
+        market.updateCashBalance(trader, margin.neg());
         return withdrawable;
     }
 
-    function updateWithdrawableMargin(Core storage core) public {
-        int256 totalBalance = core.collateralBalance(address(this));
-        // 1. exclude fees
-        totalBalance = totalBalance.sub(core.totalClaimableFee);
+    function updateWithdrawableMargin(Market storage market, int256 totalBalance) public {
         // 2. cover margin without position
-        if (totalBalance < core.totalMarginWithoutPosition) {
+        if (totalBalance < market.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin
-            core.redemptionRateWithoutPosition = totalBalance.wdiv(core.totalMarginWithoutPosition);
+            market.redemptionRateWithoutPosition = totalBalance.wdiv(
+                market.totalMarginWithoutPosition
+            );
             // margin with positions will get nothing
-            core.redemptionRateWithPosition = 0;
+            market.redemptionRateWithPosition = 0;
             return;
         } else {
             // 3. covere margin with position
-            core.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
-            core.redemptionRateWithPosition = totalBalance
-                .sub(core.totalMarginWithoutPosition)
-                .wdiv(core.totalMarginWithPosition);
+            market.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
+            market.redemptionRateWithPosition = totalBalance
+                .sub(market.totalMarginWithoutPosition)
+                .wdiv(market.totalMarginWithPosition);
         }
     }
 }
