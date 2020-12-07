@@ -102,11 +102,11 @@ library ParameterModule {
     function validateCoreParameters(Market storage market) public view {
         require(
             market.initialMarginRate > 0 && market.initialMarginRate <= Constant.SIGNED_ONE,
-            "imr should be within (0, 1]"
+            "imr should be greater than 0"
         );
         require(
             market.maintenanceMarginRate > 0 && market.maintenanceMarginRate <= Constant.SIGNED_ONE,
-            "mmr should be within (0, 1]"
+            "mmr should be greater than 0"
         );
         require(
             market.maintenanceMarginRate <= market.initialMarginRate,

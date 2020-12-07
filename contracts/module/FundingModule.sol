@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -7,7 +8,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/SafeMathExt.sol";
 
-import "./AMMCommon.sol";
+import "./AMMModule.sol";
 import "./MarginModule.sol";
 import "./OracleModule.sol";
 
@@ -17,6 +18,7 @@ library FundingModule {
     using SafeMath for uint256;
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
+    using AMMModule for Core;
     using MarginModule for Market;
     using OracleModule for Market;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -27,13 +29,6 @@ library FundingModule {
         uint256 count = core.marketIDs.length();
         for (uint256 i = 0; i < count; i++) {
             updateFundingState(core.markets[core.marketIDs.at(i)], currentTime);
-        }
-    }
-
-    function updateFundingRate(Core storage core) public {
-        uint256 count = core.marketIDs.length();
-        for (uint256 i = 0; i < count; i++) {
-            updateFundingRate(core.markets[core.marketIDs.at(i)]);
         }
     }
 
@@ -50,44 +45,33 @@ library FundingModule {
         market.fundingTime = currentTime;
     }
 
-    function updateFundingRate(Market storage market) public {
-        market.fundingRate = nextFundingRate(market);
+    function updateFundingRate(Core storage core) public {
+        uint256 count = core.marketIDs.length();
+        for (uint256 i = 0; i < count; i++) {
+            Market storage market = core.markets[core.marketIDs.at(i)];
+            market.fundingRate = nextFundingRate(core, market);
+        }
     }
 
-    function nextFundingRate(Market storage market) public view returns (int256) {
-        int256 positionAmount = market.positionAmount(address(this));
-        if (positionAmount == 0) {
+    function nextFundingRate(Core storage core, Market storage market)
+        public
+        view
+        returns (int256)
+    {
+        AMMModule.Context memory context = core.prepareContext(market);
+        if (context.positionAmount == 0) {
             return 0;
         }
-        int256 indexPrice = market.indexPrice();
-        int256 mc = market.availableCashBalance(address(this));
-        if (
-            AMMCommon.isAMMMarginSafe(
-                mc,
-                positionAmount,
-                indexPrice,
-                market.maxLeverage.value,
-                market.openSlippage.value
-            )
-        ) {
-            (int256 mv, int256 m0) = AMMCommon.regress(
-                mc,
-                positionAmount,
-                indexPrice,
-                market.maxLeverage.value,
-                market.openSlippage.value
-            );
-            if (m0 != 0) {
-                int256 fundingRate;
-                if (positionAmount > 0) {
-                    fundingRate = mc.add(mv).wdiv(m0).sub(Constant.SIGNED_ONE);
-                } else {
-                    fundingRate = indexPrice.wfrac(positionAmount, m0).neg();
-                }
-                return fundingRate.wmul(market.fundingRateCoefficient.value);
+        if (AMMModule.isAMMMarginSafe(context, market.openSlippage.value)) {
+            int256 poolMargin = AMMModule.regress(context, market.openSlippage.value);
+            if (poolMargin != 0) {
+                return
+                    context.indexPrice.wfrac(context.positionAmount, poolMargin).neg().wmul(
+                        market.fundingRateCoefficient.value
+                    );
             }
         }
-        if (positionAmount > 0) {
+        if (context.positionAmount > 0) {
             return market.fundingRateCoefficient.value.neg();
         } else {
             return market.fundingRateCoefficient.value;

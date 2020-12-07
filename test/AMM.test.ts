@@ -99,8 +99,8 @@ describe('AMM', () => {
     }
 
     beforeEach(async () => {
-        const AMMTradeModule = await createFromFactory("contracts/module/AMMTradeModule.sol:AMMTradeModule")
-        AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", { AMMTradeModule: AMMTradeModule.address });
+        const AMMModule = await createFromFactory("contracts/module/AMMModule.sol:AMMModule")
+        AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", { AMMModule: AMMModule.address });
     });
 
     describe('isAMMSafe', function () {

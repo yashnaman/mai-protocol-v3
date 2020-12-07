@@ -9,7 +9,7 @@ import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
 import "../Type.sol";
-import "./AMMTradeModule.sol";
+import "./AMMModule.sol";
 import "./FeeModule.sol";
 import "./MarginModule.sol";
 import "./OracleModule.sol";
@@ -19,7 +19,7 @@ import "hardhat/console.sol";
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMath for int256;
-    using AMMTradeModule for Core;
+    using AMMModule for Core;
     using FeeModule for Core;
     using MarginModule for Market;
     using OracleModule for Market;
@@ -55,7 +55,11 @@ library TradeModule {
         Market storage market = core.markets[marketID];
         // 0. price / amount
         Receipt memory receipt;
-        (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(amount.neg(), false);
+        (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
+            marketID,
+            amount.neg(),
+            false
+        );
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
         // 1. fee
@@ -84,7 +88,11 @@ library TradeModule {
         int256 maxAmount = market.marginAccounts[trader].positionAmount;
         require(maxAmount != 0, Error.INVALID_POSITION_AMOUNT);
         // 0. price / amount
-        (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(maxAmount, false);
+        (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
+            marketID,
+            maxAmount,
+            false
+        );
         // 1. fee
         updateTradingFees(core, market, receipt, INVALID_ADDRESS);
         // 2. execute

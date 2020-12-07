@@ -73,6 +73,7 @@ struct Core {
     bool isWrapped;
     uint256 scaler;
     address collateral;
+    int256 pooledCashBalance;
     // insurance fund
     int256 insuranceFund;
     int256 donatedInsuranceFund;

@@ -37,15 +37,15 @@ export async function createContract(path, args = [], libraries = {}) {
 export async function createPerpetualFactory() {
     const AMMCommon = await createContract("AMMCommon");
     const CollateralModule = await createContract("CollateralModule")
-    const AMMTradeModule = await createContract("AMMTradeModule", [], { AMMCommon });
+    const AMMModule = await createContract("AMMModule", [], { AMMCommon });
     const FundingModule = await createContract("FundingModule", [], { AMMCommon });
     const OrderModule = await createContract("OrderModule");
     const FeeModule = await createContract("FeeModule", [], { CollateralModule });
     const ParameterModule = await createContract("ParameterModule");
     const SettlementModule = await createContract("SettlementModule");
-    const TradeModule = await createContract("TradeModule", [], { AMMTradeModule, FeeModule });
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, FeeModule });
     return await createFactory("Perpetual", {
-        AMMTradeModule,
+        AMMModule,
         CollateralModule,
         FundingModule,
         OrderModule,

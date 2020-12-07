@@ -33,8 +33,8 @@ describe('TradeModule1', () => {
             const oracle = await createContract("OracleWrapper", [erc20.address]);
             const FundingModule = await createContract("FundingModule");
             const ParameterModule = await createContract("ParameterModule");
-            const AMMTradeModule = await createContract("AMMTradeModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMTradeModule });
+            const AMMModule = await createContract("AMMModule");
+            const TradeModule = await createContract("TradeModule", [], { AMMModule });
             testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
 
             user1 = accounts[1];
@@ -240,8 +240,8 @@ describe('TradeModule1', () => {
             const oracle = await createContract("OracleWrapper", [erc20.address]);
             const FundingModule = await createContract("FundingModule");
             const ParameterModule = await createContract("ParameterModule");
-            const AMMTradeModule = await createContract("AMMTradeModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMTradeModule });
+            const AMMModule = await createContract("AMMModule");
+            const TradeModule = await createContract("TradeModule", [], { AMMModule });
             testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
 
             user1 = accounts[1];

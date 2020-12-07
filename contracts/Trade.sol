@@ -19,7 +19,7 @@ import "./interface/IShareToken.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
-import "./module/AMMTradeModule.sol";
+import "./module/AMMModule.sol";
 import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
 import "./module/SettlementModule.sol";
@@ -45,7 +45,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
     using OrderModule for Core;
 
     using FeeModule for Core;
-    using AMMTradeModule for Core;
+    using AMMModule for Core;
     using SettlementModule for Core;
     using TradeModule for Core;
     using MarginModule for Core;
@@ -97,25 +97,29 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuard {
         emit DonateInsuranceFund(msg.sender, amount);
     }
 
-    function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
+    function addLiquidity(bytes32 marketID, int256 cashToAdd)
+        external
+        payable
+        syncState
+        nonReentrant
+    {
         require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
         _core.transferFromUser(msg.sender, cashToAdd, msg.value);
-        int256 shareTotalSupply = IShareToken(_shareToken).totalSupply().toInt256();
-        int256 shareToMint = _core.addLiquidity(shareTotalSupply, cashToAdd);
-        uint256 unitInsuranceFund = shareTotalSupply > 0
-            ? _core.insuranceFund.wdiv(shareTotalSupply).toUint256()
-            : 0;
+        int256 shareToMint = _core.addLiquidity(marketID, cashToAdd);
         // _core.updateCashBalance(address(this), cashToAdd);
-        IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256(), unitInsuranceFund);
+        IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256());
 
         emit AddLiquidity(msg.sender, cashToAdd, shareToMint);
     }
 
-    function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
+    function removeLiquidity(bytes32 marketID, int256 shareToRemove)
+        external
+        syncState
+        nonReentrant
+    {
         require(shareToRemove > 0, Error.INVALID_COLLATERAL_AMOUNT);
 
-        int256 shareTotalSupply = IShareToken(_shareToken).totalSupply().toInt256();
-        int256 cashToReturn = _core.removeLiquidity(shareTotalSupply, shareToRemove);
+        int256 cashToReturn = _core.removeLiquidity(marketID, shareToRemove);
         IShareToken(_shareToken).burn(msg.sender, shareToRemove.toUint256());
         // _core.updateCashBalance(address(this), cashToReturn.neg());
         _core.transferToUser(payable(msg.sender), cashToReturn);

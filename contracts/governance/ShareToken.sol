@@ -29,9 +29,6 @@ contract ShareToken {
     /// @notice A record of each accounts delegate
     mapping(address => address) public delegates;
 
-    // A record of each accounts entryInsurance
-    mapping(address => uint256) public unitEntryInsurances;
-
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint256 fromBlock;
@@ -92,17 +89,6 @@ contract ShareToken {
         _owner = owner;
     }
 
-    function _updateEntryInsurance(
-        address account,
-        uint256 amount,
-        uint256 newUnitEntryInsurance
-    ) internal {
-        unitEntryInsurances[account] = unitEntryInsurances[account]
-            .wmul(balances[account])
-            .add(newUnitEntryInsurance.wmul(amount))
-            .wdiv(balances[account].add(amount));
-    }
-
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
@@ -112,14 +98,8 @@ contract ShareToken {
      *
      * - `to` cannot be the zero address.
      */
-    function mint(
-        address account,
-        uint256 amount,
-        uint256 newUnitEntryInsurance
-    ) public onlyOwner {
+    function mint(address account, uint256 amount) public onlyOwner {
         require(account != address(0), "Mint to the zero address");
-
-        _updateEntryInsurance(account, amount, newUnitEntryInsurance);
         totalSupply = totalSupply.add(amount);
         balances[account] = balances[account].add(amount);
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
@@ -327,7 +307,6 @@ contract ShareToken {
         require(src != address(0), "_transferTokens: cannot transfer from the zero address");
         require(dst != address(0), "_transferTokens: cannot transfer to the zero address");
 
-        _updateEntryInsurance(dst, unitEntryInsurances[src], amount);
         balances[src] = balances[src].sub(amount);
         balances[dst] = balances[dst].add(amount);
         emit Transfer(src, dst, amount);

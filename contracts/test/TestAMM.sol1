@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
-import "../module/AMMTradeModule.sol";
+import "../module/AMMModule.sol";
 import "../module/AMMCommon.sol";
 
 contract TestAMM {
@@ -91,7 +91,7 @@ contract TestAMM {
     {
         int256 mc = core.availableCashBalance(address(this));
         (int256 mv, int256 m0) = regress(beta);
-        deltaMargin = AMMTradeModule.longDeltaMargin(
+        deltaMargin = AMMModule.longDeltaMargin(
             m0,
             mc.add(mv),
             core.marginAccounts[address(this)].positionAmount,
@@ -108,7 +108,7 @@ contract TestAMM {
     {
         int256 mc = core.availableCashBalance(address(this));
         (, int256 m0) = regress(beta);
-        deltaMargin = AMMTradeModule.shortDeltaMargin(
+        deltaMargin = AMMModule.shortDeltaMargin(
             m0,
             core.marginAccounts[address(this)].positionAmount,
             positionAmount2,
@@ -120,13 +120,13 @@ contract TestAMM {
     function maxLongPosition(int256 beta) public view returns (int256) {
         (, int256 m0) = regress(beta);
         return
-            AMMTradeModule._maxLongPosition(m0, core.indexPrice(), beta, core.targetLeverage.value);
+            AMMModule._maxLongPosition(m0, core.indexPrice(), beta, core.targetLeverage.value);
     }
 
     function maxShortPosition(int256 beta) public view returns (int256) {
         (, int256 m0) = regress(beta);
         return
-            AMMTradeModule._maxShortPosition(
+            AMMModule._maxShortPosition(
                 m0,
                 core.indexPrice(),
                 beta,
@@ -139,7 +139,7 @@ contract TestAMM {
         view
         returns (int256 deltaMargin, int256 deltaPosition)
     {
-        (deltaMargin, deltaPosition) = AMMTradeModule.tradeWithAMM(
+        (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
             core,
             tradingAmount,
             partialFill
@@ -151,7 +151,7 @@ contract TestAMM {
         view
         returns (int256 share)
     {
-        share = AMMTradeModule.addLiquidity(core, shareTotalSupply, marginToAdd);
+        share = AMMModule.addLiquidity(core, shareTotalSupply, marginToAdd);
     }
 
     function removeLiquidity(int256 shareTotalSupply, int256 shareToRemove)
@@ -159,6 +159,6 @@ contract TestAMM {
         view
         returns (int256 marginToRemove)
     {
-        marginToRemove = AMMTradeModule.removeLiquidity(core, shareTotalSupply, shareToRemove);
+        marginToRemove = AMMModule.removeLiquidity(core, shareTotalSupply, shareToRemove);
     }
 }

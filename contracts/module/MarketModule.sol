@@ -54,10 +54,10 @@ library MarketModule {
         market.validateRiskParameters();
 
         market.state = MarketState.NORMAL;
-        market.id = marketID(market);
+        market.id = marketID(oracle);
     }
 
-    function marketID(Market storage market) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(address(this), market.oracle));
+    function marketID(address oracle) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(address(this), oracle));
     }
 }
