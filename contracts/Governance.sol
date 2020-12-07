@@ -2,7 +2,6 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./module/MarketModule.sol";
 import "./module/ParameterModule.sol";
@@ -14,7 +13,6 @@ import "./Storage.sol";
 // @title Goovernance is the contract to maintain perpetual parameters.
 contract Governance is Storage, Events {
     using SafeMathUpgradeable for uint256;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using MarketModule for Market;
     using ParameterModule for Market;
 
@@ -34,8 +32,7 @@ contract Governance is Storage, Events {
         bytes32 marketID,
         bytes32 key,
         int256 newValue
-    ) external onlyGovernor {
-        require(_core.marketIDs.contains(marketID), "market not exist");
+    ) external onlyGovernor onlyExistedMarket(marketID) {
         _core.markets[marketID].updateCoreParameter(key, newValue);
         _core.markets[marketID].validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
@@ -47,8 +44,7 @@ contract Governance is Storage, Events {
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external onlyGovernor {
-        require(_core.marketIDs.contains(marketID), "market not exist");
+    ) external onlyGovernor onlyExistedMarket(marketID) {
         _core.markets[marketID].updateRiskParameter(key, newValue, minValue, maxValue);
         _core.markets[marketID].validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
@@ -58,8 +54,7 @@ contract Governance is Storage, Events {
         bytes32 marketID,
         bytes32 key,
         int256 newValue
-    ) external onlyOperator {
-        require(_core.marketIDs.contains(marketID), "market not exist");
+    ) external onlyOperator onlyExistedMarket(marketID) {
         _core.markets[marketID].adjustRiskParameter(key, newValue);
         _core.markets[marketID].validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);

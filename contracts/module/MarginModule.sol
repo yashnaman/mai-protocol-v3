@@ -13,14 +13,15 @@ import "../interface/IFactory.sol";
 import "../Type.sol";
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
+import "./MarketModule.sol";
 import "./SettlementModule.sol";
-import "./CollateralModule.sol";
 
 library MarginModule {
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
+    using MarketModule for Market;
     using OracleModule for Market;
     using CollateralModule for Market;
     using SettlementModule for Market;
@@ -110,7 +111,9 @@ library MarginModule {
     ) public {
         Market storage market = core.markets[marketID];
         bool isInitial = isEmptyAccount(market, trader);
-        updateCashBalance(market, trader, amount.add(msg.value.toInt256()));
+        updateCashBalance(market, trader, amount);
+        market.increaseDepositedCollateral(amount);
+        market.depositedCollateral = market.depositedCollateral.add(amount);
         if (isInitial) {
             market.registerTrader(trader);
             IFactory(core.factory).activeProxy(trader);
@@ -126,7 +129,11 @@ library MarginModule {
     ) public {
         Market storage market = core.markets[marketID];
         updateCashBalance(market, trader, amount.neg());
-        require(isInitialMarginSafe(market, trader), "margin is unsafe");
+        if (amount > market.depositedCollateral) {
+            // remargin
+        }
+        market.decreaseDepositedCollateral(amount);
+        require(isInitialMarginSafe(market, trader), "margin is unsafe after withdrawal");
         bool isDrained = isEmptyAccount(market, trader);
         if (isDrained) {
             market.deregisterTrader(trader);
@@ -183,7 +190,10 @@ library MarginModule {
         int256 funding = unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
-        require(account.positionAmount.abs() <= previousAmount.abs(), "must close position");
+        require(
+            account.positionAmount.abs() <= previousAmount.abs(),
+            "'close' must only close position"
+        );
         account.cashBalance = account.cashBalance.add(funding);
         account.entryFunding = account.entryFunding.add(closingEntryFunding);
     }
@@ -195,7 +205,10 @@ library MarginModule {
     ) internal pure {
         int256 previousAmount = account.positionAmount;
         account.positionAmount = previousAmount.add(amount);
-        require(account.positionAmount.abs() >= previousAmount.abs(), "must open position");
+        require(
+            account.positionAmount.abs() >= previousAmount.abs(),
+            "'open' must only open position"
+        );
         account.entryFunding = account.entryFunding.add(unitAccumulativeFunding.wmul(amount));
     }
 }

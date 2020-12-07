@@ -33,8 +33,7 @@ library FeeModule {
         address claimer,
         int256 amount
     ) public {
-        require(amount != 0, "zero amount");
-        require(core.claimableFees[claimer].sub(amount) >= 0, "insufficient fee");
+        require(amount <= core.claimableFees[claimer], "insufficient fee");
         core.claimableFees[claimer] = core.claimableFees[claimer].sub(amount);
         core.totalClaimableFee = core.totalClaimableFee.sub(amount);
         core.transferToUser(payable(claimer), amount);

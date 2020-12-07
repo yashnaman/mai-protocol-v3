@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
@@ -16,6 +17,7 @@ import "./Type.sol";
 
 contract Storage is Initializable {
     using SafeMathUpgradeable for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using FundingModule for Core;
     using OracleModule for Core;
     using OracleModule for Market;
@@ -26,6 +28,14 @@ contract Storage is Initializable {
     Core internal _core;
     address internal _governor;
     address internal _shareToken;
+
+    event EnterEmergencyState();
+    event EnterClearedState();
+
+    modifier onlyExistedMarket(bytes32 marketID) {
+        require(_core.marketIDs.contains(marketID), "market not exist");
+        _;
+    }
 
     modifier syncState() {
         uint256 currentTime = block.timestamp;
@@ -44,9 +54,6 @@ contract Storage is Initializable {
         require(_core.markets[marketID].state != disallowedState, "operation is disallow now");
         _;
     }
-
-    event EnterEmergencyState();
-    event EnterClearedState();
 
     function initialize(
         address collateral,

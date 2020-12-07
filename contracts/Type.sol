@@ -59,7 +59,6 @@ struct Receipt {
 }
 
 struct Core {
-    // ========================== SHARED PART ==========================
     bool isFinalized;
     // addresses
     address factory;
@@ -74,6 +73,7 @@ struct Core {
     uint256 scaler;
     address collateral;
     int256 pooledCashBalance;
+    int256 addedCollateral;
     // insurance fund
     int256 insuranceFund;
     int256 donatedInsuranceFund;
@@ -93,8 +93,9 @@ struct Core {
 struct Market {
     bytes32 id;
     MarketState state;
-    // prices
     address oracle;
+    int256 depositedCollateral;
+    // prices
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;
     OraclePriceData settlePriceData;

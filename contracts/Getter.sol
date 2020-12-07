@@ -30,6 +30,7 @@ contract Getter is Storage {
     function marketDescription(bytes32 marketID)
         public
         view
+        onlyExistedMarket(marketID)
         returns (
             string memory underlyingAsset,
             address collateral,
@@ -41,7 +42,6 @@ contract Getter is Storage {
             int256[5] memory riskParameter
         )
     {
-        require(_core.marketIDs.contains(marketID), "market not exist");
         factory = _core.factory;
         collateral = _core.collateral;
         operator = _core.operator;
@@ -75,6 +75,7 @@ contract Getter is Storage {
     function marketStatus(bytes32 marketID)
         public
         syncState
+        onlyExistedMarket(marketID)
         returns (
             bool isEmergency,
             bool isCleared,
@@ -87,8 +88,6 @@ contract Getter is Storage {
             uint256 fundingTime
         )
     {
-        require(_core.marketIDs.contains(marketID), "market not exist");
-
         insuranceFund = _core.insuranceFund;
         donatedInsuranceFund = _core.donatedInsuranceFund;
 
@@ -105,13 +104,13 @@ contract Getter is Storage {
     function marginAccount(bytes32 marketID, address trader)
         public
         view
+        onlyExistedMarket(marketID)
         returns (
             int256 cashBalance,
             int256 positionAmount,
             int256 entryFunding
         )
     {
-        require(_core.marketIDs.contains(marketID), "market not exist");
         cashBalance = _core.markets[marketID].marginAccounts[trader].cashBalance;
         positionAmount = _core.markets[marketID].marginAccounts[trader].positionAmount;
         entryFunding = _core.markets[marketID].marginAccounts[trader].entryFunding;

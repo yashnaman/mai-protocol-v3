@@ -65,6 +65,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
         payable
         auth(trader, PRIVILEGE_DEPOSTI)
         onlyWhen(marketID, MarketState.NORMAL)
+        onlyExistedMarket(marketID)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
@@ -82,6 +83,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
         syncState
         auth(trader, PRIVILEGE_WITHDRAW)
         onlyWhen(marketID, MarketState.NORMAL)
+        onlyExistedMarket(marketID)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);

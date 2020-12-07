@@ -97,15 +97,6 @@ library AMMModule {
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
 
-    function regress(Core storage core, Market storage market)
-        public
-        view
-        returns (int256 poolMargin)
-    {
-        Context memory context = prepareContext(core, market);
-        return regress(context, market.openSlippage.value);
-    }
-
     function regress(Context memory context, int256 beta) public pure returns (int256 poolMargin) {
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
         int256 marginBalance = positionValue.add(context.IntermediateValue1);

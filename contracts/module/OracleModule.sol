@@ -52,7 +52,6 @@ library OracleModule {
     }
 
     function freezeOraclePrice(Market storage market, uint256 currentTime) public {
-        require(market.state != MarketState.NORMAL, "market must be in normal state");
         market.settlePriceData = market.indexPriceData;
         market.priceUpdateTime = currentTime;
     }

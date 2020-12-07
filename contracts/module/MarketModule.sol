@@ -2,11 +2,14 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+
 import "../module/ParameterModule.sol";
 
 import "../Type.sol";
 
 library MarketModule {
+    using SignedSafeMathUpgradeable for int256;
     using ParameterModule for Market;
     using ParameterModule for Option;
 
@@ -59,5 +62,16 @@ library MarketModule {
 
     function marketID(address oracle) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(address(this), oracle));
+    }
+
+    function increaseDepositedCollateral(Market storage market, int256 amount) public {
+        require(amount >= 0, "amount is negative");
+        market.depositedCollateral = market.depositedCollateral.add(amount);
+    }
+
+    function decreaseDepositedCollateral(Market storage market, int256 amount) public {
+        require(amount >= 0, "amount is negative");
+        market.depositedCollateral = market.depositedCollateral.sub(amount);
+        require(market.depositedCollateral >= 0, "collateral is negative");
     }
 }
