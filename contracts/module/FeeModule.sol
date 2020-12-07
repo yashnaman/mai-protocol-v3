@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../module/CollateralModule.sol";
@@ -9,7 +9,7 @@ import "../Type.sol";
 
 library FeeModule {
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
     using CollateralModule for Core;
 
     event ReceiveFee(address recipient, int256 amount);

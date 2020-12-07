@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "./Constant.sol";
 
 library SafeMathExt {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
+    using SafeMathUpgradeable for uint256;
+    using SignedSafeMathUpgradeable for int256;
 
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
@@ -56,7 +56,7 @@ library SafeMathExt {
     }
 
     function neg(int256 a) internal pure returns (int256) {
-        return SignedSafeMath.sub(int256(0), a);
+        return SignedSafeMathUpgradeable.sub(int256(0), a);
     }
 
     /// @dev ROUND_HALF_UP rule helper.

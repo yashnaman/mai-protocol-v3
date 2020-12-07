@@ -2,12 +2,12 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "./libraries/Error.sol";
 import "./libraries/OrderData.sol";
@@ -30,15 +30,15 @@ import "./module/CollateralModule.sol";
 import "./Events.sol";
 import "./AccessControl.sol";
 
-contract Settlement is Storage, AccessControl, ReentrancyGuard {
-    using SafeCast for int256;
-    using SafeCast for uint256;
-    using SafeMath for uint256;
+contract Settlement is Storage, AccessControl, ReentrancyGuardUpgradeable {
+    using SafeCastUpgradeable for int256;
+    using SafeCastUpgradeable for uint256;
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
     using SafeMathExt for uint256;
     using SafeMathExt for uint256;
-    using SignedSafeMath for int256;
-    using Address for address;
+    using SignedSafeMathUpgradeable for int256;
+    using AddressUpgradeable for address;
 
     using OrderData for Order;
     using OrderModule for Core;
@@ -49,7 +49,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
     using MarginModule for Market;
     using CollateralModule for Core;
     using SettlementModule for Market;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function unclearedTraderCount(bytes32 marketID) public view returns (uint256) {
         return _core.markets[marketID].registeredTraders.length();

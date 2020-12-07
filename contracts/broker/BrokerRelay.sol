@@ -2,20 +2,20 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
 import "../Type.sol";
 
-contract BrokerRelay is ReentrancyGuard {
-    using SafeMath for uint256;
+contract BrokerRelay is ReentrancyGuardUpgradeable {
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
     using OrderData for Order;
 
     uint256 internal _claimableFees;
@@ -51,7 +51,7 @@ contract BrokerRelay is ReentrancyGuard {
 
     function withdraw(uint256 amount) public nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        Address.sendValue(payable(msg.sender), amount);
+        AddressUpgradeable.sendValue(payable(msg.sender), amount);
         emit Withdraw(msg.sender, amount);
     }
 

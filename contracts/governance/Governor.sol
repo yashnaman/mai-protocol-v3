@@ -49,7 +49,7 @@ struct Proposal {
 }
 
 contract Governor {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
 
     /// @notice The name of this contract
@@ -135,7 +135,7 @@ contract Governor {
 
     function executingDelay() public virtual pure returns (uint256) {
         return 86400;
-    } 
+    }
 
     function executingTimeout() public virtual pure returns (uint256) {
         return 86400 * 7;
@@ -322,7 +322,7 @@ contract Governor {
             proposal.forVotes = proposal.forVotes.add(votes);
         } else {
             proposal.againstVotes = proposal.againstVotes.add(votes);
-        } 
+        }
 
         receipt.hasVoted = true;
         receipt.support = support;

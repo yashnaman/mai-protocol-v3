@@ -2,14 +2,11 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-// import "@openzeppelin/contracts-ethereum-package/contracts/Initializable.sol";
-// import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/SafeERC20.sol";
-// import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IFactory.sol";
 import "../interface/IWETH.sol";
@@ -25,11 +22,11 @@ import "../Type.sol";
  *
  */
 library CollateralModule {
-    using SafeMath for uint256;
-    using SafeCast for int256;
-    using SafeCast for uint256;
-    using SignedSafeMath for int256;
-    using SafeERC20 for IERC20;
+    using SafeMathUpgradeable for uint256;
+    using SafeCastUpgradeable for int256;
+    using SafeCastUpgradeable for uint256;
+    using SignedSafeMathUpgradeable for int256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // /**
     //  * @dev     Initialize collateral and decimals.
@@ -42,7 +39,7 @@ library CollateralModule {
      * @return  Raw repesentation of collateral balance.
      */
     function collateralBalance(Core storage core, address account) internal view returns (int256) {
-        return IERC20(core.collateral).balanceOf(account).toInt256();
+        return IERC20Upgradeable(core.collateral).balanceOf(account).toInt256();
     }
 
     /**
@@ -60,7 +57,7 @@ library CollateralModule {
         if (core.isWrapped && value > 0) {
             IWETH(IFactory(core.factory).weth()).deposit();
         }
-        IERC20(core.collateral).safeTransferFrom(account, address(this), rawAmount);
+        IERC20Upgradeable(core.collateral).safeTransferFrom(account, address(this), rawAmount);
     }
 
     /**
@@ -76,9 +73,9 @@ library CollateralModule {
         uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         if (core.isWrapped) {
             IWETH(IFactory(core.factory).weth()).withdraw(rawAmount);
-            Address.sendValue(account, rawAmount);
+            AddressUpgradeable.sendValue(account, rawAmount);
         } else {
-            IERC20(core.collateral).safeTransfer(account, rawAmount);
+            IERC20Upgradeable(core.collateral).safeTransfer(account, rawAmount);
         }
     }
 

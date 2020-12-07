@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../libraries/SafeCastExt.sol";
 import "../libraries/SafeMathExt.sol";
 
-contract VersionController is Ownable {
-    using Address for address;
-    using SafeMath for uint256;
+contract VersionController is OwnableUpgradeable {
+    using AddressUpgradeable for address;
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
     using SafeCastExt for address;
     using SafeCastExt for bytes32;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     struct VersionDescription {
         address creator;
@@ -24,12 +24,12 @@ contract VersionController is Ownable {
         string note;
     }
 
-    EnumerableSet.AddressSet internal _versions;
+    EnumerableSetUpgradeable.AddressSet internal _versions;
     mapping(address => VersionDescription) internal _descriptions;
 
     event AddVersion(address implementation);
 
-    constructor() Ownable() {}
+    constructor() OwnableUpgradeable() {}
 
     function addVersion(
         address implementation,

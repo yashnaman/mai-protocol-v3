@@ -3,13 +3,13 @@
 pragma solidity >=0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../module/AMMModule.sol";
 import "../module/AMMCommon.sol";
 
 contract TestAMM {
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
     using MarginModule for Core;
     using OracleModule for Core;
 

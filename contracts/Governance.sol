@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
+import "./module/MarketModule.sol";
 import "./module/ParameterModule.sol";
 
 import "./Type.sol";
@@ -12,9 +13,10 @@ import "./Storage.sol";
 
 // @title Goovernance is the contract to maintain perpetual parameters.
 contract Governance is Storage, Events {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
+    using MarketModule for Market;
     using ParameterModule for Market;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
 

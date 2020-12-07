@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IFactory.sol";
 
@@ -17,7 +17,7 @@ import "./Type.sol";
 import "./Storage.sol";
 
 contract Getter is Storage {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
     using CollateralModule for address;
     using FundingModule for Core;
     using MarginModule for Core;
@@ -25,7 +25,7 @@ contract Getter is Storage {
     using OracleModule for Core;
     using ParameterModule for Core;
     using SettlementModule for Core;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     function marketDescription(bytes32 marketID)
         public

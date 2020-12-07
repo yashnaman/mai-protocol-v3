@@ -2,9 +2,10 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../interface/IShareToken.sol";
 
@@ -20,11 +21,11 @@ library AMMModule {
     using Math for int256;
     using Math for uint256;
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
-    using SafeMath for uint256;
+    using SignedSafeMathUpgradeable for int256;
+    using SafeMathUpgradeable for uint256;
     using OracleModule for Market;
     using MarginModule for Market;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     struct Context {
         int256 indexPrice;
@@ -246,7 +247,7 @@ library AMMModule {
         }
         context.availableCashBalance = context.availableCashBalance.add(cashToAdd);
         newPoolMargin = pooledMarginBalance(core);
-        int256 shareTotalSupply = IERC20(core.shareToken).totalSupply().toInt256();
+        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
             shareAmount = newPoolMargin;
@@ -263,7 +264,7 @@ library AMMModule {
     ) public view returns (int256 marginToReturn) {
         require(shareToRemove > 0, "share amount is 0");
         require(
-            shareToRemove <= IERC20(core.shareToken).balanceOf(msg.sender).toInt256(),
+            shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
         );
         Market storage market = core.markets[marketID];
@@ -271,7 +272,7 @@ library AMMModule {
         int256 beta = market.openSlippage.value;
         require(isAMMMarginSafe(context, beta), "amm is unsafe before removing liquidity");
 
-        int256 shareTotalSupply = IERC20(core.shareToken).totalSupply().toInt256();
+        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         int256 shareRatio = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply);
         int256 poolMargin = regress(context, beta);
         poolMargin = poolMargin.wmul(shareRatio);

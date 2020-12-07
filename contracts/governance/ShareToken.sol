@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "../libraries/SafeMathExt.sol";
 
 contract ShareToken {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
 
     /// @notice EIP-20 token name for this token

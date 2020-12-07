@@ -2,7 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 
 import "../Type.sol";
 
@@ -19,16 +19,6 @@ library OrderData {
             "Order(address trader,address broker,address relayer,address perpetual,address referrer,int256 amount,int256 priceLimit,bytes32 data,uint256 chainID)"
         )
     );
-
-    /**
-     * 64 - deadline
-     * 32 - version
-     *  8 - type
-     *  8 - closeOnlu
-     * 32 - salt
-     *
-     * total 128 + 16
-     */
 
     function deadline(Order memory order) internal pure returns (uint64) {
         return uint64(bytes8(order.data));
@@ -53,13 +43,13 @@ library OrderData {
     function orderHash(Order memory order) internal pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
         return
-            ECDSA.toEthSignedMessageHash(
+            ECDSAUpgradeable.toEthSignedMessageHash(
                 keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
             );
     }
 
     function signer(Order memory order, bytes memory signature) internal pure returns (address) {
-        return ECDSA.recover(orderHash(order), signature);
+        return ECDSAUpgradeable.recover(orderHash(order), signature);
     }
 
     function orderHashDebug(Order memory order)
@@ -75,7 +65,7 @@ library OrderData {
         return (
             result,
             keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
-            ECDSA.toEthSignedMessageHash(
+            ECDSAUpgradeable.toEthSignedMessageHash(
                 keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
             )
         );

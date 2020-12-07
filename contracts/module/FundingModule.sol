@@ -2,9 +2,9 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
 
@@ -15,13 +15,13 @@ import "./OracleModule.sol";
 import "../Type.sol";
 
 library FundingModule {
-    using SafeMath for uint256;
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
     using MarginModule for Market;
     using OracleModule for Market;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 

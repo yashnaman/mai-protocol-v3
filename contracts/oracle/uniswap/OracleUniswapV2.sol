@@ -5,7 +5,7 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import '@uniswap/lib/contracts/libraries/FixedPoint.sol';
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 contract OracleUniswapV2 {
     using FixedPoint for *;

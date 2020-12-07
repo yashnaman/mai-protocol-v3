@@ -2,8 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
@@ -12,8 +11,8 @@ import "../libraries/SafeMathExt.sol";
 import "../Type.sol";
 
 library OrderModule {
+    using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
     using OrderData for Order;
 
     uint32 internal constant SUPPORTED_ORDER_VERSION = 3;

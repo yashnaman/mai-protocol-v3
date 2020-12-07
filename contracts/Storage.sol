@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./interface/IFactory.sol";
 import "./interface/IDecimals.sol";
@@ -13,8 +14,8 @@ import "./module/SettlementModule.sol";
 
 import "./Type.sol";
 
-contract Storage {
-    using SafeMath for uint256;
+contract Storage is Initializable {
+    using SafeMathUpgradeable for uint256;
     using FundingModule for Core;
     using OracleModule for Core;
     using OracleModule for Market;
@@ -52,7 +53,7 @@ contract Storage {
         address operator,
         address governor,
         address shareToken
-    ) internal {
+    ) internal initializer {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
         require(shareToken != address(0), "shareToken is invalid");

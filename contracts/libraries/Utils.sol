@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "./SafeMathExt.sol";
 
 library Utils {
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
 
     function hasSameSign(int256 x, int256 y) internal pure returns (bool) {
         if (x == 0 || y == 0) {

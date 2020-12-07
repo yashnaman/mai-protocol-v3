@@ -2,7 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/Error.sol";
 import "../libraries/SafeMathExt.sol";
@@ -18,7 +18,7 @@ import "hardhat/console.sol";
 
 library TradeModule {
     using SafeMathExt for int256;
-    using SignedSafeMath for int256;
+    using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
     using FeeModule for Core;
     using MarginModule for Market;
