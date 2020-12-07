@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+
 import "../interface/IOracle.sol";
 
 import "../Type.sol";
 
 library OracleModule {
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     function updatePrice(Core storage core, uint256 currentTime) internal {
-        uint256 count = core.markets.length;
+        uint256 count = core.marketIDs.length();
         for (uint256 i = 0; i < count; i++) {
-            updatePrice(core.markets[i], currentTime);
+            updatePrice(core.markets[core.marketIDs.at(i)], currentTime);
         }
     }
 

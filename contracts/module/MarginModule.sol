@@ -76,10 +76,6 @@ library MarginModule {
             );
     }
 
-    function availableMargin(Market storage market, address trader) internal view returns (int256) {
-        return margin(market, trader).sub(initialMargin(market, trader));
-    }
-
     function isInitialMarginSafe(Market storage market, address trader)
         internal
         view
@@ -103,37 +99,38 @@ library MarginModule {
     function isEmptyAccount(Market storage market, address trader) internal view returns (bool) {
         return
             market.marginAccounts[trader].cashBalance == 0 &&
-            market.marginAccounts[trader].positionAmount == 0 &&
-            market.marginAccounts[trader].entryFunding == 0;
+            market.marginAccounts[trader].positionAmount == 0;
     }
 
     function deposit(
-        Market storage market,
+        Core storage core,
+        bytes32 marketID,
         address trader,
         int256 amount
-    ) public returns (bool isInitial) {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        isInitial = isEmptyAccount(market, trader);
+    ) public {
+        Market storage market = core.markets[marketID];
+        bool isInitial = isEmptyAccount(market, trader);
         updateCashBalance(market, trader, amount.add(msg.value.toInt256()));
         if (isInitial) {
             market.registerTrader(trader);
+            IFactory(core.factory).activeProxy(trader);
         }
         emit Deposit(trader, amount);
     }
 
     function withdraw(
-        Market storage market,
+        Core storage core,
+        bytes32 marketID,
         address trader,
         int256 amount
-    ) public returns (bool isDrained) {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+    ) public {
+        Market storage market = core.markets[marketID];
         updateCashBalance(market, trader, amount.neg());
         require(isInitialMarginSafe(market, trader), "margin is unsafe");
-        isDrained = isEmptyAccount(market, trader);
+        bool isDrained = isEmptyAccount(market, trader);
         if (isDrained) {
             market.deregisterTrader(trader);
+            IFactory(core.factory).deactiveProxy(trader);
         }
         emit Withdraw(trader, amount);
     }

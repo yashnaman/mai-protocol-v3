@@ -35,6 +35,7 @@ struct Order {
     address broker;
     address relayer;
     address perpetual;
+    bytes32 marketID;
     address referrer;
     int256 amount;
     int256 priceLimit;
@@ -79,11 +80,13 @@ struct Core {
     int256 totalClaimableFee;
     mapping(address => int256) claimableFees;
     // markets
-    Market[] markets;
-    mapping(bytes32 => uint256) marketIndex;
+    EnumerableSet.Bytes32Set marketIDs;
+    mapping(bytes32 => Market) markets;
     // access control
     mapping(address => mapping(address => uint256)) accessControls;
-    // funding
+    // order
+    mapping(bytes32 => int256) orderFilled;
+    mapping(bytes32 => bool) orderCanceled;
 }
 
 struct Market {
@@ -95,8 +98,6 @@ struct Market {
     OraclePriceData markPriceData;
     OraclePriceData settlePriceData;
     uint256 priceUpdateTime;
-    // amm account
-    MarginAccount ammAccount;
     // funding state
     int256 fundingRate;
     int256 unitAccumulativeFunding;
@@ -124,9 +125,6 @@ struct Market {
     int256 redemptionRateWithPosition;
     EnumerableSet.AddressSet registeredTraders;
     EnumerableSet.AddressSet clearedTraders;
-    // filled
-    mapping(bytes32 => int256) orderFilled;
-    mapping(bytes32 => bool) orderCanceled;
     // accounts
     mapping(address => MarginAccount) marginAccounts;
 }

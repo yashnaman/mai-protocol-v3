@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "./module/ParameterModule.sol";
 
@@ -13,6 +14,7 @@ import "./Storage.sol";
 contract Governance is Storage, Events {
     using SafeMath for uint256;
     using ParameterModule for Market;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
 
@@ -30,9 +32,10 @@ contract Governance is Storage, Events {
         bytes32 marketID,
         bytes32 key,
         int256 newValue
-    ) external onlyGovernor onlyValidMarket(marketID) {
-        _core.markets[_core.marketIndex[marketID]].updateCoreParameter(key, newValue);
-        _core.markets[_core.marketIndex[marketID]].validateCoreParameters();
+    ) external onlyGovernor {
+        require(_core.marketIDs.contains(marketID), "market not exist");
+        _core.markets[marketID].updateCoreParameter(key, newValue);
+        _core.markets[marketID].validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
     }
 
@@ -42,14 +45,10 @@ contract Governance is Storage, Events {
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external onlyGovernor onlyValidMarket(marketID) {
-        _core.markets[_core.marketIndex[marketID]].updateRiskParameter(
-            key,
-            newValue,
-            minValue,
-            maxValue
-        );
-        _core.markets[_core.marketIndex[marketID]].validateRiskParameters();
+    ) external onlyGovernor {
+        require(_core.marketIDs.contains(marketID), "market not exist");
+        _core.markets[marketID].updateRiskParameter(key, newValue, minValue, maxValue);
+        _core.markets[marketID].validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
     }
 
@@ -57,9 +56,10 @@ contract Governance is Storage, Events {
         bytes32 marketID,
         bytes32 key,
         int256 newValue
-    ) external onlyOperator onlyValidMarket(marketID) {
-        _core.markets[_core.marketIndex[marketID]].adjustRiskParameter(key, newValue);
-        _core.markets[_core.marketIndex[marketID]].validateRiskParameters();
+    ) external onlyOperator {
+        require(_core.marketIDs.contains(marketID), "market not exist");
+        _core.markets[marketID].adjustRiskParameter(key, newValue);
+        _core.markets[marketID].validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }
 }

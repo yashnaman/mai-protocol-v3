@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/SafeMathExt.sol";
 
@@ -18,20 +19,21 @@ library FundingModule {
     using SignedSafeMath for int256;
     using MarginModule for Market;
     using OracleModule for Market;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
     function updateFundingState(Core storage core, uint256 currentTime) public {
-        uint256 count = core.markets.length;
+        uint256 count = core.marketIDs.length();
         for (uint256 i = 0; i < count; i++) {
-            updateFundingState(core.markets[i], currentTime);
+            updateFundingState(core.markets[core.marketIDs.at(i)], currentTime);
         }
     }
 
     function updateFundingRate(Core storage core) public {
-        uint256 count = core.markets.length;
+        uint256 count = core.marketIDs.length();
         for (uint256 i = 0; i < count; i++) {
-            updateFundingRate(core.markets[i]);
+            updateFundingRate(core.markets[core.marketIDs.at(i)]);
         }
     }
 

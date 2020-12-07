@@ -26,14 +26,6 @@ contract Storage {
     address internal _governor;
     address internal _shareToken;
 
-    modifier onlyValidMarket(bytes32 marketID) {
-        require(
-            _core.markets[_core.marketIndex[marketID]].state != MarketState.INVALID,
-            "market id is invalid"
-        );
-        _;
-    }
-
     modifier syncState() {
         uint256 currentTime = block.timestamp;
         _core.updateFundingState(currentTime);
@@ -43,18 +35,12 @@ contract Storage {
     }
 
     modifier onlyWhen(bytes32 marketID, MarketState allowedState) {
-        require(
-            _core.markets[_core.marketIndex[marketID]].state == allowedState,
-            "operation is disallowed now"
-        );
+        require(_core.markets[marketID].state == allowedState, "operation is disallowed now");
         _;
     }
 
     modifier onlyNotWhen(bytes32 marketID, MarketState disallowedState) {
-        require(
-            _core.markets[_core.marketIndex[marketID]].state != disallowedState,
-            "operation is disallow now"
-        );
+        require(_core.markets[marketID].state != disallowedState, "operation is disallow now");
         _;
     }
 
@@ -92,8 +78,8 @@ contract Storage {
     {
         uint256 currentTime = block.timestamp;
         _core.updatePrice(currentTime);
-        _core.markets[_core.marketIndex[marketID]].state = MarketState.EMERGENCY;
-        _core.markets[_core.marketIndex[marketID]].freezeOraclePrice(currentTime);
+        _core.markets[marketID].state = MarketState.EMERGENCY;
+        _core.markets[marketID].freezeOraclePrice(currentTime);
         emit EnterEmergencyState();
     }
 
@@ -101,7 +87,7 @@ contract Storage {
         internal
         onlyWhen(marketID, MarketState.EMERGENCY)
     {
-        _core.markets[_core.marketIndex[marketID]].state = MarketState.CLEARED;
+        _core.markets[marketID].state = MarketState.CLEARED;
         emit EnterClearedState();
     }
 

@@ -51,31 +51,33 @@ contract Settlement is Storage, AccessControl, ReentrancyGuard {
     using CollateralModule for Core;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    function unclearedTraderCount() public view returns (uint256) {
-        return _core.registeredTraders.length();
+    function unclearedTraderCount(bytes32 marketID) public view returns (uint256) {
+        return _core.markets[marketID].registeredTraders.length();
     }
 
-    function listUnclearedTraders(uint256 start, uint256 count)
-        public
-        view
-        returns (address[] memory result)
-    {
-        uint256 total = _core.registeredTraders.length();
+    function listUnclearedTraders(
+        bytes32 marketID,
+        uint256 start,
+        uint256 count
+    ) public view returns (address[] memory result) {
+        Market storage market = _core.markets[marketID];
+        uint256 total = market.registeredTraders.length();
         if (start >= total) {
             return result;
         }
         uint256 stop = start.add(count).min(total);
         result = new address[](stop.sub(start));
         for (uint256 i = start; i < stop; i++) {
-            result[i.sub(start)] = _core.registeredTraders.at(i);
+            result[i.sub(start)] = market.registeredTraders.at(i);
         }
     }
 
-    function clearMarginAccount(address trader)
+    function clearMarginAccount(bytes32 marketID, address trader)
         public
-        onlyWhen(MarketState.EMERGENCY)
+        onlyWhen(marketID, MarketState.EMERGENCY)
         nonReentrant
     {
+        Market storage market = _core.markets[marketID];
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         _core.clearMarginAccount(trader);
         if (_core.keeperGasReward > 0) {

@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "./interface/IFactory.sol";
 
@@ -24,11 +25,11 @@ contract Getter is Storage {
     using OracleModule for Core;
     using ParameterModule for Core;
     using SettlementModule for Core;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     function marketDescription(bytes32 marketID)
         public
         view
-        onlyValidMarket(marketID)
         returns (
             string memory underlyingAsset,
             address collateral,
@@ -40,14 +41,13 @@ contract Getter is Storage {
             int256[5] memory riskParameter
         )
     {
-        require(_core.marketIndex[marketID] != 0, "market not exist");
-
+        require(_core.marketIDs.contains(marketID), "market not exist");
         factory = _core.factory;
         collateral = _core.collateral;
         operator = _core.operator;
         vault = _core.vault;
 
-        Market storage market = _core.markets[_core.marketIndex[marketID]];
+        Market storage market = _core.markets[marketID];
         underlyingAsset = IOracle(market.oracle).underlyingAsset();
         oracle = market.oracle;
 
@@ -75,7 +75,6 @@ contract Getter is Storage {
     function marketStatus(bytes32 marketID)
         public
         syncState
-        onlyValidMarket(marketID)
         returns (
             bool isEmergency,
             bool isCleared,
@@ -88,10 +87,12 @@ contract Getter is Storage {
             uint256 fundingTime
         )
     {
+        require(_core.marketIDs.contains(marketID), "market not exist");
+
         insuranceFund = _core.insuranceFund;
         donatedInsuranceFund = _core.donatedInsuranceFund;
 
-        Market storage market = _core.markets[_core.marketIndex[marketID]];
+        Market storage market = _core.markets[marketID];
         isEmergency = market.state == MarketState.EMERGENCY;
         isCleared = market.state == MarketState.CLEARED;
         markPrice = market.markPrice();
@@ -104,18 +105,16 @@ contract Getter is Storage {
     function marginAccount(bytes32 marketID, address trader)
         public
         view
-        onlyValidMarket(marketID)
         returns (
             int256 cashBalance,
             int256 positionAmount,
             int256 entryFunding
         )
     {
-        cashBalance = _core.markets[_core.marketIndex[marketID]].marginAccounts[trader].cashBalance;
-        positionAmount = _core.markets[_core.marketIndex[marketID]].marginAccounts[trader]
-            .positionAmount;
-        entryFunding = _core.markets[_core.marketIndex[marketID]].marginAccounts[trader]
-            .entryFunding;
+        require(_core.marketIDs.contains(marketID), "market not exist");
+        cashBalance = _core.markets[marketID].marginAccounts[trader].cashBalance;
+        positionAmount = _core.markets[marketID].marginAccounts[trader].positionAmount;
+        entryFunding = _core.markets[marketID].marginAccounts[trader].entryFunding;
     }
 
     function claimableFee(address claimer) public view returns (int256) {

@@ -22,7 +22,7 @@ library OrderModule {
     event CancelOrder(Order order, bytes32 orderHash);
 
     function validateOrder(
-        Market storage market,
+        Core storage core,
         Order memory order,
         int256 amount
     ) public view {
@@ -38,35 +38,36 @@ library OrderModule {
         require(order.version() == SUPPORTED_ORDER_VERSION, "order version is not supported");
 
         bytes32 orderHash = order.orderHash();
-        require(!market.orderCanceled[orderHash], "order is canceled");
+        require(!core.orderCanceled[orderHash], "order is canceled");
         require(
-            market.orderFilled[orderHash].add(amount).abs() <= order.amount.abs(),
+            core.orderFilled[orderHash].add(amount).abs() <= order.amount.abs(),
             "no enough amount to fill"
         );
 
         if (order.isCloseOnly() || order.orderType() == OrderType.STOP) {
+            Market storage market = core.markets[order.marketID];
             int256 maxAmount = market.marginAccounts[order.trader].positionAmount;
             require(!Utils.hasSameSign(maxAmount, amount), "not closing order");
             require(amount.abs() <= maxAmount.abs(), "no enough amount to close");
         }
     }
 
-    function cancelOrder(Market storage market, Order memory order) public {
+    function cancelOrder(Core storage core, Order memory order) public {
         bytes32 orderHash = order.orderHash();
-        require(!market.orderCanceled[orderHash], "order is canceled");
-        market.orderCanceled[orderHash] = true;
+        require(!core.orderCanceled[orderHash], "order is canceled");
+        core.orderCanceled[orderHash] = true;
         emit CancelOrder(order, orderHash);
     }
 
     function fillOrder(
-        Market storage market,
+        Core storage core,
         Order memory order,
         int256 amount
     ) public {
         bytes32 orderHash = order.orderHash();
-        market.orderFilled[orderHash] = market.orderFilled[orderHash].add(amount);
+        core.orderFilled[orderHash] = core.orderFilled[orderHash].add(amount);
         require(
-            market.orderFilled[orderHash].abs() <= order.amount.abs(),
+            core.orderFilled[orderHash].abs() <= order.amount.abs(),
             "no enough amount to fill"
         );
         emit FillOrder(order, orderHash, amount, order.amount);
