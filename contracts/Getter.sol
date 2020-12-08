@@ -27,6 +27,10 @@ contract Getter is Storage {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
+    function liquidityDescription() public view returns (int256) {
+        return (_core.pooledCashBalance);
+    }
+
     function marketDescription(bytes32 marketID)
         public
         view
