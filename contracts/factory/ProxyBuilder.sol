@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "../thirdparty/upgrades/UpgradeabilityProxy.sol";
-import "../thirdparty/upgrades/AdminUpgradeabilityProxy.sol";
+import "@openzeppelin/contracts/proxy/UpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 
 /// @title Create a upgradeable proxy as storage of new perpetual.
 contract ProxyBuilder {
     function _createStaticProxy(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
-        UpgradeabilityProxy newInstance = new UpgradeabilityProxy(implementation, "");
+        UpgradeableProxy newInstance = new UpgradeableProxy(implementation, "");
         return address(newInstance);
     }
 
@@ -20,7 +20,7 @@ contract ProxyBuilder {
         require(implementation != address(0), "invalid implementation");
         require(Address.isContract(implementation), "implementation must be contract");
         bytes memory deploymentData = abi.encodePacked(
-            type(AdminUpgradeabilityProxy).creationCode,
+            type(TransparentUpgradeableProxy).creationCode,
             abi.encode(implementation, admin, "")
         );
         bytes32 salt = keccak256(abi.encode(implementation, admin, msg.sender, nonce));

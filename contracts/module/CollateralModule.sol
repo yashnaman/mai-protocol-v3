@@ -28,11 +28,6 @@ library CollateralModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    // /**
-    //  * @dev     Initialize collateral and decimals.
-    //  * @param   collateral   Address of collateral, 0x0 if using ether.
-    //  */
-
     /**
      * @dev     Get collateral balance in account.
      * @param   account     Address of account.
@@ -50,14 +45,16 @@ library CollateralModule {
     function transferFromUser(
         Core storage core,
         address account,
-        int256 amount,
-        uint256 value
-    ) public {
-        uint256 rawAmount = _toRawAmount(core, amount.toUint256());
-        if (core.isWrapped && value > 0) {
+        int256 amount
+    ) public returns (int256 totalAmount) {
+        int256 internalValue = 0;
+        if (core.isWrapped && msg.value > 0) {
+            internalValue = _toInternalAmount(core, msg.value).toInt256();
             IWETH(IFactory(core.factory).weth()).deposit();
         }
+        uint256 rawAmount = _toRawAmount(core, amount.toUint256());
         IERC20Upgradeable(core.collateral).safeTransferFrom(account, address(this), rawAmount);
+        totalAmount = amount.add(internalValue);
     }
 
     /**
@@ -77,6 +74,15 @@ library CollateralModule {
         } else {
             IERC20Upgradeable(core.collateral).safeTransfer(account, rawAmount);
         }
+    }
+
+    /**
+     * @dev     Convert the represention of amount from internal to raw.
+     * @param   amount  Amount with internal decimals.
+     * @return  Amount  with decimals of token.
+     */
+    function _toInternalAmount(Core storage core, uint256 amount) private view returns (uint256) {
+        return amount.mul(core.scaler);
     }
 
     /**

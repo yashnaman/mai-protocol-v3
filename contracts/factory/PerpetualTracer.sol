@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/SafeCastExt.sol";
 
 contract PerpetualTracer {
-    using SafeMathUpgradeable for uint256;
+    using SafeMath for uint256;
     using SafeCastExt for address;
     using SafeCastExt for bytes32;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // address of proxy => struct {
     //     address of proxy
     //     address of implementation
     // }
-    EnumerableSetUpgradeable.AddressSet internal _proxyInstances;
-    mapping(address => EnumerableSetUpgradeable.AddressSet) internal _traderActiveProxies;
+    EnumerableSet.AddressSet internal _proxyInstances;
+    mapping(address => EnumerableSet.AddressSet) internal _traderActiveProxies;
 
     modifier instanceOnly() {
         require(_isPerpetualInstance(msg.sender), "");

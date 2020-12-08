@@ -53,10 +53,6 @@ struct Receipt {
     int256 referrerFee;
     int256 takerOpeningAmount;
     int256 makerOpeningAmount;
-    int256 takerClosingAmount;
-    int256 makerClosingAmount;
-    int256 takerFundingLoss;
-    int256 makerFundingLoss;
 }
 
 struct Core {
@@ -77,6 +73,7 @@ struct Core {
     int256 addedCollateral;
     // insurance fund
     int256 insuranceFund;
+    int256 insuranceFundCap;
     int256 donatedInsuranceFund;
     // fee
     int256 totalClaimableFee;
@@ -113,8 +110,7 @@ struct Market {
     int256 referrerRebateRate;
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
-    int256 insuranceFundCap; // 到达cap之后，分给lp
-    int256 insuranceFundRate; // 每一笔罚金都要抽这么多到fund
+    int256 insuranceFundRate;
     // ris parameters
     Option spread;
     Option openSlippage;

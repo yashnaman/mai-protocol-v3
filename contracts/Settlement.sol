@@ -24,7 +24,7 @@ import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
 import "./module/SettlementModule.sol";
 import "./module/OrderModule.sol";
-import "./module/FeeModule.sol";
+import "./module/CoreModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
@@ -45,7 +45,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuardUpgradeable {
 
     using AMMModule for Core;
     using TradeModule for Core;
-    using FeeModule for Core;
+    using CoreModule for Core;
     using MarginModule for Market;
     using CollateralModule for Core;
     using SettlementModule for Market;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../interface/IOracle.sol";
 
@@ -11,7 +11,7 @@ import "./VersionController.sol";
 import "./GlobalVariables.sol";
 
 contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController, GlobalVariables {
-    using AddressUpgradeable for address;
+    using Address for address;
 
     address internal _governorTemplate;
     address internal _shareTokenTemplate;

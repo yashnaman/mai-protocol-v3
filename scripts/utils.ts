@@ -40,10 +40,10 @@ export async function createPerpetualFactory() {
     const AMMModule = await createContract("AMMModule", [], { AMMCommon });
     const FundingModule = await createContract("FundingModule", [], { AMMCommon });
     const OrderModule = await createContract("OrderModule");
-    const FeeModule = await createContract("FeeModule", [], { CollateralModule });
+    const CoreModule = await createContract("CoreModule", [], { CollateralModule });
     const ParameterModule = await createContract("ParameterModule");
     const SettlementModule = await createContract("SettlementModule");
-    const TradeModule = await createContract("TradeModule", [], { AMMModule, FeeModule });
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
     return await createFactory("Perpetual", {
         AMMModule,
         CollateralModule,
@@ -52,7 +52,7 @@ export async function createPerpetualFactory() {
         ParameterModule,
         SettlementModule,
         TradeModule,
-        FeeModule,
+        CoreModule,
     });
 }
 

@@ -25,6 +25,7 @@ library MarginModule {
     using OracleModule for Market;
     using CollateralModule for Market;
     using SettlementModule for Market;
+    using CollateralModule for Core;
 
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
@@ -111,14 +112,14 @@ library MarginModule {
     ) public {
         Market storage market = core.markets[marketID];
         bool isInitial = isEmptyAccount(market, trader);
-        updateCashBalance(market, trader, amount);
-        market.increaseDepositedCollateral(amount);
-        market.depositedCollateral = market.depositedCollateral.add(amount);
+        int256 totalAmount = core.transferFromUser(trader, amount);
+        market.increaseDepositedCollateral(totalAmount);
+        updateCashBalance(market, trader, totalAmount);
         if (isInitial) {
             market.registerTrader(trader);
             IFactory(core.factory).activeProxy(trader);
         }
-        emit Deposit(trader, amount);
+        emit Deposit(trader, totalAmount);
     }
 
     function withdraw(
@@ -139,16 +140,17 @@ library MarginModule {
             market.deregisterTrader(trader);
             IFactory(core.factory).deactiveProxy(trader);
         }
+        core.transferToUser(payable(trader), amount);
         emit Withdraw(trader, amount);
     }
 
     function updateCashBalance(
         Market storage market,
         address trader,
-        int256 amount
+        int256 deltaCashBalance
     ) internal {
         market.marginAccounts[trader].cashBalance = market.marginAccounts[trader].cashBalance.add(
-            amount
+            deltaCashBalance
         );
     }
 
@@ -156,59 +158,12 @@ library MarginModule {
         Market storage market,
         address trader,
         int256 deltaPositionAmount,
-        int256 deltaMargin
-    )
-        internal
-        returns (
-            int256 fundingLoss,
-            int256 closingAmount,
-            int256 openingAmount
-        )
-    {
-        MarginAccount memory account = market.marginAccounts[trader];
-        (closingAmount, openingAmount) = Utils.splitAmount(
-            account.positionAmount,
-            deltaPositionAmount
+        int256 deltaCashBalance
+    ) internal {
+        MarginAccount storage account = market.marginAccounts[trader];
+        account.positionAmount = account.positionAmount.add(deltaPositionAmount);
+        account.cashBalance = account.cashBalance.add(deltaCashBalance).add(
+            market.unitAccumulativeFunding.wmul(deltaPositionAmount)
         );
-        if (closingAmount != 0) {
-            closePosition(account, closingAmount, market.unitAccumulativeFunding);
-            fundingLoss = market.marginAccounts[trader].cashBalance.sub(account.cashBalance);
-        }
-        if (openingAmount != 0) {
-            openPosition(account, openingAmount, market.unitAccumulativeFunding);
-        }
-        account.cashBalance = account.cashBalance.add(deltaMargin);
-        market.marginAccounts[trader] = account;
-    }
-
-    function closePosition(
-        MarginAccount memory account,
-        int256 amount,
-        int256 unitAccumulativeFunding
-    ) internal pure {
-        int256 closingEntryFunding = account.entryFunding.wfrac(amount, account.positionAmount);
-        int256 funding = unitAccumulativeFunding.wmul(amount).sub(closingEntryFunding);
-        int256 previousAmount = account.positionAmount;
-        account.positionAmount = previousAmount.add(amount);
-        require(
-            account.positionAmount.abs() <= previousAmount.abs(),
-            "'close' must only close position"
-        );
-        account.cashBalance = account.cashBalance.add(funding);
-        account.entryFunding = account.entryFunding.add(closingEntryFunding);
-    }
-
-    function openPosition(
-        MarginAccount memory account,
-        int256 amount,
-        int256 unitAccumulativeFunding
-    ) internal pure {
-        int256 previousAmount = account.positionAmount;
-        account.positionAmount = previousAmount.add(amount);
-        require(
-            account.positionAmount.abs() >= previousAmount.abs(),
-            "'open' must only open position"
-        );
-        account.entryFunding = account.entryFunding.add(unitAccumulativeFunding.wmul(amount));
     }
 }

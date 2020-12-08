@@ -64,7 +64,7 @@ contract Getter is Storage {
             market.referrerRebateRate,
             market.liquidationPenaltyRate,
             market.keeperGasReward,
-            market.insuranceFundCap,
+            _core.insuranceFundCap,
             market.insuranceFundRate
         ];
         riskParameter = [
