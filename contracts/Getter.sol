@@ -28,7 +28,7 @@ contract Getter is Storage {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     function liquidityDescription() public view returns (int256) {
-        return (_core.pooledCashBalance);
+        return (_core.poolCashBalance);
     }
 
     function marketDescription(bytes32 marketID)
