@@ -23,6 +23,7 @@ struct MarginAccount {
 enum MarketState { INVALID, NORMAL, EMERGENCY, CLEARED }
 enum ActionOnFailure { IGNORE, REVERT }
 enum OrderType { LIMIT, MARKET, STOP }
+enum Side { LONG, SHORT }
 
 struct Signature {
     bytes32 config;

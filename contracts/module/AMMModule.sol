@@ -31,6 +31,7 @@ library AMMModule {
         int256 indexPrice;
         int256 IntermediateValue1;
         int256 IntermediateValue2;
+        int256 IntermediateValue3;
         int256 availableCashBalance;
         int256 positionAmount;
     }
@@ -111,11 +112,19 @@ library AMMModule {
         int256 shareRatio = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply);
         int256 poolMargin = regress(context, beta);
         poolMargin = poolMargin.wmul(shareRatio);
-        int256 maxPositionAmount = absMaxPosition(context, poolMargin, beta);
-        require(
-            context.positionAmount.abs() < maxPositionAmount,
-            "amm is unsafe after removing liquidity"
-        );
+        if (context.positionAmount > 0) {
+            int256 maxLongPosition = maxPosition(context, poolMargin, market.maxLeverage.value, beta, Side.LONG);
+            require(
+                context.positionAmount < maxLongPosition,
+                "amm is unsafe after removing liquidity"
+            );
+        } else {
+            int256 minShortPosition = maxPosition(context, poolMargin, market.maxLeverage.value, beta, Side.SHORT);
+            require(
+                context.positionAmount > minShortPosition,
+                "amm is unsafe after removing liquidity"
+            );
+        }
         marginToReturn = marginToRemove(market, context, poolMargin);
     }
 
@@ -177,7 +186,10 @@ library AMMModule {
                 int256 positionValue = indexPrice.wmul(positionAmount);
                 context.IntermediateValue1 = context.IntermediateValue1.add(positionValue);
                 context.IntermediateValue2 = context.IntermediateValue2.add(
-                    positionValue.wmul(positionAmount).wmul(market.openSlippage.value)
+                    positionValue.wmul(positionAmount).mul(market.openSlippage.value)
+                );
+                context.IntermediateValue3 = context.IntermediateValue3.add(
+                    positionValue.abs().wdiv(market.maxLeverage.value)
                 );
             }
         }
@@ -229,17 +241,28 @@ library AMMModule {
         }
         int256 newPosition = context.positionAmount.add(tradingAmount);
         require(newPosition != 0, "new position is zero when open");
-        int256 pooledMargin = regress(context, openBeta);
-        int256 maxPosition = absMaxPosition(context, pooledMargin, openBeta);
-        if (newPosition.abs() > maxPosition) {
-            require(!partialFill, "trade amount exceeds max amount");
-            deltaPosition = maxPosition.sub(context.positionAmount);
-            newPosition = maxPosition;
+        int256 poolMargin = regress(context, openBeta);
+        if (newPosition > 0) {
+            int256 maxLongPosition = maxPosition(context, poolMargin, market.maxLeverage.value, openBeta, Side.LONG);
+            if (newPosition > maxLongPosition) {
+                require(!partialFill, "trade amount exceeds max amount");
+                deltaPosition = maxLongPosition.sub(context.positionAmount);
+                newPosition = maxLongPosition;
+            } else {
+                deltaPosition = tradingAmount;
+            }
         } else {
-            deltaPosition = tradingAmount;
+            int256 minShortPosition = maxPosition(context, poolMargin, market.maxLeverage.value, openBeta, Side.SHORT);
+            if (newPosition < minShortPosition) {
+                require(!partialFill, "trade amount exceeds max amount");
+                deltaPosition = minShortPosition.sub(context.positionAmount);
+                newPosition = minShortPosition;
+            } else {
+                deltaPosition = tradingAmount;
+            }
         }
         deltaMargin = _deltaMargin(
-            pooledMargin,
+            poolMargin,
             context.positionAmount,
             newPosition,
             context.indexPrice,
@@ -260,19 +283,41 @@ library AMMModule {
         );
     }
 
-    function absMaxPosition(
+    function maxPosition(
         Context memory context,
         int256 poolMargin,
-        int256 beta
-    ) internal pure returns (int256 maxLongPosition) {
-        int256 tmp = context.IntermediateValue1;
+        int256 maxLeverage,
+        int256 beta,
+        Side side
+    ) internal pure returns (int256 maxPosition) {
         int256 beforeSqrt = poolMargin
             .mul(poolMargin)
             .mul(2)
-            .sub(tmp)
+            .sub(context.IntermediateValue2)
             .wdiv(context.indexPrice)
             .wdiv(beta);
-        return beforeSqrt < 0 ? type(int256).max : beforeSqrt.sqrt();
+        int256 maxPosition1 = beforeSqrt < 0 ? type(int256).max : beforeSqrt.sqrt();
+        int256 maxPosition2;
+        beforeSqrt = poolMargin.sub(context.IntermediateValue3).add(
+            context.IntermediateValue2.wdiv(poolMargin).div(2)
+        );
+        beforeSqrt = beforeSqrt.wmul(maxLeverage).wmul(maxLeverage).wmul(beta);
+        beforeSqrt = poolMargin.sub(
+            beforeSqrt.mul(2).wdiv(context.indexPrice)
+        );
+        if (beforeSqrt < 0) {
+            maxPosition2 = type(int256).max;
+        } else {
+            maxPosition2 = beforeSqrt.mul(poolMargin).sqrt();
+            maxPosition2 = poolMargin.sub(maxPosition2).wdiv(maxLeverage).wdiv(beta);
+        }
+        maxPosition = maxPosition1 > maxPosition2 ? maxPosition2 : maxPosition1;
+        if (side == Side.LONG) {
+            int256 maxPosition3 = poolMargin.wdiv(beta);
+            maxPosition = maxPosition > maxPosition3 ? maxPosition3 : maxPosition;
+        } else {
+            maxPosition = maxPosition.neg();
+        }
     }
 
     function pooledMarginBalance(Core storage core) private view returns (int256 marginBalance) {
