@@ -29,14 +29,14 @@ library OracleModule {
         return
             market.state == MarketState.NORMAL
                 ? market.markPriceData.price
-                : market.settlePriceData.price;
+                : market.settlementPriceData.price;
     }
 
     function indexPrice(Market storage market) internal view returns (int256) {
         return
             market.state == MarketState.NORMAL
                 ? market.indexPriceData.price
-                : market.settlePriceData.price;
+                : market.settlementPriceData.price;
     }
 
     // prettier-ignore
@@ -52,7 +52,7 @@ library OracleModule {
     }
 
     function freezeOraclePrice(Market storage market, uint256 currentTime) public {
-        market.settlePriceData = market.indexPriceData;
+        market.settlementPriceData = market.indexPriceData;
         market.priceUpdateTime = currentTime;
     }
 }

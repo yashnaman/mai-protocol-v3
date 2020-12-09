@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-contract GlobalVariables {
+contract Variables {
     address internal _weth;
     address internal _vault;
     int256 internal _vaultFeeRate;
@@ -24,5 +24,9 @@ contract GlobalVariables {
 
     function weth() public view returns (address) {
         return _weth;
+    }
+
+    function accessController() public view returns (address) {
+        return address(this);
     }
 }

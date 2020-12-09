@@ -11,4 +11,6 @@ interface IFactory {
     function deactiveProxy(address trader) external;
 
     function weth() external view returns (address);
+
+    function accessController() external view returns (address);
 }

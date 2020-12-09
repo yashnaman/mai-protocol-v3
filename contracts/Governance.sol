@@ -28,34 +28,34 @@ contract Governance is Storage, Events {
         _;
     }
 
-    function updateCoreParameter(
+    function updateMarketParameter(
         bytes32 marketID,
         bytes32 key,
         int256 newValue
     ) external onlyGovernor onlyExistedMarket(marketID) {
-        _core.markets[marketID].updateCoreParameter(key, newValue);
+        _core.markets[marketID].updateMarketParameter(key, newValue);
         _core.markets[marketID].validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
     }
 
-    function updateRiskParameter(
+    function updateMarketRiskParameter(
         bytes32 marketID,
         bytes32 key,
         int256 newValue,
         int256 minValue,
         int256 maxValue
     ) external onlyGovernor onlyExistedMarket(marketID) {
-        _core.markets[marketID].updateRiskParameter(key, newValue, minValue, maxValue);
+        _core.markets[marketID].updateMarketRiskParameter(key, newValue, minValue, maxValue);
         _core.markets[marketID].validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
     }
 
-    function adjustRiskParameter(
+    function adjustMarketRiskParameter(
         bytes32 marketID,
         bytes32 key,
         int256 newValue
     ) external onlyOperator onlyExistedMarket(marketID) {
-        _core.markets[marketID].adjustRiskParameter(key, newValue);
+        _core.markets[marketID].adjustMarketRiskParameter(key, newValue);
         _core.markets[marketID].validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }

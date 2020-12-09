@@ -4,7 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
+import "../libraries/Utils.sol";
+
 import "../module/ParameterModule.sol";
+import "../module/OracleModule.sol";
 
 import "../Type.sol";
 
@@ -12,6 +15,11 @@ library MarketModule {
     using SignedSafeMathUpgradeable for int256;
     using ParameterModule for Market;
     using ParameterModule for Option;
+    using OracleModule for Market;
+
+    event EnterNormalState();
+    event EnterEmergencyState(int256 settlementPrice, uint256 settlementTime);
+    event EnterClearedState();
 
     function initialize(
         Market storage market,
@@ -56,12 +64,12 @@ library MarketModule {
         );
         market.validateRiskParameters();
 
-        market.state = MarketState.NORMAL;
+        market.state = MarketState.INITIALIZING;
         market.id = marketID(oracle);
     }
 
     function marketID(address oracle) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(address(this), oracle));
+        return keccak256(abi.encodePacked(Utils.chainID(), address(this), oracle));
     }
 
     function increaseDepositedCollateral(Market storage market, int256 amount) public {
@@ -73,5 +81,26 @@ library MarketModule {
         require(amount >= 0, "amount is negative");
         market.depositedCollateral = market.depositedCollateral.sub(amount);
         require(market.depositedCollateral >= 0, "collateral is negative");
+    }
+
+    function enterNormalState(Market storage market) internal {
+        require(market.state == MarketState.INITIALIZING, "market should be in initializing state");
+        market.state = MarketState.NORMAL;
+        emit EnterNormalState();
+    }
+
+    function enterEmergencyState(Market storage market) internal {
+        require(market.state == MarketState.NORMAL, "market should be in normal state");
+        uint256 currentTime = block.timestamp;
+        market.updatePrice(currentTime);
+        market.state = MarketState.EMERGENCY;
+        market.freezeOraclePrice(currentTime);
+        emit EnterEmergencyState(market.settlementPriceData.price, market.settlementPriceData.time);
+    }
+
+    function enterClearedState(Market storage market) internal {
+        require(market.state == MarketState.EMERGENCY, "market should be in normal state");
+        market.state = MarketState.CLEARED;
+        emit EnterClearedState();
     }
 }

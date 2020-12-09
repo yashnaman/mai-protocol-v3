@@ -33,8 +33,8 @@ contract TestTrade is Storage, TestMargin {
         _core.vaultFeeRate = vaultFeeRate;
     }
 
-    function updateRiskParameter(bytes32 key, int256 newValue) external {
-        _core.updateRiskParameter(key, newValue, newValue, newValue);
+    function updateMarketRiskParameter(bytes32 key, int256 newValue) external {
+        _core.updateMarketRiskParameter(key, newValue, newValue, newValue);
     }
 
     function trade(

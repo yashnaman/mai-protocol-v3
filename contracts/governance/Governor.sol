@@ -150,7 +150,7 @@ contract Governor {
         for (uint256 i = 0; i < numEntries; i++) {
             calldatas[i] = abi.encodePacked(keys[i], values[i]);
         }
-        _propose("updateCoreParameter(bytes32,int256)", calldatas, "CoreParameterUpdate");
+        _propose("updateMarketParameter(bytes32,int256)", calldatas, "CoreParameterUpdate");
     }
 
     function proposeRiskParameterUpdate(
@@ -170,9 +170,9 @@ contract Governor {
             calldatas[i] = abi.encodePacked(keys[i], values[i], minValues[i], maxValues[i]);
         }
         _propose(
-            "updateRiskParameter(bytes32,int256,int256,int256)",
+            "updateMarketRiskParameter(bytes32,int256,int256,int256)",
             calldatas,
-            "updateRiskParameter"
+            "updateMarketRiskParameter"
         );
     }
 

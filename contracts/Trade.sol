@@ -9,11 +9,13 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
+import "./libraries/Constant.sol";
 import "./libraries/Error.sol";
 import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
+import "./interface/IAccessController.sol";
 import "./interface/IFactory.sol";
 import "./interface/IShareToken.sol";
 
@@ -29,11 +31,10 @@ import "./module/CoreModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
-import "./AccessControl.sol";
 
 // import "hardhat/console.sol";
 
-contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
+contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using SafeCastUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -64,7 +65,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
     )
         external
         payable
-        auth(trader, PRIVILEGE_DEPOSTI)
+        onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
         onlyWhen(marketID, MarketState.NORMAL)
         onlyExistedMarket(marketID)
         nonReentrant
@@ -81,7 +82,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
     )
         external
         syncState
-        auth(trader, PRIVILEGE_WITHDRAW)
+        onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         onlyWhen(marketID, MarketState.NORMAL)
         onlyExistedMarket(marketID)
         nonReentrant
@@ -131,7 +132,12 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
         int256 priceLimit,
         uint256 deadline,
         address referrer
-    ) external syncState auth(trader, PRIVILEGE_TRADE) onlyWhen(marketID, MarketState.NORMAL) {
+    )
+        external
+        syncState
+        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
+        onlyWhen(marketID, MarketState.NORMAL)
+    {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
@@ -147,7 +153,15 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
     ) external {
         // signer
         address signer = order.signer(signature);
-        require(signer == order.trader || isGranted(order.trader, signer, PRIVILEGE_TRADE), "");
+        require(
+            signer == order.trader ||
+                IAccessController(_core.accessController).isGranted(
+                    order.trader,
+                    signer,
+                    Constant.PRIVILEGE_TRADE
+                ),
+            ""
+        );
         // validate
         _core.validateOrder(order, amount);
         // do trade
@@ -161,11 +175,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
     ) external syncState onlyWhen(marketID, MarketState.NORMAL) nonReentrant {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-
         _core.liquidateByAMM(marketID, trader);
-        if (_core.donatedInsuranceFund < 0) {
-            _enterEmergencyState(marketID);
-        }
     }
 
     function liquidateByTrader(
@@ -179,11 +189,7 @@ contract Trade is Storage, Events, AccessControl, ReentrancyGuardUpgradeable {
         require(amount != 0, Error.INVALID_POSITION_AMOUNT);
         require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
         require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
-
         _core.liquidateByTrader(marketID, msg.sender, trader, amount, priceLimit);
-        if (_core.donatedInsuranceFund < 0) {
-            _enterEmergencyState(marketID);
-        }
     }
 
     bytes[50] private __gap;

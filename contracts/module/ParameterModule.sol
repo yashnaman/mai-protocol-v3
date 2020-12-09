@@ -13,14 +13,34 @@ library ParameterModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function updateCoreParameter(
+    function updateLiquidityPoolParameter(
+        Core storage core,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        if (key == "insuranceFundCap") {
+            core.insuranceFundCap = newValue;
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function updateMarketParameter(
         Market storage market,
         bytes32 key,
         int256 newValue
     ) public {
         if (key == "initialMarginRate") {
+            require(
+                newValue < market.initialMarginRate,
+                "increasing initial margin rate is not allowed"
+            );
             market.initialMarginRate = newValue;
         } else if (key == "maintenanceMarginRate") {
+            require(
+                newValue < market.maintenanceMarginRate,
+                "increasing maintenance margin rate is not allowed"
+            );
             market.maintenanceMarginRate = newValue;
         } else if (key == "operatorFeeRate") {
             market.operatorFeeRate = newValue;
@@ -32,12 +52,14 @@ library ParameterModule {
             market.keeperGasReward = newValue;
         } else if (key == "referrerRebateRate") {
             market.referrerRebateRate = newValue;
+        } else if (key == "insuranceFundRate") {
+            market.insuranceFundRate = newValue;
         } else {
             revert("key not found");
         }
     }
 
-    function adjustRiskParameter(
+    function adjustMarketRiskParameter(
         Market storage market,
         bytes32 key,
         int256 newValue
@@ -57,7 +79,7 @@ library ParameterModule {
         }
     }
 
-    function updateRiskParameter(
+    function updateMarketRiskParameter(
         Market storage market,
         bytes32 key,
         int256 newValue,

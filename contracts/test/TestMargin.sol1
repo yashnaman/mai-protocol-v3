@@ -34,8 +34,8 @@ contract TestMargin is Storage {
         _core.unitAccumulativeFunding = newUnitAccumulativeFunding;
     }
 
-    function updateCoreParameter(bytes32 key, int256 newValue) external {
-        _core.updateCoreParameter(key, newValue);
+    function updateMarketParameter(bytes32 key, int256 newValue) external {
+        _core.updateMarketParameter(key, newValue);
     }
 
     function initialMargin(address trader) external view returns (int256) {

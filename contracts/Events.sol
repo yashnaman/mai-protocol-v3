@@ -7,9 +7,6 @@ contract Events {
     event UpdateCoreSetting(bytes32 key, int256 value);
     event UpdateRiskSetting(bytes32 key, int256 value, int256 minValue, int256 maxValue);
     event AdjustRiskSetting(bytes32 key, int256 value);
-    // privilege
-    event GrantPrivilege(address indexed owner, address indexed trader, uint256 privilege);
-    event RevokePrivilege(address indexed owner, address indexed trader, uint256 privilege);
 
     // settle
     event Clear(address trader);

@@ -12,6 +12,7 @@ import "../Type.sol";
 import "./AMMModule.sol";
 import "./CoreModule.sol";
 import "./MarginModule.sol";
+import "./MarketModule.sol";
 import "./OracleModule.sol";
 import "./TradeModule.sol";
 import "./CollateralModule.sol";
@@ -23,7 +24,7 @@ library LiquidationModule {
     using CoreModule for Core;
     using MarginModule for Market;
     using OracleModule for Market;
-    using MarginModule for MarginAccount;
+    using MarketModule for Market;
     using CollateralModule for Core;
 
     address internal constant INVALID_ADDRESS = address(0);
@@ -141,6 +142,9 @@ library LiquidationModule {
         market.updateCashBalance(address(this), penaltyToTaker);
         market.updateCashBalance(trader, penaltyFromTrader.neg());
         updateInsuranceFund(core, penaltyToFund);
+        if (core.donatedInsuranceFund < 0) {
+            market.enterEmergencyState();
+        }
     }
 
     function updateInsuranceFund(Core storage core, int256 penalty) internal {

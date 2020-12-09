@@ -55,7 +55,7 @@ describe('TradeModule1', () => {
                 referrerRebateRate: toWei("0"),
             }
             for (var key in coreParameters) {
-                await testTrade.updateCoreParameter(toBytes32(key), coreParameters[key]);
+                await testTrade.updateMarketParameter(toBytes32(key), coreParameters[key]);
             }
             await testTrade.setVault(user4.address, toWei("0.0002"))
             const receipt = {
@@ -78,7 +78,7 @@ describe('TradeModule1', () => {
             expect(result.operatorFee).to.equal(toWei("1"));
             expect(result.referrerFee).to.equal(toWei("0"));
 
-            await testTrade.updateCoreParameter(toBytes32("referrerRebateRate"), toWei("0.5"));
+            await testTrade.updateMarketParameter(toBytes32("referrerRebateRate"), toWei("0.5"));
             var result = await testTrade.updateTradingFees(receipt, none);
             expect(result.lpFee).to.equal(toWei("7"));
             expect(result.vaultFee).to.equal(toWei("2"));
@@ -363,11 +363,11 @@ describe('TradeModule1', () => {
         testCases.forEach((testCase) => {
             it(testCase.name, async () => {
                 for (var key in coreParameters) {
-                    await testTrade.updateCoreParameter(toBytes32(key), coreParameters[key]);
+                    await testTrade.updateMarketParameter(toBytes32(key), coreParameters[key]);
                 }
                 await testTrade.setVault(user4.address, toWei("0.0002"))
                 for (var key in riskParameters) {
-                    await testTrade.updateRiskParameter(toBytes32(key), riskParameters[key]);
+                    await testTrade.updateMarketRiskParameter(toBytes32(key), riskParameters[key]);
                 }
                 await testTrade.updateUnitAccumulativeFunding(toWei("9.9059375"))
                 await testTrade.updateMarkPrice(toWei("6965"));

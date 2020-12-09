@@ -28,9 +28,8 @@ import "./module/CoreModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
-import "./AccessControl.sol";
 
-contract Settlement is Storage, AccessControl, ReentrancyGuardUpgradeable {
+contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using SafeCastUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -48,7 +47,7 @@ contract Settlement is Storage, AccessControl, ReentrancyGuardUpgradeable {
     using CoreModule for Core;
     using MarginModule for Market;
     using CollateralModule for Core;
-    using SettlementModule for Market;
+    using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function unclearedTraderCount(bytes32 marketID) public view returns (uint256) {
@@ -72,35 +71,24 @@ contract Settlement is Storage, AccessControl, ReentrancyGuardUpgradeable {
         }
     }
 
-    function clearMarginAccount(bytes32 marketID, address trader)
+    function clear(bytes32 marketID, address trader)
         public
         onlyWhen(marketID, MarketState.EMERGENCY)
+        onlyExistedMarket(marketID)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        Market storage market = _core.markets[marketID];
-        market.clearMarginAccount(trader);
-        if (market.keeperGasReward > 0) {
-            _core.transferToUser(msg.sender, market.keeperGasReward);
-        }
-        if (unclearedTraderCount(marketID) == 0) {
-            market.updateWithdrawableMargin(0);
-            _enterClearedState(marketID);
-        }
-        emit Clear(trader);
+        _core.clear(marketID, trader);
     }
 
     function settle(bytes32 marketID, address trader)
         public
-        auth(trader, PRIVILEGE_WITHDRAW)
+        onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         onlyWhen(marketID, MarketState.CLEARED)
+        onlyExistedMarket(marketID)
         nonReentrant
     {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        Market storage market = _core.markets[marketID];
-        int256 withdrawable = market.settledMarginAccount(trader);
-        market.updateCashBalance(trader, withdrawable.neg());
-        _core.transferToUser(payable(trader), withdrawable);
-        emit Withdraw(trader, withdrawable);
+        _core.settle(marketID, trader);
     }
 }

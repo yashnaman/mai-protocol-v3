@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import "../interface/IOracle.sol";
 
-import "./ProxyBuilder.sol";
-import "./PerpetualTracer.sol";
-import "./VersionController.sol";
-import "./GlobalVariables.sol";
+import "./Creator.sol";
+import "./Tracer.sol";
+import "./Implementation.sol";
+import "./Variables.sol";
 
-contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController, GlobalVariables {
+contract LiquidityPoolFactory is Creator, Tracer, Implementation, Variables {
     using Address for address;
 
     address internal _governorTemplate;
@@ -22,7 +23,7 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController, Glo
         address wethToken,
         address globalVault,
         int256 globalVaultFeeRate
-    ) GlobalVariables(wethToken, globalVault, globalVaultFeeRate) VersionController() {
+    ) Variables(wethToken, globalVault, globalVaultFeeRate) Implementation() {
         require(governorTemplate.isContract(), "governor template must be contract");
         require(shareTokenTemplate.isContract(), "share token template must be contract");
         _governorTemplate = governorTemplate;
@@ -116,7 +117,7 @@ contract PerpetualMaker is ProxyBuilder, PerpetualTracer, VersionController, Glo
             ),
             "fail to init perpetual"
         );
-        _registerPerpetualInstance(perpetual);
+        _registerLiquidityPool(perpetual);
         emit CreatePerpetual(
             perpetual,
             governor,

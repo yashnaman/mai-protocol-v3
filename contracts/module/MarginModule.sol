@@ -13,6 +13,7 @@ import "../interface/IFactory.sol";
 import "../Type.sol";
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
+import "./CoreModule.sol";
 import "./MarketModule.sol";
 import "./SettlementModule.sol";
 
@@ -26,6 +27,7 @@ library MarginModule {
     using CollateralModule for Market;
     using SettlementModule for Market;
     using CollateralModule for Core;
+    using CoreModule for Core;
 
     event Deposit(address trader, int256 amount);
     event Withdraw(address trader, int256 amount);
@@ -129,10 +131,8 @@ library MarginModule {
         int256 amount
     ) public {
         Market storage market = core.markets[marketID];
+        core.rebalance(market);
         updateCashBalance(market, trader, amount.neg());
-        if (amount > market.depositedCollateral) {
-            // remargin
-        }
         market.decreaseDepositedCollateral(amount);
         require(isInitialMarginSafe(market, trader), "margin is unsafe after withdrawal");
         bool isDrained = isEmptyAccount(market, trader);

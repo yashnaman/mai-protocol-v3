@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/UpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 
 /// @title Create a upgradeable proxy as storage of new perpetual.
-contract ProxyBuilder {
+contract Creator {
     function _createStaticProxy(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
         UpgradeableProxy newInstance = new UpgradeableProxy(implementation, "");

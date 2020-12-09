@@ -456,7 +456,7 @@ describe('MarginModule', () => {
                     testCase.marginAccount.entryFunding);
                 for (var key in testCase.parameters || {}) {
                     // console.log("set", key, "=>", testCase.parameters[key].toString())
-                    await testMargin.updateCoreParameter(toBytes32(key), testCase.parameters[key]);
+                    await testMargin.updateMarketParameter(toBytes32(key), testCase.parameters[key]);
                 }
                 await testMargin.updateUnitAccumulativeFunding(testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
