@@ -60,6 +60,10 @@ library AMMModule {
         );
         deltaMargin = deltaMargin.add(openDeltaMargin);
         deltaPosition = closingAmount.add(openDeltaPosition);
+        if (deltaPosition < 0 && deltaMargin < 0) {
+            // negative price
+            deltaMargin = 0;
+        }
         int256 spread = market.spread.value.wmul(deltaMargin);
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
@@ -68,7 +72,7 @@ library AMMModule {
         Core storage core,
         bytes32 marketID,
         int256 cashToAdd
-    ) public view returns (int256 shareAmount) {
+    ) public view returns (int256 receivedShare) {
         require(cashToAdd > 0, "margin to add must be positive");
         Market storage market = core.markets[marketID];
         Context memory context = prepareContext(core, market);
@@ -89,19 +93,19 @@ library AMMModule {
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
-            shareAmount = newPoolMargin;
+            receivedShare = newPoolMargin;
         } else {
-            shareAmount = newPoolMargin.sub(poolMargin).wdiv(poolMargin).wmul(shareTotalSupply);
+            receivedShare = newPoolMargin.sub(poolMargin).wdiv(poolMargin).wmul(shareTotalSupply);
         }
-        require(shareAmount > 0, "share must be positive when add liquidity");
+        require(receivedShare > 0, "received share must be positive");
     }
 
     function removeLiquidity(
         Core storage core,
         bytes32 marketID,
         int256 shareToRemove
-    ) public view returns (int256 marginToReturn) {
-        require(shareToRemove > 0, "share amount must be positive");
+    ) public view returns (int256 receivedMargin) {
+        require(shareToRemove > 0, "share to remove must be positive");
         require(
             shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
@@ -109,27 +113,29 @@ library AMMModule {
         Market storage market = core.markets[marketID];
         Context memory context = prepareContext(core, market);
         int256 beta = market.openSlippage.value;
+        int256 positionAmount = context.positionAmount;
         require(isAMMMarginSafe(context, beta), "amm is unsafe before removing liquidity");
 
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         int256 shareRatio = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply);
         int256 poolMargin = regress(context, beta);
-        poolMargin = poolMargin.wmul(shareRatio);
-        if (context.positionAmount > 0) {
-            int256 maxLongPosition = maxPosition(context, poolMargin, market.maxLeverage.value, beta, Side.LONG);
-            require(
-                context.positionAmount < maxLongPosition,
-                "amm is unsafe after removing liquidity"
-            );
-        } else {
-            int256 minShortPosition = maxPosition(context, poolMargin, market.maxLeverage.value, beta, Side.SHORT);
-            require(
-                context.positionAmount > minShortPosition,
-                "amm is unsafe after removing liquidity"
-            );
+        if (poolMargin == 0) {
+            return 0;
         }
-        marginToReturn = marginToRemove(context, poolMargin, beta);
-        require(marginToReturn >= 0, "margin to remove is negative");
+        poolMargin = poolMargin.wmul(shareRatio);
+        int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
+        minPoolMargin = minPoolMargin.mul(beta).add(context.IntermediateValue2).div(2).sqrt();
+        require(poolMargin >= minPoolMargin && positionAmount <= poolMargin.wdiv(beta),
+                "amm is unsafe after removing liquidity");
+        receivedMargin = marginToRemove(context, poolMargin, beta);
+        require(receivedMargin >= 0, "received margin is negative");
+        int256 newMarginBalance = poolMarginBalance(core).sub(receivedMargin);
+        int256 positionValue = context.indexPrice
+            .wmul(positionAmount)
+            .abs()
+            .wdiv(market.maxLeverage.value)
+            .add(context.IntermediateValue3);
+        require(newMarginBalance >= positionValue, "amm exceeds max leverage after removing liquidity");
     }
 
     function regress(Context memory context, int256 beta) public pure returns (int256 poolMargin) {
@@ -139,19 +145,18 @@ library AMMModule {
             context.IntermediateValue2
         );
         int256 beforeSqrt = marginBalance.mul(marginBalance).sub(tmp.mul(2));
-        require(beforeSqrt >= 0, "amm is unsafe when regress");
+        require(beforeSqrt >= 0, "amm is unsafe when regressing");
         poolMargin = beforeSqrt.sqrt().add(marginBalance).div(2);
     }
 
     function isAMMMarginSafe(Context memory context, int256 beta) public pure returns (bool) {
         int256 partialMarginBalance = context.availableCashBalance.add(context.IntermediateValue1);
-        int256 tmp = context.IntermediateValue2;
         int256 betaPos = beta.wmul(context.positionAmount);
         if (context.positionAmount == 0) {
-            return partialMarginBalance.mul(partialMarginBalance).sub(tmp.mul(2)) >= 0;
+            return partialMarginBalance.mul(partialMarginBalance).sub(context.IntermediateValue2.mul(2)) >= 0;
         }
         int256 beforeSqrt = partialMarginBalance.mul(2).neg().add(betaPos).mul(betaPos).add(
-            tmp.mul(2)
+            context.IntermediateValue2.mul(2)
         );
         if (context.positionAmount > 0 && beforeSqrt < 0) {
             return true;
@@ -215,6 +220,7 @@ library AMMModule {
         int256 beta = market.closeSlippage.value;
         if (isAMMMarginSafe(context, beta)) {
             int256 poolMargin = regress(context, beta);
+            require(poolMargin > 0, "pool margin must be positive");
             int256 newPositionAmount = context.positionAmount.add(tradingAmount);
             if (newPositionAmount == 0) {
                 return poolMargin.sub(context.availableCashBalance);
@@ -249,6 +255,7 @@ library AMMModule {
         int256 newPosition = context.positionAmount.add(tradingAmount);
         require(newPosition != 0, "new position is zero when open");
         int256 poolMargin = regress(context, beta);
+        require(poolMargin > 0, "pool margin must be positive");
         if (newPosition > 0) {
             int256 maxLongPosition = maxPosition(context, poolMargin, market.maxLeverage.value, beta, Side.LONG);
             if (newPosition > maxLongPosition) {
@@ -297,16 +304,17 @@ library AMMModule {
         int256 beta,
         Side side
     ) internal pure returns (int256 maxPosition) {
+        require(context.indexPrice > 0, "index price must be positive");
         int256 beforeSqrt = poolMargin
             .mul(poolMargin)
             .mul(2)
             .sub(context.IntermediateValue2)
             .wdiv(context.indexPrice)
             .wdiv(beta);
-        int256 maxPosition1 = beforeSqrt < 0 ? type(int256).max : beforeSqrt.sqrt();
+        int256 maxPosition1 = beforeSqrt < 0 ? 0 : beforeSqrt.sqrt();
         int256 maxPosition2;
         beforeSqrt = poolMargin.sub(context.IntermediateValue3).add(
-            context.IntermediateValue2.wdiv(poolMargin).div(2)
+            context.IntermediateValue2.div(poolMargin).div(2)
         );
         beforeSqrt = beforeSqrt.wmul(maxLeverage).wmul(maxLeverage).wmul(beta);
         beforeSqrt = poolMargin.sub(
@@ -341,6 +349,9 @@ library AMMModule {
         int256 poolMargin,
         int256 beta
     ) public view returns (int256 removingMargin) {
+        if (poolMargin == 0) {
+            return context.availableCashBalance;
+        }
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
         int256 tmpA = context.IntermediateValue1.add(positionValue);
         int256 tmpB = context.IntermediateValue2.add(
@@ -348,6 +359,5 @@ library AMMModule {
         );
         removingMargin = tmpB.div(poolMargin).div(2).add(poolMargin).sub(tmpA);
         removingMargin = context.availableCashBalance.sub(removingMargin);
-        require(removingMargin > 0, "removing margin must be positive");
     }
 }
