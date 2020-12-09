@@ -95,6 +95,7 @@ library LiquidationModule {
         Receipt memory receipt;
         // 0. price / amountyo
         int256 tradingPrice = market.markPrice();
+        bool isOpeningPosition = Utils.isOpeningPosition(market.positionAmount(taker), amount);
         TradeModule.validatePrice(amount, tradingPrice, priceLimit);
         (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
         // 1. execute
@@ -108,7 +109,7 @@ library LiquidationModule {
             0
         );
         // 3. safe
-        if (receipt.takerOpeningAmount > 0) {
+        if (isOpeningPosition) {
             require(market.isInitialMarginSafe(taker), "trader initial margin unsafe");
         } else {
             require(market.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");

@@ -59,4 +59,6 @@ contract Governance is Storage, Events {
         _core.markets[marketID].validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }
+
+    bytes[50] private __gap;
 }

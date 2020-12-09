@@ -91,4 +91,6 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         _core.settle(marketID, trader);
     }
+
+    bytes[50] private __gap;
 }

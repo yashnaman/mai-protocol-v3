@@ -11,13 +11,14 @@ import "./module/CoreModule.sol";
 import "./module/MarketModule.sol";
 
 import "./Events.sol";
+import "./AMM.sol";
 import "./Governance.sol";
 import "./Trade.sol";
 import "./Type.sol";
 import "./Settlement.sol";
 import "./Storage.sol";
 
-contract Perpetual is Storage, Trade, Settlement, Governance {
+contract Perpetual is Storage, Trade, AMM, Settlement, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using MarketModule for Market;
     using CoreModule for Core;
@@ -102,4 +103,6 @@ contract Perpetual is Storage, Trade, Settlement, Governance {
             riskParams
         );
     }
+
+    bytes[50] private __gap;
 }

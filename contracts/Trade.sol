@@ -54,10 +54,6 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     using SettlementModule for Core;
     using TradeModule for Core;
 
-    function claimFee(int256 amount) external nonReentrant {
-        _core.claimFee(msg.sender, amount);
-    }
-
     function deposit(
         bytes32 marketID,
         address trader,
@@ -90,39 +86,6 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
         require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
         _core.withdraw(marketID, trader, amount);
-    }
-
-    function donateInsuranceFund(int256 amount) external payable nonReentrant {
-        require(amount > 0, "amount is 0");
-        _core.donateInsuranceFund(amount);
-    }
-
-    function addLiquidity(bytes32 marketID, int256 cashToAdd)
-        external
-        payable
-        syncState
-        nonReentrant
-    {
-        require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        _core.transferFromUser(msg.sender, cashToAdd);
-        int256 shareToMint = _core.addLiquidity(marketID, cashToAdd);
-        IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256());
-
-        emit AddLiquidity(msg.sender, cashToAdd, shareToMint);
-    }
-
-    function removeLiquidity(bytes32 marketID, int256 shareToRemove)
-        external
-        syncState
-        nonReentrant
-    {
-        require(shareToRemove > 0, Error.INVALID_COLLATERAL_AMOUNT);
-
-        int256 cashToReturn = _core.removeLiquidity(marketID, shareToRemove);
-        IShareToken(_shareToken).burn(msg.sender, shareToRemove.toUint256());
-        _core.transferToUser(payable(msg.sender), cashToReturn);
-
-        emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
 
     function trade(

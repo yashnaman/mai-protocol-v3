@@ -47,6 +47,10 @@ library TradeModule {
             amount.neg(),
             false
         );
+        bool isOpeningPosition = Utils.isOpeningPosition(
+            market.positionAmount(trader),
+            receipt.tradingAmount.neg()
+        );
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
         // 1. fee
@@ -54,7 +58,7 @@ library TradeModule {
         // 2. execute
         updateTradingResult(market, receipt, trader, address(this));
         // 3. safe
-        if (receipt.takerOpeningAmount != 0) {
+        if (isOpeningPosition) {
             require(market.isInitialMarginSafe(trader), "trader initial margin is unsafe");
         } else {
             require(market.isMarginSafe(trader), "trader margin is unsafe");

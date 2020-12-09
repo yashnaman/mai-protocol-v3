@@ -51,8 +51,6 @@ struct Receipt {
     int256 vaultFee;
     int256 operatorFee;
     int256 referrerFee;
-    int256 takerOpeningAmount;
-    int256 makerOpeningAmount;
 }
 
 struct Core {

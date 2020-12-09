@@ -30,6 +30,10 @@ library Utils {
         }
     }
 
+    function isOpeningPosition(int256 amount, int256 delta) internal pure returns (bool) {
+        return Utils.hasSameSign(amount, delta) || amount.abs() < delta.abs();
+    }
+
     function chainID() internal pure returns (uint256 id) {
         assembly {
             id := chainid()
