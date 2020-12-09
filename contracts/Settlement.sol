@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "./libraries/Error.sol";
 import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
@@ -17,8 +16,6 @@ import "./libraries/Utils.sol";
 import "./interface/IFactory.sol";
 import "./interface/IShareToken.sol";
 
-import "./Type.sol";
-import "./Storage.sol";
 import "./module/AMMModule.sol";
 import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
@@ -27,7 +24,8 @@ import "./module/OrderModule.sol";
 import "./module/CoreModule.sol";
 import "./module/CollateralModule.sol";
 
-import "./Events.sol";
+import "./Storage.sol";
+import "./Type.sol";
 
 contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
@@ -77,7 +75,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         onlyExistedMarket(marketID)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(trader != address(0), "trader is invalid");
         _core.clear(marketID, trader);
     }
 
@@ -88,7 +86,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         onlyExistedMarket(marketID)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
+        require(trader != address(0), "trader is invalid");
         _core.settle(marketID, trader);
     }
 

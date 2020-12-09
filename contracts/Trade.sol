@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./libraries/Constant.sol";
-import "./libraries/Error.sol";
 import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
@@ -19,8 +18,6 @@ import "./interface/IAccessController.sol";
 import "./interface/IFactory.sol";
 import "./interface/IShareToken.sol";
 
-import "./Type.sol";
-import "./Storage.sol";
 import "./module/AMMModule.sol";
 import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
@@ -31,6 +28,8 @@ import "./module/CoreModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
+import "./Storage.sol";
+import "./Type.sol";
 
 // import "hardhat/console.sol";
 
@@ -66,8 +65,8 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         onlyExistedMarket(marketID)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        require(trader != address(0), "trader is invalid");
+        require(amount > 0, "amount is invalid");
         _core.deposit(marketID, trader, amount.add(msg.value.toInt256()));
     }
 
@@ -83,8 +82,8 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         onlyExistedMarket(marketID)
         nonReentrant
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount > 0, Error.INVALID_COLLATERAL_AMOUNT);
+        require(trader != address(0), "trader is invalid");
+        require(amount > 0, "amount is invalid");
         _core.withdraw(marketID, trader, amount);
     }
 
@@ -94,27 +93,29 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 priceLimit,
         uint256 deadline,
-        address referrer
+        address referrer,
+        bool isCloseOnly
     )
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
         onlyWhen(marketID, MarketState.NORMAL)
     {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount != 0, Error.INVALID_POSITION_AMOUNT);
-        require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
-        require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+        require(trader != address(0), "trader is invalid");
+        require(amount != 0, "amount is invalid");
+        require(priceLimit >= 0, "price limit is invalid");
+        require(deadline >= block.timestamp, "deadline exceeded");
+        if (isCloseOnly) {
+            amount = _core.truncateAmount(marketID, trader, amount);
+        }
         _core.trade(marketID, trader, amount, priceLimit, referrer);
     }
 
     function brokerTrade(
         Order memory order,
-        bytes32 marketID,
         int256 amount,
         bytes memory signature
     ) external {
-        // signer
         address signer = order.signer(signature);
         require(
             signer == order.trader ||
@@ -123,12 +124,13 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
                     signer,
                     Constant.PRIVILEGE_TRADE
                 ),
-            ""
+            "unauthorized"
         );
-        // validate
         _core.validateOrder(order, amount);
-        // do trade
-        _core.trade(marketID, order.trader, amount, order.priceLimit, order.referrer);
+        if (order.isCloseOnly() || order.orderType() == OrderType.STOP) {
+            amount = _core.truncateAmount(order.marketID, order.trader, amount);
+        }
+        _core.trade(order.marketID, order.trader, amount, order.priceLimit, order.referrer);
     }
 
     function liquidateByAMM(
@@ -136,8 +138,8 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         address trader,
         uint256 deadline
     ) external syncState onlyWhen(marketID, MarketState.NORMAL) nonReentrant {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+        require(trader != address(0), "trader is invalid");
+        require(deadline >= block.timestamp, "deadline exceeded");
         _core.liquidateByAMM(marketID, trader);
     }
 
@@ -148,10 +150,10 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         int256 priceLimit,
         uint256 deadline
     ) external syncState onlyWhen(marketID, MarketState.NORMAL) nonReentrant {
-        require(trader != address(0), Error.INVALID_TRADER_ADDRESS);
-        require(amount != 0, Error.INVALID_POSITION_AMOUNT);
-        require(priceLimit >= 0, Error.INVALID_TRADING_PRICE);
-        require(deadline >= block.timestamp, Error.EXCEED_DEADLINE);
+        require(trader != address(0), "trader is invalid");
+        require(amount != 0, "amount is invalid");
+        require(priceLimit >= 0, "price limit is invalid");
+        require(deadline >= block.timestamp, "deadline exceeded");
         _core.liquidateByTrader(marketID, msg.sender, trader, amount, priceLimit);
     }
 

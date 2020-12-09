@@ -8,12 +8,15 @@ import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
 
+import "../module/MarginModule.sol";
+
 import "../Type.sol";
 
 library OrderModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
     using OrderData for Order;
+    using MarginModule for Market;
 
     uint32 internal constant SUPPORTED_ORDER_VERSION = 3;
 
@@ -42,13 +45,18 @@ library OrderModule {
             core.orderFilled[orderHash].add(amount).abs() <= order.amount.abs(),
             "no enough amount to fill"
         );
+    }
 
-        if (order.isCloseOnly() || order.orderType() == OrderType.STOP) {
-            Market storage market = core.markets[order.marketID];
-            int256 maxAmount = market.marginAccounts[order.trader].positionAmount;
-            require(!Utils.hasSameSign(maxAmount, amount), "not closing order");
-            require(amount.abs() <= maxAmount.abs(), "no enough amount to close");
-        }
+    function truncateAmount(
+        Core storage core,
+        bytes32 marketID,
+        address trader,
+        int256 amount
+    ) public view returns (int256 alignedAmount) {
+        int256 maxAmount = core.markets[marketID].positionAmount(trader);
+        require(!Utils.hasSameSign(maxAmount, amount), "not closing order");
+        require(amount.abs() <= maxAmount.abs(), "no enough amount to close");
+        alignedAmount = amount.abs() > maxAmount.abs() ? maxAmount : amount;
     }
 
     function cancelOrder(Core storage core, Order memory order) public {

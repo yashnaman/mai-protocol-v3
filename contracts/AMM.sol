@@ -13,9 +13,8 @@ import "./module/CollateralModule.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
-import "./Events.sol";
 
-contract AMM is Storage, Events, ReentrancyGuardUpgradeable {
+contract AMM is Storage, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using SignedSafeMathUpgradeable for int256;
 
@@ -38,12 +37,8 @@ contract AMM is Storage, Events, ReentrancyGuardUpgradeable {
         syncState
         nonReentrant
     {
-        require(cashToAdd > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        _core.transferFromUser(msg.sender, cashToAdd);
-        int256 shareToMint = _core.addLiquidity(marketID, cashToAdd);
-        IShareToken(_shareToken).mint(msg.sender, shareToMint.toUint256());
-
-        emit AddLiquidity(msg.sender, cashToAdd, shareToMint);
+        require(cashToAdd > 0, "amount is invalid");
+        _core.addLiquidity(marketID, cashToAdd);
     }
 
     function removeLiquidity(bytes32 marketID, int256 shareToRemove)
@@ -51,12 +46,8 @@ contract AMM is Storage, Events, ReentrancyGuardUpgradeable {
         syncState
         nonReentrant
     {
-        require(shareToRemove > 0, Error.INVALID_COLLATERAL_AMOUNT);
-        int256 cashToReturn = _core.removeLiquidity(marketID, shareToRemove);
-        IShareToken(_shareToken).burn(msg.sender, shareToRemove.toUint256());
-        _core.transferToUser(payable(msg.sender), cashToReturn);
-
-        emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
+        require(shareToRemove > 0, "amount is invalid");
+        _core.removeLiquidity(marketID, shareToRemove);
     }
 
     bytes[50] private __gap;

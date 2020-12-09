@@ -52,22 +52,22 @@ library OrderData {
         return ECDSAUpgradeable.recover(orderHash(order), signature);
     }
 
-    function orderHashDebug(Order memory order)
-        internal
-        pure
-        returns (
-            bytes32,
-            bytes32,
-            bytes32
-        )
-    {
-        bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
-        return (
-            result,
-            keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
-            ECDSAUpgradeable.toEthSignedMessageHash(
-                keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
-            )
-        );
-    }
+    // function orderHashDebug(Order memory order)
+    //     internal
+    //     pure
+    //     returns (
+    //         bytes32,
+    //         bytes32,
+    //         bytes32
+    //     )
+    // {
+    //     bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
+    //     return (
+    //         result,
+    //         keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
+    //         ECDSAUpgradeable.toEthSignedMessageHash(
+    //             keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
+    //         )
+    //     );
+    // }
 }

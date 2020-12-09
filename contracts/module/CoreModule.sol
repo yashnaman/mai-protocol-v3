@@ -4,19 +4,19 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../libraries/Error.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
 import "../interface/IFactory.sol";
 import "../interface/IDecimals.sol";
 
-import "../Type.sol";
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
 import "./MarginModule.sol";
 import "./MarketModule.sol";
 import "./SettlementModule.sol";
+
+import "../Type.sol";
 
 library CoreModule {
     using SafeCastUpgradeable for uint256;

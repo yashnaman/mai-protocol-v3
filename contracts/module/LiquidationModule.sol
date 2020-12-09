@@ -4,11 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
-import "../libraries/Error.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "../Type.sol";
 import "./AMMModule.sol";
 import "./CoreModule.sol";
 import "./MarginModule.sol";
@@ -16,6 +14,8 @@ import "./MarketModule.sol";
 import "./OracleModule.sol";
 import "./TradeModule.sol";
 import "./CollateralModule.sol";
+
+import "../Type.sol";
 
 library LiquidationModule {
     using SafeMathExt for int256;
@@ -52,7 +52,7 @@ library LiquidationModule {
         require(!market.isMaintenanceMarginSafe(trader), "trader is safe");
         Receipt memory receipt;
         int256 maxAmount = market.marginAccounts[trader].positionAmount;
-        require(maxAmount != 0, Error.INVALID_POSITION_AMOUNT);
+        require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
             marketID,

@@ -25,12 +25,6 @@ enum ActionOnFailure { IGNORE, REVERT }
 enum OrderType { LIMIT, MARKET, STOP }
 enum Side { LONG, SHORT }
 
-struct Signature {
-    bytes32 config;
-    bytes32 r;
-    bytes32 s;
-}
-
 struct Order {
     address trader;
     address broker;

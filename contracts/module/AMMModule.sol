@@ -4,27 +4,33 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../interface/IShareToken.sol";
 
-import "../Type.sol";
 import "../libraries/Constant.sol";
 import "../libraries/Math.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
+
+import "../module/CollateralModule.sol";
 import "../module/MarginModule.sol";
 import "../module/OracleModule.sol";
+
+import "../Type.sol";
 
 library AMMModule {
     using Math for int256;
     using Math for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
+    using SafeCastUpgradeable for int256;
     using SafeMathUpgradeable for uint256;
     using OracleModule for Market;
     using MarginModule for Market;
+    using CollateralModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     struct Context {
@@ -35,6 +41,9 @@ library AMMModule {
         int256 availableCashBalance;
         int256 positionAmount;
     }
+
+    event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
+    event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
 
     function tradeWithAMM(
         Core storage core,
@@ -71,9 +80,21 @@ library AMMModule {
     function addLiquidity(
         Core storage core,
         bytes32 marketID,
+        int256 cashAmount
+    ) public {
+        require(cashAmount > 0, "margin to add must be positive");
+        int256 shareAmount = calculateShareToMint(core, marketID, cashAmount);
+        require(shareAmount > 0, "received share must be positive");
+        core.transferFromUser(msg.sender, cashAmount);
+        IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
+        emit AddLiquidity(msg.sender, cashAmount, shareAmount);
+    }
+
+    function calculateShareToMint(
+        Core storage core,
+        bytes32 marketID,
         int256 cashToAdd
-    ) public view returns (int256 receivedShare) {
-        require(cashToAdd > 0, "margin to add must be positive");
+    ) internal view returns (int256 shareToMint) {
         Market storage market = core.markets[marketID];
         Context memory context = prepareContext(core, market);
         int256 beta = market.openSlippage.value;
@@ -93,45 +114,57 @@ library AMMModule {
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
-            receivedShare = newPoolMargin;
+            shareToMint = newPoolMargin;
         } else {
-            receivedShare = newPoolMargin.sub(poolMargin).wdiv(poolMargin).wmul(shareTotalSupply);
+            shareToMint = newPoolMargin.sub(poolMargin).wdiv(poolMargin).wmul(shareTotalSupply);
         }
-        require(receivedShare > 0, "received share must be positive");
     }
 
     function removeLiquidity(
         Core storage core,
         bytes32 marketID,
         int256 shareToRemove
-    ) public view returns (int256 receivedMargin) {
+    ) public {
         require(shareToRemove > 0, "share to remove must be positive");
         require(
             shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
         );
+        int256 cashToReturn = calculateCashToReturn(core, marketID, shareToRemove);
+        IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
+        core.transferToUser(payable(msg.sender), cashToReturn);
+        emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
+    }
+
+    function calculateCashToReturn(
+        Core storage core,
+        bytes32 marketID,
+        int256 shareToRemove
+    ) public view returns (int256 cashToReturn) {
         Market storage market = core.markets[marketID];
         Context memory context = prepareContext(core, market);
         int256 beta = market.openSlippage.value;
         int256 positionAmount = context.positionAmount;
         require(isAMMMarginSafe(context, beta), "amm is unsafe before removing liquidity");
-
-        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
-        int256 shareRatio = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply);
         int256 poolMargin = regress(context, beta);
         if (poolMargin == 0) {
             return 0;
         }
-        poolMargin = poolMargin.wmul(shareRatio);
-        int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
-        minPoolMargin = minPoolMargin.mul(beta).add(context.IntermediateValue2).div(2).sqrt();
-        require(
-            poolMargin >= minPoolMargin && positionAmount <= poolMargin.wdiv(beta),
-            "amm is unsafe after removing liquidity"
-        );
-        receivedMargin = marginToRemove(context, poolMargin, beta);
-        require(receivedMargin >= 0, "received margin is negative");
-        int256 newMarginBalance = poolMarginBalance(core).sub(receivedMargin);
+        {
+            int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
+            poolMargin = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply).wmul(
+                poolMargin
+            );
+            int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
+            minPoolMargin = minPoolMargin.mul(beta).add(context.IntermediateValue2).div(2).sqrt();
+            require(
+                poolMargin >= minPoolMargin && positionAmount <= poolMargin.wdiv(beta),
+                "amm is unsafe after removing liquidity"
+            );
+        }
+        cashToReturn = marginToRemove(context, poolMargin, beta);
+        require(cashToReturn >= 0, "received margin is negative");
+        int256 newMarginBalance = poolMarginBalance(core).sub(cashToReturn);
         int256 positionValue = context
             .indexPrice
             .wmul(positionAmount)

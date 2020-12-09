@@ -4,17 +4,15 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
-import "../libraries/Error.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "../Type.sol";
 import "./AMMModule.sol";
 import "./CoreModule.sol";
 import "./MarginModule.sol";
 import "./OracleModule.sol";
 
-import "hardhat/console.sol";
+import "../Type.sol";
 
 library TradeModule {
     using SafeMathExt for int256;
