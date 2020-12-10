@@ -15,7 +15,7 @@ const _0 = toWad('0')
 
 const params = {
     unitAccumulatedFundingLoss: toWad('1.9'),
-    spread: toWad('0.001'),
+    halfSpread: toWad('0.001'),
     openSlippage: toWad('100'),
     closeSlippage: toWad('90'),
     maxLeverage: toWad('5'),
@@ -125,14 +125,14 @@ describe('AMM', () => {
                 name: 'zero position - ok',
                 amm: amm02,
                 indexPrice1: params.indexPrice,
-                indexPrice2: toWad('1561'),
+                indexPrice2: toWad('643'),
                 isSafe: true
             },
             {
                 name: 'zero position - fail',
                 amm: amm02,
                 indexPrice1: params.indexPrice,
-                indexPrice2: toWad('1560'),
+                indexPrice2: toWad('644'),
                 isSafe: false
             },
             /*
@@ -176,7 +176,7 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.spread, params.openSlippage, params.closeSlippage, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, element.indexPrice1, element.indexPrice2)
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippage, params.closeSlippage, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, element.indexPrice1, element.indexPrice2)
                 if (element.isSafe) {
                     expect(await AMM.isAMMMarginSafe()).to.be.true
                 } else {

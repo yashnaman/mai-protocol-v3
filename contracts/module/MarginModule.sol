@@ -62,7 +62,7 @@ library MarginModule {
         view
         returns (int256)
     {
-        return market.marginAccounts[trader].cashBalance.add(
+        return market.marginAccounts[trader].cashBalance.sub(
             market.marginAccounts[trader].positionAmount.wmul(market.unitAccumulativeFunding)
         );
     }
