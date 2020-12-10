@@ -306,7 +306,7 @@ library AMMModule {
         int256 poolMargin = regress(context, beta);
         require(poolMargin > 0, "pool margin must be positive");
         if (newPosition > 0) {
-            int256 maxLongPosition = maxPosition(
+            int256 maxLongPosition = _maxPosition(
                 context,
                 poolMargin,
                 market.maxLeverage.value,
@@ -321,7 +321,7 @@ library AMMModule {
                 deltaPosition = tradingAmount;
             }
         } else {
-            int256 minShortPosition = maxPosition(
+            int256 minShortPosition = _maxPosition(
                 context,
                 poolMargin,
                 market.maxLeverage.value,
@@ -358,7 +358,7 @@ library AMMModule {
         );
     }
 
-    function maxPosition(
+    function _maxPosition(
         Context memory context,
         int256 poolMargin,
         int256 maxLeverage,
