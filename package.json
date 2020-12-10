@@ -43,8 +43,8 @@
     "typescript": "^4.0.5"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "3.3.0",
-    "@openzeppelin/contracts-upgradeable-upgradeable": "^3.3.0",
+    "@openzeppelin/contracts": "3.3.0",
+    "@openzeppelin/contracts-upgradeable": "^3.3.0",
     "@uniswap/lib": "^2.0.6",
     "@uniswap/v2-core": "^1.0.1",
     "bignumber.js": "^9.0.1"
