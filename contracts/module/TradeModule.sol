@@ -31,17 +31,17 @@ library TradeModule {
 
     function trade(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
         address referrer
     ) public {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         // 0. price / amount
         Receipt memory receipt;
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
-            marketID,
+            marketIndex,
             amount.neg(),
             false
         );

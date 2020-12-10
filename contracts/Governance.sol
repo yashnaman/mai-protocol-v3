@@ -29,34 +29,34 @@ contract Governance is Storage, Events {
     }
 
     function updateMarketParameter(
-        bytes32 marketID,
+        uint256 marketIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyGovernor onlyExistedMarket(marketID) {
-        _core.markets[marketID].updateMarketParameter(key, newValue);
-        _core.markets[marketID].validateCoreParameters();
+    ) external onlyGovernor onlyExistedMarket(marketIndex) {
+        _core.markets[marketIndex].updateMarketParameter(key, newValue);
+        _core.markets[marketIndex].validateCoreParameters();
         emit UpdateCoreSetting(key, newValue);
     }
 
     function updateMarketRiskParameter(
-        bytes32 marketID,
+        uint256 marketIndex,
         bytes32 key,
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external onlyGovernor onlyExistedMarket(marketID) {
-        _core.markets[marketID].updateMarketRiskParameter(key, newValue, minValue, maxValue);
-        _core.markets[marketID].validateRiskParameters();
+    ) external onlyGovernor onlyExistedMarket(marketIndex) {
+        _core.markets[marketIndex].updateMarketRiskParameter(key, newValue, minValue, maxValue);
+        _core.markets[marketIndex].validateRiskParameters();
         emit UpdateRiskSetting(key, newValue, minValue, maxValue);
     }
 
     function adjustMarketRiskParameter(
-        bytes32 marketID,
+        uint256 marketIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyOperator onlyExistedMarket(marketID) {
-        _core.markets[marketID].adjustMarketRiskParameter(key, newValue);
-        _core.markets[marketID].validateRiskParameters();
+    ) external onlyOperator onlyExistedMarket(marketIndex) {
+        _core.markets[marketIndex].adjustMarketRiskParameter(key, newValue);
+        _core.markets[marketIndex].validateRiskParameters();
         emit AdjustRiskSetting(key, newValue);
     }
 

@@ -45,17 +45,17 @@ library LiquidationModule {
 
     function liquidateByAMM(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader
     ) public returns (int256) {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         require(!market.isMaintenanceMarginSafe(trader), "trader is safe");
         Receipt memory receipt;
         int256 maxAmount = market.marginAccounts[trader].positionAmount;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
-            marketID,
+            marketIndex,
             maxAmount,
             false
         );
@@ -84,13 +84,13 @@ library LiquidationModule {
 
     function liquidateByTrader(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address taker,
         address maker,
         int256 amount,
         int256 priceLimit
     ) public returns (int256) {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         require(!market.isMaintenanceMarginSafe(maker), "trader is safe");
         Receipt memory receipt;
         // 0. price / amountyo

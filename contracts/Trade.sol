@@ -54,41 +54,41 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     using TradeModule for Core;
 
     function deposit(
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount
     )
         external
         payable
         onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
-        onlyWhen(marketID, MarketState.NORMAL)
-        onlyExistedMarket(marketID)
+        onlyWhen(marketIndex, MarketState.NORMAL)
+        onlyExistedMarket(marketIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
-        _core.deposit(marketID, trader, amount.add(msg.value.toInt256()));
+        _core.deposit(marketIndex, trader, amount.add(msg.value.toInt256()));
     }
 
     function withdraw(
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount
     )
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        onlyWhen(marketID, MarketState.NORMAL)
-        onlyExistedMarket(marketID)
+        onlyWhen(marketIndex, MarketState.NORMAL)
+        onlyExistedMarket(marketIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
-        _core.withdraw(marketID, trader, amount);
+        _core.withdraw(marketIndex, trader, amount);
     }
 
     function trade(
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
@@ -99,16 +99,16 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
-        onlyWhen(marketID, MarketState.NORMAL)
+        onlyWhen(marketIndex, MarketState.NORMAL)
     {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(priceLimit >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
         if (isCloseOnly) {
-            amount = _core.truncateAmount(marketID, trader, amount);
+            amount = _core.truncateAmount(marketIndex, trader, amount);
         }
-        _core.trade(marketID, trader, amount, priceLimit, referrer);
+        _core.trade(marketIndex, trader, amount, priceLimit, referrer);
     }
 
     function brokerTrade(
@@ -128,33 +128,33 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         );
         _core.validateOrder(order, amount);
         if (order.isCloseOnly() || order.orderType() == OrderType.STOP) {
-            amount = _core.truncateAmount(order.marketID, order.trader, amount);
+            amount = _core.truncateAmount(order.marketIndex, order.trader, amount);
         }
-        _core.trade(order.marketID, order.trader, amount, order.priceLimit, order.referrer);
+        _core.trade(order.marketIndex, order.trader, amount, order.priceLimit, order.referrer);
     }
 
     function liquidateByAMM(
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         uint256 deadline
-    ) external syncState onlyWhen(marketID, MarketState.NORMAL) nonReentrant {
+    ) external syncState onlyWhen(marketIndex, MarketState.NORMAL) nonReentrant {
         require(trader != address(0), "trader is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _core.liquidateByAMM(marketID, trader);
+        _core.liquidateByAMM(marketIndex, trader);
     }
 
     function liquidateByTrader(
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
         uint256 deadline
-    ) external syncState onlyWhen(marketID, MarketState.NORMAL) nonReentrant {
+    ) external syncState onlyWhen(marketIndex, MarketState.NORMAL) nonReentrant {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(priceLimit >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _core.liquidateByTrader(marketID, msg.sender, trader, amount, priceLimit);
+        _core.liquidateByTrader(marketIndex, msg.sender, trader, amount, priceLimit);
     }
 
     bytes[50] private __gap;

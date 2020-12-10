@@ -30,104 +30,55 @@ contract LiquidityPoolFactory is Creator, Tracer, Implementation, Variables {
         _shareTokenTemplate = shareTokenTemplate;
     }
 
-    event CreatePerpetual(
-        address perpetual,
+    event CreateLiquidityPool(
+        address liquidityPool,
         address governor,
         address shareToken,
         address operator,
-        address oracle,
-        address collateral,
-        int256[7] coreParams,
-        int256[5] riskParams
+        address collateral
     );
 
-    function createPerpetual(
-        address oracle,
-        int256[7] calldata coreParams,
-        int256[5] calldata riskParams,
-        int256[5] calldata minRiskParamValues,
-        int256[5] calldata maxRiskParamValues,
-        uint256 nonce
-    ) external returns (address) {
-        return
-            _createPerpetualWith(
-                latestVersion(),
-                oracle,
-                coreParams,
-                riskParams,
-                minRiskParamValues,
-                maxRiskParamValues,
-                nonce
-            );
+    function createLiquidityPool(address collateral, uint256 nonce) external returns (address) {
+        return _createLiquidityPoolWith(latestVersion(), collateral, nonce);
     }
 
-    function createPerpetualWith(
+    function createLiquidityPoolWith(
         address implementation,
-        address oracle,
-        int256[7] calldata coreParams,
-        int256[5] calldata riskParams,
-        int256[5] calldata minRiskParamValues,
-        int256[5] calldata maxRiskParamValues,
+        address collateral,
         uint256 nonce
     ) external returns (address) {
-        return
-            _createPerpetualWith(
-                implementation,
-                oracle,
-                coreParams,
-                riskParams,
-                minRiskParamValues,
-                maxRiskParamValues,
-                nonce
-            );
+        return _createLiquidityPoolWith(implementation, collateral, nonce);
     }
 
-    function _createPerpetualWith(
+    function _createLiquidityPoolWith(
         address implementation,
-        address oracle,
-        int256[7] calldata coreParams,
-        int256[5] calldata riskParams,
-        int256[5] calldata minRiskParamValues,
-        int256[5] calldata maxRiskParamValues,
+        address collateral,
         uint256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
         address governor = _createStaticProxy(_governorTemplate);
         address shareToken = _createStaticProxy(_shareTokenTemplate);
-        address perpetual = _createPerpetualProxy(implementation, governor, nonce);
+        address liquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
         shareToken.functionCall(
-            abi.encodeWithSignature("initialize(address)", perpetual),
+            abi.encodeWithSignature("initialize(address)", liquidityPool),
             "fail to init share token"
         );
         governor.functionCall(
-            abi.encodeWithSignature("initialize(address,address)", shareToken, perpetual),
+            abi.encodeWithSignature("initialize(address,address)", shareToken, liquidityPool),
             "fail to init governor"
         );
-        perpetual.functionCall(
+        liquidityPool.functionCall(
             abi.encodeWithSignature(
-                "initialize(address,address,address,address,int256[7],int256[5],int256[5],int256[5])",
+                "initialize(address,address,address,address)",
                 msg.sender,
-                oracle,
+                collateral,
                 governor,
-                shareToken,
-                coreParams,
-                riskParams,
-                minRiskParamValues,
-                maxRiskParamValues
+                shareToken
             ),
             "fail to init perpetual"
         );
-        _registerLiquidityPool(perpetual);
-        emit CreatePerpetual(
-            perpetual,
-            governor,
-            shareToken,
-            msg.sender,
-            oracle,
-            IOracle(oracle).collateral(),
-            coreParams,
-            riskParams
-        );
-        return perpetual;
+        _registerLiquidityPool(liquidityPool);
+        emit CreateLiquidityPool(liquidityPool, governor, shareToken, msg.sender, collateral);
+        return liquidityPool;
     }
 }

@@ -25,7 +25,7 @@ contract Perpetual is Storage, Trade, AMM, Settlement, Governance {
 
     event Finalize();
     event CreateMarket(
-        bytes32 marketID,
+        uint256 marketIndex,
         address governor,
         address shareToken,
         address operator,
@@ -68,9 +68,9 @@ contract Perpetual is Storage, Trade, AMM, Settlement, Governance {
 
     function finalize() external onlyOperator {
         require(!_core.isFinalized, "core is already finalized");
-        uint256 count = _core.marketIDs.length();
-        for (uint256 i = 0; i < count; i++) {
-            _core.markets[_core.marketIDs.at(i)].enterNormalState();
+        uint256 length = _core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            _core.markets[i].enterNormalState();
         }
         _core.isFinalized = true;
         emit Finalize();
@@ -83,17 +83,11 @@ contract Perpetual is Storage, Trade, AMM, Settlement, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) internal {
-        bytes32 marketID = MarketModule.marketID(oracle);
-        require(!_core.marketIDs.contains(marketID), "market is duplicated");
-        _core.markets[marketID].initialize(
-            oracle,
-            coreParams,
-            riskParams,
-            minRiskParamValues,
-            maxRiskParamValues
-        );
+        uint256 marketIndex = _core.markets.length;
+        Market storage market = _core.markets.push();
+        market.initialize(oracle, coreParams, riskParams, minRiskParamValues, maxRiskParamValues);
         emit CreateMarket(
-            marketID,
+            marketIndex,
             _core.governor,
             _core.shareToken,
             _core.operator,

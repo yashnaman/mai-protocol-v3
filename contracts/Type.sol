@@ -30,7 +30,7 @@ struct Order {
     address broker;
     address relayer;
     address perpetual;
-    bytes32 marketID;
+    uint256 marketIndex;
     address referrer;
     int256 amount;
     int256 priceLimit;
@@ -72,8 +72,7 @@ struct Core {
     int256 totalClaimableFee;
     mapping(address => int256) claimableFees;
     // markets
-    EnumerableSetUpgradeable.Bytes32Set marketIDs;
-    mapping(bytes32 => Market) markets;
+    Market[] markets;
     // order
     mapping(bytes32 => int256) orderFilled;
     mapping(bytes32 => bool) orderCanceled;
@@ -103,9 +102,9 @@ struct Market {
     int256 keeperGasReward;
     int256 insuranceFundRate;
     // ris parameters
-    Option spread;
-    Option openSlippage;
-    Option closeSlippage;
+    Option halfSpread;
+    Option beta1;
+    Option beta2;
     Option fundingRateCoefficient;
     Option maxLeverage;
     // users

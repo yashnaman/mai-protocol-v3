@@ -30,10 +30,10 @@ library SettlementModule {
 
     function clear(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader
     ) public {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         require(market.registeredTraders.contains(trader), "trader is not registered");
         require(!market.clearedTraders.contains(trader), "trader is already cleared");
         int256 margin = market.margin(trader);
@@ -55,11 +55,11 @@ library SettlementModule {
 
     function settle(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader
     ) public {
         require(trader != address(0), "trader is invalid");
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         int256 withdrawable = settledMarginAccount(market, trader);
         market.updateCashBalance(trader, withdrawable.neg());
         core.transferToUser(payable(trader), withdrawable);

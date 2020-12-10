@@ -41,17 +41,9 @@ library MarketModule {
         market.insuranceFundRate = coreParams[7];
         market.validateCoreParameters();
 
-        market.spread.updateOption(riskParams[0], minRiskParamValues[0], maxRiskParamValues[0]);
-        market.openSlippage.updateOption(
-            riskParams[1],
-            minRiskParamValues[1],
-            maxRiskParamValues[1]
-        );
-        market.closeSlippage.updateOption(
-            riskParams[2],
-            minRiskParamValues[2],
-            maxRiskParamValues[2]
-        );
+        market.halfSpread.updateOption(riskParams[0], minRiskParamValues[0], maxRiskParamValues[0]);
+        market.beta1.updateOption(riskParams[1], minRiskParamValues[1], maxRiskParamValues[1]);
+        market.beta2.updateOption(riskParams[2], minRiskParamValues[2], maxRiskParamValues[2]);
         market.fundingRateCoefficient.updateOption(
             riskParams[3],
             minRiskParamValues[3],
@@ -65,10 +57,10 @@ library MarketModule {
         market.validateRiskParameters();
 
         market.state = MarketState.INITIALIZING;
-        market.id = marketID(oracle);
+        market.id = marketIndex(oracle);
     }
 
-    function marketID(address oracle) internal view returns (bytes32) {
+    function marketIndex(address oracle) internal view returns (bytes32) {
         return keccak256(abi.encodePacked(Utils.chainID(), address(this), oracle));
     }
 

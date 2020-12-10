@@ -26,9 +26,9 @@ library FundingModule {
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
     function updateFundingState(Core storage core, uint256 currentTime) public {
-        uint256 count = core.marketIDs.length();
-        for (uint256 i = 0; i < count; i++) {
-            updateFundingState(core.markets[core.marketIDs.at(i)], currentTime);
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            updateFundingState(core.markets[i], currentTime);
         }
     }
 
@@ -46,9 +46,9 @@ library FundingModule {
     }
 
     function updateFundingRate(Core storage core) public {
-        uint256 count = core.marketIDs.length();
-        for (uint256 i = 0; i < count; i++) {
-            Market storage market = core.markets[core.marketIDs.at(i)];
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            Market storage market = core.markets[i];
             market.fundingRate = nextFundingRate(core, market);
         }
     }
@@ -62,8 +62,8 @@ library FundingModule {
         if (context.positionAmount == 0) {
             return 0;
         }
-        if (AMMModule.isAMMMarginSafe(context, market.openSlippage.value)) {
-            int256 poolMargin = AMMModule.regress(context, market.openSlippage.value);
+        if (AMMModule.isAMMMarginSafe(context, market.beta1.value)) {
+            int256 poolMargin = AMMModule.regress(context, market.beta1.value);
             if (poolMargin != 0) {
                 return
                     context.indexPrice.wfrac(context.positionAmount, poolMargin).neg().wmul(

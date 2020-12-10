@@ -49,11 +49,11 @@ library OrderModule {
 
     function truncateAmount(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount
     ) public view returns (int256 alignedAmount) {
-        int256 maxAmount = core.markets[marketID].positionAmount(trader);
+        int256 maxAmount = core.markets[marketIndex].positionAmount(trader);
         require(!Utils.hasSameSign(maxAmount, amount), "not closing order");
         require(amount.abs() <= maxAmount.abs(), "no enough amount to close");
         alignedAmount = amount.abs() > maxAmount.abs() ? maxAmount : amount;

@@ -47,12 +47,12 @@ library AMMModule {
 
     function tradeWithAMM(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         int256 tradingAmount,
         bool partialFill
     ) public view returns (int256 deltaMargin, int256 deltaPosition) {
         require(tradingAmount != 0, "trade amount is zero");
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         Context memory context = prepareContext(core, market);
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
             context.positionAmount,
@@ -73,17 +73,17 @@ library AMMModule {
             // negative price
             deltaMargin = 0;
         }
-        int256 spread = market.spread.value.wmul(deltaMargin);
+        int256 spread = market.halfSpread.value.wmul(deltaMargin);
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
     }
 
     function addLiquidity(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         int256 cashAmount
     ) public {
         require(cashAmount > 0, "margin to add must be positive");
-        int256 shareAmount = calculateShareToMint(core, marketID, cashAmount);
+        int256 shareAmount = calculateShareToMint(core, marketIndex, cashAmount);
         require(shareAmount > 0, "received share must be positive");
         core.transferFromUser(msg.sender, cashAmount);
         IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
@@ -92,12 +92,12 @@ library AMMModule {
 
     function calculateShareToMint(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         int256 cashToAdd
     ) internal view returns (int256 shareToMint) {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         Context memory context = prepareContext(core, market);
-        int256 beta = market.openSlippage.value;
+        int256 beta = market.beta1.value;
         int256 poolMargin;
         int256 newPoolMargin;
         if (isAMMMarginSafe(context, beta)) {
@@ -122,7 +122,7 @@ library AMMModule {
 
     function removeLiquidity(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         int256 shareToRemove
     ) public {
         require(shareToRemove > 0, "share to remove must be positive");
@@ -130,7 +130,7 @@ library AMMModule {
             shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
         );
-        int256 cashToReturn = calculateCashToReturn(core, marketID, shareToRemove);
+        int256 cashToReturn = calculateCashToReturn(core, marketIndex, shareToRemove);
         IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
         core.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
@@ -138,12 +138,12 @@ library AMMModule {
 
     function calculateCashToReturn(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         Context memory context = prepareContext(core, market);
-        int256 beta = market.openSlippage.value;
+        int256 beta = market.beta1.value;
         int256 positionAmount = context.positionAmount;
         require(isAMMMarginSafe(context, beta), "amm is unsafe before removing liquidity");
         int256 poolMargin = regress(context, beta);
@@ -212,9 +212,9 @@ library AMMModule {
         view
         returns (int256 cashBalance)
     {
-        uint256 marketCount = core.marketIDs.length();
-        for (uint256 i = 0; i < marketCount; i++) {
-            Market storage market = core.markets[core.marketIDs.at(i)];
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            Market storage market = core.markets[i];
             cashBalance = cashBalance.add(market.availableCashBalance(address(this)));
         }
         cashBalance = cashBalance.add(core.liquidityPoolCashBalance);
@@ -225,9 +225,9 @@ library AMMModule {
         view
         returns (Context memory context)
     {
-        uint256 marketCount = core.marketIDs.length();
-        for (uint256 i = 0; i < marketCount; i++) {
-            Market storage market = core.markets[core.marketIDs.at(i)];
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            Market storage market = core.markets[i];
             int256 positionAmount = market.positionAmount(address(this));
             int256 indexPrice = market.indexPrice();
             if (market.id == currentMarket.id) {
@@ -237,7 +237,7 @@ library AMMModule {
                 int256 positionValue = indexPrice.wmul(positionAmount);
                 context.IntermediateValue1 = context.IntermediateValue1.add(positionValue);
                 context.IntermediateValue2 = context.IntermediateValue2.add(
-                    positionValue.wmul(positionAmount).mul(market.openSlippage.value)
+                    positionValue.wmul(positionAmount).mul(market.beta1.value)
                 );
                 context.IntermediateValue3 = context.IntermediateValue3.add(
                     positionValue.abs().wdiv(market.maxLeverage.value)
@@ -262,7 +262,7 @@ library AMMModule {
             return 0;
         }
         require(context.positionAmount != 0, "position is zero when close");
-        int256 beta = market.closeSlippage.value;
+        int256 beta = market.beta2.value;
         if (isAMMMarginSafe(context, beta)) {
             int256 poolMargin = regress(context, beta);
             require(poolMargin > 0, "pool margin must be positive");
@@ -292,7 +292,7 @@ library AMMModule {
         if (tradingAmount == 0) {
             return (0, 0);
         }
-        int256 beta = market.openSlippage.value;
+        int256 beta = market.beta1.value;
         if (!isAMMMarginSafe(context, beta)) {
             require(partialFill, "amm is unsafe when open");
             return (0, 0);
@@ -391,9 +391,9 @@ library AMMModule {
     }
 
     function poolMarginBalance(Core storage core) private view returns (int256 marginBalance) {
-        uint256 marketCount = core.marketIDs.length();
-        for (uint256 i = 0; i < marketCount; i++) {
-            Market storage market = core.markets[core.marketIDs.at(i)];
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            Market storage market = core.markets[i];
             marginBalance = marginBalance.add(market.margin(address(this)));
         }
         marginBalance = marginBalance.add(core.liquidityPoolCashBalance);
@@ -403,7 +403,7 @@ library AMMModule {
         Context memory context,
         int256 poolMargin,
         int256 beta
-    ) public view returns (int256 removingMargin) {
+    ) public pure returns (int256 removingMargin) {
         if (poolMargin == 0) {
             return context.availableCashBalance;
         }

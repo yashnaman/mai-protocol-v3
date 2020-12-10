@@ -12,7 +12,7 @@ contract Creator {
         return address(newInstance);
     }
 
-    function _createPerpetualProxy(
+    function _createUpgradeableProxy(
         address implementation,
         address admin,
         uint256 nonce

@@ -31,10 +31,10 @@ contract Getter is Storage {
         return (_core.liquidityPoolCashBalance);
     }
 
-    function marketDescription(bytes32 marketID)
+    function marketDescription(uint256 marketIndex)
         public
         view
-        onlyExistedMarket(marketID)
+        onlyExistedMarket(marketIndex)
         returns (
             string memory underlyingAsset,
             address collateral,
@@ -51,7 +51,7 @@ contract Getter is Storage {
         operator = _core.operator;
         vault = _core.vault;
 
-        Market storage market = _core.markets[marketID];
+        Market storage market = _core.markets[marketIndex];
         underlyingAsset = IOracle(market.oracle).underlyingAsset();
         oracle = market.oracle;
 
@@ -68,18 +68,18 @@ contract Getter is Storage {
             market.insuranceFundRate
         ];
         riskParameter = [
-            market.spread.value,
-            market.openSlippage.value,
-            market.closeSlippage.value,
+            market.halfSpread.value,
+            market.beta1.value,
+            market.beta2.value,
             market.fundingRateCoefficient.value,
             market.maxLeverage.value
         ];
     }
 
-    function marketStatus(bytes32 marketID)
+    function marketStatus(uint256 marketIndex)
         public
         syncState
-        onlyExistedMarket(marketID)
+        onlyExistedMarket(marketIndex)
         returns (
             bool isEmergency,
             bool isCleared,
@@ -95,7 +95,7 @@ contract Getter is Storage {
         insuranceFund = _core.insuranceFund;
         donatedInsuranceFund = _core.donatedInsuranceFund;
 
-        Market storage market = _core.markets[marketID];
+        Market storage market = _core.markets[marketIndex];
         isEmergency = market.state == MarketState.EMERGENCY;
         isCleared = market.state == MarketState.CLEARED;
         markPrice = market.markPrice();
@@ -105,19 +105,19 @@ contract Getter is Storage {
         fundingTime = market.fundingTime;
     }
 
-    function marginAccount(bytes32 marketID, address trader)
+    function marginAccount(uint256 marketIndex, address trader)
         public
         view
-        onlyExistedMarket(marketID)
+        onlyExistedMarket(marketIndex)
         returns (
             int256 cashBalance,
             int256 positionAmount,
             int256 entryFunding
         )
     {
-        cashBalance = _core.markets[marketID].marginAccounts[trader].cashBalance;
-        positionAmount = _core.markets[marketID].marginAccounts[trader].positionAmount;
-        entryFunding = _core.markets[marketID].marginAccounts[trader].entryFunding;
+        cashBalance = _core.markets[marketIndex].marginAccounts[trader].cashBalance;
+        positionAmount = _core.markets[marketIndex].marginAccounts[trader].positionAmount;
+        entryFunding = _core.markets[marketIndex].marginAccounts[trader].entryFunding;
     }
 
     function claimableFee(address claimer) public view returns (int256) {

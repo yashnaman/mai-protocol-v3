@@ -25,8 +25,8 @@ contract Storage {
     address internal _governor;
     address internal _shareToken;
 
-    modifier onlyExistedMarket(bytes32 marketID) {
-        require(_core.marketIDs.contains(marketID), "market not exist");
+    modifier onlyExistedMarket(uint256 marketIndex) {
+        require(marketIndex < _core.markets.length, "market not exist");
         _;
     }
 
@@ -38,13 +38,13 @@ contract Storage {
         _core.updateFundingRate();
     }
 
-    modifier onlyWhen(bytes32 marketID, MarketState allowedState) {
-        require(_core.markets[marketID].state == allowedState, "operation is disallowed now");
+    modifier onlyWhen(uint256 marketIndex, MarketState allowedState) {
+        require(_core.markets[marketIndex].state == allowedState, "operation is disallowed now");
         _;
     }
 
-    modifier onlyNotWhen(bytes32 marketID, MarketState disallowedState) {
-        require(_core.markets[marketID].state != disallowedState, "operation is disallow now");
+    modifier onlyNotWhen(uint256 marketIndex, MarketState disallowedState) {
+        require(_core.markets[marketIndex].state != disallowedState, "operation is disallow now");
         _;
     }
 

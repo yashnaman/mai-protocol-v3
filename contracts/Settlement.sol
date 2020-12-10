@@ -48,16 +48,16 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function unclearedTraderCount(bytes32 marketID) public view returns (uint256) {
-        return _core.markets[marketID].registeredTraders.length();
+    function unclearedTraderCount(uint256 marketIndex) public view returns (uint256) {
+        return _core.markets[marketIndex].registeredTraders.length();
     }
 
     function listUnclearedTraders(
-        bytes32 marketID,
+        uint256 marketIndex,
         uint256 start,
         uint256 count
     ) public view returns (address[] memory result) {
-        Market storage market = _core.markets[marketID];
+        Market storage market = _core.markets[marketIndex];
         uint256 total = market.registeredTraders.length();
         if (start >= total) {
             return result;
@@ -69,25 +69,25 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         }
     }
 
-    function clear(bytes32 marketID, address trader)
+    function clear(uint256 marketIndex, address trader)
         public
-        onlyWhen(marketID, MarketState.EMERGENCY)
-        onlyExistedMarket(marketID)
+        onlyWhen(marketIndex, MarketState.EMERGENCY)
+        onlyExistedMarket(marketIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.clear(marketID, trader);
+        _core.clear(marketIndex, trader);
     }
 
-    function settle(bytes32 marketID, address trader)
+    function settle(uint256 marketIndex, address trader)
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        onlyWhen(marketID, MarketState.CLEARED)
-        onlyExistedMarket(marketID)
+        onlyWhen(marketIndex, MarketState.CLEARED)
+        onlyExistedMarket(marketIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.settle(marketID, trader);
+        _core.settle(marketIndex, trader);
     }
 
     bytes[50] private __gap;

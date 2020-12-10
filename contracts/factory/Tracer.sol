@@ -18,7 +18,7 @@ contract Tracer {
 
     struct MUID {
         address liquidityPool;
-        bytes32 marketID;
+        uint256 marketIndex;
     }
 
     uint256 internal nextGUID;
@@ -83,10 +83,12 @@ contract Tracer {
     function isActiveLiquidityPoolOf(
         address trader,
         address liquidityPool,
-        bytes32 marketID
+        uint256 marketIndex
     ) public view returns (bool) {
         return
-            _traderActiveLiquidityPools[trader].contains(_poolMarketKey(liquidityPool, marketID));
+            _traderActiveLiquidityPools[trader].contains(
+                _poolMarketKey(liquidityPool, marketIndex)
+            );
     }
 
     function listActiveLiquidityPoolsOf(
@@ -107,31 +109,31 @@ contract Tracer {
         return result;
     }
 
-    function activateLiquidityPoolFor(address trader, bytes32 marketID)
+    function activateLiquidityPoolFor(address trader, uint256 marketIndex)
         external
         onlyLiquidityPool
         returns (bool)
     {
-        bytes32 key = _poolMarketKey(msg.sender, marketID);
+        bytes32 key = _poolMarketKey(msg.sender, marketIndex);
         if (_muidReference[key].liquidityPool == address(0)) {
-            _muidReference[key] = MUID({ liquidityPool: msg.sender, marketID: marketID });
+            _muidReference[key] = MUID({ liquidityPool: msg.sender, marketIndex: marketIndex });
         }
         return _traderActiveLiquidityPools[trader].add(key);
     }
 
-    function dectivateLiquidityPoolFor(address trader, bytes32 marketID)
+    function dectivateLiquidityPoolFor(address trader, uint256 marketIndex)
         external
         onlyLiquidityPool
         returns (bool)
     {
-        return _traderActiveLiquidityPools[trader].remove(_poolMarketKey(msg.sender, marketID));
+        return _traderActiveLiquidityPools[trader].remove(_poolMarketKey(msg.sender, marketIndex));
     }
 
-    function _poolMarketKey(address liquidityPool, bytes32 marketID)
+    function _poolMarketKey(address liquidityPool, uint256 marketIndex)
         internal
         pure
         returns (bytes32)
     {
-        return keccak256(abi.encodePacked(liquidityPool, marketID));
+        return keccak256(abi.encodePacked(liquidityPool, marketIndex));
     }
 }

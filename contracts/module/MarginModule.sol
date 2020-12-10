@@ -108,11 +108,11 @@ library MarginModule {
 
     function deposit(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount
     ) public {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         bool isInitial = isEmptyAccount(market, trader);
         int256 totalAmount = core.transferFromUser(trader, amount);
         market.increaseDepositedCollateral(totalAmount);
@@ -126,11 +126,11 @@ library MarginModule {
 
     function withdraw(
         Core storage core,
-        bytes32 marketID,
+        uint256 marketIndex,
         address trader,
         int256 amount
     ) public {
-        Market storage market = core.markets[marketID];
+        Market storage market = core.markets[marketIndex];
         core.rebalance(market);
         updateCashBalance(market, trader, amount.neg());
         market.decreaseDepositedCollateral(amount);

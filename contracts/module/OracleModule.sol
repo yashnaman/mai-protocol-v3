@@ -11,9 +11,9 @@ library OracleModule {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     function updatePrice(Core storage core, uint256 currentTime) internal {
-        uint256 count = core.marketIDs.length();
-        for (uint256 i = 0; i < count; i++) {
-            updatePrice(core.markets[core.marketIDs.at(i)], currentTime);
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            updatePrice(core.markets[i], currentTime);
         }
     }
 

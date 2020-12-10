@@ -31,23 +31,23 @@ contract AMM is Storage, ReentrancyGuardUpgradeable {
         _core.donateInsuranceFund(amount);
     }
 
-    function addLiquidity(bytes32 marketID, int256 cashToAdd)
+    function addLiquidity(uint256 marketIndex, int256 cashToAdd)
         external
         payable
         syncState
         nonReentrant
     {
         require(cashToAdd > 0, "amount is invalid");
-        _core.addLiquidity(marketID, cashToAdd);
+        _core.addLiquidity(marketIndex, cashToAdd);
     }
 
-    function removeLiquidity(bytes32 marketID, int256 shareToRemove)
+    function removeLiquidity(uint256 marketIndex, int256 shareToRemove)
         external
         syncState
         nonReentrant
     {
         require(shareToRemove > 0, "amount is invalid");
-        _core.removeLiquidity(marketID, shareToRemove);
+        _core.removeLiquidity(marketIndex, shareToRemove);
     }
 
     bytes[50] private __gap;
