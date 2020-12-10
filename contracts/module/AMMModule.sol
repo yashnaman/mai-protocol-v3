@@ -73,8 +73,8 @@ library AMMModule {
             // negative price
             deltaMargin = 0;
         }
-        int256 spread = market.halfSpread.value.wmul(deltaMargin);
-        deltaMargin = deltaMargin > 0 ? deltaMargin.add(spread) : deltaMargin.sub(spread);
+        int256 halfSpread = market.halfSpread.value.wmul(deltaMargin);
+        deltaMargin = deltaMargin > 0 ? deltaMargin.add(halfSpread) : deltaMargin.sub(halfSpread);
     }
 
     function addLiquidity(
@@ -97,7 +97,7 @@ library AMMModule {
     ) internal view returns (int256 shareToMint) {
         Market storage market = core.markets[marketIndex];
         Context memory context = prepareContext(core, market);
-        int256 beta = market.beta1.value;
+        int256 beta = market.openSlippageFactor.value;
         int256 poolMargin;
         int256 newPoolMargin;
         if (isAMMMarginSafe(context, beta)) {
@@ -143,7 +143,7 @@ library AMMModule {
     ) public view returns (int256 cashToReturn) {
         Market storage market = core.markets[marketIndex];
         Context memory context = prepareContext(core, market);
-        int256 beta = market.beta1.value;
+        int256 beta = market.openSlippageFactor.value;
         int256 positionAmount = context.positionAmount;
         require(isAMMMarginSafe(context, beta), "amm is unsafe before removing liquidity");
         int256 poolMargin = regress(context, beta);
@@ -237,7 +237,7 @@ library AMMModule {
                 int256 positionValue = indexPrice.wmul(positionAmount);
                 context.IntermediateValue1 = context.IntermediateValue1.add(positionValue);
                 context.IntermediateValue2 = context.IntermediateValue2.add(
-                    positionValue.wmul(positionAmount).mul(market.beta1.value)
+                    positionValue.wmul(positionAmount).mul(market.openSlippageFactor.value)
                 );
                 context.IntermediateValue3 = context.IntermediateValue3.add(
                     positionValue.abs().wdiv(market.maxLeverage.value)
@@ -262,7 +262,7 @@ library AMMModule {
             return 0;
         }
         require(context.positionAmount != 0, "position is zero when close");
-        int256 beta = market.beta2.value;
+        int256 beta = market.closeSlippageFactor.value;
         if (isAMMMarginSafe(context, beta)) {
             int256 poolMargin = regress(context, beta);
             require(poolMargin > 0, "pool margin must be positive");
@@ -292,7 +292,7 @@ library AMMModule {
         if (tradingAmount == 0) {
             return (0, 0);
         }
-        int256 beta = market.beta1.value;
+        int256 beta = market.openSlippageFactor.value;
         if (!isAMMMarginSafe(context, beta)) {
             require(partialFill, "amm is unsafe when open");
             return (0, 0);

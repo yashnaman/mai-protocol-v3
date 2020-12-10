@@ -64,12 +64,12 @@ library ParameterModule {
         bytes32 key,
         int256 newValue
     ) public {
-        if (key == "spread") {
+        if (key == "halfSpread") {
             adjustOption(market.halfSpread, newValue);
-        } else if (key == "beta1") {
-            adjustOption(market.beta1, newValue);
-        } else if (key == "beta2") {
-            adjustOption(market.beta2, newValue);
+        } else if (key == "openSlippageFactor") {
+            adjustOption(market.openSlippageFactor, newValue);
+        } else if (key == "closeSlippageFactor") {
+            adjustOption(market.closeSlippageFactor, newValue);
         } else if (key == "fundingRateCoefficient") {
             adjustOption(market.fundingRateCoefficient, newValue);
         } else if (key == "maxLeverage") {
@@ -86,12 +86,12 @@ library ParameterModule {
         int256 newMinValue,
         int256 newMaxValue
     ) public {
-        if (key == "spread") {
+        if (key == "halfSpread") {
             updateOption(market.halfSpread, newValue, newMinValue, newMaxValue);
-        } else if (key == "beta1") {
-            updateOption(market.beta1, newValue, newMinValue, newMaxValue);
-        } else if (key == "beta2") {
-            updateOption(market.beta2, newValue, newMinValue, newMaxValue);
+        } else if (key == "openSlippageFactor") {
+            updateOption(market.openSlippageFactor, newValue, newMinValue, newMaxValue);
+        } else if (key == "closeSlippageFactor") {
+            updateOption(market.closeSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "fundingRateCoefficient") {
             updateOption(market.fundingRateCoefficient, newValue, newMinValue, newMaxValue);
         } else if (key == "maxLeverage") {
@@ -153,13 +153,13 @@ library ParameterModule {
     function validateRiskParameters(Market storage market) public view {
         require(market.halfSpread.value >= 0, "hsr shoud be greater than 0");
         require(
-            market.beta1.value > 0 && market.beta1.value < Constant.SIGNED_ONE,
+            market.openSlippageFactor.value > 0 && market.openSlippageFactor.value < Constant.SIGNED_ONE,
             "b1 should be within (0, 1)"
         );
         require(
-            market.beta2.value > 0 &&
-                market.beta2.value < Constant.SIGNED_ONE &&
-                market.beta2.value < market.beta1.value,
+            market.closeSlippageFactor.value > 0 &&
+                market.closeSlippageFactor.value < Constant.SIGNED_ONE &&
+                market.closeSlippageFactor.value < market.openSlippageFactor.value,
             "b2 should be within (0, b1)"
         );
         require(market.fundingRateCoefficient.value >= 0, "frc should be greater than 0");

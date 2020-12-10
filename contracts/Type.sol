@@ -17,7 +17,6 @@ struct OraclePriceData {
 struct MarginAccount {
     int256 cashBalance;
     int256 positionAmount;
-    int256 entryFunding;
 }
 
 enum MarketState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
@@ -103,8 +102,8 @@ struct Market {
     int256 insuranceFundRate;
     // ris parameters
     Option halfSpread;
-    Option beta1;
-    Option beta2;
+    Option openSlippageFactor;
+    Option closeSlippageFactor;
     Option fundingRateCoefficient;
     Option maxLeverage;
     // users

@@ -62,8 +62,8 @@ library FundingModule {
         if (context.positionAmount == 0) {
             return 0;
         }
-        if (AMMModule.isAMMMarginSafe(context, market.beta1.value)) {
-            int256 poolMargin = AMMModule.regress(context, market.beta1.value);
+        if (AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value)) {
+            int256 poolMargin = AMMModule.regress(context, market.openSlippageFactor.value);
             if (poolMargin != 0) {
                 return
                     context.indexPrice.wfrac(context.positionAmount, poolMargin).neg().wmul(

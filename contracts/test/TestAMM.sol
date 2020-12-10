@@ -6,49 +6,57 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../module/AMMModule.sol";
-import "../module/AMMCommon.sol";
 
 contract TestAMM {
     using SignedSafeMathUpgradeable for int256;
-    using MarginModule for Core;
-    using OracleModule for Core;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
+    // using MarginModule for Core;
+    // using OracleModule for Core;
 
     Core core;
 
+    constructor() {
+        core.markets.push();
+        core.markets.push();
+    }
+
     function setParams(
         int256 unitAccumulativeFunding,
-        int256 halfSpreadRate,
-        int256 beta1,
-        int256 beta2,
-        int256 targetLeverage,
+        int256 halfSpread,
+        int256 openSlippageFactor,
+        int256 closeSlippageFactor,
+        int256 maxLeverage,
         int256 cashBalance,
-        int256 positionAmount,
-        int256 entryFunding,
-        int256 indexPrice
+        int256 positionAmount1,
+        int256 positionAmount2,
+        int256 indexPrice1,
+        int256 indexPrice2
     ) public {
-        core.unitAccumulativeFunding = unitAccumulativeFunding;
-        core.halfSpreadRate.value = halfSpreadRate;
-        core.beta1.value = beta1;
-        core.beta2.value = beta2;
-        core.targetLeverage.value = targetLeverage;
-        core.marginAccounts[address(this)].cashBalance = cashBalance;
-        core.marginAccounts[address(this)].positionAmount = positionAmount;
-        core.marginAccounts[address(this)].entryFunding = entryFunding;
-        core.indexPriceData.price = indexPrice;
+        core.markets[0].unitAccumulativeFunding = unitAccumulativeFunding;
+        core.markets[0].halfSpread.value = halfSpread;
+        core.markets[0].openSlippageFactor.value = openSlippageFactor;
+        core.markets[0].closeSlippageFactor.value = closeSlippageFactor;
+        core.markets[0].maxLeverage.value = maxLeverage;
+        core.liquidityPoolCashBalance = cashBalance;
+        core.markets[0].marginAccounts[address(this)].positionAmount = positionAmount1;
+        core.markets[0].indexPriceData.price = indexPrice1;
+
+        core.markets[1].unitAccumulativeFunding = unitAccumulativeFunding;
+        core.markets[1].halfSpread.value = halfSpread;
+        core.markets[1].openSlippageFactor.value = openSlippageFactor;
+        core.markets[1].closeSlippageFactor.value = closeSlippageFactor;
+        core.markets[1].maxLeverage.value = maxLeverage;
+        core.markets[1].marginAccounts[address(this)].positionAmount = positionAmount2;
+        core.markets[1].indexPriceData.price = indexPrice2;
     }
 
-    function isAMMMarginSafe(int256 beta) public view returns (bool) {
-        int256 mc = core.availableCashBalance(address(this));
-        return
-            AMMCommon.isAMMMarginSafe(
-                mc,
-                core.marginAccounts[address(this)].positionAmount,
-                core.indexPrice(),
-                core.targetLeverage.value,
-                beta
-            );
+    function isAMMMarginSafe() public view returns (bool) {
+        Market storage market = core.markets[1];
+        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
+        return AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value);
     }
 
+    /*
     function regress(int256 beta) public view returns (int256 mv, int256 m0) {
         int256 mc = core.availableCashBalance(address(this));
         (mv, m0) = AMMCommon.regress(
@@ -161,4 +169,5 @@ contract TestAMM {
     {
         marginToRemove = AMMModule.removeLiquidity(core, shareTotalSupply, shareToRemove);
     }
+    */
 }

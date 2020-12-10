@@ -69,8 +69,8 @@ contract Getter is Storage {
         ];
         riskParameter = [
             market.halfSpread.value,
-            market.beta1.value,
-            market.beta2.value,
+            market.openSlippageFactor.value,
+            market.closeSlippageFactor.value,
             market.fundingRateCoefficient.value,
             market.maxLeverage.value
         ];
@@ -111,13 +111,11 @@ contract Getter is Storage {
         onlyExistedMarket(marketIndex)
         returns (
             int256 cashBalance,
-            int256 positionAmount,
-            int256 entryFunding
+            int256 positionAmount
         )
     {
         cashBalance = _core.markets[marketIndex].marginAccounts[trader].cashBalance;
         positionAmount = _core.markets[marketIndex].marginAccounts[trader].positionAmount;
-        entryFunding = _core.markets[marketIndex].marginAccounts[trader].entryFunding;
     }
 
     function claimableFee(address claimer) public view returns (int256) {
