@@ -16,8 +16,8 @@ const _0 = toWad('0')
 const params = {
     unitAccumulatedFundingLoss: toWad('1.9'),
     halfSpread: toWad('0.001'),
-    openSlippage: toWad('100'),
-    closeSlippage: toWad('90'),
+    openSlippageFactor: toWad('100'),
+    closeSlippageFactor: toWad('90'),
     maxLeverage: toWad('5'),
     indexPrice: toWad('100')
 }
@@ -122,14 +122,14 @@ describe('AMM', () => {
 
         const cases = [
             {
-                name: 'zero position - ok',
+                name: 'current zero position - ok',
                 amm: amm02,
                 indexPrice1: params.indexPrice,
                 indexPrice2: toWad('643'),
                 isSafe: true
             },
             {
-                name: 'zero position - fail',
+                name: 'current zero position - fail',
                 amm: amm02,
                 indexPrice1: params.indexPrice,
                 indexPrice2: toWad('644'),
@@ -176,7 +176,7 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippage, params.closeSlippage, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, element.indexPrice1, element.indexPrice2)
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, element.indexPrice1, element.indexPrice2)
                 if (element.isSafe) {
                     expect(await AMM.isAMMMarginSafe()).to.be.true
                 } else {
@@ -185,16 +185,19 @@ describe('AMM', () => {
             })
         })
     })
-    /*
 
     describe('regress', function () {
 
         const successCases = [
             {
-                amm: amm0,
-                mv: toWad('4000'),
-                m0: toWad('5000'),
+                amm: ammInit,
+                poolMargin: _0,
             },
+            {
+                amm: amm01,
+                poolMargin: toWad('10000'),
+            },
+            /*
             {
                 amm: amm1,
                 mv: toWad('4000'),
@@ -215,17 +218,17 @@ describe('AMM', () => {
                 mv: toWad('2698.739297452669114401'),
                 m0: toWad('3373.424121815836393002'),
             }
+            */
         ]
 
         successCases.forEach((element, index) => {
             it(`success-${index}`, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
-                const context = await AMM.regress(toWad('0.1'))
-                expect(context.mv).approximateBigNumber(element.mv)
-                expect(context.m0).approximateBigNumber(element.m0)
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await AMM.regress()).approximateBigNumber(element.poolMargin);
             })
         })
 
+        /*
         const failCases = [
             {
                 name: 'short unsafe',
@@ -243,8 +246,10 @@ describe('AMM', () => {
                 await expect(AMM.regress(toWad('0.1'))).to.be.revertedWith('amm is unsafe when regress')
             })
         })
+        */
     })
 
+    /*
     describe('virtualM0', function () {
 
         const successCases = [

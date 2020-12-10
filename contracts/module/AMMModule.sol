@@ -175,7 +175,7 @@ library AMMModule {
 
     function regress(Context memory context, int256 beta) public pure returns (int256 poolMargin) {
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
-        int256 marginBalance = positionValue.add(context.IntermediateValue1);
+        int256 marginBalance = positionValue.add(context.IntermediateValue1).add(context.availableCashBalance);
         int256 tmp = positionValue.wmul(context.positionAmount).mul(beta).add(
             context.IntermediateValue2
         );

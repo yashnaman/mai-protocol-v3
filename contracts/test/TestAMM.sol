@@ -60,18 +60,13 @@ contract TestAMM {
         return AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value);
     }
 
-    /*
-    function regress(int256 beta) public view returns (int256 mv, int256 m0) {
-        int256 mc = core.availableCashBalance(address(this));
-        (mv, m0) = AMMCommon.regress(
-            mc,
-            core.marginAccounts[address(this)].positionAmount,
-            core.indexPrice(),
-            core.targetLeverage.value,
-            beta
-        );
+    function regress() public view returns (int256) {
+        Market storage market = core.markets[0];
+        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
+        return AMMModule.regress(context, market.openSlippageFactor.value);
     }
 
+    /*
     function virtualM0() public view returns (int256) {
         int256 mc = core.availableCashBalance(address(this));
         int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
