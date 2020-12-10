@@ -116,7 +116,7 @@ library AMMModule {
             require(shareTotalSupply == 0, "share has no value");
             shareToMint = newPoolMargin;
         } else {
-            shareToMint = newPoolMargin.sub(poolMargin).wdiv(poolMargin).wmul(shareTotalSupply);
+            shareToMint = newPoolMargin.sub(poolMargin).wfrac(shareTotalSupply, poolMargin);
         }
     }
 
@@ -152,9 +152,7 @@ library AMMModule {
         }
         {
             int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
-            poolMargin = shareTotalSupply.sub(shareToRemove).wdiv(shareTotalSupply).wmul(
-                poolMargin
-            );
+            poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
             int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
             minPoolMargin = minPoolMargin.mul(beta).add(context.IntermediateValue2).div(2).sqrt();
             require(
@@ -167,9 +165,7 @@ library AMMModule {
         int256 newMarginBalance = poolMarginBalance(core).sub(cashToReturn);
         int256 positionValue = context
             .indexPrice
-            .wmul(positionAmount)
-            .abs()
-            .wdiv(market.maxLeverage.value)
+            .wfrac(positionAmount.abs(), market.maxLeverage.value)
             .add(context.IntermediateValue3);
         require(
             newMarginBalance >= positionValue,
@@ -352,7 +348,7 @@ library AMMModule {
         int256 indexPrice,
         int256 beta
     ) internal pure returns (int256 deltaMargin) {
-        deltaMargin = positionAmount2.add(positionAmount1).div(2).wmul(beta).wdiv(poolMargin).neg();
+        deltaMargin = positionAmount2.add(positionAmount1).div(2).wfrac(beta, poolMargin).neg();
         deltaMargin = deltaMargin.add(Constant.SIGNED_ONE).wmul(indexPrice).wmul(
             positionAmount1.sub(positionAmount2)
         );
