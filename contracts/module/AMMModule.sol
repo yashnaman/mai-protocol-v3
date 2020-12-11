@@ -83,7 +83,8 @@ library AMMModule {
         int256 cashAmount
     ) public {
         require(cashAmount > 0, "margin to add must be positive");
-        int256 shareAmount = calculateShareToMint(core, marketIndex, cashAmount);
+        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
+        int256 shareAmount = calculateShareToMint(core, marketIndex, shareTotalSupply, cashAmount);
         require(shareAmount > 0, "received share must be positive");
         core.transferFromUser(msg.sender, cashAmount);
         IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
@@ -93,6 +94,7 @@ library AMMModule {
     function calculateShareToMint(
         Core storage core,
         uint256 marketIndex,
+        int256 shareTotalSupply,
         int256 cashToAdd
     ) internal view returns (int256 shareToMint) {
         Market storage market = core.markets[marketIndex];
@@ -111,7 +113,6 @@ library AMMModule {
         } else {
             newPoolMargin = poolMarginBalance(core).add(cashToAdd).div(2);
         }
-        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
             shareToMint = newPoolMargin;
@@ -130,7 +131,8 @@ library AMMModule {
             shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
         );
-        int256 cashToReturn = calculateCashToReturn(core, marketIndex, shareToRemove);
+        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
+        int256 cashToReturn = calculateCashToReturn(core, marketIndex, shareTotalSupply, shareToRemove);
         IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
         core.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
@@ -139,6 +141,7 @@ library AMMModule {
     function calculateCashToReturn(
         Core storage core,
         uint256 marketIndex,
+        int256 shareTotalSupply,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
         Market storage market = core.markets[marketIndex];
@@ -151,7 +154,6 @@ library AMMModule {
             return 0;
         }
         {
-            int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
             poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
             int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
             minPoolMargin = minPoolMargin
@@ -374,7 +376,10 @@ library AMMModule {
             .sub(context.squareValueWithoutCurrent)
             .wdiv(context.indexPrice)
             .wdiv(beta);
-        int256 maxPosition1 = beforeSqrt < 0 ? 0 : beforeSqrt.sqrt();
+        if (beforeSqrt <= 0) {
+            return 0;
+        }
+        int256 maxPosition1 = beforeSqrt.sqrt();
         int256 maxPosition2;
         beforeSqrt = poolMargin.sub(context.positionMarginWithoutCurrent).add(
             context.squareValueWithoutCurrent.div(poolMargin).div(2)

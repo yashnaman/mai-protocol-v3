@@ -11,7 +11,7 @@ contract TestAMM {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     // using MarginModule for Core;
-    // using OracleModule for Core;
+    using OracleModule for Market;
 
     Core core;
 
@@ -66,78 +66,32 @@ contract TestAMM {
         return AMMModule.regress(context, market.openSlippageFactor.value);
     }
 
-    /*
-    function virtualM0() public view returns (int256) {
-        int256 mc = core.availableCashBalance(address(this));
-        int256 positionAmount = core.marginAccounts[address(this)].positionAmount;
-        if (positionAmount > 0) {
-            return
-                AMMCommon.longVirtualM0(
-                    mc,
-                    positionAmount,
-                    core.indexPrice(),
-                    core.targetLeverage.value,
-                    core.beta1.value
-                );
-        } else {
-            return
-                AMMCommon.shortVirtualM0(
-                    mc,
-                    positionAmount,
-                    core.indexPrice(),
-                    core.targetLeverage.value,
-                    core.beta1.value
-                );
-        }
-    }
 
-    function longDeltaMargin(int256 positionAmount2, int256 beta)
+    function deltaMargin(int256 amount)
         public
         view
         returns (int256 deltaMargin)
     {
-        int256 mc = core.availableCashBalance(address(this));
-        (int256 mv, int256 m0) = regress(beta);
-        deltaMargin = AMMModule.longDeltaMargin(
-            m0,
-            mc.add(mv),
-            core.marginAccounts[address(this)].positionAmount,
-            positionAmount2,
-            core.indexPrice(),
-            beta
+        Market storage market = core.markets[0];
+        deltaMargin = AMMModule._deltaMargin(
+            regress(),
+            market.marginAccounts[address(this)].positionAmount,
+            market.marginAccounts[address(this)].positionAmount.add(amount),
+            market.indexPrice(),
+            market.openSlippageFactor.value
         );
     }
 
-    function shortDeltaMargin(int256 positionAmount2, int256 beta)
-        public
-        view
-        returns (int256 deltaMargin)
-    {
-        int256 mc = core.availableCashBalance(address(this));
-        (, int256 m0) = regress(beta);
-        deltaMargin = AMMModule.shortDeltaMargin(
-            m0,
-            core.marginAccounts[address(this)].positionAmount,
-            positionAmount2,
-            core.indexPrice(),
-            beta
-        );
-    }
-
-    function maxLongPosition(int256 beta) public view returns (int256) {
-        (, int256 m0) = regress(beta);
+    function maxPosition(Side side) public view returns (int256) {
+        Market storage market = core.markets[0];
+        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
         return
-            AMMModule._maxLongPosition(m0, core.indexPrice(), beta, core.targetLeverage.value);
-    }
-
-    function maxShortPosition(int256 beta) public view returns (int256) {
-        (, int256 m0) = regress(beta);
-        return
-            AMMModule._maxShortPosition(
-                m0,
-                core.indexPrice(),
-                beta,
-                core.targetLeverage.value
+            AMMModule._maxPosition(
+                context,
+                regress(),
+                market.maxLeverage.value,
+                market.openSlippageFactor.value,
+                side
             );
     }
 
@@ -148,17 +102,18 @@ contract TestAMM {
     {
         (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
             core,
+            0,
             tradingAmount,
             partialFill
         );
     }
 
-    function addLiquidity(int256 shareTotalSupply, int256 marginToAdd)
+    function addLiquidity(int256 totalShare, int256 marginToAdd)
         public
         view
         returns (int256 share)
     {
-        share = AMMModule.addLiquidity(core, shareTotalSupply, marginToAdd);
+        share = AMMModule.calculateShareToMint(core, 0, totalShare, marginToAdd);
     }
 
     function removeLiquidity(int256 shareTotalSupply, int256 shareToRemove)
@@ -166,7 +121,6 @@ contract TestAMM {
         view
         returns (int256 marginToRemove)
     {
-        marginToRemove = AMMModule.removeLiquidity(core, shareTotalSupply, shareToRemove);
+        marginToRemove = AMMModule.calculateCashToReturn(core, 0, shareTotalSupply, shareToRemove);
     }
-    */
 }
