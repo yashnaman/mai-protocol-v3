@@ -154,11 +154,12 @@ library AMMModule {
             int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
             poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
             int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
-            minPoolMargin = minPoolMargin.mul(beta).add(context.squareValueWithoutCurrent).div(2).sqrt();
-            require(
-                poolMargin >= minPoolMargin,
-                "amm is unsafe after removing liquidity"
-            );
+            minPoolMargin = minPoolMargin
+                .mul(beta)
+                .add(context.squareValueWithoutCurrent)
+                .div(2)
+                .sqrt();
+            require(poolMargin >= minPoolMargin, "amm is unsafe after removing liquidity");
         }
         cashToReturn = marginToRemove(context, poolMargin, beta);
         require(cashToReturn >= 0, "received margin is negative");
@@ -166,7 +167,11 @@ library AMMModule {
         uint256 length = core.markets.length;
         for (uint256 i = 0; i < length; i++) {
             Market storage market = core.markets[i];
-            require(market.positionAmount(address(this)) <= poolMargin.wdiv(market.openSlippageFactor.value), "amm is unsafe after removing liquidity");
+            require(
+                market.positionAmount(address(this)) <=
+                    poolMargin.wdiv(market.openSlippageFactor.value),
+                "amm is unsafe after removing liquidity"
+            );
         }
         int256 positionMargin = context
             .indexPrice
@@ -180,7 +185,9 @@ library AMMModule {
 
     function regress(Context memory context, int256 beta) public pure returns (int256 poolMargin) {
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
-        int256 marginBalance = positionValue.add(context.valueWithoutCurrent).add(context.availableCashBalance);
+        int256 marginBalance = positionValue.add(context.valueWithoutCurrent).add(
+            context.availableCashBalance
+        );
         int256 tmp = positionValue.wmul(context.positionAmount).mul(beta).add(
             context.squareValueWithoutCurrent
         );
@@ -190,8 +197,11 @@ library AMMModule {
     }
 
     function isAMMMarginSafe(Context memory context, int256 beta) public pure returns (bool) {
-        int256 value = context.indexPrice.wmul(context.positionAmount).add(context.valueWithoutCurrent);
-        int256 minAvailableCashBalance = context.indexPrice
+        int256 value = context.indexPrice.wmul(context.positionAmount).add(
+            context.valueWithoutCurrent
+        );
+        int256 minAvailableCashBalance = context
+            .indexPrice
             .wmul(context.positionAmount)
             .wmul(context.positionAmount)
             .mul(beta);
