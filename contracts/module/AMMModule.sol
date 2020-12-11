@@ -35,9 +35,9 @@ library AMMModule {
 
     struct Context {
         int256 indexPrice;
-        int256 IntermediateValue1;
-        int256 IntermediateValue2;
-        int256 IntermediateValue3;
+        int256 valueWithoutCurrent;
+        int256 squareValueWithoutCurrent;
+        int256 positionMarginWithoutCurrent;
         int256 availableCashBalance;
         int256 positionAmount;
     }
@@ -154,30 +154,35 @@ library AMMModule {
             int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
             poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
             int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
-            minPoolMargin = minPoolMargin.mul(beta).add(context.IntermediateValue2).div(2).sqrt();
+            minPoolMargin = minPoolMargin.mul(beta).add(context.squareValueWithoutCurrent).div(2).sqrt();
             require(
-                poolMargin >= minPoolMargin && positionAmount <= poolMargin.wdiv(beta),
+                poolMargin >= minPoolMargin,
                 "amm is unsafe after removing liquidity"
             );
         }
         cashToReturn = marginToRemove(context, poolMargin, beta);
         require(cashToReturn >= 0, "received margin is negative");
         int256 newMarginBalance = poolMarginBalance(core).sub(cashToReturn);
-        int256 positionValue = context
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            Market storage market = core.markets[i];
+            require(market.positionAmount(address(this)) <= poolMargin.wdiv(market.openSlippageFactor.value), "amm is unsafe after removing liquidity");
+        }
+        int256 positionMargin = context
             .indexPrice
             .wfrac(positionAmount.abs(), market.maxLeverage.value)
-            .add(context.IntermediateValue3);
+            .add(context.positionMarginWithoutCurrent);
         require(
-            newMarginBalance >= positionValue,
+            newMarginBalance >= positionMargin,
             "amm exceeds max leverage after removing liquidity"
         );
     }
 
     function regress(Context memory context, int256 beta) public pure returns (int256 poolMargin) {
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
-        int256 marginBalance = positionValue.add(context.IntermediateValue1).add(context.availableCashBalance);
+        int256 marginBalance = positionValue.add(context.valueWithoutCurrent).add(context.availableCashBalance);
         int256 tmp = positionValue.wmul(context.positionAmount).mul(beta).add(
-            context.IntermediateValue2
+            context.squareValueWithoutCurrent
         );
         int256 beforeSqrt = marginBalance.mul(marginBalance).sub(tmp.mul(2));
         require(beforeSqrt >= 0, "amm is unsafe when regressing");
@@ -185,26 +190,17 @@ library AMMModule {
     }
 
     function isAMMMarginSafe(Context memory context, int256 beta) public pure returns (bool) {
-        int256 partialMarginBalance = context.availableCashBalance.add(context.IntermediateValue1);
-        int256 betaPos = beta.wmul(context.positionAmount);
-        if (context.positionAmount == 0) {
-            return
-                partialMarginBalance.mul(partialMarginBalance).sub(
-                    context.IntermediateValue2.mul(2)
-                ) >= 0;
-        }
-        int256 beforeSqrt = partialMarginBalance.mul(2).neg().add(betaPos).mul(betaPos).add(
-            context.IntermediateValue2.mul(2)
-        );
-        if (context.positionAmount > 0 && beforeSqrt < 0) {
-            return true;
-        }
-        require(beforeSqrt >= 0, "index bound is invalid");
-        int256 bound = beforeSqrt.sqrt().add(betaPos).sub(partialMarginBalance).wdiv(
-            context.positionAmount
-        );
-        return
-            context.positionAmount > 0 ? context.indexPrice >= bound : context.indexPrice <= bound;
+        int256 value = context.indexPrice.wmul(context.positionAmount).add(context.valueWithoutCurrent);
+        int256 minAvailableCashBalance = context.indexPrice
+            .wmul(context.positionAmount)
+            .wmul(context.positionAmount)
+            .mul(beta);
+        minAvailableCashBalance = minAvailableCashBalance
+            .add(context.squareValueWithoutCurrent)
+            .mul(2)
+            .sqrt()
+            .sub(value);
+        return context.availableCashBalance >= minAvailableCashBalance;
     }
 
     function liquidityPoolCashBalance(Core storage core)
@@ -235,21 +231,21 @@ library AMMModule {
                 context.positionAmount = positionAmount;
             } else {
                 int256 positionValue = indexPrice.wmul(positionAmount);
-                context.IntermediateValue1 = context.IntermediateValue1.add(positionValue);
-                context.IntermediateValue2 = context.IntermediateValue2.add(
+                context.valueWithoutCurrent = context.valueWithoutCurrent.add(positionValue);
+                context.squareValueWithoutCurrent = context.squareValueWithoutCurrent.add(
                     positionValue.wmul(positionAmount).mul(market.openSlippageFactor.value)
                 );
-                context.IntermediateValue3 = context.IntermediateValue3.add(
+                context.positionMarginWithoutCurrent = context.positionMarginWithoutCurrent.add(
                     positionValue.abs().wdiv(market.maxLeverage.value)
                 );
             }
         }
         context.availableCashBalance = liquidityPoolCashBalance(core);
         require(
-            context.availableCashBalance.add(context.IntermediateValue1).add(
+            context.availableCashBalance.add(context.valueWithoutCurrent).add(
                 context.indexPrice.wmul(context.positionAmount)
             ) >= 0,
-            "amm is emergency"
+            "amm is unsafe"
         );
     }
 
@@ -365,13 +361,13 @@ library AMMModule {
         int256 beforeSqrt = poolMargin
             .mul(poolMargin)
             .mul(2)
-            .sub(context.IntermediateValue2)
+            .sub(context.squareValueWithoutCurrent)
             .wdiv(context.indexPrice)
             .wdiv(beta);
         int256 maxPosition1 = beforeSqrt < 0 ? 0 : beforeSqrt.sqrt();
         int256 maxPosition2;
-        beforeSqrt = poolMargin.sub(context.IntermediateValue3).add(
-            context.IntermediateValue2.div(poolMargin).div(2)
+        beforeSqrt = poolMargin.sub(context.positionMarginWithoutCurrent).add(
+            context.squareValueWithoutCurrent.div(poolMargin).div(2)
         );
         beforeSqrt = beforeSqrt.wmul(maxLeverage).wmul(maxLeverage).wmul(beta);
         beforeSqrt = poolMargin.sub(beforeSqrt.mul(2).wdiv(context.indexPrice));
@@ -408,8 +404,8 @@ library AMMModule {
             return context.availableCashBalance;
         }
         int256 positionValue = context.indexPrice.wmul(context.positionAmount);
-        int256 tmpA = context.IntermediateValue1.add(positionValue);
-        int256 tmpB = context.IntermediateValue2.add(
+        int256 tmpA = context.valueWithoutCurrent.add(positionValue);
+        int256 tmpB = context.squareValueWithoutCurrent.add(
             positionValue.wmul(context.positionAmount).mul(beta)
         );
         removingMargin = tmpB.div(poolMargin).div(2).add(poolMargin).sub(tmpA);
