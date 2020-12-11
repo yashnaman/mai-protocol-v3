@@ -84,7 +84,7 @@ contract TestAMM {
 
     function maxPosition(Side side) public view returns (int256) {
         Market storage market = core.markets[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
+        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
         return
             AMMModule._maxPosition(
                 context,
@@ -113,7 +113,7 @@ contract TestAMM {
         view
         returns (int256 share)
     {
-        share = AMMModule.calculateShareToMint(core, 0, totalShare, marginToAdd);
+        share = AMMModule.calculateShareToMint(core, totalShare, marginToAdd);
     }
 
     function removeLiquidity(int256 shareTotalSupply, int256 shareToRemove)
@@ -121,6 +121,6 @@ contract TestAMM {
         view
         returns (int256 marginToRemove)
     {
-        marginToRemove = AMMModule.calculateCashToReturn(core, 0, shareTotalSupply, shareToRemove);
+        marginToRemove = AMMModule.calculateCashToReturn(core, shareTotalSupply, shareToRemove);
     }
 }
