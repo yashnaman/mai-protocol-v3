@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../libraries/SafeCastExt.sol";
 import "../libraries/SafeMathExt.sol";
 
+import "hardhat/console.sol";
+
 contract Tracer {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
@@ -42,6 +44,7 @@ contract Tracer {
     }
 
     function isLiquidityPool(address liquidityPool) public view returns (bool) {
+        console.log("[DEBUG]", "!---!");
         return _liquidityPoolList.contains(liquidityPool);
     }
 

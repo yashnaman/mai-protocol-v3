@@ -75,10 +75,11 @@ struct Core {
     // order
     mapping(bytes32 => int256) orderFilled;
     mapping(bytes32 => bool) orderCanceled;
+    // funding
+    uint256 fundingTime;
 }
 
 struct Market {
-    bytes32 id;
     MarketState state;
     address oracle;
     int256 depositedCollateral;
@@ -90,7 +91,6 @@ struct Market {
     // funding state
     int256 fundingRate;
     int256 unitAccumulativeFunding;
-    uint256 fundingTime;
     // core parameters
     int256 initialMarginRate;
     int256 maintenanceMarginRate;

@@ -17,6 +17,8 @@ import "./SettlementModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library MarginModule {
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
@@ -117,7 +119,7 @@ library MarginModule {
         updateCashBalance(market, trader, totalAmount);
         if (isInitial) {
             market.registerTrader(trader);
-            IFactory(core.factory).activeProxy(trader);
+            IFactory(core.factory).activateLiquidityPoolFor(trader, marketIndex);
         }
         emit Deposit(trader, totalAmount);
     }
@@ -136,7 +138,7 @@ library MarginModule {
         bool isDrained = isEmptyAccount(market, trader);
         if (isDrained) {
             market.deregisterTrader(trader);
-            IFactory(core.factory).deactiveProxy(trader);
+            IFactory(core.factory).dectivateLiquidityPoolFor(trader, marketIndex);
         }
         core.transferToUser(payable(trader), amount);
         emit Withdraw(trader, amount);

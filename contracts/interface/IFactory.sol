@@ -6,9 +6,9 @@ interface IFactory {
 
     function vaultFeeRate() external view returns (int256);
 
-    function activeProxy(address trader) external;
+    function activateLiquidityPoolFor(address trader, uint256 marketIndex) external;
 
-    function deactiveProxy(address trader) external;
+    function dectivateLiquidityPoolFor(address trader, uint256 marketIndex) external;
 
     function weth() external view returns (address);
 

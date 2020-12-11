@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "./interface/IFactory.sol";
 
@@ -18,6 +19,7 @@ import "./Storage.sol";
 
 contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
+    using SafeCastUpgradeable for uint256;
     using CollateralModule for address;
     using FundingModule for Core;
     using MarginModule for Core;
@@ -27,34 +29,67 @@ contract Getter is Storage {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
-    function liquidityDescription() public view returns (int256) {
-        return (_core.liquidityPoolCashBalance);
-    }
-
-    function marketDescription(uint256 marketIndex)
+    function liquidityPoolInfo()
         public
         view
+        returns (
+            address factory,
+            address operator,
+            address collateral,
+            address vault,
+            int256 vaultFeeRate,
+            int256 insuranceFund,
+            int256 insuranceFundCap,
+            int256 donatedInsuranceFund,
+            int256 totalClaimableFee,
+            int256 liquidityPoolCashBalance,
+            int256 liquidityPoolCollateral,
+            int256 marketCount
+        )
+    {
+        factory = _core.factory;
+        operator = _core.operator;
+        collateral = _core.collateral;
+        vault = _core.vault;
+        vaultFeeRate = _core.vaultFeeRate;
+        insuranceFund = _core.insuranceFund;
+        insuranceFundCap = _core.insuranceFundCap;
+        donatedInsuranceFund = _core.donatedInsuranceFund;
+        totalClaimableFee = _core.totalClaimableFee;
+        liquidityPoolCashBalance = _core.liquidityPoolCashBalance;
+        liquidityPoolCollateral = _core.liquidityPoolCollateral;
+        marketCount = _core.markets.length.toInt256();
+    }
+
+    function marketInfo(uint256 marketIndex)
+        public
+        syncState
         onlyExistedMarket(marketIndex)
         returns (
+            MarketState state,
             string memory underlyingAsset,
             address collateral,
-            address factory,
             address oracle,
-            address operator,
-            address vault,
+            int256 markPrice,
+            int256 indexPrice,
+            int256 unitAccumulativeFunding,
+            int256 fundingRate,
+            uint256 fundingTime,
             int256[10] memory coreParameter,
             int256[5] memory riskParameter
         )
     {
-        factory = _core.factory;
-        collateral = _core.collateral;
-        operator = _core.operator;
-        vault = _core.vault;
-
         Market storage market = _core.markets[marketIndex];
-        underlyingAsset = IOracle(market.oracle).underlyingAsset();
-        oracle = market.oracle;
 
+        state = market.state;
+        underlyingAsset = IOracle(market.oracle).underlyingAsset();
+        collateral = _core.collateral;
+        oracle = market.oracle;
+        markPrice = market.markPrice();
+        indexPrice = market.indexPrice();
+        unitAccumulativeFunding = market.unitAccumulativeFunding;
+        fundingRate = market.fundingRate;
+        fundingTime = _core.fundingTime;
         coreParameter = [
             market.initialMarginRate,
             market.maintenanceMarginRate,
@@ -76,43 +111,11 @@ contract Getter is Storage {
         ];
     }
 
-    function marketStatus(uint256 marketIndex)
-        public
-        syncState
-        onlyExistedMarket(marketIndex)
-        returns (
-            bool isEmergency,
-            bool isCleared,
-            int256 insuranceFund,
-            int256 donatedInsuranceFund,
-            int256 markPrice,
-            int256 indexPrice,
-            int256 unitAccumulativeFunding,
-            int256 fundingRate,
-            uint256 fundingTime
-        )
-    {
-        insuranceFund = _core.insuranceFund;
-        donatedInsuranceFund = _core.donatedInsuranceFund;
-
-        Market storage market = _core.markets[marketIndex];
-        isEmergency = market.state == MarketState.EMERGENCY;
-        isCleared = market.state == MarketState.CLEARED;
-        markPrice = market.markPrice();
-        indexPrice = market.indexPrice();
-        unitAccumulativeFunding = market.unitAccumulativeFunding;
-        fundingRate = market.fundingRate;
-        fundingTime = market.fundingTime;
-    }
-
     function marginAccount(uint256 marketIndex, address trader)
         public
         view
         onlyExistedMarket(marketIndex)
-        returns (
-            int256 cashBalance,
-            int256 positionAmount
-        )
+        returns (int256 cashBalance, int256 positionAmount)
     {
         cashBalance = _core.markets[marketIndex].marginAccounts[trader].cashBalance;
         positionAmount = _core.markets[marketIndex].marginAccounts[trader].positionAmount;

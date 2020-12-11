@@ -35,24 +35,29 @@ export async function createContract(path, args = [], libraries = {}) {
 }
 
 export async function createPerpetualFactory() {
-    const AMMCommon = await createContract("AMMCommon");
     const CollateralModule = await createContract("CollateralModule")
-    const AMMModule = await createContract("AMMModule", [], { AMMCommon });
-    const FundingModule = await createContract("FundingModule", [], { AMMCommon });
+    const AMMModule = await createContract("AMMModule", [], { CollateralModule });
+    const FundingModule = await createContract("FundingModule", [], { AMMModule });
     const OrderModule = await createContract("OrderModule");
+    const OracleModule = await createContract("OracleModule");
     const CoreModule = await createContract("CoreModule", [], { CollateralModule });
     const ParameterModule = await createContract("ParameterModule");
-    const SettlementModule = await createContract("SettlementModule");
+    const MarketModule = await createContract("MarketModule", [], { ParameterModule });
     const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
+    const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, OracleModule, TradeModule });
+    const MarginModule = await createContract("MarginModule", [], { MarketModule, CoreModule, CollateralModule });
+    const SettlementModule = await createContract("SettlementModule", [], { CollateralModule });
     return await createFactory("Perpetual", {
         AMMModule,
-        CollateralModule,
         FundingModule,
         OrderModule,
         ParameterModule,
         SettlementModule,
         TradeModule,
         CoreModule,
+        LiquidationModule,
+        MarginModule,
+        MarketModule,
     });
 }
 

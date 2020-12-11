@@ -11,6 +11,8 @@ import "./Tracer.sol";
 import "./Implementation.sol";
 import "./Variables.sol";
 
+import "hardhat/console.sol";
+
 contract LiquidityPoolFactory is Creator, Tracer, Implementation, Variables {
     using Address for address;
 
@@ -59,6 +61,7 @@ contract LiquidityPoolFactory is Creator, Tracer, Implementation, Variables {
         address governor = _createStaticProxy(_governorTemplate);
         address shareToken = _createStaticProxy(_shareTokenTemplate);
         address liquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
+
         shareToken.functionCall(
             abi.encodeWithSignature("initialize(address)", liquidityPool),
             "fail to init share token"
@@ -67,6 +70,7 @@ contract LiquidityPoolFactory is Creator, Tracer, Implementation, Variables {
             abi.encodeWithSignature("initialize(address,address)", shareToken, liquidityPool),
             "fail to init governor"
         );
+
         liquidityPool.functionCall(
             abi.encodeWithSignature(
                 "initialize(address,address,address,address)",

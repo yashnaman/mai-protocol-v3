@@ -31,7 +31,7 @@ import "./Events.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
@@ -65,6 +65,7 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         onlyExistedMarket(marketIndex)
         nonReentrant
     {
+        console.log("[DEBUG]", "deposit");
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
         _core.deposit(marketIndex, trader, amount.add(msg.value.toInt256()));

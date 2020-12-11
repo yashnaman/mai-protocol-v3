@@ -17,8 +17,9 @@ import "./Trade.sol";
 import "./Type.sol";
 import "./Settlement.sol";
 import "./Storage.sol";
+import "./Getter.sol";
 
-contract Perpetual is Storage, Trade, AMM, Settlement, Governance {
+contract Perpetual is Storage, Trade, AMM, Settlement, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using MarketModule for Market;
     using CoreModule for Core;

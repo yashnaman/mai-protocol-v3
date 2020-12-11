@@ -13,6 +13,8 @@ import "./module/SettlementModule.sol";
 
 import "./Type.sol";
 
+import "hardhat/console.sol";
+
 contract Storage {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
@@ -27,6 +29,7 @@ contract Storage {
 
     modifier onlyExistedMarket(uint256 marketIndex) {
         require(marketIndex < _core.markets.length, "market not exist");
+        console.log("[DEBUG]", "marketIndex", marketIndex);
         _;
     }
 
@@ -40,6 +43,7 @@ contract Storage {
 
     modifier onlyWhen(uint256 marketIndex, MarketState allowedState) {
         require(_core.markets[marketIndex].state == allowedState, "operation is disallowed now");
+        console.log("[DEBUG]", "onlyWhen");
         _;
     }
 
@@ -49,6 +53,7 @@ contract Storage {
     }
 
     modifier onlyAuthorized(address trader, uint256 privilege) {
+        console.log("[DEBUG]", trader, msg.sender);
         require(
             trader == msg.sender ||
                 IAccessController(_core.accessController).isGranted(trader, msg.sender, privilege),

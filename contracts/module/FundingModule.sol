@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
@@ -16,6 +17,7 @@ import "../Type.sol";
 
 library FundingModule {
     using SafeMathUpgradeable for uint256;
+    using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
@@ -26,23 +28,23 @@ library FundingModule {
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
     function updateFundingState(Core storage core, uint256 currentTime) public {
-        uint256 length = core.markets.length;
-        for (uint256 i = 0; i < length; i++) {
-            updateFundingState(core.markets[i], currentTime);
-        }
-    }
-
-    function updateFundingState(Market storage market, uint256 currentTime) public {
-        if (market.fundingTime >= currentTime) {
+        if (core.fundingTime >= currentTime) {
             return;
         }
-        int256 timeElapsed = int256(currentTime.sub(market.fundingTime));
+        int256 timeElapsed = currentTime.sub(core.fundingTime).toInt256();
+        uint256 length = core.markets.length;
+        for (uint256 i = 0; i < length; i++) {
+            updateFundingState(core.markets[i], timeElapsed);
+        }
+        core.fundingTime = currentTime;
+    }
+
+    function updateFundingState(Market storage market, int256 timeElapsed) public {
         int256 deltaUnitLoss = market.indexPrice().wfrac(
             market.fundingRate.wmul(timeElapsed),
             FUNDING_INTERVAL
         );
         market.unitAccumulativeFunding = market.unitAccumulativeFunding.add(deltaUnitLoss);
-        market.fundingTime = currentTime;
     }
 
     function updateFundingRate(Core storage core) public {
