@@ -80,6 +80,7 @@ struct Core {
 }
 
 struct Market {
+    uint256 id;
     MarketState state;
     address oracle;
     int256 depositedCollateral;

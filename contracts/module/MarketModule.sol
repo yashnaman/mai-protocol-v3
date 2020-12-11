@@ -23,12 +23,14 @@ library MarketModule {
 
     function initialize(
         Market storage market,
+        uint256 id,
         address oracle,
         int256[8] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) public {
+        market.id = id;
         market.oracle = oracle;
 
         market.initialMarginRate = coreParams[0];
@@ -42,8 +44,16 @@ library MarketModule {
         market.validateCoreParameters();
 
         market.halfSpread.updateOption(riskParams[0], minRiskParamValues[0], maxRiskParamValues[0]);
-        market.openSlippageFactor.updateOption(riskParams[1], minRiskParamValues[1], maxRiskParamValues[1]);
-        market.closeSlippageFactor.updateOption(riskParams[2], minRiskParamValues[2], maxRiskParamValues[2]);
+        market.openSlippageFactor.updateOption(
+            riskParams[1],
+            minRiskParamValues[1],
+            maxRiskParamValues[1]
+        );
+        market.closeSlippageFactor.updateOption(
+            riskParams[2],
+            minRiskParamValues[2],
+            maxRiskParamValues[2]
+        );
         market.fundingRateCoefficient.updateOption(
             riskParams[3],
             minRiskParamValues[3],
@@ -55,13 +65,7 @@ library MarketModule {
             maxRiskParamValues[4]
         );
         market.validateRiskParameters();
-
         market.state = MarketState.INITIALIZING;
-        market.id = marketIndex(oracle);
-    }
-
-    function marketIndex(address oracle) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(Utils.chainID(), address(this), oracle));
     }
 
     function increaseDepositedCollateral(Market storage market, int256 amount) public {

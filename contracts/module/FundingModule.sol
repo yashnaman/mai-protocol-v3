@@ -48,35 +48,32 @@ library FundingModule {
     }
 
     function updateFundingRate(Core storage core) public {
+        AMMModule.Context memory context = core.prepareContext();
+        int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
+            ? AMMModule.regress(context, 0)
+            : 0;
         uint256 length = core.markets.length;
         for (uint256 i = 0; i < length; i++) {
-            Market storage market = core.markets[i];
-            market.fundingRate = nextFundingRate(core, market);
+            updateFundingRate(core.markets[i], poolMargin);
         }
     }
 
-    function nextFundingRate(Core storage core, Market storage market)
-        public
-        view
-        returns (int256)
-    {
-        AMMModule.Context memory context = core.prepareContext(market);
-        if (context.positionAmount == 0) {
-            return 0;
-        }
-        if (AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value)) {
-            int256 poolMargin = AMMModule.regress(context, market.openSlippageFactor.value);
+    function updateFundingRate(Market storage market, int256 poolMargin) public {
+        int256 newFundingRate;
+        int256 positionAmount = market.positionAmount(address(this));
+        if (positionAmount == 0) {
+            newFundingRate = 0;
+        } else {
             if (poolMargin != 0) {
-                return
-                    context.indexPrice.wfrac(context.positionAmount, poolMargin).neg().wmul(
-                        market.fundingRateCoefficient.value
-                    );
+                newFundingRate = market.indexPrice().wfrac(positionAmount, poolMargin).neg().wmul(
+                    market.fundingRateCoefficient.value
+                );
+            } else if (positionAmount > 0) {
+                newFundingRate = market.fundingRateCoefficient.value.neg();
+            } else {
+                newFundingRate = market.fundingRateCoefficient.value;
             }
         }
-        if (context.positionAmount > 0) {
-            return market.fundingRateCoefficient.value.neg();
-        } else {
-            return market.fundingRateCoefficient.value;
-        }
+        market.fundingRate = newFundingRate;
     }
 }

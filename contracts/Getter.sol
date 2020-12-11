@@ -29,6 +29,14 @@ contract Getter is Storage {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
+    function governor() public view returns (address) {
+        return _core.governor;
+    }
+
+    function shareToken() public view returns (address) {
+        return _core.shareToken;
+    }
+
     function liquidityPoolInfo()
         public
         view

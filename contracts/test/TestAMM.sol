@@ -32,7 +32,7 @@ contract TestAMM {
         int256 indexPrice1,
         int256 indexPrice2
     ) public {
-        core.markets[0].id = "0x0";
+        core.markets[0].id = 0;
         core.markets[0].state = MarketState.NORMAL;
         core.markets[0].unitAccumulativeFunding = unitAccumulativeFunding;
         core.markets[0].halfSpread.value = halfSpread;
@@ -43,7 +43,7 @@ contract TestAMM {
         core.markets[0].marginAccounts[address(this)].positionAmount = positionAmount1;
         core.markets[0].indexPriceData.price = indexPrice1;
 
-        core.markets[1].id = "0x1";
+        core.markets[1].id = 1;
         core.markets[1].state = MarketState.NORMAL;
         core.markets[1].unitAccumulativeFunding = unitAccumulativeFunding;
         core.markets[1].halfSpread.value = halfSpread;
@@ -56,13 +56,13 @@ contract TestAMM {
 
     function isAMMMarginSafe() public view returns (bool) {
         Market storage market = core.markets[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
+        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
         return AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value);
     }
 
     function regress() public view returns (int256) {
         Market storage market = core.markets[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, market);
+        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
         return AMMModule.regress(context, market.openSlippageFactor.value);
     }
 

@@ -86,7 +86,14 @@ contract Perpetual is Storage, Trade, AMM, Settlement, Getter, Governance {
     ) internal {
         uint256 marketIndex = _core.markets.length;
         Market storage market = _core.markets.push();
-        market.initialize(oracle, coreParams, riskParams, minRiskParamValues, maxRiskParamValues);
+        market.initialize(
+            marketIndex,
+            oracle,
+            coreParams,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
         emit CreateMarket(
             marketIndex,
             _core.governor,

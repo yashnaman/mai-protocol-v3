@@ -156,23 +156,23 @@ describe("integration", () => {
         console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
         console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
-        await gs.collect("updateIndex", perpUser1.updateIndex());
+        print(await perp.callStatic.liquidityPoolInfo());
 
-        // // trade 1
-        // await gs.collect("trade 1 - open", perpUser1.trade(user1.address, toWei("0.1"), toWei("506"), now + 999999, none));
-        // print(await perpUser1.marginAccount(user1.address));
+        // trade 1
+        await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("506"), now + 999999, none, false));
+        print(await perpUser1.marginAccount(0, user1.address));
 
-        // // trade 2
-        // await gs.collect("trade 2 - open", perpUser1.trade(user1.address, toWei("0.05"), toWei("550"), now + 999999, none));
-        // print(await perpUser1.marginAccount(user1.address));
+        // trade 2
+        await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("550"), now + 999999, none, false));
+        print(await perpUser1.marginAccount(0, user1.address));
 
-        // // trade 3
-        // await gs.collect("trade 3 - revert", perpUser1.trade(user1.address, toWei("-0.2"), toWei("400"), now + 999999, none));
-        // print(await perpUser1.marginAccount(user1.address));
+        // trade 3
+        await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("400"), now + 999999, none, false));
+        print(await perpUser1.marginAccount(0, user1.address));
 
-        // // trade 4
-        // await gs.collect("trade 4 - close all", perpUser1.trade(user1.address, toWei("0.05"), toWei("510"), now + 999999, none));
-        // print(await perpUser1.marginAccount(user1.address));
+        // trade 4
+        await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("510"), now + 999999, none, false));
+        print(await perpUser1.marginAccount(0, user1.address));
 
         // // withdraw
         // await gs.collect("withdraw", perpUser1.withdraw(user1.address, toWei("10")));
