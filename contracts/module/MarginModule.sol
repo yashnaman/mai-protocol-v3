@@ -64,9 +64,10 @@ library MarginModule {
         view
         returns (int256)
     {
-        return market.marginAccounts[trader].cashBalance.sub(
-            market.marginAccounts[trader].positionAmount.wmul(market.unitAccumulativeFunding)
-        );
+        return
+            market.marginAccounts[trader].cashBalance.sub(
+                market.marginAccounts[trader].positionAmount.wmul(market.unitAccumulativeFunding)
+            );
     }
 
     function positionAmount(Market storage market, address trader) internal view returns (int256) {

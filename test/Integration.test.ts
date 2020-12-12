@@ -45,7 +45,7 @@ describe("integration", () => {
     }
 
     function print(obj) {
-        // return;
+        return;
         var props = []
         for (var n in obj) {
             props.push([n, toString(obj[n])]);
@@ -96,7 +96,6 @@ describe("integration", () => {
         // create components
         var weth = await createContract("WETH9");
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var oracle = await createContract("OracleWrapper", [ctk.address]);
         var lpTokenTemplate = await createContract("ShareToken");
         var govTemplate = await createContract("Governor");
         var maker = await createContract(
@@ -120,10 +119,42 @@ describe("integration", () => {
 
         // oracle
         var now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("500"), now);
-        await oracle.setIndexPrice(toWei("500"), now);
+        let oracle1 = await createContract("OracleWrapper", [ctk.address]);
+        let oracle2 = await createContract("OracleWrapper", [ctk.address]);
+        let oracle3 = await createContract("OracleWrapper", [ctk.address]);
+        let oracle4 = await createContract("OracleWrapper", [ctk.address]);
+        let updatePrice = async (price1, price2, price3, price4) => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle1.setMarkPrice(price1, now);
+            await oracle1.setIndexPrice(price1, now);
+            await oracle2.setMarkPrice(price2, now);
+            await oracle2.setIndexPrice(price2, now);
+            await oracle3.setMarkPrice(price3, now);
+            await oracle3.setIndexPrice(price3, now);
+            await oracle4.setMarkPrice(price4, now);
+            await oracle4.setIndexPrice(price4, now);
+        }
+        await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
-        await perp.createInitializingMarket(oracle.address,
+        await perp.createInitializingMarket(oracle1.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        )
+        await perp.createInitializingMarket(oracle2.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        )
+        await perp.createInitializingMarket(oracle3.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        )
+        await perp.createInitializingMarket(oracle4.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -150,6 +181,7 @@ describe("integration", () => {
         print(await perpUser1.marginAccount(0, user1.address));
 
         // lp
+        await updatePrice(toWei("501"), toWei("601"), toWei("701"), toWei("801"))
         const perpUser2 = await PerpetualFactory.connect(perp.address, user2);
         await gs.collect("addLiquidity", perpUser2.addLiquidity(toWei("1000")));
         const shareUser2 = await CustomErc20Factory.connect(await perp.shareToken(), user2);
@@ -159,30 +191,36 @@ describe("integration", () => {
         print(await perp.callStatic.liquidityPoolInfo());
 
         // trade 1
-        await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("506"), now + 999999, none, false));
+        await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
+        await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, false));
         print(await perpUser1.marginAccount(0, user1.address));
 
         // trade 2
-        await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("550"), now + 999999, none, false));
+        await updatePrice(toWei("503"), toWei("604"), toWei("705"), toWei("806"))
+        await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
         print(await perpUser1.marginAccount(0, user1.address));
 
         // trade 3
-        await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("400"), now + 999999, none, false));
+        await updatePrice(toWei("504"), toWei("605"), toWei("706"), toWei("807"))
+        await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, false));
         print(await perpUser1.marginAccount(0, user1.address));
 
         // trade 4
-        await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("510"), now + 999999, none, false));
+        await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
+        await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
         print(await perpUser1.marginAccount(0, user1.address));
 
-        // // withdraw
-        // await gs.collect("withdraw", perpUser1.withdraw(user1.address, toWei("10")));
-        // console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
-        // print(await perpUser1.marginAccount(user1.address));
+        // withdraw
+        await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
+        await gs.collect("withdraw", perpUser1.withdraw(0, user1.address, toWei("10")));
+        console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
+        print(await perpUser1.marginAccount(0, user1.address));
 
-        // // remove lp
-        // await gs.collect("removeLiquidatity", perpUser2.removeLiquidatity(await shareUser2.balanceOf(user2.address)));
-        // console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
-        // console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
+        // remove lp
+        await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
+        await gs.collect("removeLiquidity", perpUser2.removeLiquidity(await shareUser2.balanceOf(user2.address)));
+        console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
+        console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
         gs.summary();
     })

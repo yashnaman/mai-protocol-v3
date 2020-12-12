@@ -13,6 +13,7 @@ describe('Storage', () => {
     let accounts;
     let user0;
     let user1;
+    let user2;
     let storage;
     let TestStorage;
 
@@ -20,52 +21,61 @@ describe('Storage', () => {
         accounts = await getAccounts();
         user0 = accounts[0];
         user1 = accounts[1];
+        user2 = accounts[2];
 
         const ParameterModule = await createContract("ParameterModule")
-        const FundingModule = await createContract("FundingModule")
-        TestStorage = await createFactory("TestStorage", { FundingModule, ParameterModule });
+        const CollateralModule = await createContract("CollateralModule")
+        const AMMModule = await createContract("AMMModule", [], { CollateralModule })
+        const FundingModule = await createContract("FundingModule", [], { AMMModule })
+        const CoreModule = await createContract("CoreModule", [], { CollateralModule })
+        const MarketModule = await createContract("MarketModule", [], { ParameterModule })
+        TestStorage = await createFactory("TestStorage", { FundingModule, MarketModule });
         storage = await TestStorage.deploy();
     })
 
     it("initialize", async () => {
         const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        const oracle = await createContract("OracleWrapper", [erc20.address]);
-        // await storage.initialize(
+        // await storage.initializeCore(
+        //     erc20.address,
         //     user0.address,
-        //     oracle.address,
         //     user1.address,
-        //     user1.address,
-        //     [
-        //         toWei("0.1"),
-        //         toWei("0.05"),
-        //         toWei("0.001"),
-        //         toWei("0.001"),
-        //         toWei("0.2"),
-        //         toWei("0.02"),
-        //         toWei("1"),
-        //     ],
-        //     [
-        //         toWei("0.01"),
-        //         toWei("0.1"),
-        //         toWei("0.06"),
-        //         toWei("0.1"),
-        //         toWei("5"),
-        //     ],
-        //     [
-        //         toWei("0"),
-        //         toWei("0"),
-        //         toWei("0"),
-        //         toWei("0"),
-        //         toWei("0"),
-        //     ],
-        //     [
-        //         toWei("0.1"),
-        //         toWei("0.2"),
-        //         toWei("0.2"),
-        //         toWei("0.5"),
-        //         toWei("10"),
-        //     ],
-        // )
+        //     user2.address,
+        // );
+        const oracle = await createContract("OracleWrapper", [erc20.address]);
+        await storage.initializeMarket(
+            oracle.address,
+            [
+                toWei("0.1"),
+                toWei("0.05"),
+                toWei("0.001"),
+                toWei("0.001"),
+                toWei("0.2"),
+                toWei("0.02"),
+                toWei("1"),
+                toWei("5"),
+            ],
+            [
+                toWei("0.01"),
+                toWei("0.1"),
+                toWei("0.06"),
+                toWei("0.1"),
+                toWei("5"),
+            ],
+            [
+                toWei("0"),
+                toWei("0"),
+                toWei("0"),
+                toWei("0"),
+                toWei("0"),
+            ],
+            [
+                toWei("0.1"),
+                toWei("0.2"),
+                toWei("0.2"),
+                toWei("0.5"),
+                toWei("10"),
+            ],
+        )
     })
 
 });

@@ -32,13 +32,13 @@ library ParameterModule {
     ) public {
         if (key == "initialMarginRate") {
             require(
-                newValue < market.initialMarginRate,
+                market.initialMarginRate == 0 || newValue < market.initialMarginRate,
                 "increasing initial margin rate is not allowed"
             );
             market.initialMarginRate = newValue;
         } else if (key == "maintenanceMarginRate") {
             require(
-                newValue < market.maintenanceMarginRate,
+                market.maintenanceMarginRate == 0 || newValue < market.maintenanceMarginRate,
                 "increasing maintenance margin rate is not allowed"
             );
             market.maintenanceMarginRate = newValue;
@@ -153,7 +153,8 @@ library ParameterModule {
     function validateRiskParameters(Market storage market) public view {
         require(market.halfSpread.value >= 0, "hsr shoud be greater than 0");
         require(
-            market.openSlippageFactor.value > 0 && market.openSlippageFactor.value < Constant.SIGNED_ONE,
+            market.openSlippageFactor.value > 0 &&
+                market.openSlippageFactor.value < Constant.SIGNED_ONE,
             "b1 should be within (0, 1)"
         );
         require(
