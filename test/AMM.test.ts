@@ -60,10 +60,10 @@ const amm2 = {
 
 // [3] short 3: unsafe
 const amm3 = {
-    cashBalance: toWad('17877'),
+    cashBalance: toWad('17692'),
     positionAmount1: toWad('-80'),
     positionAmount2: toWad('10'),
-    // available cash = 17877 - 1.9 * (-80) - 1.9 * (10) = 18010
+    // available cash = 17692 - 1.9 * (-80) - 1.9 * (10) = 17825
     // pool margin = unsafe
 }
 
@@ -87,10 +87,10 @@ const amm5 = {
 
 // [6] long 3: unsafe
 const amm6 = {
-    cashBalance: toWad('2501'),
+    cashBalance: toWad('1996'),
     positionAmount1: toWad('80'),
     positionAmount2: toWad('10'),
-    // available cash = 2501 - 1.9 * (80) - 1.9 * (10) = 2330
+    // available cash = 1996 - 1.9 * (80) - 1.9 * (10) = 1825
     // pool margin = unsafe
 }
 
@@ -243,6 +243,7 @@ describe('AMM', () => {
                 amm: ammInit,
                 side: 1,
                 maxLeverage: params.maxLeverage,
+                positionAmount2: ammInit.positionAmount2,
                 maxPosition: _0
             },
             {
@@ -250,28 +251,38 @@ describe('AMM', () => {
                 amm: amm1,
                 side: 1,
                 maxLeverage: params.maxLeverage,
+                positionAmount2: amm1.positionAmount2,
                 maxPosition: toWad('-141.067359796658844252321636909')
             },
-            /*
             {
                 name: 'short, choose max position1',
                 amm: amm1,
                 side: 1,
-                maxPosition: toWad('-141.067359796658844252321636909')
+                maxLeverage: toWad('0.991'),
+                positionAmount2: toWad('200'),
+                maxPosition: toWad('-128.653323548597695348814505356')
             },
-            */
             {
                 name: 'short, choose max position2',
                 amm: amm1,
                 side: 1,
                 maxLeverage: toWad('0.5'),
+                positionAmount2: amm1.positionAmount2,
                 maxPosition: toWad('-45.403751662596934803491571167')
             },
+            {
+                name: 'long, choose max position3',
+                amm: amm4,
+                side: 0,
+                maxLeverage: params.maxLeverage,
+                positionAmount2: amm4.positionAmount2,
+                maxPosition: toWad('100')
+            }
         ]
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await AMM.maxPosition(element.side)).approximateBigNumber(element.maxPosition)
             })
         })
@@ -294,104 +305,87 @@ describe('AMM', () => {
                 deltaPosition: toWad('-141.421')
             },
             {
+                name: 'open -10 -> -141.067',
+                amm: amm1,
+                amount: toWad('-131.067'),
+                partialFill: false,
+                deltaMargin: toWad('23029.6558937445'), // trader buy, 23006.6492445 (1 + α)
+                deltaPosition: toWad('-131.067')
+            },
+            {
                 name: 'open 0 -> 100',
                 amm: amm0,
                 amount: toWad('100'),
                 deltaMargin: toWad('-4995'), // trader sell, -5000 (1 - α)
                 deltaPosition: toWad('100')
-    },
-
-            /*
-            {
-                name: 'open -11 -> -24',
-                amm: amm1,
-                amount: toWad('-13'),
-                partialFill: false,
-                deltaMargin: toWad('1710.761468483122593073'), // trader buy, (1 + α)
-                deltaPosition: toWad('-13')
             },
             {
-                name: 'open 0 -> 37',
-                amm: amm0,
-                amount: toWad('37'),
-                partialFill: false,
-                deltaMargin: toWad('-2896.60792953216181'), // trader sell, (1 - α)
-                deltaPosition: toWad('37')
-            },
-            {
-                name: 'open 11 -> 36',
+                name: 'open 10 -> 100',
                 amm: amm4,
-                amount: toWad('25'),
-                partialFill: false,
-                deltaMargin: toWad('-1775.58545802588185'), // trader sell, (1 - α)
-                deltaPosition: toWad('25')
+                amount: toWad('90'),
+                deltaMargin: toWad('-4045.95'), // trader sell, -4050 (1 - α)
+                deltaPosition: toWad('90')
             },
             {
-                name: 'close -11 -> -10',
+                name: 'close -10 -> -9',
                 amm: amm1,
                 amount: toWad('1'),
-                partialFill: false,
-                deltaMargin: toWad('-105.919615384615385'), // trader sell, (1 - α)
+                deltaMargin: toWad('-108.4371405102481132569021'), // trader sell, -108.5456861964445578147169 (1 - α)
                 deltaPosition: toWad('1')
             },
             {
-                name: 'close -11 -> 0',
+                name: 'close -10 -> 0',
                 amm: amm1,
-                amount: toWad('11'),
-                partialFill: false,
-                deltaMargin: toWad('-1129.89461538461538'), // trader sell, (1 - α)
-                deltaPosition: toWad('11')
+                amount: toWad('10'),
+                deltaMargin: toWad('-1043.932318474990069773169'), // trader sell, -1044.977295770760830603773 (1 - α)
+                deltaPosition: toWad('10')
             },
             {
-                name: 'close 11 -> 10',
+                name: 'close 10 -> 9',
                 amm: amm4,
                 amount: toWad('-1'),
-                partialFill: false,
-                deltaMargin: toWad('94.6008831068813075'), // trader buy, (1 + α)
+                deltaMargin: toWad('91.5457681173589976274684'), // trader buy, 91.4543138035554421852831 (1 + α)
                 deltaPosition: toWad('-1')
             },
             {
-                name: 'close 11 -> 0',
+                name: 'close 10 -> 0',
                 amm: amm4,
-                amount: toWad('-11'),
-                partialFill: false,
-                deltaMargin: toWad('1071.88792321443440'), // trader buy, (1 + α)
-                deltaPosition: toWad('-11')
+                amount: toWad('-10'),
+                deltaMargin: toWad('955.977726933468408565623'), // trader buy, 955.022704229239169396227 (1 + α)
+                deltaPosition: toWad('-10')
             },
             {
-                name: 'close unsafe -11 -> -10',
+                name: 'close unsafe -10 -> -9',
                 amm: amm3,
                 amount: toWad('1'),
-                partialFill: false,
-                deltaMargin: toWad('-99.9'), // trader sell, (1 - α)
+                deltaMargin: toWad('-99.9'), // trader sell, 100 (1 - α),
                 deltaPosition: toWad('1')
             },
             {
-                name: 'close unsafe 11 -> 10',
+                name: 'close unsafe 10 -> 9',
                 amm: amm6,
                 amount: toWad('-1'),
-                partialFill: false,
-                deltaMargin: toWad('100.1'), // trader buy, (1 + α)
+                deltaMargin: toWad('100.1'), // trader buy, 100 (1 + α)
                 deltaPosition: toWad('-1')
             },
             {
-                name: 'open 0 -> -25.01, partialFill',
+                name: 'open 0 -> -141.422, partialFill',
                 amm: amm0,
-                amount: toWad('-25.01'),
+                amount: toWad('-141.422'),
                 partialFill: true,
-                deltaMargin: toWad('3003'),
-                deltaPosition: toWad('-25')
+                deltaMargin: toWad('24166.2777593546814385049041293'), // trader buy, 24142.1356237309504880168872421 (1 + α)
+                deltaPosition: toWad('-141.421356237309504880168872421')
             },
             {
-                name: 'open -11 -> -24.2, partialFill',
+                name: 'open -10 -> -141.068, pos2 too large, partialFill',
                 amm: amm1,
-                amount: toWad('-13.2'),
+                amount: toWad('-131.068'),
                 partialFill: true,
-                deltaMargin: toWad('1735.348835541285897908'),
-                deltaPosition: toWad('-13.154005383416287268')
+                deltaMargin: toWad('23029.7427156455503096573958546'), // trader buy, 23006.7359796658844252321636909 (1 + α)
+                deltaPosition: toWad('-131.067359796658844252321636909')
             },
             {
-                name: 'open -11 already unsafe, partialFill',
+                name: 'open -10 already unsafe, partialFill',
                 amm: amm3,
                 amount: toWad('-0.01'),
                 partialFill: true,
@@ -399,30 +393,29 @@ describe('AMM', () => {
                 deltaPosition: _0
             },
             {
-                name: 'open 0 -> 37.3, partialFill',
+                name: 'open 0 -> 100.001, partialFill',
                 amm: amm0,
-                amount: toWad('37.3'),
+                amount: toWad('100.001'),
                 partialFill: true,
-                deltaMargin: toWad('-2909.965596304420832907'),
-                deltaPosition: toWad('37.259467035623200279')
+                deltaMargin: toWad('-4995'), // trader sell, -5000 (1 - α)
+                deltaPosition: toWad('100')
             },
             {
-                name: 'open 11 -> 36.3, partialFill',
+                name: 'open 10 -> 100.001, partialFill',
                 amm: amm4,
-                amount: toWad('25.3'),
+                amount: toWad('90.001'),
                 partialFill: true,
-                deltaMargin: toWad('-1787.086250639889059394'),
-                deltaPosition: toWad('25.223493715622091689')
+                deltaMargin: toWad('-4045.95'), // trader sell, -4050 (1 - α)
+                deltaPosition: toWad('90')
             },
             {
-                name: 'open 11 already unsafe, partialFill',
+                name: 'open 10 already unsafe, partialFill',
                 amm: amm6,
                 amount: toWad('0.01'),
                 partialFill: true,
                 deltaMargin: _0,
                 deltaPosition: _0
             }
-            */
         ]
 
         successCases.forEach(element => {
@@ -435,7 +428,6 @@ describe('AMM', () => {
         })
     })
 
-    /*
     describe('trade - fail', function () {
 
         const failCases = [
@@ -447,42 +439,42 @@ describe('AMM', () => {
                 errorMsg: 'trade amount is zero'
             },
             {
-                name: 'open 0 -> -25.01, pos2 too large',
+                name: 'open 0 -> -141.422, pos2 too large',
                 amm: amm0,
-                amount: toWad('-25.01'),
+                amount: toWad('-141.422'),
                 partialFill: false,
                 errorMsg: 'trade amount exceeds max amount'
             },
             {
-                name: 'open -11 -> -24.2, pos2 too large',
+                name: 'open -10 -> -141.068, pos2 too large',
                 amm: amm1,
-                amount: toWad('-13.2'),
+                amount: toWad('-131.068'),
                 partialFill: false,
                 errorMsg: 'trade amount exceeds max amount'
             },
             {
-                name: 'open -11 already unsafe',
+                name: 'open -10 already unsafe',
                 amm: amm3,
                 amount: toWad('-0.01'),
                 partialFill: false,
                 errorMsg: 'amm is unsafe when open'
             },
             {
-                name: 'open 0 -> 37.3',
+                name: 'open 0 -> 100.001',
                 amm: amm0,
-                amount: toWad('37.3'),
+                amount: toWad('100.001'),
                 partialFill: false,
                 errorMsg: 'trade amount exceeds max amount'
             },
             {
-                name: 'open 11 -> 36.3',
+                name: 'open 10 -> 100.001',
                 amm: amm4,
-                amount: toWad('25.3'),
+                amount: toWad('90.001'),
                 partialFill: false,
                 errorMsg: 'trade amount exceeds max amount'
             },
             {
-                name: 'open 11 already unsafe',
+                name: 'open 10 already unsafe',
                 amm: amm6,
                 amount: toWad('0.01'),
                 partialFill: false,
@@ -492,18 +484,18 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 await expect(AMM.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
             })
         })
     })
-    */
 
     describe('add liquidity', function () {
 
         const successCases = [
+            /*
             {
-                name: 'initial state(old m0 = 0)',
+                name: 'init',
                 amm: ammInit,
                 totalShare: _0,
                 marginToAdd: toWad('1000'),
@@ -516,14 +508,15 @@ describe('AMM', () => {
                 marginToAdd: toWad('1000'),
                 share: toWad('10.0916660306314520522392020897')
             },
-            /*
+            */
             {
                 name: 'short, before unsafe, after unsafe',
                 amm: amm3,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('203'),
-                share: toWad('29.994189424753050553')
+                marginToAdd: toWad('576'),
+                share: toWad('5.321016166281755196304849885')
             },
+            /*
             {
                 name: 'short, before unsafe, after safe',
                 amm: amm3,

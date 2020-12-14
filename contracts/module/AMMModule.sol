@@ -220,17 +220,13 @@ library AMMModule {
             int256 poolMargin = regress(context, beta);
             require(poolMargin > 0, "pool margin must be positive");
             int256 newPositionAmount = context.positionAmount.add(tradingAmount);
-            if (newPositionAmount == 0) {
-                return poolMargin.sub(context.availableCashBalance);
-            } else {
-                deltaMargin = _deltaMargin(
-                    poolMargin,
-                    context.positionAmount,
-                    newPositionAmount,
-                    context.indexPrice,
-                    beta
-                );
-            }
+            deltaMargin = _deltaMargin(
+                poolMargin,
+                context.positionAmount,
+                newPositionAmount,
+                context.indexPrice,
+                beta
+            );
         } else {
             deltaMargin = context.indexPrice.wmul(tradingAmount).neg();
         }
