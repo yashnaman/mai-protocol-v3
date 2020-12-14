@@ -54,6 +54,12 @@ contract TestAMM {
         core.markets[1].indexPriceData.price = indexPrice2;
     }
 
+    function setConfig(address collateral, address shareToken, uint256 scaler) public {
+        core.collateral = collateral;
+        core.shareToken = shareToken;
+        core.scaler = scaler;
+    }
+
     function isAMMMarginSafe() public view returns (bool) {
         Market storage market = core.markets[0];
         AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
@@ -108,19 +114,17 @@ contract TestAMM {
         );
     }
 
-    function addLiquidity(int256 totalShare, int256 marginToAdd)
+    function addLiquidity(int256 marginToAdd)
         public
-        view
         returns (int256 share)
     {
-        share = AMMModule.calculateShareToMint(core, totalShare, marginToAdd);
+        AMMModule.addLiquidity(core, marginToAdd);
     }
 
-    function removeLiquidity(int256 shareTotalSupply, int256 shareToRemove)
+    function removeLiquidity(int256 shareToRemove)
         public
-        view
         returns (int256 marginToRemove)
     {
-        marginToRemove = AMMModule.calculateCashToReturn(core, shareTotalSupply, shareToRemove);
+        AMMModule.removeLiquidity(core, shareToRemove);
     }
 }

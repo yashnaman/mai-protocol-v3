@@ -4,6 +4,14 @@ import { waffleChai } from "@ethereum-waffle/chai";
 import { expect, use } from "chai";
 
 import "./helper";
+import {
+    getAccounts,
+    createContract,
+} from '../scripts/utils';
+
+import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
+import { TestShareTokenFactory } from "../typechain/TestShareTokenFactory"
+import { TestAmmFactory } from "../typechain/TestAmmFactory"
 
 use(waffleChai);
 
@@ -97,16 +105,10 @@ const amm6 = {
 describe('AMM', () => {
     let AMM;
 
-    let createFromFactory = async (path, libraries = {}) => {
-        const factory = await ethers.getContractFactory(path, { libraries: libraries });
-        const deployed = await factory.deploy();
-        return deployed;
-    }
-
     beforeEach(async () => {
-        const CollateralModule = await createFromFactory("contracts/module/CollateralModule.sol:CollateralModule")
-        const AMMModule = await createFromFactory("contracts/module/AMMModule.sol:AMMModule", { CollateralModule: CollateralModule.address })
-        AMM = await createFromFactory("contracts/test/TestAMM.sol:TestAMM", { AMMModule: AMMModule.address });
+        const CollateralModule = await createContract("CollateralModule")
+        const AMMModule = await createContract("AMMModule", [], { CollateralModule })
+        AMM = await createContract("TestAMM", [], { AMMModule });
     });
 
     describe('isAMMSafe', function () {
@@ -539,20 +541,34 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
+                const accounts = await ethers.getSigners();
+                const user1 = accounts[1];
+                const user2 = accounts[2];
+                var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                await ctk.mint(user1.address, element.marginToAdd);
+                const ctkUser1 = await CustomErc20Factory.connect(ctk.address, user1);
+                await ctkUser1.approve(AMM.address, toWad("1000000"));
+                var shareToken = await createContract("TestShareToken");
+                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.setAdmin(user1.address);
+                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                await shareTokenUser1.mint(user2.address, element.totalShare);
+                await AMM.setConfig(ctk.address, shareToken.address, 1);
                 await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await AMM.addLiquidity(element.totalShare, element.marginToAdd)).approximateBigNumber(element.share);
+                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await ammUser1.addLiquidity(element.marginToAdd);
+                expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(element.share);
+                expect(await ctk.balanceOf(user1.address)).approximateBigNumber(_0);
             })
         })
 
         const failCases = [
-            /*
             {
                 name: 'invalid margin to add',
                 totalShare: toWad('100'),
                 marginToAdd: _0,
                 errorMsg: 'margin to add must be positive'
             },
-            */
             {
                 name: 'poolMargin = 0 && totalShare != 0',
                 totalShare: toWad('100'),
@@ -563,8 +579,19 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
+                const accounts = await ethers.getSigners();
+                const user1 = accounts[1];
+                const user2 = accounts[2];
+                var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                var shareToken = await createContract("TestShareToken");
+                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.setAdmin(user1.address);
+                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                await shareTokenUser1.mint(user2.address, element.totalShare);
+                await AMM.setConfig(ctk.address, shareToken.address, 1);
                 await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, ammInit.cashBalance, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
-                await expect(AMM.addLiquidity(element.totalShare, element.marginToAdd)).to.be.revertedWith(element.errorMsg)
+                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await expect(ammUser1.addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
             })
         })
     })
@@ -575,21 +602,21 @@ describe('AMM', () => {
             {
                 name: 'no position',
                 amm: amm0,
-                totalShare: toWad('100'),
+                restShare: toWad('90'), // total 100
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('1000')
             },
             {
                 name: 'short',
                 amm: amm1,
-                totalShare: toWad('100'),
+                restShare: toWad('90'), // total 100
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('988.888888888888888888888888889')
             },
             {
                 name: 'long',
                 amm: amm4,
-                totalShare: toWad('100'),
+                restShare: toWad('90'), // total 100
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('988.888888888888888888888888889')
             }
@@ -597,70 +624,95 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
+                const accounts = await ethers.getSigners();
+                const user1 = accounts[1];
+                const user2 = accounts[2];
+                var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                await ctk.mint(AMM.address, element.marginToRemove);
+                var shareToken = await createContract("TestShareToken");
+                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.setAdmin(user1.address);
+                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                await shareTokenUser1.mint(user1.address, element.shareToRemove);
+                await shareTokenUser1.mint(user2.address, element.restShare);
+                await AMM.setConfig(ctk.address, shareToken.address, 1);
                 await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await AMM.removeLiquidity(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove);
+                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await ammUser1.removeLiquidity(element.shareToRemove);
+                expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
+                expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(_0);
+                expect(await shareToken.totalSupply()).approximateBigNumber(element.restShare);
             })
         })
 
-        /*
         const failCases = [
             {
-                name: 'invalid share',
+                name: 'zero share to remove',
                 amm: amm0,
-                totalShare: _0,
-                shareToRemove: toWad('10'),
-                errorMsg: 'invalid share when remove liquidity',
-            },
-            {
-                name: 'invalid share',
-                amm: amm0,
-                totalShare: toWad('100'),
+                restShare: toWad('100'), // total 100
+                shareBalance: _0,
                 shareToRemove: _0,
-                errorMsg: 'invalid share when remove liquidity',
+                errorMsg: 'share to remove must be positive',
             },
             {
-                name: 'invalid share',
+                name: 'insufficient share balance',
                 amm: amm0,
-                totalShare: toWad('100'),
+                restShare: _0, // total 100
+                shareBalance: toWad('100'),
                 shareToRemove: toWad('100.1'),
-                errorMsg: 'invalid share when remove liquidity',
+                errorMsg: 'insufficient share balance',
             },
             {
                 name: 'short, before unsafe',
                 amm: amm3,
-                totalShare: toWad('100'),
+                restShare: toWad('90'), // total 100
+                shareBalance: toWad('10'),
                 shareToRemove: toWad('10'),
-                errorMsg: 'amm is unsafe before remove liquidity',
+                errorMsg: 'amm is unsafe before removing liquidity',
             },
             {
                 name: 'long, before unsafe',
                 amm: amm6,
-                totalShare: toWad('100'),
+                restShare: toWad('90'), // total 100
+                shareBalance: toWad('10'),
                 shareToRemove: toWad('10'),
-                errorMsg: 'amm is unsafe before remove liquidity',
+                errorMsg: 'amm is unsafe before removing liquidity',
             },
             {
                 name: 'short, after unsafe',
                 amm: amm1,
-                totalShare: toWad('100'),
-                shareToRemove: toWad('54.459'),
-                errorMsg: 'amm is unsafe after remove liquidity',
+                restShare: toWad('9.999'), // total 100
+                shareBalance: toWad('90.001'),
+                shareToRemove: toWad('90.001'),
+                errorMsg: 'amm is unsafe after removing liquidity',
             },
             {
                 name: 'long, after unsafe',
                 amm: amm4,
-                totalShare: toWad('100'),
-                shareToRemove: toWad('69.633'),
-                errorMsg: 'amm is unsafe after remove liquidity',
+                restShare: toWad('9.999'), // total 100
+                shareBalance: toWad('90.001'),
+                shareToRemove: toWad('90.001'),
+                errorMsg: 'amm is unsafe after removing liquidity',
             }
         ]
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, element.amm.cashBalance, element.amm.positionAmount, element.amm.entryFundingLoss, toWad('100'))
-                await expect(AMM.removeLiquidity(element.totalShare, element.shareToRemove)).to.be.revertedWith(element.errorMsg)
+                const accounts = await ethers.getSigners();
+                const user1 = accounts[1];
+                const user2 = accounts[2];
+                var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                var shareToken = await createContract("TestShareToken");
+                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.setAdmin(user1.address);
+                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                await shareTokenUser1.mint(user1.address, element.shareBalance);
+                await shareTokenUser1.mint(user2.address, element.restShare);
+                await AMM.setConfig(ctk.address, shareToken.address, 1);
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await expect(ammUser1.removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
-        */
     })
 });
