@@ -83,8 +83,8 @@ library AMMModule {
         int256 shareAmount = calculateShareToMint(core, shareTotalSupply, cashAmount);
         require(shareAmount > 0, "received share must be positive");
         core.transferFromUser(msg.sender, cashAmount);
-        core.liquidityPoolCashBalance = core.liquidityPoolCashBalance.add(cashAmount);
-        core.liquidityPoolCollateral = core.liquidityPoolCollateral.add(cashAmount);
+        core.poolCashBalance = core.poolCashBalance.add(cashAmount);
+        core.poolCollateral = core.poolCollateral.add(cashAmount);
         IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
         emit AddLiquidity(msg.sender, cashAmount, shareAmount);
     }
@@ -125,8 +125,8 @@ library AMMModule {
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         int256 cashToReturn = calculateCashToReturn(core, shareTotalSupply, shareToRemove);
         IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
-        core.liquidityPoolCashBalance = core.liquidityPoolCashBalance.add(cashToReturn);
-        core.liquidityPoolCollateral = core.liquidityPoolCollateral.add(cashToReturn);
+        core.poolCashBalance = core.poolCashBalance.add(cashToReturn);
+        core.poolCollateral = core.poolCollateral.add(cashToReturn);
         core.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
@@ -193,17 +193,13 @@ library AMMModule {
         return context.availableCashBalance >= minAvailableCashBalance;
     }
 
-    function liquidityPoolCashBalance(Core storage core)
-        internal
-        view
-        returns (int256 cashBalance)
-    {
+    function poolCashBalance(Core storage core) internal view returns (int256 cashBalance) {
         uint256 length = core.markets.length;
         for (uint256 i = 0; i < length; i++) {
             Market storage market = core.markets[i];
             cashBalance = cashBalance.add(market.availableCashBalance(address(this)));
         }
-        cashBalance = cashBalance.add(core.liquidityPoolCashBalance);
+        cashBalance = cashBalance.add(core.poolCashBalance);
     }
 
     function closePosition(
@@ -318,7 +314,7 @@ library AMMModule {
                 );
             }
         }
-        context.availableCashBalance = liquidityPoolCashBalance(core);
+        context.availableCashBalance = poolCashBalance(core);
         require(
             context.availableCashBalance.add(context.positionValue).add(
                 context.indexPrice.wmul(context.positionAmount)
@@ -385,7 +381,7 @@ library AMMModule {
             Market storage market = core.markets[i];
             marginBalance = marginBalance.add(market.margin(address(this), market.indexPrice()));
         }
-        marginBalance = marginBalance.add(core.liquidityPoolCashBalance);
+        marginBalance = marginBalance.add(core.poolCashBalance);
     }
 
     function marginToRemove(

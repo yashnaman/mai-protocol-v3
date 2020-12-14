@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-interface IPerpetualGovernance {
+interface ISharedLiquidityPoolGovernance {
     function updateMarketParameter(bytes32 key, int256 newValue) external;
 
     function updateMarketRiskParameter(

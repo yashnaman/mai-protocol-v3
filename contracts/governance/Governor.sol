@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
-import "../interface/IPerpetualGovernance.sol";
+import "../interface/ISharedLiquidityPoolGovernance.sol";
 
 interface IVoteToken {
     function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
@@ -176,7 +176,7 @@ contract Governor {
         );
     }
 
-    function proposePerpetualUpgrade(address targetImplementation) public {
+    function proposeSharedLiquidityPoolUpgrade(address targetImplementation) public {
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encodePacked(targetImplementation);
         _propose("upgradeTo(address)", calldatas, "upgradeTo");

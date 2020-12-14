@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 import { getDefaultProvider, Signer } from "ethers";
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
-import { PerpetualFactory } from "../typechain/PerpetualFactory"
+import { PoolCreator } from "../typechain/PoolCreator"
 import { BrokerRelayFactory } from "../typechain/BrokerRelayFactory";
 
 export function toWei(n) { return ethers.utils.parseEther(n) };
@@ -34,7 +34,7 @@ export async function createContract(path, args = [], libraries = {}) {
     return deployed;
 }
 
-export async function createPerpetualFactory() {
+export async function createSharedLiquidityPoolFactory() {
     const CollateralModule = await createContract("CollateralModule")
     const AMMModule = await createContract("AMMModule", [], { CollateralModule });
     const FundingModule = await createContract("FundingModule", [], { AMMModule });
@@ -47,7 +47,7 @@ export async function createPerpetualFactory() {
     const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, OracleModule, TradeModule });
     const MarginModule = await createContract("MarginModule", [], { MarketModule, CoreModule, CollateralModule });
     const SettlementModule = await createContract("SettlementModule", [], { CollateralModule });
-    return await createFactory("Perpetual", {
+    return await createFactory("SharedLiquidityPool", {
         AMMModule,
         FundingModule,
         OrderModule,
@@ -59,61 +59,4 @@ export async function createPerpetualFactory() {
         MarginModule,
         MarketModule,
     });
-}
-
-export class TestSet {
-    accounts;
-    operator;
-    user1;
-    user2;
-    user3;
-    vault;
-
-    collateral;
-    oracle
-    perpetualMaker
-
-    async initialzie(vaultFeeRate) {
-        this.accounts = await ethers.getSigners();
-        this.operator = this.accounts[0];
-        this.vault = this.accounts[9];
-
-        this.collateral = await createContract("CustomERC20", ["CTK", "CTK", 18]);
-        this.oracle = await createContract("OracleWrapper", [this.collateral.address]);
-
-        var shareTemplate = await createContract("ShareToken");
-        var govTemplate = await createContract("Governor");
-        var perpTemplate = (await createPerpetualFactory()).deploy();
-        this.perpetualMaker = await await createContract(
-            "PerpetualMaker",
-            [
-                govTemplate.address,
-                shareTemplate.address,
-                perpTemplate.address,
-                this.vault.address,
-                vaultFeeRate,
-            ]
-        );
-    }
-
-    async createDefaultPerpetual() {
-        await this.perpetualMaker.createPerpetual(
-            this.oracle.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1")],
-            [toWei("0.001"), toWei("0.2"), toWei("0.1"), toWei("0.005"), toWei("5")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
-            998,
-        );
-        const count = await this.perpetualMaker.totalPerpetualCount();
-        const all = await this.perpetualMaker.listPerpetuals(0, count.toString());
-        const factory = await createPerpetualFactory();
-        return await factory.attach(all[all.length - 1]);
-    }
-
-    async perpareCollateral(user, perp, amount) {
-        this.collateral.mint(user.address, amount);
-        const userCTK = await CustomErc20Factory.connect(this.collateral.address, user);
-        await userCTK.approve(perp.address, toWei("99999999999999999999"));
-    }
 }

@@ -37,7 +37,7 @@ contract Getter is Storage {
         return _core.shareToken;
     }
 
-    function liquidityPoolInfo()
+    function sharedLiquidityPoolInfo()
         public
         view
         returns (
@@ -50,8 +50,8 @@ contract Getter is Storage {
             int256 insuranceFundCap,
             int256 donatedInsuranceFund,
             int256 totalClaimableFee,
-            int256 liquidityPoolCashBalance,
-            int256 liquidityPoolCollateral,
+            int256 poolCashBalance,
+            int256 poolCollateral,
             int256 marketCount
         )
     {
@@ -64,8 +64,8 @@ contract Getter is Storage {
         insuranceFundCap = _core.insuranceFundCap;
         donatedInsuranceFund = _core.donatedInsuranceFund;
         totalClaimableFee = _core.totalClaimableFee;
-        liquidityPoolCashBalance = _core.liquidityPoolCashBalance;
-        liquidityPoolCollateral = _core.liquidityPoolCollateral;
+        poolCashBalance = _core.poolCashBalance;
+        poolCollateral = _core.poolCollateral;
         marketCount = _core.markets.length.toInt256();
     }
 

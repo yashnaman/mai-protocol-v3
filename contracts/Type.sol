@@ -28,7 +28,7 @@ struct Order {
     address trader;
     address broker;
     address relayer;
-    address perpetual;
+    address sharedLiquidityPool;
     uint256 marketIndex;
     address referrer;
     int256 amount;
@@ -61,8 +61,8 @@ struct Core {
     bool isWrapped;
     uint256 scaler;
     address collateral;
-    int256 liquidityPoolCashBalance;
-    int256 liquidityPoolCollateral;
+    int256 poolCashBalance;
+    int256 poolCollateral;
     // insurance fund
     int256 insuranceFund;
     int256 insuranceFundCap;

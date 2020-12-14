@@ -13,7 +13,7 @@ library ParameterModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function updateLiquidityPoolParameter(
+    function updateSharedLiquidityPoolParameter(
         Core storage core,
         bytes32 key,
         int256 newValue

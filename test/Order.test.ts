@@ -30,7 +30,7 @@ describe("Order", () => {
             trader: "0x0000000000000000000000000000000000000001", // trader
             broker: "0x0000000000000000000000000000000000000002", // broker
             relayer: "0x0000000000000000000000000000000000000003", // relayer
-            perpetual: "0x0000000000000000000000000000000000000004", // perpetual
+            sharedLiquidityPool: "0x0000000000000000000000000000000000000004", // sharedLiquidityPool
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: 1000,
             priceLimit: 2000,
@@ -51,7 +51,7 @@ describe("Order", () => {
             trader: accounts[0].address, // trader
             broker: accounts[0].address, // broker
             relayer: accounts[0].address, // relayer
-            perpetual: testOrder.address, // perpetual
+            sharedLiquidityPool: testOrder.address, // sharedLiquidityPool
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: toWei("1"),
             priceLimit: toWei("500"),
@@ -81,9 +81,9 @@ describe("Order", () => {
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("relayer mismatch");
         order.relayer = accounts[0].address;
 
-        order.perpetual = accounts[1].address;
-        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("perpetual mismatch");
-        order.perpetual = testOrder.address;
+        order.sharedLiquidityPool = accounts[1].address;
+        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("sharedLiquidityPool mismatch");
+        order.sharedLiquidityPool = testOrder.address;
 
         order.chainID = 1;
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("chainid mismatch");

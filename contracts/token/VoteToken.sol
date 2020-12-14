@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
-contract ShareToken {
+contract VoteToken {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
 

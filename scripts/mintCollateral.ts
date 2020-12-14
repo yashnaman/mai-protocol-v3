@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
-import { Perpetual } from "../typechain/Perpetual";
+import { SharedLiquidityPool } from "../typechain/SharedLiquidityPool";
 import {
     toWei,
-    createPerpetualFactory
+    createSharedLiquidityPoolFactory
 } from "./utils";
 
 async function main(accounts) {
@@ -24,9 +24,9 @@ async function addLiquidity(user, amount) {
         await collateral.approve("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2", amount);
     }
     {
-        const factory = await createPerpetualFactory();
-        const perpetual = await factory.attach("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2");
-        await perpetual.addLiquidity(amount)
+        const factory = await createSharedLiquidityPoolFactory();
+        const sharedLiquidityPool = await factory.attach("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2");
+        await sharedLiquidityPool.addLiquidity(amount)
     }
     console.log("add done");
 }

@@ -10,7 +10,7 @@ import "./Type.sol";
 import "./Events.sol";
 import "./Storage.sol";
 
-// @title Goovernance is the contract to maintain perpetual parameters.
+// @title Goovernance is the contract to maintain sharedLiquidityPool parameters.
 contract Governance is Storage, Events {
     using SafeMathUpgradeable for uint256;
     using MarketModule for Market;

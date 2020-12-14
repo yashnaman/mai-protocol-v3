@@ -82,7 +82,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
             Order memory order = orders[i];
             int256 amount = amounts[i];
             bytes32 orderHash = order.orderHash();
-            (bool success, ) = order.perpetual.call(
+            (bool success, ) = order.sharedLiquidityPool.call(
                 abi.encodeWithSignature(
                     "brokerTrade(Order,int256,bytes)",
                     order,

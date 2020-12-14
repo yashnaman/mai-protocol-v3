@@ -34,7 +34,7 @@ library OrderModule {
         require(Utils.hasSameSign(amount, order.amount), "side mismatch");
         require(order.broker == msg.sender, "broker mismatch");
         require(order.relayer == tx.origin, "relayer mismatch");
-        require(order.perpetual == address(this), "perpetual mismatch");
+        require(order.sharedLiquidityPool == address(this), "sharedLiquidityPool mismatch");
         require(order.chainID == Utils.chainID(), "chainid mismatch");
         require(order.deadline() >= block.timestamp, "order is expired");
         require(order.version() == SUPPORTED_ORDER_VERSION, "order version is not supported");

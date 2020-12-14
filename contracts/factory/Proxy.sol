@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 
 import "hardhat/console.sol";
 
-/// @title Create a upgradeable proxy as storage of new perpetual.
+/// @title Create a upgradeable proxy as storage of new sharedLiquidityPool.
 contract Creator {
     function _createStaticProxy(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");

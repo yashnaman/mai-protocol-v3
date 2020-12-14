@@ -39,7 +39,7 @@ contract TestAMM {
         core.markets[0].openSlippageFactor.value = openSlippageFactor;
         core.markets[0].closeSlippageFactor.value = closeSlippageFactor;
         core.markets[0].maxLeverage.value = maxLeverage;
-        core.liquidityPoolCashBalance = cashBalance;
+        core.poolCashBalance = cashBalance;
         core.markets[0].marginAccounts[address(this)].positionAmount = positionAmount1;
         core.markets[0].indexPriceData.price = indexPrice1;
 

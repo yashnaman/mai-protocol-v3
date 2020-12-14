@@ -6,11 +6,11 @@ import {
     fromWei,
     createFactory,
     createContract,
-    createPerpetualFactory
+    createSharedLiquidityPoolFactory
 } from "../scripts/utils";
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
-import { PerpetualFactory } from "../typechain/PerpetualFactory"
+import { SharedLiquidityPoolFactory } from "../typechain/SharedLiquidityPoolFactory"
 import { BrokerRelayFactory } from "../typechain/BrokerRelayFactory";
 
 type Pair = Array<string>
@@ -66,7 +66,7 @@ describe("integration", () => {
             trader: user1.address, // trader
             broker: broker.address, // broker
             relayer: user1.address, // relayer
-            perpetual: "0x0000000000000000000000000000000000000000", // perpetual
+            sharedLiquidityPool: "0x0000000000000000000000000000000000000000", // sharedLiquidityPool
             marketIndex: 0,
             referrer: "0x0000000000000000000000000000000000000000", // referrer
             amount: 1000,
@@ -87,6 +87,7 @@ describe("integration", () => {
         var gs = new GasStat();
         // users
         const accounts = await ethers.getSigners();
+        const user0 = accounts[0];
         const user1 = accounts[1];
         const user2 = accounts[2];
         const user3 = accounts[3];
@@ -99,7 +100,7 @@ describe("integration", () => {
         var lpTokenTemplate = await createContract("ShareToken");
         var govTemplate = await createContract("Governor");
         var maker = await createContract(
-            "LiquidityPoolFactory",
+            "PoolCreator",
             [
                 govTemplate.address,
                 lpTokenTemplate.address,
@@ -108,14 +109,13 @@ describe("integration", () => {
                 toWei("0.001")
             ]
         );
-        var perpTemplate = await (await createPerpetualFactory()).deploy();
+        var perpTemplate = await (await createSharedLiquidityPoolFactory()).deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
-        await maker.createLiquidityPool(ctk.address, 998);
+        await maker.createSharedLiquidityPool(ctk.address, 998);
 
-        const n = await maker.liquidityPoolCount();
-        const allLiquidityPools = await maker.listLiquidityPools(0, n.toString());
-        const perpetualFactory = await createPerpetualFactory();
-        const perp = await perpetualFactory.attach(allLiquidityPools[allLiquidityPools.length - 1]);
+        const n = await maker.sharedLiquidityPoolCount();
+        const allSharedLiquidityPools = await maker.listSharedLiquidityPools(0, n.toString());
+        const perp = await SharedLiquidityPoolFactory.connect(allSharedLiquidityPools[allSharedLiquidityPools.length - 1], user0);
 
         // oracle
         var now = Math.floor(Date.now() / 1000);
@@ -136,25 +136,25 @@ describe("integration", () => {
         }
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
-        await perp.createInitializingMarket(oracle1.address,
+        await perp.createMarket(oracle1.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createInitializingMarket(oracle2.address,
+        await perp.createMarket(oracle2.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createInitializingMarket(oracle3.address,
+        await perp.createMarket(oracle3.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createInitializingMarket(oracle4.address,
+        await perp.createMarket(oracle4.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -163,7 +163,7 @@ describe("integration", () => {
         await perp.finalize();
 
         // overview
-        print(await perp.callStatic.liquidityPoolInfo());
+        print(await perp.callStatic.sharedLiquidityPoolInfo());
         print(await perp.callStatic.marketInfo(0));
 
         // get initial coins
@@ -175,20 +175,19 @@ describe("integration", () => {
         await ctkUser2.approve(perp.address, toWei("100000"));
 
         // deposit
-        const perpUser1 = await PerpetualFactory.connect(perp.address, user1);
+        const perpUser1 = await SharedLiquidityPoolFactory.connect(perp.address, user1);
         await gs.collect("deposit", perpUser1.deposit(0, user1.address, toWei("100")));
-        console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
         print(await perpUser1.marginAccount(0, user1.address));
 
         // lp
         await updatePrice(toWei("501"), toWei("601"), toWei("701"), toWei("801"))
-        const perpUser2 = await PerpetualFactory.connect(perp.address, user2);
+        const perpUser2 = await SharedLiquidityPoolFactory.connect(perp.address, user2);
         await gs.collect("addLiquidity", perpUser2.addLiquidity(toWei("1000")));
         const shareUser2 = await CustomErc20Factory.connect(await perp.shareToken(), user2);
         console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
         console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
-        print(await perp.callStatic.liquidityPoolInfo());
+        print(await perp.callStatic.sharedLiquidityPoolInfo());
 
         // trade 1
         await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
@@ -223,5 +222,7 @@ describe("integration", () => {
         console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
 
         gs.summary();
+
+
     })
 })

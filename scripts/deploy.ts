@@ -1,8 +1,9 @@
 const { ethers } = require("hardhat");
 import {
     toWei,
+    createFactory,
     createContract,
-    createPerpetualFactory
+    createSharedLiquidityPoolFactory
 } from "./utils";
 
 async function main(accounts: any[]) {
@@ -10,11 +11,10 @@ async function main(accounts: any[]) {
 
     var weth = await createContract("WETH9");
     var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-    var oracle = await createContract("OracleWrapper", [ctk.address]);
     var lpTokenTemplate = await createContract("ShareToken");
     var govTemplate = await createContract("Governor");
-    var maker = await createContract(
-        "PerpetualMaker",
+    var poolCreator = await createContract(
+        "PoolCreator",
         [
             govTemplate.address,
             lpTokenTemplate.address,
@@ -23,21 +23,41 @@ async function main(accounts: any[]) {
             toWei("0.001")
         ]
     );
-    var perpTemplate = await (await createPerpetualFactory()).deploy();
-    await maker.addVersion(perpTemplate.address, 0, "initial version");
-    const tx = await maker.createPerpetual(
-        oracle.address,
-        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002")],
+    const SharedLiquidityPool = await createSharedLiquidityPoolFactory();
+    var perpTemplate = await SharedLiquidityPool.deploy();
+    await poolCreator.addVersion(perpTemplate.address, 0, "initial version");
+    const tx = await poolCreator.createSharedLiquidityPool(ctk.address, 998);
+
+    const n = await poolCreator.sharedLiquidityPoolCount();
+    const allSharedLiquidityPools = await poolCreator.listSharedLiquidityPools(0, n.toString());
+    const sharedLiquidityPool = await SharedLiquidityPool.attach(allSharedLiquidityPools[allSharedLiquidityPools.length - 1]);
+
+    var oracle = await createContract("OracleWrapper", [ctk.address]);
+    await sharedLiquidityPool.createMarket(oracle.address,
+        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
-        998,
-    );
-
-    const n = await maker.totalPerpetualCount();
-    const allPerpetuals = await maker.listPerpetuals(0, n.toString());
-    const perpetualFactory = await createPerpetualFactory();
-    const perp = await perpetualFactory.attach(allPerpetuals[allPerpetuals.length - 1]);
+    )
+    await sharedLiquidityPool.createMarket(oracle.address,
+        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+        [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+    )
+    await sharedLiquidityPool.createMarket(oracle.address,
+        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+        [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+    )
+    await sharedLiquidityPool.createMarket(oracle.address,
+        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+        [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+    )
+    await sharedLiquidityPool.finalize();
 
     var broker = await createContract("BrokerRelay")
 
@@ -45,9 +65,9 @@ async function main(accounts: any[]) {
         ["WETH9", weth.address],
         ["Collateral", ctk.address],
         ["Oracle", oracle.address],
-        ["PerpetualMaker", maker.address],
+        ["PoolCreator", poolCreator.address],
         ["BrokerRelay", broker.address],
-        ["Perpetual (test)", `${perp.address} @ ${tx.blockNumber}`],
+        ["SharedLiquidityPool (test)", `${sharedLiquidityPool.address} @ ${tx.blockNumber}`],
     ]
 
     console.table(addresses)

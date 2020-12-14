@@ -49,6 +49,9 @@ module.exports = {
         path: './abi',
         clear: false,
         flat: true,
-        only: ['PereptualMaker', 'Perpetual'],
+        only: ['PoolCreator', 'SharedLiquidityPool'],
+    },
+    mocha: {
+        timeout: 60000
     }
 };

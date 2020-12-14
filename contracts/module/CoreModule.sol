@@ -99,7 +99,7 @@ library CoreModule {
         );
         // pool => market
         if (rebalancingAmount != 0) {
-            core.liquidityPoolCollateral = core.liquidityPoolCollateral.sub(rebalancingAmount);
+            core.poolCollateral = core.poolCollateral.sub(rebalancingAmount);
             market.depositedCollateral = market.depositedCollateral.add(rebalancingAmount);
         }
     }
