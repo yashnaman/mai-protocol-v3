@@ -38,5 +38,6 @@ contract TestStorage is Storage, Getter {
             minRiskParamValues,
             maxRiskParamValues
         );
+        _core.markets[marketIndex].state = MarketState.NORMAL;
     }
 }

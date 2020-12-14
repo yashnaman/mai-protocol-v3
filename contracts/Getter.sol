@@ -83,8 +83,8 @@ contract Getter is Storage {
             int256 unitAccumulativeFunding,
             int256 fundingRate,
             uint256 fundingTime,
-            int256[10] memory coreParameter,
-            int256[5] memory riskParameter
+            int256[10] memory coreParameters,
+            int256[5] memory riskParameters
         )
     {
         Market storage market = _core.markets[marketIndex];
@@ -98,7 +98,7 @@ contract Getter is Storage {
         unitAccumulativeFunding = market.unitAccumulativeFunding;
         fundingRate = market.fundingRate;
         fundingTime = _core.fundingTime;
-        coreParameter = [
+        coreParameters = [
             market.initialMarginRate,
             market.maintenanceMarginRate,
             market.operatorFeeRate,
@@ -110,7 +110,7 @@ contract Getter is Storage {
             _core.insuranceFundCap,
             market.insuranceFundRate
         ];
-        riskParameter = [
+        riskParameters = [
             market.halfSpread.value,
             market.openSlippageFactor.value,
             market.closeSlippageFactor.value,

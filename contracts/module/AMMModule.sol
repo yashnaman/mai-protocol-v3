@@ -387,7 +387,7 @@ library AMMModule {
         uint256 length = core.markets.length;
         for (uint256 i = 0; i < length; i++) {
             Market storage market = core.markets[i];
-            marginBalance = marginBalance.add(market.margin(address(this)));
+            marginBalance = marginBalance.add(market.margin(address(this), market.indexPrice()));
         }
         marginBalance = marginBalance.add(core.liquidityPoolCashBalance);
     }

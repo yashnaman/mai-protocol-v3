@@ -9,10 +9,11 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "../libraries/Constant.sol";
 import "../libraries/SafeMathExt.sol";
 
-import "./MarginModule.sol";
-import "./MarketModule.sol";
 import "./CollateralModule.sol";
 import "./CoreModule.sol";
+import "./MarginModule.sol";
+import "./MarketModule.sol";
+import "./OracleModule.sol";
 
 library SettlementModule {
     using SafeMathUpgradeable for uint256;
@@ -22,6 +23,7 @@ library SettlementModule {
 
     using MarginModule for Market;
     using MarketModule for Market;
+    using OracleModule for Market;
     using CollateralModule for Core;
     using CoreModule for Core;
 
@@ -36,7 +38,7 @@ library SettlementModule {
         Market storage market = core.markets[marketIndex];
         require(market.registeredTraders.contains(trader), "trader is not registered");
         require(!market.clearedTraders.contains(trader), "trader is already cleared");
-        int256 margin = market.margin(trader);
+        int256 margin = market.margin(trader, market.markPrice());
         if (margin > 0) {
             if (market.marginAccounts[trader].positionAmount != 0) {
                 market.totalMarginWithPosition = market.totalMarginWithPosition.add(margin);
@@ -78,7 +80,7 @@ library SettlementModule {
         public
         returns (int256 amount)
     {
-        int256 margin = market.margin(trader);
+        int256 margin = market.margin(trader, market.markPrice());
         int256 positionAmount = market.positionAmount(trader);
         // nothing to withdraw
         if (margin < 0) {

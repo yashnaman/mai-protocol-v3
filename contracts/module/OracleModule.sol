@@ -18,6 +18,7 @@ library OracleModule {
         if (currentTime != market.priceUpdateTime && market.state == MarketState.NORMAL) {
             updatePriceData(market.markPriceData, IOracle(market.oracle).priceTWAPLong);
             updatePriceData(market.indexPriceData, IOracle(market.oracle).priceTWAPShort);
+            market.priceUpdateTime = currentTime;
         }
     }
 

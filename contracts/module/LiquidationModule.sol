@@ -130,7 +130,7 @@ library LiquidationModule {
         int256 penaltyToFund;
         int256 penaltyToTaker;
         int256 fullPenalty = hardPenalty.add(softPenalty);
-        int256 traderMargin = market.margin(trader);
+        int256 traderMargin = market.margin(trader, market.markPrice());
         penaltyFromTrader = fullPenalty.min(traderMargin);
         int256 effectivePenalty = penaltyFromTrader.sub(hardPenalty);
         if (effectivePenalty > 0) {

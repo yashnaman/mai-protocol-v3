@@ -19,6 +19,7 @@ describe('TradeModule1', () => {
     })
 
     describe('basic', async () => {
+        let user0;
         let user1;
         let user2;
         let user3;
@@ -27,16 +28,22 @@ describe('TradeModule1', () => {
         let none = "0x0000000000000000000000000000000000000000";
 
         let testTrade;
+        let ctk;
+        let oracle;
 
         beforeEach(async () => {
-            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("FundingModule");
+            ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+            oracle = await createContract("OracleWrapper", [ctk.address]);
+            const CollateralModule = await createContract("CollateralModule")
+            const AMMModule = await createContract("AMMModule", [], { CollateralModule });
+            const FundingModule = await createContract("FundingModule", [], { AMMModule });
             const ParameterModule = await createContract("ParameterModule");
-            const AMMModule = await createContract("AMMModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMModule });
-            testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
+            const CoreModule = await createContract("CoreModule", [], { CollateralModule });
+            const MarketModule = await createContract("MarketModule", [], { ParameterModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
+            testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, MarketModule });
 
+            user0 = accounts[0];
             user1 = accounts[1];
             user2 = accounts[2];
             user3 = accounts[3];
@@ -44,355 +51,307 @@ describe('TradeModule1', () => {
             user5 = accounts[5];
         })
 
-        it('updateTradingFees', async () => {
-            const coreParameters = {
-                initialMarginRate: toWei("0.1"),
-                maintenanceMarginRate: toWei("0.05"),
-                liquidationPenaltyRate: toWei("0.005"),
-                keeperGasReward: toWei("1"),
-                lpFeeRate: toWei("0.0007"),
-                operatorFeeRate: toWei("0.0001"),
-                referrerRebateRate: toWei("0"),
-            }
-            for (var key in coreParameters) {
-                await testTrade.updateMarketParameter(toBytes32(key), coreParameters[key]);
-            }
-            await testTrade.setVault(user4.address, toWei("0.0002"))
-            const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("0"),
-                lpFee: toWei("0"),
-                vaultFee: toWei("0"),
-                operatorFee: toWei("0"),
-                referrerFee: toWei("0"),
-                takerOpeningAmount: toWei("0"),
-                makerOpeningAmount: toWei("0"),
-                takerClosingAmount: toWei("0"),
-                makerClosingAmount: toWei("0"),
-                takerFundingLoss: toWei("0"),
-                makerFundingLoss: toWei("0"),
-            }
-            var result = await testTrade.updateTradingFees(receipt, none);
-            expect(result.lpFee).to.equal(toWei("7"));
-            expect(result.vaultFee).to.equal(toWei("2"));
-            expect(result.operatorFee).to.equal(toWei("1"));
-            expect(result.referrerFee).to.equal(toWei("0"));
+        // it('updateTradingFees', async () => {
 
-            await testTrade.updateMarketParameter(toBytes32("referrerRebateRate"), toWei("0.5"));
-            var result = await testTrade.updateTradingFees(receipt, none);
-            expect(result.lpFee).to.equal(toWei("7"));
-            expect(result.vaultFee).to.equal(toWei("2"));
-            expect(result.operatorFee).to.equal(toWei("1"));
-            expect(result.referrerFee).to.equal(toWei("0"));
+        //     await testTrade.createMarket(
+        //         oracle.address,
+        //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+        //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+        //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        //     )
+        //     await testTrade.setOperator(user0.address)
+        //     await testTrade.setVault(user4.address, toWei("0.0002"))
 
-            var result = await testTrade.updateTradingFees(receipt, user1.address);
-            expect(result.lpFee).to.equal(toWei("3.5"));
-            expect(result.vaultFee).to.equal(toWei("2"));
-            expect(result.operatorFee).to.equal(toWei("0.5"));
-            expect(result.referrerFee).to.equal(toWei("4"));
-        })
+        //     const receipt = {
+        //         tradingValue: toWei("10000"),
+        //         tradingAmount: toWei("0"),
+        //         lpFee: toWei("0"),
+        //         vaultFee: toWei("0"),
+        //         operatorFee: toWei("0"),
+        //         referrerFee: toWei("0"),
+        //     }
 
-        it('validatePrice', async () => {
-            await testTrade.validatePrice(1, toWei("100"), toWei("100"));
-            await testTrade.validatePrice(1, toWei("90"), toWei("100"));
-            await testTrade.validatePrice(-1, toWei("110"), toWei("100"));
+        //     await testTrade.updateTradingFees(0, receipt, none);
+        //     expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("2"));
+        //     expect(await testTrade.claimableFee(user0.address)).to.equal(toWei("1"));
 
-            await expect(testTrade.validatePrice(1, toWei("0"), toWei("100"))).to.be.revertedWith("price is 0")
-            await expect(testTrade.validatePrice(1, toWei("100.1"), toWei("100"))).to.be.revertedWith("too high");
-            await expect(testTrade.validatePrice(-1, toWei("99.9"), toWei("100"))).to.be.revertedWith("too low");
-        })
+        //     await testTrade.updateMarketParameter(0, toBytes32("referrerRebateRate"), toWei("0.5"));
+        //     await testTrade.updateTradingFees(0, receipt, none);
+        //     expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("4")); // 2+2
+        //     expect(await testTrade.claimableFee(user0.address)).to.equal(toWei("2")); // 1+1
+        //     expect(await testTrade.claimableFee(user1.address)).to.equal(toWei("0"));
 
-        it("updateTradingResult - case 1", async () => {
-            await testTrade.setOperator(user3.address);
-            await testTrade.setVault(user4.address, toWei("0.0002"))
-            const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("-5"),
-                lpFee: toWei("1"),
-                vaultFee: toWei("2"),
-                operatorFee: toWei("3"),
-                referrerFee: toWei("4"),
-                takerOpeningAmount: toWei("0"),
-                makerOpeningAmount: toWei("0"),
-                takerClosingAmount: toWei("0"),
-                makerClosingAmount: toWei("0"),
-                takerFundingLoss: toWei("0"),
-                makerFundingLoss: toWei("0"),
-            }
-            await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
-            var result = await testTrade.tempReceipt();
+        //     await testTrade.updateTradingFees(0, receipt, user1.address);
+        //     expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("6")); // 2+2+2
+        //     expect(await testTrade.claimableFee(user0.address)).to.equal(toWei("2.5")); // 1+1+0.5
+        //     expect(await testTrade.claimableFee(user1.address)).to.equal(toWei("4"));
+        // })
 
-            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
+        // it('validatePrice', async () => {
+        //     await testTrade.validatePrice(1, toWei("100"), toWei("100"));
+        //     await testTrade.validatePrice(1, toWei("90"), toWei("100"));
+        //     await testTrade.validatePrice(-1, toWei("110"), toWei("100"));
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
-            expect(cashBalance).to.equal(toWei("-10010"));
-            expect(positionAmount).to.equal(toWei("5"));
-            expect(result.takerOpeningAmount).to.equal(toWei("5"))
-            expect(result.takerClosingAmount).to.equal(toWei("0"))
-            expect(result.takerFundingLoss).to.equal(toWei("0"))
+        //     await expect(testTrade.validatePrice(1, toWei("0"), toWei("100"))).to.be.revertedWith("price is 0")
+        //     await expect(testTrade.validatePrice(1, toWei("100.1"), toWei("100"))).to.be.revertedWith("too high");
+        //     await expect(testTrade.validatePrice(-1, toWei("99.9"), toWei("100"))).to.be.revertedWith("too low");
+        // })
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user2.address);
-            expect(cashBalance).to.equal(toWei("10001"));
-            expect(positionAmount).to.equal(toWei("-5"));
-            expect(result.makerOpeningAmount).to.equal(toWei("-5"))
-            expect(result.makerClosingAmount).to.equal(toWei("0"))
-            expect(result.makerFundingLoss).to.equal(toWei("0"))
-        })
+        // it("updateTradingResult - case 1", async () => {
+        //     await testTrade.createMarket(
+        //         oracle.address,
+        //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+        //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+        //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        //     )
+        //     await testTrade.setOperator(user3.address);
+        //     await testTrade.setVault(user4.address, toWei("0.0002"))
+        //     const receipt = {
+        //         tradingValue: toWei("10000"),
+        //         tradingAmount: toWei("-5"),
+        //         lpFee: toWei("1"),
+        //         vaultFee: toWei("2"),
+        //         operatorFee: toWei("3"),
+        //         referrerFee: toWei("4"),
+        //     }
+        //     await testTrade.updateTradingResult(0, receipt, user1.address, user2.address)
 
-        it("updateTradingResult - case 2", async () => {
-            await testTrade.setOperator(user3.address);
-            await testTrade.setVault(user4.address, toWei("0.0002"))
-            const receipt = {
-                tradingValue: toWei("-10000"),
-                tradingAmount: toWei("5"),
-                lpFee: toWei("1"),
-                vaultFee: toWei("2"),
-                operatorFee: toWei("3"),
-                referrerFee: toWei("4"),
-                takerOpeningAmount: toWei("0"),
-                makerOpeningAmount: toWei("0"),
-                takerClosingAmount: toWei("0"),
-                makerClosingAmount: toWei("0"),
-                takerFundingLoss: toWei("0"),
-                makerFundingLoss: toWei("0"),
-            }
+        //     var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user1.address);
+        //     expect(cashBalance).to.equal(toWei("-10010"));
+        //     expect(positionAmount).to.equal(toWei("5"));
 
-            await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
-            var result = await testTrade.tempReceipt();
+        //     var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user2.address);
+        //     expect(cashBalance).to.equal(toWei("10001"));
+        //     expect(positionAmount).to.equal(toWei("-5"));
+        // })
 
-            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
+        // it("updateTradingResult - case 2", async () => {
+        //     await testTrade.createMarket(
+        //         oracle.address,
+        //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+        //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+        //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        //     )
+        //     await testTrade.setOperator(user3.address);
+        //     await testTrade.setVault(user4.address, toWei("0.0002"))
+        //     const receipt = {
+        //         tradingValue: toWei("-10000"),
+        //         tradingAmount: toWei("5"),
+        //         lpFee: toWei("1"),
+        //         vaultFee: toWei("2"),
+        //         operatorFee: toWei("3"),
+        //         referrerFee: toWei("4"),
+        //     }
+        //     await testTrade.updateTradingResult(0, receipt, user1.address, user2.address)
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
-            expect(cashBalance).to.equal(toWei("9990"));
-            expect(positionAmount).to.equal(toWei("-5"));
-            expect(result.takerOpeningAmount).to.equal(toWei("-5"))
-            expect(result.takerClosingAmount).to.equal(toWei("0"))
-            expect(result.takerFundingLoss).to.equal(toWei("0"))
+        //     var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user1.address);
+        //     expect(cashBalance).to.equal(toWei("9990"));
+        //     expect(positionAmount).to.equal(toWei("-5"));
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user2.address);
-            expect(cashBalance).to.equal(toWei("-9999"));
-            expect(positionAmount).to.equal(toWei("5"));
-            expect(result.makerOpeningAmount).to.equal(toWei("5"))
-            expect(result.makerClosingAmount).to.equal(toWei("0"))
-            expect(result.makerFundingLoss).to.equal(toWei("0"))
-        })
+        //     var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user2.address);
+        //     expect(cashBalance).to.equal(toWei("-9999"));
+        //     expect(positionAmount).to.equal(toWei("5"));
+        // })
 
-        it("updateTradingResult - case 3", async () => {
-            await testTrade.setOperator(user3.address);
-            await testTrade.setVault(user4.address, toWei("0.0002"))
-            const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("-5"),
-                lpFee: toWei("1"),
-                vaultFee: toWei("2"),
-                operatorFee: toWei("3"),
-                referrerFee: toWei("4"),
-                takerOpeningAmount: toWei("0"),
-                makerOpeningAmount: toWei("0"),
-                takerClosingAmount: toWei("0"),
-                makerClosingAmount: toWei("0"),
-                takerFundingLoss: toWei("0"),
-                makerFundingLoss: toWei("0"),
-            }
-            await testTrade.updateUnitAccumulativeFunding(toWei("100"));
+        //     it("updateTradingResult - case 3", async () => {
+        //         await testTrade.createMarket(
+        //             oracle.address,
+        //             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+        //             [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+        //             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+        //             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        //             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+        //         )
+        //         await testTrade.setOperator(user3.address);
+        //         await testTrade.setVault(user4.address, toWei("0.0002"))
+        //         const receipt = {
+        //             tradingValue: toWei("10000"),
+        //             tradingAmount: toWei("-5"),
+        //             lpFee: toWei("1"),
+        //             vaultFee: toWei("2"),
+        //             operatorFee: toWei("3"),
+        //             referrerFee: toWei("4"),
+        //         }
+        //         await testTrade.setUnitAccumulativeFunding(0, toWei("100"));
 
-            await testTrade.initializeMarginAccount(user1.address, toWei("5000"), toWei("-4"), toWei("0"))
-            await testTrade.initializeMarginAccount(user2.address, toWei("2000"), toWei("2"), toWei("0"))
+        //         await testTrade.initializeMarginAccount(0, user1.address, toWei("5000"), toWei("-4"))
+        //         await testTrade.initializeMarginAccount(0, user2.address, toWei("2000"), toWei("2"))
 
-            await testTrade.updateTradingResult(receipt, user1.address, user2.address, user5.address)
-            var result = await testTrade.tempReceipt();
+        //         await testTrade.updateTradingResult(0, receipt, user1.address, user2.address)
 
-            expect(await testTrade.claimableFees(user3.address)).to.equal(toWei("3"));
-            expect(await testTrade.claimableFees(user4.address)).to.equal(toWei("2"));
-            expect(await testTrade.claimableFees(user5.address)).to.equal(toWei("4"));
+        //         var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user1.address);
+        //         expect(cashBalance).to.equal(toWei("-4510")); // 5000 - 10000(cash) - 10(fee) + (100 * 5)(funding)
+        //         expect(positionAmount).to.equal(toWei("1"));
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user1.address);
-            expect(cashBalance).to.equal(toWei("-4610")); // 5000 - 10000(cash) - 10(fee) - (100 * -4)
-            expect(positionAmount).to.equal(toWei("1"));
-            expect(result.takerOpeningAmount).to.equal(toWei("1"))
-            expect(result.takerClosingAmount).to.equal(toWei("4"))
-            expect(result.takerFundingLoss).to.equal(toWei("-400"))
+        //         var { cashBalance, positionAmount } = await testTrade.marginAccount(0, user2.address);
+        //         expect(cashBalance).to.equal(toWei("11501")); // 2000 + 10000(cash) + 1 + (100 * -5)
+        //         expect(positionAmount).to.equal(toWei("-3"));
+        //     })
+        // })
 
-            var { cashBalance, positionAmount } = await testTrade.marginAccount(user2.address);
-            expect(cashBalance).to.equal(toWei("11801")); // 2000 + 10000(cash) + 1 - (100 * 2)
-            expect(positionAmount).to.equal(toWei("-3"));
-            expect(result.makerOpeningAmount).to.equal(toWei("-3"))
-            expect(result.makerClosingAmount).to.equal(toWei("-2"))
-            expect(result.makerFundingLoss).to.equal(toWei("200"))
-        })
-    })
+        describe("trade", async () => {
 
-    describe("trade", async () => {
+            let user1;
+            let user2;
+            let user3;
+            let user4;
+            let user5;
+            let testTrade;
+            let oracle;
 
-        let user1;
-        let user2;
-        let user3;
-        let user4;
-        let user5;
-        let testTrade;
+            beforeEach(async () => {
+                const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                oracle = await createContract("OracleWrapper", [erc20.address]);
+                const CollateralModule = await createContract("CollateralModule")
+                const AMMModule = await createContract("AMMModule", [], { CollateralModule });
+                const FundingModule = await createContract("FundingModule", [], { AMMModule });
+                const ParameterModule = await createContract("ParameterModule");
+                const CoreModule = await createContract("CoreModule", [], { CollateralModule });
+                const MarketModule = await createContract("MarketModule", [], { ParameterModule });
+                const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
+                testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, MarketModule });
 
-        beforeEach(async () => {
-            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("OracleWrapper", [erc20.address]);
-            const FundingModule = await createContract("FundingModule");
-            const ParameterModule = await createContract("ParameterModule");
-            const AMMModule = await createContract("AMMModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMModule });
-            testTrade = await createContract("TestTrade", [oracle.address], { FundingModule, ParameterModule, TradeModule });
+                user0 = accounts[0];
+                user1 = accounts[1];
+                user2 = accounts[2];
+                user3 = accounts[3];
+                user4 = accounts[4];
+                user5 = accounts[5];
+            })
 
-            user1 = accounts[1];
-            user2 = accounts[2];
-            user3 = accounts[3];
-            user4 = accounts[4];
-            user5 = accounts[5];
-        })
-
-        const coreParameters = {
-            initialMarginRate: toWei("0.1"),
-            maintenanceMarginRate: toWei("0.05"),
-            liquidationPenaltyRate: toWei("0.005"),
-            keeperGasReward: toWei("1"),
-            lpFeeRate: toWei("0.0007"),
-            operatorFeeRate: toWei("0.0001"),
-            referrerRebateRate: toWei("0"),
-        }
-        const riskParameters = {
-            halfSpreadRate: toWei("0.001"),
-            beta1: toWei("0.2"),
-            beta2: toWei("0.1"),
-            fundingRateCoefficient: toWei("0.005"),
-            targetLeverage: toWei("5"),
-        }
-        const testCases = [
-            {
-                name: "sell",
-                marginAccount: {
-                    cashBalance: toWei('7699.77'), // 10000 - 2300.23
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
+            const testCases = [
+                {
+                    name: "sell",
+                    marginAccount: {
+                        cashBalance: toWei('7698.86'), // 10000 - 2300.23
+                        positionAmount: toWei('2.3'),
+                    },
+                    input: {
+                        amount: toWei("-0.5"),
+                        priceLimit: toWei("0"),
+                    },
+                    expectOutput: {
+                        cashBalance: toWei("11178.003372325"),
+                        vaultFee: toWei("0.697516785"),
+                        operatorFee: toWei("0.3487583925"),
+                    }
                 },
-                input: {
-                    amount: toWei("-0.5"),
-                    priceLimit: toWei("0"),
+                // {
+                //     name: "sell - close mm unsafe",
+                //     marginAccount: {
+                //         cashBalance: toWei('-15443'),   // 16070.23 . mm == 626.85
+                //         positionAmount: toWei('2.3'),
+                //         entryFunding: toWei('-0.91'),
+                //     },
+                //     input: {
+                //         amount: toWei("-0.5"),
+                //         priceLimit: toWei("0"),
+                //     },
+                //     expectOutput: {
+                //         cashBalance: toWei("-12200.751349815645198533"),
+                //         ammCashBalance: toWei("4451.395359950153748472"),
+                //     }
+                // },
+                // {
+                //     name: "sell - margin unsafe",
+                //     marginAccount: {
+                //         cashBalance: toWei('-15761'),   // 16070.23 . mm == 626.85
+                //         positionAmount: toWei('2.3'),
+                //         entryFunding: toWei('-0.91'),
+                //     },
+                //     input: {
+                //         amount: toWei("-0.5"),
+                //         priceLimit: toWei("0"),
+                //     },
+                //     expectError: "trader margin is unsafe"
+                // },
+                {
+                    name: "buy without cross 0",
+                    marginAccount: {
+                        cashBalance: toWei('7698.86'),
+                        positionAmount: toWei('2.3'),
+                        entryFunding: toWei('-0.91'),
+                    },
+                    input: {
+                        amount: toWei("0.5"),
+                        priceLimit: toWei("99999999999999"),
+                    },
+                    expectOutput: {
+                        cashBalance: toWei("4203.279770389899701152"),
+                        vaultFee: toWei("0.699407232439580479"),
+                        operatorFee: toWei("0.349703616219790239"),
+                    }
                 },
-                expectOutput: {
-                    cashBalance: toWei("10942.018650184354801467"),
-                    ammCashBalance: toWei("4451.395359950153748472"),
-                }
-            },
-            {
-                name: "sell - close mm unsafe",
-                marginAccount: {
-                    cashBalance: toWei('-15443'),   // 16070.23 . mm == 626.85
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
+                // {
+                //     name: "buy - open im unsafe",
+                //     marginAccount: {
+                //         cashBalance: toWei('-14121'),
+                //         positionAmount: toWei('2.3'),
+                //         entryFunding: toWei('-0.91'),
+                //     },
+                //     input: {
+                //         amount: toWei("0.5"),
+                //         priceLimit: toWei("99999999999999"),
+                //     },
+                //     expectError: "trader initial margin is unsafe",
+                // },
+                {
+                    name: "buy cross 0",
+                    marginAccount: {
+                        cashBalance: toWei('7698.86'),
+                        positionAmount: toWei('2.3'),
+                        entryFunding: toWei('-0.91'),
+                    },
+                    input: {
+                        amount: toWei("3.3"),
+                        priceLimit: toWei("99999999999999"),
+                    },
+                    expectOutput: {
+                        cashBalance: toWei("-15401.483910332567601064"),
+                        vaultFee: toWei("4.621984716100413107"),
+                        operatorFee: toWei("2.310992358050206553"),
+                    }
                 },
-                input: {
-                    amount: toWei("-0.5"),
-                    priceLimit: toWei("0"),
-                },
-                expectOutput: {
-                    cashBalance: toWei("-12200.751349815645198533"),
-                    ammCashBalance: toWei("4451.395359950153748472"),
-                }
-            },
-            {
-                name: "sell - margin unsafe",
-                marginAccount: {
-                    cashBalance: toWei('-15761'),   // 16070.23 . mm == 626.85
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
-                },
-                input: {
-                    amount: toWei("-0.5"),
-                    priceLimit: toWei("0"),
-                },
-                expectError: "trader margin is unsafe"
-            },
-            {
-                name: "buy without cross 0",
-                marginAccount: {
-                    cashBalance: toWei('7699.77'), // 10000 - 2300.23
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
-                },
-                input: {
-                    amount: toWei("0.5"),
-                    priceLimit: toWei("99999999999999"),
-                },
-                expectOutput: {
-                    cashBalance: toWei("4292.448765679380144733"),
-                    ammCashBalance: toWei("11100.919264288562248655"),
-                }
-            },
-            {
-                name: "buy - open im unsafe",
-                marginAccount: {
-                    cashBalance: toWei('-14121'),
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
-                },
-                input: {
-                    amount: toWei("0.5"),
-                    priceLimit: toWei("99999999999999"),
-                },
-                expectError: "trader initial margin is unsafe",
-            },
-            {
-                name: "buy cross 0",
-                marginAccount: {
-                    cashBalance: toWei('7699.77'), // 10000 - 2300.23
-                    positionAmount: toWei('2.3'),
-                    entryFunding: toWei('-0.91'),
-                },
-                input: {
-                    amount: toWei("3.3"),
-                    priceLimit: toWei("99999999999999"),
-                },
-                expectOutput: {
-                    cashBalance: toWei("-15287.812508807433237139"),
-                    ammCashBalance: toWei("30656.769467190158282122"),
-                }
-            },
-        ]
+            ]
 
-        testCases.forEach((testCase) => {
-            it(testCase.name, async () => {
-                for (var key in coreParameters) {
-                    await testTrade.updateMarketParameter(toBytes32(key), coreParameters[key]);
-                }
-                await testTrade.setVault(user4.address, toWei("0.0002"))
-                for (var key in riskParameters) {
-                    await testTrade.updateMarketRiskParameter(toBytes32(key), riskParameters[key]);
-                }
-                await testTrade.updateUnitAccumulativeFunding(toWei("9.9059375"))
-                await testTrade.updateMarkPrice(toWei("6965"));
-                await testTrade.updateIndexPrice(toWei("7000"));
-                await testTrade.initializeMarginAccount(
-                    testTrade.address,
-                    toWei('7699.77'),
-                    toWei('2.3'),
-                    toWei('-0.91'));
-                await testTrade.initializeMarginAccount(
-                    user1.address,
-                    testCase.marginAccount.cashBalance,
-                    testCase.marginAccount.positionAmount,
-                    testCase.marginAccount.entryFunding);
-                if (typeof testCase.expectOutput != "undefined") {
-                    await testTrade.trade(user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address);
-                    // console.log(fromWei(await testTrade.callStatic.margin(user1.address)));
-                    var { cashBalance } = await testTrade.marginAccount(user1.address);
-                    expect(cashBalance).approximateBigNumber(testCase.expectOutput.cashBalance);
-                    var { cashBalance } = await testTrade.marginAccount(testTrade.address);
-                    expect(cashBalance).approximateBigNumber(testCase.expectOutput.ammCashBalance);
-                } else {
-                    await expect(testTrade.trade(user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address))
-                        .to.be.revertedWith(testCase["expectError"])
-                }
+            testCases.forEach((testCase) => {
+                it(testCase.name, async () => {
+                    await testTrade.createMarket(
+                        oracle.address,
+                        // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+                        [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+                        // alpha
+                        [toWei("0.001"), toWei("100"), toWei("90"), toWei("0.005"), toWei("5")],
+                        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+                        [toWei("0.1"), toWei("100"), toWei("100"), toWei("0.5"), toWei("10")],
+                    )
+                    await testTrade.setOperator(user3.address);
+                    await testTrade.setVault(user4.address, toWei("0.0002"))
+                    await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
+
+                    let now = Math.floor(Date.now() / 1000);
+                    await oracle.setMarkPrice(toWei("6965"), now);
+                    await oracle.setIndexPrice(toWei("7000"), now);
+
+                    await testTrade.initializeMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
+                    await testTrade.initializeMarginAccount(0, user1.address, testCase.marginAccount.cashBalance, testCase.marginAccount.positionAmount);
+                    if (typeof testCase.expectOutput != "undefined") {
+                        await testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address);
+                        var { cashBalance } = await testTrade.marginAccount(0, user1.address);
+                        expect(cashBalance).approximateBigNumber(testCase.expectOutput.cashBalance);
+                        expect(await testTrade.claimableFee(user4.address)).approximateBigNumber(testCase.expectOutput.vaultFee);
+                        expect(await testTrade.claimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
+                    } else {
+                        await expect(testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address))
+                            .to.be.revertedWith(testCase["expectError"])
+                    }
+                })
             })
         })
     })

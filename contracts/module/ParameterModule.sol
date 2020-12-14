@@ -152,14 +152,9 @@ library ParameterModule {
 
     function validateRiskParameters(Market storage market) public view {
         require(market.halfSpread.value >= 0, "hsr shoud be greater than 0");
-        require(
-            market.openSlippageFactor.value > 0 &&
-                market.openSlippageFactor.value < Constant.SIGNED_ONE,
-            "b1 should be within (0, 1)"
-        );
+        require(market.openSlippageFactor.value > 0, "b1 should be within (0, 1)");
         require(
             market.closeSlippageFactor.value > 0 &&
-                market.closeSlippageFactor.value < Constant.SIGNED_ONE &&
                 market.closeSlippageFactor.value < market.openSlippageFactor.value,
             "b2 should be within (0, b1)"
         );

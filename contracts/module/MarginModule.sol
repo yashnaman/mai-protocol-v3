@@ -35,25 +35,29 @@ library MarginModule {
     event Withdraw(address trader, int256 amount);
 
     // atribute
-    function initialMargin(Market storage market, address trader) internal view returns (int256) {
+    function initialMargin(
+        Market storage market,
+        address trader,
+        int256 indexPrice
+    ) internal view returns (int256) {
         return
             market.marginAccounts[trader]
                 .positionAmount
-                .wmul(market.markPrice())
+                .wmul(indexPrice)
                 .wmul(market.initialMarginRate)
                 .abs()
                 .max(market.keeperGasReward);
     }
 
-    function maintenanceMargin(Market storage market, address trader)
-        internal
-        view
-        returns (int256)
-    {
+    function maintenanceMargin(
+        Market storage market,
+        address trader,
+        int256 indexPrice
+    ) internal view returns (int256) {
         return
             market.marginAccounts[trader]
                 .positionAmount
-                .wmul(market.markPrice())
+                .wmul(indexPrice)
                 .wmul(market.maintenanceMarginRate)
                 .abs()
                 .max(market.keeperGasReward);
@@ -74,9 +78,13 @@ library MarginModule {
         return market.marginAccounts[trader].positionAmount;
     }
 
-    function margin(Market storage market, address trader) internal view returns (int256) {
+    function margin(
+        Market storage market,
+        address trader,
+        int256 indexPrice
+    ) internal view returns (int256) {
         return
-            market.marginAccounts[trader].positionAmount.wmul(market.markPrice()).add(
+            market.marginAccounts[trader].positionAmount.wmul(indexPrice).add(
                 availableCashBalance(market, trader)
             );
     }
@@ -86,7 +94,9 @@ library MarginModule {
         view
         returns (bool)
     {
-        return margin(market, trader) >= initialMargin(market, trader);
+        return
+            margin(market, trader, market.markPrice()) >=
+            initialMargin(market, trader, market.markPrice());
     }
 
     function isMaintenanceMarginSafe(Market storage market, address trader)
@@ -94,11 +104,13 @@ library MarginModule {
         view
         returns (bool)
     {
-        return margin(market, trader) >= maintenanceMargin(market, trader);
+        return
+            margin(market, trader, market.markPrice()) >=
+            maintenanceMargin(market, trader, market.markPrice());
     }
 
     function isMarginSafe(Market storage market, address trader) internal view returns (bool) {
-        return margin(market, trader) >= 0;
+        return margin(market, trader, market.markPrice()) >= 0;
     }
 
     function isEmptyAccount(Market storage market, address trader) internal view returns (bool) {

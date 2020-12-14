@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "../Storage.sol";
 import "../module/MarginModule.sol";
-import "../module/ParameterModule.sol";
+import "../module/OracleModule.sol";
 import "../Storage.sol";
 
 contract TestMargin is Storage {
     using MarginModule for Market;
     using ParameterModule for Market;
+    using OracleModule for Market;
 
     Market internal _market;
 
@@ -49,11 +50,11 @@ contract TestMargin is Storage {
     }
 
     function initialMargin(address trader) external view returns (int256) {
-        return _market.initialMargin(trader);
+        return _market.initialMargin(trader, _market.markPrice());
     }
 
     function maintenanceMargin(address trader) external view returns (int256) {
-        return _market.maintenanceMargin(trader);
+        return _market.maintenanceMargin(trader, _market.markPrice());
     }
 
     function availableCashBalance(address trader) external view returns (int256) {
@@ -65,7 +66,7 @@ contract TestMargin is Storage {
     }
 
     function margin(address trader) external syncState returns (int256) {
-        return _market.margin(trader);
+        return _market.margin(trader, _market.markPrice());
     }
 
     function isInitialMarginSafe(address trader) external view returns (bool) {

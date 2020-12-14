@@ -94,8 +94,8 @@ library CoreModule {
     }
 
     function rebalance(Core storage core, Market storage market) public {
-        int256 rebalancingAmount = market.initialMargin(address(this)).sub(
-            market.margin(address(this))
+        int256 rebalancingAmount = market.initialMargin(address(this), market.markPrice()).sub(
+            market.margin(address(this), market.markPrice())
         );
         // pool => market
         if (rebalancingAmount != 0) {

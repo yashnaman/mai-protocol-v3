@@ -53,35 +53,35 @@ describe("integration", () => {
         console.table(props)
     }
 
-    // it("broker", async () => {
-    //     var gs = new GasStat();
-    //     const accounts = await ethers.getSigners();
-    //     const user1 = accounts[1];
-    //     const user2 = accounts[2];
-    //     const user3 = accounts[3];
-    //     const vault = accounts[9];
+    it("broker", async () => {
+        var gs = new GasStat();
+        const accounts = await ethers.getSigners();
+        const user1 = accounts[1];
+        const user2 = accounts[2];
+        const user3 = accounts[3];
+        const vault = accounts[9];
 
-    //     var broker = await createContract("BrokerRelay");
-    //     const order = {
-    //         trader: user1.address, // trader
-    //         broker: broker.address, // broker
-    //         relayer: user1.address, // relayer
-    //         perpetual: "0x0000000000000000000000000000000000000000", // perpetual
-    //         marketIndex: 0,
-    //         referrer: "0x0000000000000000000000000000000000000000", // referrer
-    //         amount: 1000,
-    //         priceLimit: 2000,
-    //         data: ethers.utils.solidityPack(["uint64", "uint32", "uint8", "uint8", "uint64"], [1606217568, 1, 1, 1, 123456]).padEnd(66, "0"),
-    //         chainID: 1,
-    //     };
+        var broker = await createContract("BrokerRelay");
+        const order = {
+            trader: user1.address, // trader
+            broker: broker.address, // broker
+            relayer: user1.address, // relayer
+            perpetual: "0x0000000000000000000000000000000000000000", // perpetual
+            marketIndex: 0,
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
+            amount: 1000,
+            priceLimit: 2000,
+            data: ethers.utils.solidityPack(["uint64", "uint32", "uint8", "uint8", "uint64"], [1606217568, 1, 1, 1, 123456]).padEnd(66, "0"),
+            chainID: 1,
+        };
 
-    //     const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
-    //     await brokerUser1.deposit({ value: 10000 });
-    //     console.log((await brokerUser1.balanceOf(user1.address)).toString());
-    //     await gs.collect("batchTrade 1", broker.batchTrade([order], [100], ["0x"], [100]));
+        const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
+        await brokerUser1.deposit({ value: 10000 });
+        console.log((await brokerUser1.balanceOf(user1.address)).toString());
+        await gs.collect("batchTrade 1", broker.batchTrade([order], [100], ["0x"], [100]));
 
-    //     gs.summary()
-    // });
+        gs.summary()
+    });
 
     it("main", async () => {
         var gs = new GasStat();
