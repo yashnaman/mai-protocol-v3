@@ -493,7 +493,6 @@ describe('AMM', () => {
     describe('add liquidity', function () {
 
         const successCases = [
-            /*
             {
                 name: 'init',
                 amm: ammInit,
@@ -508,7 +507,6 @@ describe('AMM', () => {
                 marginToAdd: toWad('1000'),
                 share: toWad('10.0916660306314520522392020897')
             },
-            */
             {
                 name: 'short, before unsafe, after unsafe',
                 amm: amm3,
@@ -516,29 +514,27 @@ describe('AMM', () => {
                 marginToAdd: toWad('576'),
                 share: toWad('5.321016166281755196304849885')
             },
-            /*
             {
                 name: 'short, before unsafe, after safe',
                 amm: amm3,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('204'),
-                share: toWad('34.058581410041613024')
+                marginToAdd: toWad('577'),
+                share: toWad('6.021800176340430529365414419')
             },
             {
                 name: 'long, before unsafe, after unsafe',
                 amm: amm6,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('110'),
-                share: toWad('17.783041850283580957')
+                marginToAdd: toWad('576'),
+                share: toWad('5.321016166281755196304849885')
             },
             {
                 name: 'long, before unsafe, after safe',
                 amm: amm6,
                 totalShare: toWad('100'),
-                marginToAdd: toWad('111'),
-                share: toWad('20.829626062945364605')
+                marginToAdd: toWad('577'),
+                share: toWad('6.021800176340430529365414419')
             }
-            */
         ]
 
         successCases.forEach(element => {
@@ -548,16 +544,17 @@ describe('AMM', () => {
             })
         })
 
-        /*
         const failCases = [
+            /*
             {
                 name: 'invalid margin to add',
                 totalShare: toWad('100'),
                 marginToAdd: _0,
                 errorMsg: 'margin to add must be positive'
             },
+            */
             {
-                name: 'm0 = 0 && totalShare != 0',
+                name: 'poolMargin = 0 && totalShare != 0',
                 totalShare: toWad('100'),
                 marginToAdd: toWad('100'),
                 errorMsg: 'share has no value'
@@ -566,11 +563,10 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(_0, params.halfSpreadRate, params.beta1, params.beta2, params.targetLeverage, ammInit.cashBalance, ammInit.positionAmount, _0, toWad('100'))
+                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, ammInit.cashBalance, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
                 await expect(AMM.addLiquidity(element.totalShare, element.marginToAdd)).to.be.revertedWith(element.errorMsg)
             })
         })
-        */
     })
 
     describe('remove liquidity', function () {
@@ -583,22 +579,20 @@ describe('AMM', () => {
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('1000')
             },
-            /*
             {
                 name: 'short',
                 amm: amm1,
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
-                marginToRemove: toWad('86.967656688056717601')
+                marginToRemove: toWad('988.888888888888888888888888889')
             },
             {
                 name: 'long',
                 amm: amm4,
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
-                marginToRemove: toWad('89.952448465310273482')
+                marginToRemove: toWad('988.888888888888888888888888889')
             }
-            */
         ]
 
         successCases.forEach(element => {
