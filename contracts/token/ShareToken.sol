@@ -15,38 +15,40 @@ contract ShareToken is
     function initialize(
         string memory name,
         string memory symbol,
-        address minter
+        address admin
     ) public virtual initializer {
-        __ShareToken_init(name, symbol, minter);
+        __ShareToken_init(name, symbol, admin);
     }
 
     function __ShareToken_init(
         string memory name,
         string memory symbol,
-        address minter
+        address admin
     ) internal initializer {
         __Context_init_unchained();
         __AccessControl_init_unchained();
         __ERC20_init_unchained(name, symbol);
-        __ShareToken_init_unchained(minter);
+        __ShareToken_init_unchained(admin);
     }
 
-    function __ShareToken_init_unchained(address minter) internal initializer {
-        _setupRole(DEFAULT_ADMIN_ROLE, minter);
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    function __ShareToken_init_unchained(address admin) internal initializer {
+        _setupRole(ADMIN_ROLE, admin);
     }
 
     function mint(address account, uint256 amount) public virtual {
         require(
-            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
-            "ERC20PresetMinterPauser: must have minter role to mint"
+            hasRole(ADMIN_ROLE, _msgSender()),
+            "ERC20PresetMinterPauser: must have admin role to mint"
         );
         _mint(account, amount);
     }
 
     function burn(address account, uint256 amount) public virtual {
         require(
-            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
-            "ERC20PresetMinterPauser: must have minter role to mint"
+            hasRole(ADMIN_ROLE, _msgSender()),
+            "ERC20PresetMinterPauser: must have admin role to burn"
         );
         _burn(account, amount);
     }
