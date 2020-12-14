@@ -20,8 +20,6 @@ contract ShareToken is
         __ShareToken_init(name, symbol, minter);
     }
 
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-
     function __ShareToken_init(
         string memory name,
         string memory symbol,
@@ -34,12 +32,12 @@ contract ShareToken is
     }
 
     function __ShareToken_init_unchained(address minter) internal initializer {
-        _setupRole(ADMIN_ROLE, minter);
+        _setupRole(DEFAULT_ADMIN_ROLE, minter);
     }
 
     function mint(address account, uint256 amount) public virtual {
         require(
-            hasRole(ADMIN_ROLE, _msgSender()),
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
             "ERC20PresetMinterPauser: must have minter role to mint"
         );
         _mint(account, amount);
@@ -47,7 +45,7 @@ contract ShareToken is
 
     function burn(address account, uint256 amount) public virtual {
         require(
-            hasRole(ADMIN_ROLE, _msgSender()),
+            hasRole(DEFAULT_ADMIN_ROLE, _msgSender()),
             "ERC20PresetMinterPauser: must have minter role to mint"
         );
         _burn(account, amount);
