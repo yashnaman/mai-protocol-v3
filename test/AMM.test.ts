@@ -1,5 +1,5 @@
-const { ethers } = require("hardhat");
 import BigNumber from 'bignumber.js'
+import { ethers } from "hardhat";
 import { waffleChai } from "@ethereum-waffle/chai";
 import { expect, use } from "chai";
 
