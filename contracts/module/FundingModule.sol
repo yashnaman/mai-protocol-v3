@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
 
@@ -23,7 +22,6 @@ library FundingModule {
     using AMMModule for Core;
     using MarginModule for Market;
     using OracleModule for Market;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 

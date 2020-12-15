@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../interface/IShareToken.sol";
 
@@ -31,7 +30,6 @@ library AMMModule {
     using OracleModule for Market;
     using MarginModule for Market;
     using CollateralModule for Core;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     struct Context {
         int256 indexPrice;

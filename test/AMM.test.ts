@@ -22,12 +22,21 @@ const toWad = (x: any) => {
 const _0 = toWad('0')
 
 const params = {
-    unitAccumulatedFundingLoss: toWad('1.9'),
+    unitAccumulativeFunding: toWad('1.9'),
     halfSpread: toWad('0.001'),
     openSlippageFactor: toWad('100'),
     closeSlippageFactor: toWad('90'),
     maxLeverage: toWad('5'),
     indexPrice: toWad('100')
+}
+
+// [-2] emergency
+const ammEmergency = {
+    cashBalance: toWad('10000'),
+    positionAmount1: toWad('-50'),
+    positionAmount2: toWad('-52'),
+    // available cash = 10000 - 1.9 * (-50) - 1.9 * (-52) = 10193.8
+    // pool margin = emergency
 }
 
 // [-1] init
@@ -103,12 +112,12 @@ const amm6 = {
 }
 
 describe('AMM', () => {
-    let AMM;
+    let amm;
 
     beforeEach(async () => {
-        const CollateralModule = await createContract("CollateralModule")
-        const AMMModule = await createContract("AMMModule", [], { CollateralModule })
-        AMM = await createContract("TestAMM", [], { AMMModule });
+        const collateralModule = await createContract("CollateralModule")
+        const ammModule = await createContract("AMMModule", [], {"CollateralModule": collateralModule})
+        amm = await createContract("TestAMM", [], {"AMMModule": ammModule});
     });
 
     describe('isAMMSafe', function () {
@@ -148,11 +157,11 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 if (element.isSafe) {
-                    expect(await AMM.isAMMMarginSafe()).to.be.true
+                    expect(await amm.isAMMMarginSafe()).to.be.true
                 } else {
-                    expect(await AMM.isAMMMarginSafe()).to.be.false
+                    expect(await amm.isAMMMarginSafe()).to.be.false
                 }
             })
         })
@@ -189,8 +198,8 @@ describe('AMM', () => {
 
         successCases.forEach((element, index) => {
             it(`success-${index}`, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await AMM.regress()).approximateBigNumber(element.poolMargin);
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await amm.regress()).approximateBigNumber(element.poolMargin);
             })
         })
 
@@ -207,8 +216,8 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                await expect(AMM.regress()).to.be.revertedWith('amm is unsafe when regress')
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await expect(amm.regress()).to.be.revertedWith('amm is unsafe when regress')
             })
         })
     })
@@ -232,8 +241,8 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await AMM.deltaMargin(element.amount)).approximateBigNumber(element.deltaMargin)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await amm.deltaMargin(element.amount)).approximateBigNumber(element.deltaMargin)
             })
         })
     })
@@ -284,14 +293,14 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await AMM.maxPosition(element.side)).approximateBigNumber(element.maxPosition)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await amm.maxPosition(element.side)).approximateBigNumber(element.maxPosition)
             })
         })
 
         it('zero index price', async () => {
-            await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, amm1.cashBalance, amm1.positionAmount1, amm1.positionAmount2, _0, params.indexPrice)
-            await expect(AMM.maxPosition(0)).to.be.revertedWith('index price must be positive')
+            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, amm1.cashBalance, amm1.positionAmount1, amm1.positionAmount2, _0, params.indexPrice)
+            await expect(amm.maxPosition(0)).to.be.revertedWith('index price must be positive')
         })
     })
 
@@ -422,8 +431,8 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const context = await AMM.tradeWithAMM(element.amount, element.partialFill)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                const context = await amm.tradeWithAMM(element.amount, element.partialFill)
                 expect(context.deltaMargin).approximateBigNumber(element.deltaMargin)
                 expect(context.deltaPosition).approximateBigNumber(element.deltaPosition)
             })
@@ -434,11 +443,25 @@ describe('AMM', () => {
 
         const failCases = [
             {
+                name: 'emergency',
+                amm: ammEmergency,
+                amount: toWad('1'),
+                partialFill: false,
+                errorMsg: 'amm is emergency'
+            },
+            {
                 name: 'zero trade amount',
                 amm: amm0,
                 amount: _0,
                 partialFill: false,
                 errorMsg: 'trade amount is zero'
+            },
+            {
+                name: 'poolMargin = 0',
+                amm: ammInit,
+                amount: toWad('1'),
+                partialFill: false,
+                errorMsg: 'pool margin must be positive'
             },
             {
                 name: 'open 0 -> -141.422, pos2 too large',
@@ -486,8 +509,8 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                await expect(AMM.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await expect(amm.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
             })
         })
     })
@@ -547,15 +570,15 @@ describe('AMM', () => {
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 await ctk.mint(user1.address, element.marginToAdd);
                 const ctkUser1 = await CustomErc20Factory.connect(ctk.address, user1);
-                await ctkUser1.approve(AMM.address, toWad("1000000"));
+                await ctkUser1.approve(amm.address, toWad("1000000"));
                 var shareToken = await createContract("TestShareToken");
-                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
                 const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user2.address, element.totalShare);
-                await AMM.setConfig(ctk.address, shareToken.address, 1);
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await amm.setConfig(ctk.address, shareToken.address, 1);
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
                 await ammUser1.addLiquidity(element.marginToAdd);
                 expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(element.share);
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(_0);
@@ -584,13 +607,13 @@ describe('AMM', () => {
                 const user2 = accounts[2];
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 var shareToken = await createContract("TestShareToken");
-                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
                 const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user2.address, element.totalShare);
-                await AMM.setConfig(ctk.address, shareToken.address, 1);
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, ammInit.cashBalance, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await amm.setConfig(ctk.address, shareToken.address, 1);
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, ammInit.cashBalance, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
+                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
                 await expect(ammUser1.addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
             })
         })
@@ -599,6 +622,13 @@ describe('AMM', () => {
     describe('remove liquidity', function () {
 
         const successCases = [
+            {
+                name: 'poolMargin = 0',
+                amm: ammInit,
+                restShare: toWad('90'), // total 100
+                shareToRemove: toWad('10'),
+                marginToRemove: _0
+            },
             {
                 name: 'no position',
                 amm: amm0,
@@ -628,16 +658,16 @@ describe('AMM', () => {
                 const user1 = accounts[1];
                 const user2 = accounts[2];
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-                await ctk.mint(AMM.address, element.marginToRemove);
+                await ctk.mint(amm.address, element.marginToRemove);
                 var shareToken = await createContract("TestShareToken");
-                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
                 const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user1.address, element.shareToRemove);
                 await shareTokenUser1.mint(user2.address, element.restShare);
-                await AMM.setConfig(ctk.address, shareToken.address, 1);
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await amm.setConfig(ctk.address, shareToken.address, 1);
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
                 await ammUser1.removeLiquidity(element.shareToRemove);
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
                 expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(_0);
@@ -703,14 +733,14 @@ describe('AMM', () => {
                 const user2 = accounts[2];
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 var shareToken = await createContract("TestShareToken");
-                await shareToken.initialize("TEST", "TEST", AMM.address);
+                await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
                 const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user1.address, element.shareBalance);
                 await shareTokenUser1.mint(user2.address, element.restShare);
-                await AMM.setConfig(ctk.address, shareToken.address, 1);
-                await AMM.setParams(params.unitAccumulatedFundingLoss, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(AMM.address, user1);
+                await amm.setConfig(ctk.address, shareToken.address, 1);
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
                 await expect(ammUser1.removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
