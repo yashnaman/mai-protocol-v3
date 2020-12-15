@@ -67,8 +67,8 @@ contract TestGovernance is Governance {
         return _core.beta2.value;
     }
 
-    function fundingRateCoefficient() public view returns (int256) {
-        return _core.fundingRateCoefficient.value;
+    function fundingRateLimit() public view returns (int256) {
+        return _core.fundingRateLimit.value;
     }
 
     function targetLeverage() public view returns (int256) {

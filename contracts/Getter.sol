@@ -114,7 +114,7 @@ contract Getter is Storage {
             market.halfSpread.value,
             market.openSlippageFactor.value,
             market.closeSlippageFactor.value,
-            market.fundingRateCoefficient.value,
+            market.fundingRateLimit.value,
             market.maxLeverage.value
         ];
     }

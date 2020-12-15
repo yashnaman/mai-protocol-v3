@@ -64,17 +64,21 @@ library FundingModule {
         if (positionAmount == 0) {
             newFundingRate = 0;
         } else {
-            int256 fundingRateCoefficient = market.fundingRateCoefficient.value;
+            int256 fundingRateLimit = market.fundingRateLimit.value;
             if (poolMargin != 0) {
                 newFundingRate = market.indexPrice().wfrac(positionAmount, poolMargin).neg().wmul(
-                    market.fundingRateCoefficient.value
+                    market.fundingRateLimit.value
                 );
-                newFundingRate = newFundingRate > fundingRateCoefficient ? fundingRateCoefficient : newFundingRate;
-                newFundingRate = newFundingRate < fundingRateCoefficient.neg() ? fundingRateCoefficient.neg() : newFundingRate;
+                newFundingRate = newFundingRate > fundingRateLimit
+                    ? fundingRateLimit
+                    : newFundingRate;
+                newFundingRate = newFundingRate < fundingRateLimit.neg()
+                    ? fundingRateLimit.neg()
+                    : newFundingRate;
             } else if (positionAmount > 0) {
-                newFundingRate = fundingRateCoefficient.neg();
+                newFundingRate = fundingRateLimit.neg();
             } else {
-                newFundingRate = fundingRateCoefficient;
+                newFundingRate = fundingRateLimit;
             }
         }
         market.fundingRate = newFundingRate;

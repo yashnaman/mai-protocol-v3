@@ -70,8 +70,8 @@ library ParameterModule {
             adjustOption(market.openSlippageFactor, newValue);
         } else if (key == "closeSlippageFactor") {
             adjustOption(market.closeSlippageFactor, newValue);
-        } else if (key == "fundingRateCoefficient") {
-            adjustOption(market.fundingRateCoefficient, newValue);
+        } else if (key == "fundingRateLimit") {
+            adjustOption(market.fundingRateLimit, newValue);
         } else if (key == "maxLeverage") {
             adjustOption(market.maxLeverage, newValue);
         } else {
@@ -92,8 +92,8 @@ library ParameterModule {
             updateOption(market.openSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "closeSlippageFactor") {
             updateOption(market.closeSlippageFactor, newValue, newMinValue, newMaxValue);
-        } else if (key == "fundingRateCoefficient") {
-            updateOption(market.fundingRateCoefficient, newValue, newMinValue, newMaxValue);
+        } else if (key == "fundingRateLimit") {
+            updateOption(market.fundingRateLimit, newValue, newMinValue, newMaxValue);
         } else if (key == "maxLeverage") {
             updateOption(market.maxLeverage, newValue, newMinValue, newMaxValue);
         } else {
@@ -158,7 +158,7 @@ library ParameterModule {
                 market.closeSlippageFactor.value < market.openSlippageFactor.value,
             "b2 should be within (0, b1)"
         );
-        require(market.fundingRateCoefficient.value >= 0, "frc should be greater than 0");
+        require(market.fundingRateLimit.value >= 0, "frc should be greater than 0");
         require(
             market.maxLeverage.value > Constant.SIGNED_ONE &&
                 market.maxLeverage.value < Constant.SIGNED_ONE * 10,

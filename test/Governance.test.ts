@@ -29,7 +29,7 @@ describe('Governance', () => {
         halfSpreadRate: toWei("0.001"),
         beta1: toWei("0.2"),
         beta2: toWei("0.1"),
-        fundingRateCoefficient: toWei("0.005"),
+        fundingRateLimit: toWei("0.005"),
         targetLeverage: toWei("5"),
     }
 
@@ -127,8 +127,8 @@ describe('Governance', () => {
         await governance.updateMarketRiskParameter(toBytes32("beta2"), toWei("0.45"), toWei("0"), toWei("1"));
         expect(await governance.beta2()).to.equal(toWei("0.45"));
 
-        await governance.updateMarketRiskParameter(toBytes32("fundingRateCoefficient"), toWei("0.1"), toWei("0"), toWei("1"));
-        expect(await governance.fundingRateCoefficient()).to.equal(toWei("0.1"));
+        await governance.updateMarketRiskParameter(toBytes32("fundingRateLimit"), toWei("0.1"), toWei("0"), toWei("1"));
+        expect(await governance.fundingRateLimit()).to.equal(toWei("0.1"));
 
         await governance.updateMarketRiskParameter(toBytes32("targetLeverage"), toWei("5"), toWei("0"), toWei("10"));
         expect(await governance.targetLeverage()).to.equal(toWei("5"));
@@ -154,7 +154,7 @@ describe('Governance', () => {
         await expect(governance.updateMarketRiskParameter(toBytes32("beta2"), toWei("0.5"), toWei("0"), toWei("1"))).to.be.revertedWith("b2 should be within \\(0, b1\\)");
         await governance.updateMarketRiskParameter(toBytes32("beta2"), toWei("0.4"), toWei("0"), toWei("1"));
 
-        await expect(governance.updateMarketRiskParameter(toBytes32("fundingRateCoefficient"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("frc should be greater than 0");
+        await expect(governance.updateMarketRiskParameter(toBytes32("fundingRateLimit"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("frc should be greater than 0");
 
         await expect(governance.updateMarketRiskParameter(toBytes32("targetLeverage"), toWei("1"), toWei("0"), toWei("1"))).to.be.revertedWith("tl should be within \\(1, 10\\)");
         await expect(governance.updateMarketRiskParameter(toBytes32("targetLeverage"), toWei("10"), toWei("0"), toWei("10"))).to.be.revertedWith("tl should be within \\(1, 10\\)");

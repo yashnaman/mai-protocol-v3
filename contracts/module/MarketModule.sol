@@ -54,7 +54,7 @@ library MarketModule {
             minRiskParamValues[2],
             maxRiskParamValues[2]
         );
-        market.fundingRateCoefficient.updateOption(
+        market.fundingRateLimit.updateOption(
             riskParams[3],
             minRiskParamValues[3],
             maxRiskParamValues[3]

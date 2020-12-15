@@ -105,7 +105,7 @@ struct Market {
     Option halfSpread;
     Option openSlippageFactor;
     Option closeSlippageFactor;
-    Option fundingRateCoefficient;
+    Option fundingRateLimit;
     Option maxLeverage;
     // users
     int256 totalMarginWithoutPosition;

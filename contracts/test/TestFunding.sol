@@ -18,7 +18,7 @@ contract TestFunding {
     function setParams(
         int256 unitAccumulativeFunding,
         int256 openSlippageFactor,
-        int256 fundingRateCoefficient,
+        int256 fundingRateLimit,
         int256 cashBalance,
         int256 positionAmount1,
         int256 positionAmount2,
@@ -32,7 +32,7 @@ contract TestFunding {
         core.markets[0].state = MarketState.NORMAL;
         core.markets[0].unitAccumulativeFunding = unitAccumulativeFunding;
         core.markets[0].openSlippageFactor.value = openSlippageFactor;
-        core.markets[0].fundingRateCoefficient.value = fundingRateCoefficient;
+        core.markets[0].fundingRateLimit.value = fundingRateLimit;
         core.markets[0].marginAccounts[address(this)].positionAmount = positionAmount1;
         core.markets[0].indexPriceData.price = indexPrice1;
         core.markets[0].fundingRate = fundingRate;
@@ -41,7 +41,7 @@ contract TestFunding {
         core.markets[1].state = MarketState.NORMAL;
         core.markets[1].unitAccumulativeFunding = unitAccumulativeFunding;
         core.markets[1].openSlippageFactor.value = openSlippageFactor;
-        core.markets[1].fundingRateCoefficient.value = fundingRateCoefficient;
+        core.markets[1].fundingRateLimit.value = fundingRateLimit;
         core.markets[1].marginAccounts[address(this)].positionAmount = positionAmount2;
         core.markets[1].indexPriceData.price = indexPrice2;
         core.markets[1].fundingRate = fundingRate;
