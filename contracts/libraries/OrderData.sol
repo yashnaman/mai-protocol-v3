@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library OrderData {
     string internal constant DOMAIN_NAME = "Mai Protocol v3";
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
@@ -42,14 +44,15 @@ library OrderData {
 
     function orderHash(Order memory order) internal pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
-        return
-            ECDSAUpgradeable.toEthSignedMessageHash(
-                keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
-            );
+        return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result));
     }
 
     function signer(Order memory order, bytes memory signature) internal pure returns (address) {
-        return ECDSAUpgradeable.recover(orderHash(order), signature);
+        return
+            ECDSAUpgradeable.recover(
+                ECDSAUpgradeable.toEthSignedMessageHash(orderHash(order)),
+                signature
+            );
     }
 
     function orderHashDebug(Order memory order)

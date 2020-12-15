@@ -12,10 +12,11 @@ import "./Proxy.sol";
 import "./Tracer.sol";
 import "./Implementation.sol";
 import "./Variables.sol";
+import "./AccessControl.sol";
 
 import "hardhat/console.sol";
 
-contract PoolCreator is Creator, Tracer, Implementation, Variables {
+contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessControl {
     using Address for address;
 
     address internal _governorTemplate;

@@ -115,8 +115,9 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         Order memory order,
         int256 amount,
         bytes memory signature
-    ) external {
+    ) external syncState onlyWhen(order.marketIndex, MarketState.NORMAL) {
         address signer = order.signer(signature);
+        console.log("[DEBUG] signer = %s", signer);
         require(
             signer == order.trader ||
                 IAccessController(_core.accessController).isGranted(

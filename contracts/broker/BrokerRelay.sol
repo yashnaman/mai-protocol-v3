@@ -7,9 +7,12 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
+import "../interface/ILiquidityPool.sol";
+
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
+
 import "../Type.sol";
 
 contract BrokerRelay is ReentrancyGuardUpgradeable {
@@ -82,21 +85,26 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
             Order memory order = orders[i];
             int256 amount = amounts[i];
             bytes32 orderHash = order.orderHash();
-            (bool success, ) = order.liquidityPool.call(
-                abi.encodeWithSignature(
-                    "brokerTrade(Order,int256,bytes)",
-                    order,
-                    amount,
-                    signatures
-                )
+
+            ILiquidityPool(order.liquidityPool).brokerTrade(
+                order, amount, signatures[i]
             );
-            if (success) {
-                _transfer(order.trader, order.broker, gasReward);
-                emit TradeSuccess(orderHash, order, amount, gasReward);
-            } else {
-                emit TradeFailed(orderHash, order, amount);
-                return;
-            }
+
+            // (bool success, ) = order.liquidityPool.call(
+            //     abi.encodeWithSignature(
+            //         "brokerTrade(Order,int256,bytes)",
+            //         order,
+            //         amount,
+            //         signatures
+            //     )
+            // );
+            // if (success) {
+            //     _transfer(order.trader, order.broker, gasReward);
+            //     emit TradeSuccess(orderHash, order, amount, gasReward);
+            // } else {
+            //     emit TradeFailed(orderHash, order, amount);
+            //     return;
+            // }
         }
     }
 }
