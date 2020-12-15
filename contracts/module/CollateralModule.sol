@@ -49,7 +49,6 @@ library CollateralModule {
         address account,
         int256 amount
     ) public returns (int256 totalAmount) {
-        console.log("[DEBUG]", uint256(amount), uint256(msg.value));
         if (core.isWrapped && msg.value > 0) {
             int256 internalAmount = _toInternalAmount(core, msg.value).toInt256();
             IWETH(IFactory(core.factory).weth()).deposit();

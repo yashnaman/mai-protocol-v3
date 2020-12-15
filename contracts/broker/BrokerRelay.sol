@@ -35,9 +35,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     event TradeFailed(bytes32 orderHash, Order order, int256 amount);
     event TradeSuccess(bytes32 orderHash, Order order, int256 amount, uint256 gasReward);
 
-    constructor() {
-        _chainID = Utils.chainID();
-    }
+    // constructor() {
+    //     _chainID = Utils.chainID();
+    // }
 
     receive() external payable {
         deposit();
@@ -86,25 +86,13 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
             int256 amount = amounts[i];
             bytes32 orderHash = order.orderHash();
 
-            ILiquidityPool(order.liquidityPool).brokerTrade(
-                order, amount, signatures[i]
-            );
-
-            // (bool success, ) = order.liquidityPool.call(
-            //     abi.encodeWithSignature(
-            //         "brokerTrade(Order,int256,bytes)",
-            //         order,
-            //         amount,
-            //         signatures
-            //     )
-            // );
-            // if (success) {
-            //     _transfer(order.trader, order.broker, gasReward);
-            //     emit TradeSuccess(orderHash, order, amount, gasReward);
-            // } else {
-            //     emit TradeFailed(orderHash, order, amount);
-            //     return;
-            // }
+            try ILiquidityPool(order.liquidityPool).brokerTrade(order, amount, signatures[i])  {
+                _transfer(order.trader, order.broker, gasReward);
+                emit TradeSuccess(orderHash, order, amount, gasReward);
+            } catch {
+                emit TradeFailed(orderHash, order, amount);
+                return;
+            }
         }
     }
 }
