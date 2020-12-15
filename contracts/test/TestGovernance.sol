@@ -76,8 +76,8 @@ contract TestGovernance is Governance {
         return _core.markets[marketIndex].closeSlippageFactor.value;
     }
 
-    function fundingRateCoefficient(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].fundingRateCoefficient.value;
+    function fundingRateLimit(uint256 marketIndex) public view returns (int256) {
+        return _core.markets[marketIndex].fundingRateLimit.value;
     }
 
     function maxLeverage(uint256 marketIndex) public view returns (int256) {

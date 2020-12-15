@@ -129,7 +129,7 @@ describe('Governance', () => {
         expect(await governance.closeSlippageFactor(0)).to.equal(toWei("0.45"));
 
         await governance.updateMarketRiskParameter(0, toBytes32("fundingRateLimit"), toWei("0.1"), toWei("0"), toWei("1"));
-        expect(await governance.fundingRateCoefficient(0)).to.equal(toWei("0.1"));
+        expect(await governance.fundingRateLimit(0)).to.equal(toWei("0.1"));
 
         await governance.updateMarketRiskParameter(0, toBytes32("maxLeverage"), toWei("5"), toWei("0"), toWei("10"));
         expect(await governance.maxLeverage(0)).to.equal(toWei("5"));
