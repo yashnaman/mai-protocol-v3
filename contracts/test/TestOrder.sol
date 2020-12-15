@@ -13,6 +13,10 @@ contract TestOrder is Storage {
     using OrderData for Order;
     using OrderModule for Core;
 
+    constructor() {
+        _core.markets.push();
+    }
+
     function orderHash(Order memory order) public pure returns (bytes32) {
         return order.orderHash();
     }
@@ -49,6 +53,13 @@ contract TestOrder is Storage {
         return order.orderHashDebug();
     }
 
+    function truncateAmount(
+        address trader,
+        int256 amount
+    ) public view returns (int256) {
+        return _core.truncateAmount(0, trader, amount);
+    }
+
     function cancelOrder(Order memory order) public {
         _core.cancelOrder(order);
     }
@@ -62,6 +73,6 @@ contract TestOrder is Storage {
     }
 
     function setPositionAmount(address trader, int256 amount) public {
-        _core.marginAccounts[trader].positionAmount = amount;
+        _core.markets[0].marginAccounts[trader].positionAmount = amount;
     }
 }

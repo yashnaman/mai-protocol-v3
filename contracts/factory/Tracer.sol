@@ -27,111 +27,108 @@ contract Tracer {
     // hash(muid) => MUID {}
     mapping(bytes32 => MUID) internal _muids;
     // guid => liquidity pool address
-    mapping(uint256 => address) internal _sharedLiquidityPoolGUIDIndex;
+    mapping(uint256 => address) internal _liquidityPoolGUIDIndex;
     // liquidity pool address[]
-    EnumerableSet.AddressSet internal _sharedLiquidityPoolSet;
+    EnumerableSet.AddressSet internal _liquidityPoolSet;
     // trader => hash(muid) []
-    mapping(address => EnumerableSet.Bytes32Set) internal _traderActiveSharedLiquidityPools;
+    mapping(address => EnumerableSet.Bytes32Set) internal _traderActiveLiquidityPools;
 
-    modifier onlySharedLiquidityPool() {
-        require(isSharedLiquidityPool(msg.sender), "call is not liquidity pool instance");
+    modifier onlyLiquidityPool() {
+        require(isLiquidityPool(msg.sender), "call is not liquidity pool instance");
         _;
     }
 
     // =========================== Liquidity Pool ===========================
-    function sharedLiquidityPoolCount() public view returns (uint256) {
-        return _sharedLiquidityPoolSet.length();
+    function liquidityPoolCount() public view returns (uint256) {
+        return _liquidityPoolSet.length();
     }
 
-    function isSharedLiquidityPool(address liquidityPool) public view returns (bool) {
-        return _sharedLiquidityPoolSet.contains(liquidityPool);
+    function isLiquidityPool(address liquidityPool) public view returns (bool) {
+        return _liquidityPoolSet.contains(liquidityPool);
     }
 
-    function listSharedLiquidityPools(uint256 begin, uint256 end)
+    function listLiquidityPools(uint256 begin, uint256 end)
         public
         view
         returns (address[] memory result)
     {
         require(end > begin, "begin should be lower than end");
-        uint256 length = _sharedLiquidityPoolSet.length();
+        uint256 length = _liquidityPoolSet.length();
         if (begin >= length) {
             return result;
         }
         uint256 safeEnd = begin.add(end).min(length);
         result = new address[](safeEnd.sub(begin));
         for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = _sharedLiquidityPoolSet.at(i);
+            result[i.sub(begin)] = _liquidityPoolSet.at(i);
         }
         return result;
     }
 
-    function findSharedLiquidityPoolByIndex(uint256 guid) public view returns (address) {
-        return _sharedLiquidityPoolGUIDIndex[guid];
+    function findLiquidityPoolByIndex(uint256 guid) public view returns (address) {
+        return _liquidityPoolGUIDIndex[guid];
     }
 
-    function _registerSharedLiquidityPool(address liquidityPool) internal {
+    function _registerLiquidityPool(address liquidityPool) internal {
         require(liquidityPool != address(0), "invalid liquidity pool address");
-        bool notExist = _sharedLiquidityPoolSet.add(liquidityPool);
+        bool notExist = _liquidityPoolSet.add(liquidityPool);
         require(notExist, "liquidity pool exists");
-        _sharedLiquidityPoolGUIDIndex[nextGUID] = liquidityPool;
+        _liquidityPoolGUIDIndex[nextGUID] = liquidityPool;
         nextGUID = nextGUID.add(1);
     }
 
     // =========================== Active Liquidity Pool of Trader ===========================
-    function activeSharedLiquidityPoolCountOf(address trader) public view returns (uint256) {
-        return _traderActiveSharedLiquidityPools[trader].length();
+    function activeLiquidityPoolCountOf(address trader) public view returns (uint256) {
+        return _traderActiveLiquidityPools[trader].length();
     }
 
-    function isActiveSharedLiquidityPoolOf(
+    function isActiveLiquidityPoolOf(
         address trader,
         address liquidityPool,
         uint256 marketIndex
     ) public view returns (bool) {
         return
-            _traderActiveSharedLiquidityPools[trader].contains(
+            _traderActiveLiquidityPools[trader].contains(
                 _poolMarketKey(liquidityPool, marketIndex)
             );
     }
 
-    function listActiveSharedLiquidityPoolsOf(
+    function listActiveLiquidityPoolsOf(
         address trader,
         uint256 begin,
         uint256 end
     ) public view returns (MUID[] memory result) {
         require(end > begin, "begin should be lower than end");
-        uint256 length = _traderActiveSharedLiquidityPools[trader].length();
+        uint256 length = _traderActiveLiquidityPools[trader].length();
         if (begin >= length) {
             return result;
         }
         uint256 safeEnd = begin.add(end).min(length);
         result = new MUID[](safeEnd.sub(begin));
         for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = _muids[_traderActiveSharedLiquidityPools[trader].at(i)];
+            result[i.sub(begin)] = _muids[_traderActiveLiquidityPools[trader].at(i)];
         }
         return result;
     }
 
-    function activateSharedLiquidityPoolFor(address trader, uint256 marketIndex)
+    function activateLiquidityPoolFor(address trader, uint256 marketIndex)
         external
-        onlySharedLiquidityPool
+        onlyLiquidityPool
         returns (bool)
     {
         bytes32 key = _poolMarketKey(msg.sender, marketIndex);
         if (_muids[key].liquidityPool == address(0)) {
             _muids[key] = MUID({ liquidityPool: msg.sender, marketIndex: marketIndex });
         }
-        return _traderActiveSharedLiquidityPools[trader].add(key);
+        return _traderActiveLiquidityPools[trader].add(key);
     }
 
-    function deactivateSharedLiquidityPoolFor(address trader, uint256 marketIndex)
+    function deactivateLiquidityPoolFor(address trader, uint256 marketIndex)
         external
-        onlySharedLiquidityPool
+        onlyLiquidityPool
         returns (bool)
     {
-        return
-            _traderActiveSharedLiquidityPools[trader].remove(
-                _poolMarketKey(msg.sender, marketIndex)
-            );
+        return _traderActiveLiquidityPools[trader].remove(_poolMarketKey(msg.sender, marketIndex));
     }
 
     function _poolMarketKey(address liquidityPool, uint256 marketIndex)

@@ -13,6 +13,8 @@ import "../interface/IWETH.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title   Collateral Module
  * @dev     Handle underlying collaterals.
@@ -47,14 +49,17 @@ library CollateralModule {
         address account,
         int256 amount
     ) public returns (int256 totalAmount) {
-        int256 internalValue = 0;
+        console.log("[DEBUG]", uint256(amount), uint256(msg.value));
         if (core.isWrapped && msg.value > 0) {
-            internalValue = _toInternalAmount(core, msg.value).toInt256();
+            int256 internalAmount = _toInternalAmount(core, msg.value).toInt256();
             IWETH(IFactory(core.factory).weth()).deposit();
+            totalAmount = totalAmount.add(internalAmount);
         }
-        uint256 rawAmount = _toRawAmount(core, amount.toUint256());
-        IERC20Upgradeable(core.collateral).safeTransferFrom(account, address(this), rawAmount);
-        totalAmount = amount.add(internalValue);
+        if (amount > 0) {
+            uint256 rawAmount = _toRawAmount(core, amount.toUint256());
+            IERC20Upgradeable(core.collateral).safeTransferFrom(account, address(this), rawAmount);
+            totalAmount = totalAmount.add(amount);
+        }
     }
 
     /**

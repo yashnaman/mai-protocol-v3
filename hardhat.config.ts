@@ -49,7 +49,7 @@ module.exports = {
         path: './abi',
         clear: false,
         flat: true,
-        only: ['PoolCreator', 'SharedLiquidityPool'],
+        only: ['PoolCreator', 'LiquidityPool'],
     },
     mocha: {
         timeout: 60000

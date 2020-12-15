@@ -27,9 +27,13 @@ library TradeModule {
 
     address internal constant INVALID_ADDRESS = address(0);
 
-    event ClosePositionByTrade(address trader, int256 amount, int256 price, int256 fundingLoss);
-    event OpenPositionByTrade(address trader, int256 amount, int256 price);
-    event Trade(address indexed trader, int256 positionAmount, int256 price, int256 fee);
+    event Trade(
+        uint256 marketIndex,
+        address indexed trader,
+        int256 positionAmount,
+        int256 price,
+        int256 fee
+    );
 
     function trade(
         Core storage core,
@@ -65,6 +69,7 @@ library TradeModule {
         }
         // 4. event
         emit Trade(
+            marketIndex,
             trader,
             receipt.tradingAmount,
             tradingPrice,

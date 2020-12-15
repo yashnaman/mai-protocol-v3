@@ -34,7 +34,7 @@ export async function createContract(path, args = [], libraries = {}) {
     return deployed;
 }
 
-export async function createSharedLiquidityPoolFactory() {
+export async function createLiquidityPoolFactory() {
     const CollateralModule = await createContract("CollateralModule")
     const AMMModule = await createContract("AMMModule", [], { CollateralModule });
     const FundingModule = await createContract("FundingModule", [], { AMMModule });
@@ -47,7 +47,7 @@ export async function createSharedLiquidityPoolFactory() {
     const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, OracleModule, TradeModule });
     const MarginModule = await createContract("MarginModule", [], { MarketModule, CoreModule, CollateralModule });
     const SettlementModule = await createContract("SettlementModule", [], { CollateralModule });
-    return await createFactory("SharedLiquidityPool", {
+    return await createFactory("LiquidityPool", {
         AMMModule,
         FundingModule,
         OrderModule,

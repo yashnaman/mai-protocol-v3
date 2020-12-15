@@ -29,14 +29,8 @@ library LiquidationModule {
 
     address internal constant INVALID_ADDRESS = address(0);
 
-    event ClosePositionByLiquidation(
-        address trader,
-        int256 amount,
-        int256 price,
-        int256 fundingLoss
-    );
-    event OpenPositionByLiquidation(address trader, int256 amount, int256 price);
     event Liquidate(
+        uint256 marketIndex,
         address indexed liquidator,
         address indexed trader,
         int256 amount,
@@ -68,12 +62,13 @@ library LiquidationModule {
             core,
             market,
             trader,
-            receipt.tradingValue.wmul(market.liquidationPenaltyRate),
+            market.markPrice().wmul(receipt.tradingAmount).wmul(market.liquidationPenaltyRate),
             market.keeperGasReward
         );
         core.transferToUser(msg.sender, market.keeperGasReward);
         // 4. events
         emit Liquidate(
+            marketIndex,
             address(this),
             trader,
             receipt.tradingAmount,
@@ -115,7 +110,7 @@ library LiquidationModule {
             require(market.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
         }
         // 6. events
-        emit Liquidate(taker, maker, receipt.tradingAmount, tradingPrice.abs());
+        emit Liquidate(marketIndex, taker, maker, receipt.tradingAmount, tradingPrice.abs());
         return 0;
     }
 

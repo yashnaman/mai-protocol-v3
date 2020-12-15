@@ -37,7 +37,7 @@ contract Getter is Storage {
         return _core.shareToken;
     }
 
-    function sharedLiquidityPoolInfo()
+    function liquidityPoolInfo()
         public
         view
         returns (
@@ -75,7 +75,6 @@ contract Getter is Storage {
         onlyExistedMarket(marketIndex)
         returns (
             MarketState state,
-            string memory underlyingAsset,
             address collateral,
             address oracle,
             int256 markPrice,
@@ -90,7 +89,6 @@ contract Getter is Storage {
         Market storage market = _core.markets[marketIndex];
 
         state = market.state;
-        underlyingAsset = IOracle(market.oracle).underlyingAsset();
         collateral = _core.collateral;
         oracle = market.oracle;
         markPrice = market.markPrice();

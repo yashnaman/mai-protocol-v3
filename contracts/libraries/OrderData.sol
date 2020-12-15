@@ -16,7 +16,7 @@ library OrderData {
     );
     bytes32 internal constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
-            "Order(address trader,address broker,address relayer,address sharedLiquidityPool,address referrer,int256 amount,int256 priceLimit,bytes32 data,uint256 chainID)"
+            "Order(address trader,address broker,address relayer,address liquidityPool,address referrer,int256 amount,int256 priceLimit,bytes32 data,uint256 chainID)"
         )
     );
 
@@ -52,22 +52,22 @@ library OrderData {
         return ECDSAUpgradeable.recover(orderHash(order), signature);
     }
 
-    // function orderHashDebug(Order memory order)
-    //     internal
-    //     pure
-    //     returns (
-    //         bytes32,
-    //         bytes32,
-    //         bytes32
-    //     )
-    // {
-    //     bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
-    //     return (
-    //         result,
-    //         keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
-    //         ECDSAUpgradeable.toEthSignedMessageHash(
-    //             keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
-    //         )
-    //     );
-    // }
+    function orderHashDebug(Order memory order)
+        internal
+        pure
+        returns (
+            bytes32,
+            bytes32,
+            bytes32
+        )
+    {
+        bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
+        return (
+            result,
+            keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
+            ECDSAUpgradeable.toEthSignedMessageHash(
+                keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
+            )
+        );
+    }
 }

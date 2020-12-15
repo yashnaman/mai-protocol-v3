@@ -31,8 +31,8 @@ library MarginModule {
     using CollateralModule for Core;
     using CoreModule for Core;
 
-    event Deposit(address trader, int256 amount);
-    event Withdraw(address trader, int256 amount);
+    event Deposit(uint256 marketIndex, address trader, int256 amount);
+    event Withdraw(uint256 marketIndex, address trader, int256 amount);
 
     // atribute
     function initialMargin(
@@ -132,9 +132,9 @@ library MarginModule {
         updateCashBalance(market, trader, totalAmount);
         if (isInitial) {
             market.registerTrader(trader);
-            IFactory(core.factory).activateSharedLiquidityPoolFor(trader, marketIndex);
+            IFactory(core.factory).activateLiquidityPoolFor(trader, marketIndex);
         }
-        emit Deposit(trader, totalAmount);
+        emit Deposit(marketIndex, trader, totalAmount);
     }
 
     function withdraw(
@@ -151,10 +151,10 @@ library MarginModule {
         bool isDrained = isEmptyAccount(market, trader);
         if (isDrained) {
             market.deregisterTrader(trader);
-            IFactory(core.factory).deactivateSharedLiquidityPoolFor(trader, marketIndex);
+            IFactory(core.factory).deactivateLiquidityPoolFor(trader, marketIndex);
         }
         core.transferToUser(payable(trader), amount);
-        emit Withdraw(trader, amount);
+        emit Withdraw(marketIndex, trader, amount);
     }
 
     function updateCashBalance(

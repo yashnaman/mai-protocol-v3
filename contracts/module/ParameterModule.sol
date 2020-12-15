@@ -13,7 +13,7 @@ library ParameterModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function updateSharedLiquidityPoolParameter(
+    function updateLiquidityPoolParameter(
         Core storage core,
         bytes32 key,
         int256 newValue
@@ -122,14 +122,8 @@ library ParameterModule {
     }
 
     function validateCoreParameters(Market storage market) public view {
-        require(
-            market.initialMarginRate > 0 && market.initialMarginRate <= Constant.SIGNED_ONE,
-            "imr should be greater than 0"
-        );
-        require(
-            market.maintenanceMarginRate > 0 && market.maintenanceMarginRate <= Constant.SIGNED_ONE,
-            "mmr should be greater than 0"
-        );
+        require(market.initialMarginRate > 0, "imr should be greater than 0");
+        require(market.maintenanceMarginRate > 0, "mmr should be greater than 0");
         require(
             market.maintenanceMarginRate <= market.initialMarginRate,
             "mmr should be lower than imr"
@@ -152,11 +146,11 @@ library ParameterModule {
 
     function validateRiskParameters(Market storage market) public view {
         require(market.halfSpread.value >= 0, "hsr shoud be greater than 0");
-        require(market.openSlippageFactor.value > 0, "b1 should be within (0, 1)");
+        require(market.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(
             market.closeSlippageFactor.value > 0 &&
                 market.closeSlippageFactor.value < market.openSlippageFactor.value,
-            "b2 should be within (0, b1)"
+            "beta2 should be within (0, b1)"
         );
         require(market.fundingRateLimit.value >= 0, "frc should be greater than 0");
         require(

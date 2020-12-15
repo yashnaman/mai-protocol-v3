@@ -4,7 +4,9 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "../interface/IOracle.sol";
+import "../interface/IGovernor.sol";
+import "../interface/ILiquidityPool.sol";
+import "../interface/IShareToken.sol";
 
 import "./Proxy.sol";
 import "./Tracer.sol";
@@ -32,69 +34,42 @@ contract PoolCreator is Creator, Tracer, Implementation, Variables {
         _shareTokenTemplate = shareTokenTemplate;
     }
 
-    event CreateSharedLiquidityPool(
-        address sharedLiquidityPool,
+    event CreateLiquidityPool(
+        address liquidityPool,
         address governor,
         address shareToken,
         address operator,
         address collateral
     );
 
-    function createSharedLiquidityPool(address collateral, uint256 nonce)
-        external
-        returns (address)
-    {
-        return _createSharedLiquidityPoolWith(latestVersion(), collateral, nonce);
+    function createLiquidityPool(address collateral, uint256 nonce) external returns (address) {
+        return _createLiquidityPoolWith(latestVersion(), collateral, nonce);
     }
 
-    function createSharedLiquidityPoolWith(
+    function createLiquidityPoolWith(
         address implementation,
         address collateral,
         uint256 nonce
     ) external returns (address) {
-        return _createSharedLiquidityPoolWith(implementation, collateral, nonce);
+        return _createLiquidityPoolWith(implementation, collateral, nonce);
     }
 
-    function _createSharedLiquidityPoolWith(
+    function _createLiquidityPoolWith(
         address implementation,
         address collateral,
         uint256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
-        address governor = _createStaticProxy(_governorTemplate);
-        address shareToken = _createStaticProxy(_shareTokenTemplate);
-        address sharedLiquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
-        shareToken.functionCall(
-            abi.encodeWithSignature(
-                "initialize(string,string,address)",
-                "MCDEX Share Token",
-                "STK",
-                sharedLiquidityPool
-            ),
-            "fail to init share token"
-        );
-        governor.functionCall(
-            abi.encodeWithSignature("initialize(address,address)", shareToken, sharedLiquidityPool),
-            "fail to init governor"
-        );
-        sharedLiquidityPool.functionCall(
-            abi.encodeWithSignature(
-                "initialize(address,address,address,address)",
-                msg.sender,
-                collateral,
-                governor,
-                shareToken
-            ),
-            "fail to init sharedLiquidityPool"
-        );
-        _registerSharedLiquidityPool(sharedLiquidityPool);
-        emit CreateSharedLiquidityPool(
-            sharedLiquidityPool,
-            governor,
-            shareToken,
-            msg.sender,
-            collateral
-        );
-        return sharedLiquidityPool;
+        address governor = _createClone(_governorTemplate);
+        address shareToken = _createClone(_shareTokenTemplate);
+        address liquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
+        // initialize
+        IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
+        IGovernor(governor).initialize(shareToken, liquidityPool);
+        ILiquidityPool(liquidityPool).initialize(msg.sender, collateral, governor, shareToken);
+        // register
+        _registerLiquidityPool(liquidityPool);
+        emit CreateLiquidityPool(liquidityPool, governor, shareToken, msg.sender, collateral);
+        return liquidityPool;
     }
 }

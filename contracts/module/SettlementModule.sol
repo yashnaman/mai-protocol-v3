@@ -27,8 +27,8 @@ library SettlementModule {
     using CollateralModule for Core;
     using CoreModule for Core;
 
-    event Clear(address trader);
-    event Settle(address trader, int256 amount);
+    event Clear(uint256 marketIndex, address trader);
+    event Settle(uint256 marketIndex, address trader, int256 amount);
 
     function clear(
         Core storage core,
@@ -48,6 +48,7 @@ library SettlementModule {
         }
         market.registeredTraders.remove(trader);
         market.clearedTraders.add(trader);
+        emit Clear(marketIndex, trader);
 
         if (market.registeredTraders.length() == 0) {
             settleWithdrawableMargin(market, 0);
@@ -65,7 +66,7 @@ library SettlementModule {
         int256 withdrawable = settledMarginAccount(market, trader);
         market.updateCashBalance(trader, withdrawable.neg());
         core.transferToUser(payable(trader), withdrawable);
-        emit Settle(trader, withdrawable);
+        emit Settle(marketIndex, trader, withdrawable);
     }
 
     function registerTrader(Market storage market, address trader) internal {

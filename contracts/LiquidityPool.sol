@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IFactory.sol";
-import "./interface/IOracle.sol";
 
 import "./module/CoreModule.sol";
 import "./module/MarketModule.sol";
@@ -19,7 +18,7 @@ import "./Settlement.sol";
 import "./Storage.sol";
 import "./Getter.sol";
 
-contract SharedLiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
+contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using MarketModule for Market;
     using CoreModule for Core;

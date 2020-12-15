@@ -28,7 +28,7 @@ struct Order {
     address trader;
     address broker;
     address relayer;
-    address sharedLiquidityPool;
+    address liquidityPool;
     uint256 marketIndex;
     address referrer;
     int256 amount;

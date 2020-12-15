@@ -1,8 +1,8 @@
 const { ethers } = require("hardhat");
-import { SharedLiquidityPool } from "../typechain/SharedLiquidityPool";
+import { LiquidityPool } from "../typechain/LiquidityPool";
 import {
     toWei,
-    createSharedLiquidityPoolFactory
+    createLiquidityPoolFactory
 } from "./utils";
 
 async function main(accounts) {
@@ -13,7 +13,7 @@ async function main(accounts) {
     // await mint(user, amount)
     // await addLiquidity(user, amount)
 
-    await mint({ address: "0x4330D2cd1007AEE10918064d15CF39aC26fb266f" }, amount)
+    await mint({ address: "0xd595F7c2C071d3FD8f5587931EdF34E92f9ad39F" }, amount)
 
 }
 
@@ -24,16 +24,16 @@ async function addLiquidity(user, amount) {
         await collateral.approve("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2", amount);
     }
     {
-        const factory = await createSharedLiquidityPoolFactory();
-        const sharedLiquidityPool = await factory.attach("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2");
-        await sharedLiquidityPool.addLiquidity(amount)
+        const factory = await createLiquidityPoolFactory();
+        const liquidityPool = await factory.attach("0xEA7557d345A5f4A927dBbEf04a2A6244d87d27f2");
+        await liquidityPool.addLiquidity(amount)
     }
     console.log("add done");
 }
 
 async function mint(user, amount) {
     const factory = await ethers.getContractFactory("CustomERC20");
-    const collateral = await factory.attach("0x010b7D4b32bB7D3cd8F75F01F403Db9b4bC2c671");
+    const collateral = await factory.attach("0x7C9880f0c23C18F072f55353DD4E6fE48463A64D");
     await collateral.mint(user.address, amount);
     console.log("mint done");
 }

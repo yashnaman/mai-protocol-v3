@@ -10,7 +10,7 @@ import "./Type.sol";
 import "./Events.sol";
 import "./Storage.sol";
 
-// @title Goovernance is the contract to maintain sharedLiquidityPool parameters.
+// @title Goovernance is the contract to maintain liquidityPool parameters.
 contract Governance is Storage, Events {
     using SafeMathUpgradeable for uint256;
     using MarketModule for Market;
@@ -35,7 +35,7 @@ contract Governance is Storage, Events {
     ) external onlyGovernor onlyExistedMarket(marketIndex) {
         _core.markets[marketIndex].updateMarketParameter(key, newValue);
         _core.markets[marketIndex].validateCoreParameters();
-        emit UpdateCoreSetting(key, newValue);
+        emit UpdateMarketParameter(marketIndex, key, newValue);
     }
 
     function updateMarketRiskParameter(
@@ -47,7 +47,7 @@ contract Governance is Storage, Events {
     ) external onlyGovernor onlyExistedMarket(marketIndex) {
         _core.markets[marketIndex].updateMarketRiskParameter(key, newValue, minValue, maxValue);
         _core.markets[marketIndex].validateRiskParameters();
-        emit UpdateRiskSetting(key, newValue, minValue, maxValue);
+        emit UpdateMarketRiskParameter(marketIndex, key, newValue, minValue, maxValue);
     }
 
     function adjustMarketRiskParameter(
@@ -57,7 +57,7 @@ contract Governance is Storage, Events {
     ) external onlyOperator onlyExistedMarket(marketIndex) {
         _core.markets[marketIndex].adjustMarketRiskParameter(key, newValue);
         _core.markets[marketIndex].validateRiskParameters();
-        emit AdjustRiskSetting(key, newValue);
+        emit AdjustMarketRiskSetting(marketIndex, key, newValue);
     }
 
     bytes[50] private __gap;

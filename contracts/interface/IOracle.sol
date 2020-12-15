@@ -2,7 +2,7 @@
 pragma solidity 0.7.4;
 
 interface IOracle {
-    function collateral() external view returns (address);
+    function collateral() external view returns (string memory);
 
     function underlyingAsset() external view returns (string memory);
 

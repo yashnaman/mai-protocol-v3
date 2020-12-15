@@ -56,8 +56,8 @@ contract TestTrade is Storage, Getter {
         _core.vaultFeeRate = vaultFeeRate;
     }
 
-    function updateSharedLiquidityPoolParameter(bytes32 key, int256 newValue) external {
-        _core.updateSharedLiquidityPoolParameter(key, newValue);
+    function updateLiquidityPoolParameter(bytes32 key, int256 newValue) external {
+        _core.updateLiquidityPoolParameter(key, newValue);
     }
 
     function updateMarketParameter(

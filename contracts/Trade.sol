@@ -66,8 +66,8 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        require(amount > 0, "amount is invalid");
-        _core.deposit(marketIndex, trader, amount.add(msg.value.toInt256()));
+        require(amount > 0 || msg.value > 0, "amount is invalid");
+        _core.deposit(marketIndex, trader, amount);
     }
 
     function withdraw(

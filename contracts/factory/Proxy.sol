@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/proxy/UpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
+import "../thirdparty/proxy/UpgradeableProxy.sol";
+import "../thirdparty/cloneFactory/CloneFactory.sol";
 
 import "hardhat/console.sol";
 
-/// @title Create a upgradeable proxy as storage of new sharedLiquidityPool.
-contract Creator {
-    function _createStaticProxy(address implementation) internal returns (address) {
+/// @title Create a upgradeable proxy as storage of new liquidityPool.
+contract Creator is CloneFactory {
+    function _createClone(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
-        UpgradeableProxy newInstance = new UpgradeableProxy(implementation, "");
-        return address(newInstance);
+        return createClone(implementation);
     }
 
     function _createUpgradeableProxy(
@@ -22,8 +21,8 @@ contract Creator {
         require(implementation != address(0), "invalid implementation");
         require(Address.isContract(implementation), "implementation must be contract");
         bytes memory deploymentData = abi.encodePacked(
-            type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(implementation, admin, "")
+            type(UpgradeableProxy).creationCode,
+            abi.encode(implementation, admin)
         );
         bytes32 salt = keccak256(abi.encode(implementation, admin, msg.sender, nonce));
         assembly {

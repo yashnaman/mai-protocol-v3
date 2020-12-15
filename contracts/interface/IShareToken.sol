@@ -5,6 +5,12 @@ pragma solidity 0.7.4;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IShareToken {
+    function initialize(
+        string memory name,
+        string memory symbol,
+        address admin
+    ) external;
+
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address account) external view returns (uint256);

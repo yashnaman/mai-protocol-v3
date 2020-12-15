@@ -13,9 +13,11 @@ describe("Order", () => {
 
     before(async () => {
         accounts = await getAccounts();
-        const FundingModule = await createContract("FundingModule");
+        // const CollateralModule = await createContract("CollateralModule");
+        // const AMMModule = await createContract("AMMModule", [], { CollateralModule });
+        // const FundingModule = await createContract("FundingModule", [], { AMMModule });
         const OrderModule = await createContract("OrderModule");
-        testOrder = await createContract("TestOrder", [], { OrderModule, FundingModule });
+        testOrder = await createContract("TestOrder", [], { OrderModule });
     })
 
     it("signature", async () => {
@@ -30,14 +32,15 @@ describe("Order", () => {
             trader: "0x0000000000000000000000000000000000000001", // trader
             broker: "0x0000000000000000000000000000000000000002", // broker
             relayer: "0x0000000000000000000000000000000000000003", // relayer
-            sharedLiquidityPool: "0x0000000000000000000000000000000000000004", // sharedLiquidityPool
+            liquidityPool: "0x0000000000000000000000000000000000000004", // liquidityPool
+            marketIndex: 0,
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: 1000,
             priceLimit: 2000,
             data: ethers.utils.solidityPack(["uint64", "uint32", "uint8", "uint8", "uint64"], [1606217568, 1, 1, 1, 123456]).padEnd(66, "0"),
             chainID: 1,
         };
-        expect(await testOrder.orderHash(order)).to.equal("0xc0d4582d65fd03849397783d2abd806e4cc0be28144cf3215acbaadbe69113fd");
+        expect(await testOrder.orderHash(order)).to.equal("0xfa80f29153ad5c4b4b1eb88f8bcbed96b4aea311d8ddf7307e54737dd2416ef4");
         expect(await testOrder.deadline(order)).to.equal(1606217568);
         expect(await testOrder.version(order)).to.equal(1);
         expect(await testOrder.orderType(order)).to.equal(1);
@@ -51,7 +54,8 @@ describe("Order", () => {
             trader: accounts[0].address, // trader
             broker: accounts[0].address, // broker
             relayer: accounts[0].address, // relayer
-            sharedLiquidityPool: testOrder.address, // sharedLiquidityPool
+            liquidityPool: testOrder.address, // liquidityPool
+            marketIndex: 0,
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: toWei("1"),
             priceLimit: toWei("500"),
@@ -81,16 +85,15 @@ describe("Order", () => {
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("relayer mismatch");
         order.relayer = accounts[0].address;
 
-        order.sharedLiquidityPool = accounts[1].address;
-        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("sharedLiquidityPool mismatch");
-        order.sharedLiquidityPool = testOrder.address;
+        order.liquidityPool = accounts[1].address;
+        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("liquidityPool mismatch");
+        order.liquidityPool = testOrder.address;
 
         order.chainID = 1;
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("chainid mismatch");
         order.chainID = 31337;
 
         let tmp = order.data;
-
         order.data = ethers.utils.solidityPack(
             ["uint64", "uint32", "uint8", "uint8", "uint64"],
             [now - 100, 3, 1, 0, 123456]
@@ -104,30 +107,32 @@ describe("Order", () => {
         ).padEnd(66, "0")
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("order version is not supported");
 
+
+        // // order.data = tmp;
+        // // order.data = ethers.utils.solidityPack(
+        // //     ["uint64", "uint32", "uint8", "uint8", "uint64"],
+        // //     [now + 10000, 3, 3, 0, 123456]
+        // // ).padEnd(66, "0")
+        // // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("invalid opcode");
+
         // order.data = tmp;
         // order.data = ethers.utils.solidityPack(
         //     ["uint64", "uint32", "uint8", "uint8", "uint64"],
-        //     [now + 10000, 3, 3, 0, 123456]
+        //     [now + 10000, 3, 2, 0, 123456]
         // ).padEnd(66, "0")
-        // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("invalid opcode");
+        // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
+
+        // order.data = tmp;
+        // order.data = ethers.utils.solidityPack(
+        //     ["uint64", "uint32", "uint8", "uint8", "uint64"],
+        //     [now + 10000, 3, 1, 1, 123456]
+        // ).padEnd(66, "0")
+        // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
+
+        // await testOrder.setPositionAmount(accounts[0].address, toWei("-0.05"));
+        // await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("no enough amount to close");
 
         order.data = tmp;
-        order.data = ethers.utils.solidityPack(
-            ["uint64", "uint32", "uint8", "uint8", "uint64"],
-            [now + 10000, 3, 2, 0, 123456]
-        ).padEnd(66, "0")
-        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
-
-        order.data = tmp;
-        order.data = ethers.utils.solidityPack(
-            ["uint64", "uint32", "uint8", "uint8", "uint64"],
-            [now + 10000, 3, 1, 1, 123456]
-        ).padEnd(66, "0")
-        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("not closing order");
-
-        await testOrder.setPositionAmount(accounts[0].address, toWei("-0.05"));
-        await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("no enough amount to close");
-
         await testOrder.setPositionAmount(accounts[0].address, toWei("-0.05"));
         await testOrder.validateOrder(order, toWei("0.05"));
 
@@ -135,9 +140,17 @@ describe("Order", () => {
         await expect(testOrder.validateOrder(order, toWei("0.11"))).to.be.revertedWith("no enough amount to fill");
 
         await expect(testOrder.fillOrder(order, toWei("0.11"))).to.be.revertedWith("no enough amount to fill");
-
         await testOrder.cancelOrder(order);
         await expect(testOrder.validateOrder(order, toWei("0.1"))).to.be.revertedWith("order is canceled");
         await expect(testOrder.cancelOrder(order)).to.be.revertedWith("order is canceled");
+    })
+
+    it("truncateAmount", async () => {
+    })
+
+    it("cancelOrder", async () => {
+    })
+
+    it("fillOrder", async () => {
     })
 });
