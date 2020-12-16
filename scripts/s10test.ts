@@ -45,8 +45,10 @@ async function main(accounts: any[]) {
     var liquidityPoolTmpl = await LiquidityPool.deploy();
     await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version");
 
-    await set1(accounts, poolCreator, weth);
-    await set2(accounts, poolCreator, weth);
+    const pool1 = await set1(accounts, poolCreator, weth);
+    const pool2 = await set2(accounts, poolCreator, weth);
+
+    await reader(accounts, { pool1, pool2 });
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
@@ -83,6 +85,7 @@ async function set1(accounts: any[], poolCreator, weth) {
         ["  Market 1", `@ ${mtx2.blockNumber}`],
     ]
     console.table(addresses)
+    return liquidityPool
 }
 
 async function set2(accounts: any[], poolCreator, weth) {
@@ -138,6 +141,22 @@ async function set2(accounts: any[], poolCreator, weth) {
         ["  Market 3", `@ ${mtx4.blockNumber}`],
     ]
     console.table(addresses)
+    return liquidityPool
+}
+
+async function reader(accounts: any[], pools) {
+    var reader = await createContract("Reader");
+    const addresses = [
+        ["Reader", reader.address],
+    ]
+    console.table(addresses)
+
+    console.log('reader test: pool1')
+    console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool1.address))
+    console.log('reader test: pool2')
+    console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool2.address))
+    
+    return { reader }
 }
 
 async function init(accounts: any[]) {
