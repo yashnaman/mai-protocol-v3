@@ -88,7 +88,7 @@ contract TestAMM {
         );
     }
 
-    function maxPosition(Side side) public view returns (int256) {
+    function maxPosition(bool isLongSide) public view returns (int256) {
         Market storage market = core.markets[0];
         AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
         return
@@ -97,7 +97,7 @@ contract TestAMM {
                 regress(),
                 market.maxLeverage.value,
                 market.openSlippageFactor.value,
-                side
+                isLongSide
             );
     }
 

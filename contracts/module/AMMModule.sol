@@ -249,7 +249,7 @@ library AMMModule {
                 poolMargin,
                 market.maxLeverage.value,
                 beta,
-                Side.LONG
+                true
             );
             if (newPosition > maxLongPosition) {
                 require(partialFill, "trade amount exceeds max amount");
@@ -264,7 +264,7 @@ library AMMModule {
                 poolMargin,
                 market.maxLeverage.value,
                 beta,
-                Side.SHORT
+                false
             );
             if (newPosition < minShortPosition) {
                 require(partialFill, "trade amount exceeds max amount");
@@ -301,9 +301,9 @@ library AMMModule {
                 context.indexPrice = indexPrice;
                 context.positionAmount = positionAmount;
             } else {
-                context.positionValue = context.positionValue.add(indexPrice.wmulCeil(positionAmount));
+                context.positionValue = context.positionValue.add(indexPrice.wmul(positionAmount, Round.UP));
                 context.squareValue = context.squareValue.add(
-                    indexPrice.wmulFloor(positionAmount).wmulFloor(positionAmount).mul(market.openSlippageFactor.value)
+                    indexPrice.wmul(positionAmount, Round.DOWN).wmul(positionAmount, Round.DOWN).mul(market.openSlippageFactor.value)
                 );
                 context.positionMargin = context.positionMargin.add(
                     indexPrice.wmul(positionAmount).abs().wdiv(market.maxLeverage.value)
@@ -337,7 +337,7 @@ library AMMModule {
         int256 poolMargin,
         int256 maxLeverage,
         int256 beta,
-        Side side
+        bool isLongSide
     ) internal pure returns (int256 maxPosition) {
         require(context.indexPrice > 0, "index price must be positive");
         int256 beforeSqrt = poolMargin
@@ -363,7 +363,7 @@ library AMMModule {
             maxPosition2 = poolMargin.sub(maxPosition2).wdiv(maxLeverage).wdiv(beta);
         }
         maxPosition = maxPosition1 > maxPosition2 ? maxPosition2 : maxPosition1;
-        if (side == Side.LONG) {
+        if (isLongSide) {
             int256 maxPosition3 = poolMargin.wdiv(beta);
             maxPosition = maxPosition > maxPosition3 ? maxPosition3 : maxPosition;
         } else {

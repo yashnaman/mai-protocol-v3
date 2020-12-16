@@ -6,9 +6,13 @@ import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "./Constant.sol";
 
+enum Round { UP, DOWN }
+
 library SafeMathExt {
+
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
+
 
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
@@ -51,38 +55,22 @@ library SafeMathExt {
         r = roundHalfUp(t, z).div(z);
     }
 
-    function wmulCeil(int256 x, int256 y) internal pure returns (int256 z) {
-        z = divCeil(x.mul(y), Constant.SIGNED_ONE);
+    function wmul(int256 x, int256 y, Round round) internal pure returns (int256 z) {
+        z = div(x.mul(y), Constant.SIGNED_ONE, round);
     }
 
-    function wdivCeil(int256 x, int256 y) internal pure returns (int256 z) {
-        z = divCeil(x.mul(Constant.SIGNED_ONE), y);
+    function wdiv(int256 x, int256 y, Round round) internal pure returns (int256 z) {
+        z = div(x.mul(Constant.SIGNED_ONE), y, round);
     }
 
-    function wfracCeil(
+    function wfrac(
         int256 x,
         int256 y,
-        int256 z
+        int256 z,
+        Round round
     ) internal pure returns (int256 r) {
         int256 t = x.mul(y);
-        r = divCeil(t, z);
-    }
-
-    function wmulFloor(int256 x, int256 y) internal pure returns (int256 z) {
-        z = x.mul(y).div(Constant.SIGNED_ONE);
-    }
-
-    function wdivFloor(int256 x, int256 y) internal pure returns (int256 z) {
-        z = x.mul(Constant.SIGNED_ONE).div(y);
-    }
-
-    function wfracFloor(
-        int256 x,
-        int256 y,
-        int256 z
-    ) internal pure returns (int256 r) {
-        int256 t = x.mul(y);
-        r = t.div(z);
+        r = div(t, z, round);
     }
 
     function abs(int256 x) internal pure returns (int256) {
@@ -104,15 +92,19 @@ library SafeMathExt {
         return x.sub(y / 2);
     }
 
-    function divCeil(int256 x, int256 y) internal pure returns (int256) {
+    function div(int256 x, int256 y, Round round) internal pure returns (int256) {
         require(y != 0, "division by zero");
         int256 origin = x.div(y);
-        if (x % y == 0) {
-            return origin;
-        } else if (origin > 0) {
-            return origin.add(1);
+        if (round == Round.UP) {
+            if (x % y == 0) {
+                return origin;
+            } else if (origin > 0) {
+                return origin.add(1);
+            } else {
+                return origin.sub(1);
+            }
         } else {
-            return origin.sub(1);
+            return origin;
         }
     }
 

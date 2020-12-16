@@ -261,7 +261,7 @@ describe('AMM', () => {
             {
                 name: 'init',
                 amm: ammInit,
-                side: 1,
+                isLongSide: false,
                 maxLeverage: params.maxLeverage,
                 positionAmount2: ammInit.positionAmount2,
                 maxPosition: _0
@@ -269,7 +269,7 @@ describe('AMM', () => {
             {
                 name: 'short, infinite max position2, choose max position1',
                 amm: amm1,
-                side: 1,
+                isLongSide: false,
                 maxLeverage: params.maxLeverage,
                 positionAmount2: amm1.positionAmount2,
                 maxPosition: toWad('-141.067359796658844252321636909')
@@ -277,7 +277,7 @@ describe('AMM', () => {
             {
                 name: 'short, choose max position1',
                 amm: amm1,
-                side: 1,
+                isLongSide: false,
                 maxLeverage: toWad('0.991'),
                 positionAmount2: toWad('200'),
                 maxPosition: toWad('-128.653323548597695348814505356')
@@ -285,7 +285,7 @@ describe('AMM', () => {
             {
                 name: 'short, choose max position2',
                 amm: amm1,
-                side: 1,
+                isLongSide: false,
                 maxLeverage: toWad('0.5'),
                 positionAmount2: amm1.positionAmount2,
                 maxPosition: toWad('-45.403751662596934803491571167')
@@ -293,7 +293,7 @@ describe('AMM', () => {
             {
                 name: 'long, choose max position3',
                 amm: amm4,
-                side: 0,
+                isLongSide: true,
                 maxLeverage: params.maxLeverage,
                 positionAmount2: amm4.positionAmount2,
                 maxPosition: toWad('100')
@@ -303,7 +303,7 @@ describe('AMM', () => {
         cases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
-                expect(await amm.maxPosition(element.side)).approximateBigNumber(element.maxPosition)
+                expect(await amm.maxPosition(element.isLongSide)).approximateBigNumber(element.maxPosition)
             })
         })
 

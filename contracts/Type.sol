@@ -21,7 +21,6 @@ struct MarginAccount {
 
 enum MarketState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
 enum OrderType { LIMIT, MARKET, STOP }
-enum Side { LONG, SHORT }
 
 struct Order {
     address trader;
