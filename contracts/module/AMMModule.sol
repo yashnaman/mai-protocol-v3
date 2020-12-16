@@ -123,8 +123,8 @@ library AMMModule {
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
         int256 cashToReturn = calculateCashToReturn(core, shareTotalSupply, shareToRemove);
         IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
-        core.poolCashBalance = core.poolCashBalance.add(cashToReturn);
-        core.poolCollateral = core.poolCollateral.add(cashToReturn);
+        core.poolCashBalance = core.poolCashBalance.sub(cashToReturn);
+        core.poolCollateral = core.poolCollateral.sub(cashToReturn);
         core.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
