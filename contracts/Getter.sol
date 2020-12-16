@@ -29,53 +29,47 @@ contract Getter is Storage {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
-    function governor() public view returns (address) {
-        return _core.governor;
-    }
-
-    function shareToken() public view returns (address) {
-        return _core.shareToken;
-    }
-
     function liquidityPoolInfo()
         public
         view
         returns (
-            address factory,
-            address operator,
-            address collateral,
-            address vault,
-            int256 vaultFeeRate,
-            int256 insuranceFundCap,
-            uint256 marketCount
-        )
-    {
-        factory = _core.factory;
-        operator = _core.operator;
-        collateral = _core.collateral;
-        vault = _core.vault;
-        vaultFeeRate = _core.vaultFeeRate;
-        insuranceFundCap = _core.insuranceFundCap;
-        marketCount = _core.markets.length;
-    }
-
-    function liquidityPoolState()
-        public
-        view
-        returns (
-            int256 insuranceFund,
-            int256 donatedInsuranceFund,
-            int256 totalClaimableFee,
-            int256 poolCashBalance,
-            int256 poolCollateral,
+            // [0] factory
+            // [1] operator
+            // [2] collateral
+            // [3] vault
+            // [4] governor
+            // [5] shareToken
+            address[6] memory addresses,
+            // [0] vaultFeeRate,
+            // [1] insuranceFundCap,
+            // [2] insuranceFund,
+            // [3] donatedInsuranceFund,
+            // [4] totalClaimableFee,
+            // [5] poolCashBalance,
+            // [6] poolCollateral,
+            int256[7] memory nums,
+            uint256 marketCount,
             uint256 fundingTime
         )
     {
-        insuranceFund = _core.insuranceFund;
-        donatedInsuranceFund = _core.donatedInsuranceFund;
-        totalClaimableFee = _core.totalClaimableFee;
-        poolCashBalance = _core.poolCashBalance;
-        poolCollateral = _core.poolCollateral;
+        addresses = [
+            _core.factory,
+            _core.operator,
+            _core.collateral,
+            _core.vault,
+            _core.governor,
+            _core.shareToken
+        ];
+        nums = [
+            _core.vaultFeeRate,
+            _core.insuranceFundCap,
+            _core.insuranceFund,
+            _core.donatedInsuranceFund,
+            _core.totalClaimableFee,
+            _core.poolCashBalance,
+            _core.poolCollateral
+        ];
+        marketCount = _core.markets.length;
         fundingTime = _core.fundingTime;
     }
 
@@ -85,36 +79,46 @@ contract Getter is Storage {
         onlyExistedMarket(marketIndex)
         returns (
             MarketState state,
-            address collateral,
             address oracle,
-            int256 markPrice,
-            int256 indexPrice,
-            int256 unitAccumulativeFunding,
-            int256[10] memory coreParameters,
-            int256[5] memory riskParameters
+            // [0] depositedCollateral
+            // [1] markPrice,
+            // [2] indexPrice,
+            // [3] unitAccumulativeFunding,
+            // [4] initialMarginRate,
+            // [5] maintenanceMarginRate,
+            // [6] operatorFeeRate,
+            // [7] lpFeeRate,
+            // [8] referrerRebateRate,
+            // [9] liquidationPenaltyRate,
+            // [10] keeperGasReward,
+            // [11] insuranceFundRate,
+            // [12] halfSpread,
+            // [13] openSlippageFactor,
+            // [14] closeSlippageFactor,
+            // [15] fundingRateLimit,
+            // [16] maxLeverage
+            int256[17] memory nums
         )
     {
         Market storage market = _core.markets[marketIndex];
 
         state = market.state;
-        collateral = _core.collateral;
         oracle = market.oracle;
-        markPrice = market.markPrice();
-        indexPrice = market.indexPrice();
-        unitAccumulativeFunding = market.unitAccumulativeFunding;
-        coreParameters = [
+        nums = [
+            market.depositedCollateral,
+            market.markPrice(),
+            market.indexPrice(),
+            market.unitAccumulativeFunding,
+
             market.initialMarginRate,
             market.maintenanceMarginRate,
             market.operatorFeeRate,
-            _core.vaultFeeRate,
             market.lpFeeRate,
             market.referrerRebateRate,
             market.liquidationPenaltyRate,
             market.keeperGasReward,
-            _core.insuranceFundCap,
-            market.insuranceFundRate
-        ];
-        riskParameters = [
+            market.insuranceFundRate,
+
             market.halfSpread.value,
             market.openSlippageFactor.value,
             market.closeSlippageFactor.value,

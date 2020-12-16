@@ -4,49 +4,48 @@ pragma experimental ABIEncoderV2;
 
 import "../Type.sol";
 import "../interface/ILiquidityPool.sol";
+import "../interface/IOracle.sol";
 
 contract Reader {
 
     struct LiquidityPoolStorage {
         address operator;
         address collateral;
-        address shareToken;
-        address governor;
         address vault;
+        address governor;
+        address shareToken;
         int256 vaultFeeRate;
         int256 insuranceFundCap;
-
         int256 insuranceFund;
         int256 donatedInsuranceFund;
         int256 totalClaimableFee;
         int256 poolCashBalance;
         uint256 fundingTime;
+
         MarketStorage[] marketStorages;
     }
 
     struct MarketStorage {
-        MarketState state;
         string underlyingAsset;
+        MarketState state;
         address oracle;
         int256 markPrice;
         int256 indexPrice;
+        int256 unitAccumulativeFunding;
         int256 initialMarginRate;
         int256 maintenanceMarginRate;
         int256 operatorFeeRate;
-        int256 vaultFeeRate;
         int256 lpFeeRate;
         int256 referrerRebateRate;
         int256 liquidationPenaltyRate;
         int256 keeperGasReward;
         int256 insuranceFundRate;
-        int256 fundingRate;
-        int256 unitAccumulativeFunding;
         int256 halfSpread;
         int256 openSlippageFactor;
         int256 closeSlippageFactor;
         int256 fundingRateLimit;
         int256 maxLeverage;
-        MarginAccount ammAccountStorage;
+        int256 ammPositionAmount;
     }
 
     function getAccountStorage(
@@ -58,97 +57,64 @@ contract Reader {
             .marginAccount(marketIndex, account);
     }
 
-    /*
-    [00] operatorAddress
-    [01] collateralTokenAddress
-    [02] shareTokenAddress
-    [03] governorAddress
-    [04] vaultAddress
-    [05] vaultFeeRate
-    [06] insuranceFund
-    [07] insuranceFundCap
-    [08] donatedInsuranceFund
-    [09] totalClaimableFee
-    [10] poolCashBalance
-    [11] fundingTime
-    [12] marketCount
-    [13 + market * 19]
-      [00] oracleAddress
-      [01] initialMarginRate
-      [02] maintenanceMarginRate
-      [03] operatorFeeRate
-      [04] lpFeeRate
-      [05] referrerRebateRate
-      [06] liquidationPenaltyRate
-      [07] keeperGasReward
-      [08] insuranceFundRate
-      [09] state
-      [10] markPrice
-      [11] indexPrice
-      [12] unitAccumulativeFunding
-      [13] halfSpread
-      [14] openSlippageFactor
-      [15] closeSlippageFactor
-      [16] fundingRateLimit
-      [17] maxLeverage
-      [18] ammPositionAmount
-    */
     function getLiquidityPoolStorage(address liquidityPool)
         public
         returns (LiquidityPoolStorage memory pool)
     {
         uint256 marketCount;
-        (
-            ,
-            pool.operator,
-            pool.collateral,
-            pool.vault,
-            pool.vaultFeeRate,
-            pool.insuranceFundCap,
-            marketCount
-        ) = ILiquidityPool(liquidityPool).liquidityPoolInfo();
-        (
-            pool.insuranceFund,
-            pool.donatedInsuranceFund,
-            pool.totalClaimableFee,
-            pool.poolCashBalance,
-            ,
-            pool.fundingTime
-        ) = ILiquidityPool(liquidityPool).liquidityPoolState();
-        pool.shareToken = ILiquidityPool(liquidityPool).shareToken();
-        pool.governor = ILiquidityPool(liquidityPool).governor();
+        {
+            address[6] memory addresses;
+            int256[7] memory nums;
+            (
+                addresses,
+                nums,
+                marketCount,
+                pool.fundingTime
+            ) = ILiquidityPool(liquidityPool).liquidityPoolInfo();
+            pool.operator = addresses[1];
+            pool.collateral = addresses[2];
+            pool.vault = addresses[3];
+            pool.governor = addresses[4];
+            pool.shareToken = addresses[5];
+            pool.vaultFeeRate = nums[0];
+            pool.insuranceFundCap = nums[1];
+            pool.insuranceFund = nums[2];
+            pool.donatedInsuranceFund = nums[3];
+            pool.totalClaimableFee = nums[4];
+            pool.poolCashBalance = nums[5];
+        }
+        
         pool.marketStorages = new MarketStorage[](marketCount);
         for (uint256 i = 0; i < marketCount; i++) {
-        //     MarketStorage memory marketStorage;
-        //     int256[8] memory coreParameters;
-        //     int256[5] memory riskParameters;
-        //     (
-        //         marketStorage.state,
-        //         marketStorage.oracle,
-        //         marketStorage.markPrice,
-        //         marketStorage.indexPrice,
-        //         marketStorage.unitAccumulativeFunding,
-        //         marketStorage.fundingRate,
-        //         coreParameters,
-        //         riskParameters
-        //     ) = pool.marketInfo(i);
-
-        // marketStorage.underlyingAsset = IOracle(marketStorage.oracle).underlyingAsset();
-        // marketStorage.initialMarginRate = coreParameters[0];
-        // marketStorage.maintenanceMarginRate = coreParameters[1];
-        // marketStorage.operatorFeeRate = coreParameters[2];
-        // marketStorage.lpFeeRate = coreParameters[3];
-        // marketStorage.referrerRebateRate = coreParameters[4];
-        // marketStorage.liquidationPenaltyRate = coreParameters[5];
-        // marketStorage.keeperGasReward = coreParameters[6];
-        // marketStorage.insuranceFundRate = coreParameters[7];
-        // marketStorage.halfSpread = riskParameters[0];
-        // marketStorage.openSlippageFactor = riskParameters[1];
-        // marketStorage.closeSlippageFactor = riskParameters[2];
-        // marketStorage.fundingRateLimit = riskParameters[3];
-        // marketStorage.maxLeverage = riskParameters[4];
-        // marketStorage.ammAccountStorage = getAccountStorage(liquidityPool, i, liquidityPool);
-        // liquidityPoolStorage.marketStorages[i] = marketStorage;
+            {
+                int256[17] memory nums;
+                (
+                    pool.marketStorages[i].state,
+                    pool.marketStorages[i].oracle,
+                    nums
+                ) = ILiquidityPool(liquidityPool).marketInfo(i);
+                pool.marketStorages[i].markPrice = nums[1];
+                pool.marketStorages[i].indexPrice = nums[2];
+                pool.marketStorages[i].unitAccumulativeFunding = nums[3];
+                pool.marketStorages[i].initialMarginRate = nums[4];
+                pool.marketStorages[i].maintenanceMarginRate = nums[5];
+                pool.marketStorages[i].operatorFeeRate = nums[6];
+                pool.marketStorages[i].lpFeeRate = nums[7];
+                pool.marketStorages[i].referrerRebateRate = nums[8];
+                pool.marketStorages[i].liquidationPenaltyRate = nums[9];
+                pool.marketStorages[i].keeperGasReward = nums[10];
+                pool.marketStorages[i].insuranceFundRate = nums[11];
+                pool.marketStorages[i].halfSpread = nums[12];
+                pool.marketStorages[i].openSlippageFactor = nums[13];
+                pool.marketStorages[i].closeSlippageFactor = nums[14];
+                pool.marketStorages[i].fundingRateLimit = nums[15];
+                pool.marketStorages[i].maxLeverage = nums[16];
+            }
+            pool.marketStorages[i].underlyingAsset = IOracle(pool.marketStorages[i].oracle).underlyingAsset();
+            (
+                ,
+                pool.marketStorages[i].ammPositionAmount
+            ) = ILiquidityPool(liquidityPool).marginAccount(i, liquidityPool);
         }
     }
 }

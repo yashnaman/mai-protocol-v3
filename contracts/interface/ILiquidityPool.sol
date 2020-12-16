@@ -6,32 +6,26 @@ import "../Type.sol";
 
 interface ILiquidityPool {
 
-    function governor() external view returns (address);
-
-    function shareToken() external view returns (address);
-
     function liquidityPoolInfo()
         external
         view
         returns (
-            address factory,
-            address operator,
-            address collateral,
-            address vault,
-            int256 vaultFeeRate,
-            int256 insuranceFundCap,
-            uint256 marketCount
-        );
-
-    function liquidityPoolState()
-        external
-        view
-        returns (
-            int256 insuranceFund,
-            int256 donatedInsuranceFund,
-            int256 totalClaimableFee,
-            int256 poolCashBalance,
-            int256 poolCollateral,
+            // [0] factory
+            // [1] operator
+            // [2] collateral
+            // [3] vault
+            // [4] governor
+            // [5] shareToken
+            address[6] memory addresses,
+            // [0] vaultFeeRate,
+            // [1] insuranceFundCap,
+            // [2] insuranceFund,
+            // [3] donatedInsuranceFund,
+            // [4] totalClaimableFee,
+            // [5] poolCashBalance,
+            // [6] poolCollateral,
+            int256[7] memory nums,
+            uint256 marketCount,
             uint256 fundingTime
         );
 
@@ -40,12 +34,24 @@ interface ILiquidityPool {
         returns (
             MarketState state,
             address oracle,
-            int256 markPrice,
-            int256 indexPrice,
-            int256 unitAccumulativeFunding,
-            int256 fundingRate,
-            int256[8] memory coreParameters,
-            int256[5] memory riskParameters
+            // [0] depositedCollateral
+            // [1] markPrice,
+            // [2] indexPrice,
+            // [3] unitAccumulativeFunding,
+            // [4] initialMarginRate,
+            // [5] maintenanceMarginRate,
+            // [6] operatorFeeRate,
+            // [7] lpFeeRate,
+            // [8] referrerRebateRate,
+            // [9] liquidationPenaltyRate,
+            // [10] keeperGasReward,
+            // [11] insuranceFundRate,
+            // [12] halfSpread,
+            // [13] openSlippageFactor,
+            // [14] closeSlippageFactor,
+            // [15] fundingRateLimit,
+            // [16] maxLeverage
+            int256[17] memory nums
         );
 
     function initialize(
