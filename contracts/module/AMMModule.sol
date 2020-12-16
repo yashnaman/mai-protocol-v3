@@ -143,11 +143,10 @@ library AMMModule {
         }
         {
             poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
-            int256 minPoolMargin = context.indexPrice.wmul(positionAmount).wmul(positionAmount);
-            minPoolMargin = context.squareValue.div(2).sqrt();
+            int256 minPoolMargin = context.squareValue.div(2).sqrt();
             require(poolMargin >= minPoolMargin, "amm is unsafe after removing liquidity");
         }
-        cashToReturn = marginToRemove(context, poolMargin, 0);
+        cashToReturn = marginToRemove(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
         int256 newMarginBalance = poolMarginBalance(core).sub(cashToReturn);
         uint256 length = core.markets.length;
@@ -302,13 +301,12 @@ library AMMModule {
                 context.indexPrice = indexPrice;
                 context.positionAmount = positionAmount;
             } else {
-                int256 positionValue = indexPrice.wmul(positionAmount);
-                context.positionValue = context.positionValue.add(positionValue);
+                context.positionValue = context.positionValue.add(indexPrice.wmulCeil(positionAmount));
                 context.squareValue = context.squareValue.add(
-                    positionValue.wmul(positionAmount).mul(market.openSlippageFactor.value)
+                    indexPrice.wmulFloor(positionAmount).wmulFloor(positionAmount).mul(market.openSlippageFactor.value)
                 );
                 context.positionMargin = context.positionMargin.add(
-                    positionValue.abs().wdiv(market.maxLeverage.value)
+                    indexPrice.wmul(positionAmount).abs().wdiv(market.maxLeverage.value)
                 );
             }
         }
@@ -384,16 +382,13 @@ library AMMModule {
 
     function marginToRemove(
         Context memory context,
-        int256 poolMargin,
-        int256 beta
+        int256 poolMargin
     ) public pure returns (int256 removingMargin) {
         if (poolMargin == 0) {
             return context.availableCashBalance;
         }
-        int256 positionValue = context.indexPrice.wmul(context.positionAmount);
-        int256 tmpA = context.positionValue.add(positionValue);
-        int256 tmpB = context.squareValue.add(positionValue.wmul(context.positionAmount).mul(beta));
-        removingMargin = tmpB.div(poolMargin).div(2).add(poolMargin).sub(tmpA);
+        require(poolMargin > 0, "pool margin must be positive when removing liquidity");
+        removingMargin = context.squareValue.div(poolMargin).div(2).add(poolMargin).sub(context.positionValue);
         removingMargin = context.availableCashBalance.sub(removingMargin);
     }
 }

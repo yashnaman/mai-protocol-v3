@@ -51,6 +51,40 @@ library SafeMathExt {
         r = roundHalfUp(t, z).div(z);
     }
 
+    function wmulCeil(int256 x, int256 y) internal pure returns (int256 z) {
+        z = divCeil(x.mul(y), Constant.SIGNED_ONE);
+    }
+
+    function wdivCeil(int256 x, int256 y) internal pure returns (int256 z) {
+        z = divCeil(x.mul(Constant.SIGNED_ONE), y);
+    }
+
+    function wfracCeil(
+        int256 x,
+        int256 y,
+        int256 z
+    ) internal pure returns (int256 r) {
+        int256 t = x.mul(y);
+        r = divCeil(t, z);
+    }
+
+    function wmulFloor(int256 x, int256 y) internal pure returns (int256 z) {
+        z = x.mul(y).div(Constant.SIGNED_ONE);
+    }
+
+    function wdivFloor(int256 x, int256 y) internal pure returns (int256 z) {
+        z = x.mul(Constant.SIGNED_ONE).div(y);
+    }
+
+    function wfracFloor(
+        int256 x,
+        int256 y,
+        int256 z
+    ) internal pure returns (int256 r) {
+        int256 t = x.mul(y);
+        r = t.div(z);
+    }
+
     function abs(int256 x) internal pure returns (int256) {
         return x >= 0 ? x : neg(x);
     }
@@ -68,6 +102,18 @@ library SafeMathExt {
             return x.add(y / 2);
         }
         return x.sub(y / 2);
+    }
+
+    function divCeil(int256 x, int256 y) internal pure returns (int256) {
+        require(y != 0, "division by zero");
+        int256 origin = x.div(y);
+        if (x % y == 0) {
+            return origin;
+        } else if (origin > 0) {
+            return origin.add(1);
+        } else {
+            return origin.sub(1);
+        }
     }
 
     function max(int256 a, int256 b) internal pure returns (int256) {
