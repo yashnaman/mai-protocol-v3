@@ -2,5 +2,5 @@
 
 ```
 npx hardhat compile
-npx hardhat --network=s10 run scripts/s10test.ts
+npx hardhat run --network s10 scripts/s10test.ts
 ```

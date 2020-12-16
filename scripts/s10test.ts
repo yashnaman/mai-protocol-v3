@@ -6,7 +6,6 @@ import {
     createLiquidityPoolFactory
 } from "./utils";
 
-
 async function deployOracle(accounts: any[]) {
     const oracle1 = await createContract("OracleWrapper", ["ETH", "USD"]);
     const oracle2 = await createContract("OracleWrapper", ["ETH", "BTC"]);
@@ -40,6 +39,10 @@ async function main(accounts: any[]) {
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, vault.address, vaultFeeRate]
     );
+    const addresses = [
+        ["poolCreator", poolCreator.address],
+    ]
+    console.table(addresses)
 
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
@@ -49,13 +52,6 @@ async function main(accounts: any[]) {
     const pool2 = await set2(accounts, poolCreator, weth);
 
     await reader(accounts, { pool1, pool2 });
-    await set1(accounts, poolCreator, weth);
-    await set2(accounts, poolCreator, weth);
-
-    const addresses = [
-        ["poolCreator", poolCreator.address],
-    ]
-    console.table(addresses)
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
@@ -165,12 +161,33 @@ async function reader(accounts: any[], pools) {
     console.table(addresses)
 
     console.log('reader test: pool1')
-    console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool1.address))
+    console.log(myDump(await reader.callStatic.getLiquidityPoolStorage(pools.pool1.address)))
     console.log('reader test: pool2')
-    console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool2.address))
+    console.log(myDump(await reader.callStatic.getLiquidityPoolStorage(pools.pool2.address)))
 
     return { reader }
 }
+
+function myDump(o: any, prefix?: string) {
+    if (o === null) {
+        return 'null'
+    }
+    if ((typeof o) !== 'object') {
+        return o.toString()
+    }
+    if (ethers.BigNumber.isBigNumber(o)) {
+        return o.toString()
+    }
+    let s = '\n'
+    if (!prefix) {
+        prefix = ''
+    }
+    prefix += '  '
+    for (let k in o) {
+        s += prefix + `${k}: ${myDump(o[k], prefix)}, \n`
+    }
+    return s
+}  
 
 ethers.getSigners()
     .then(accounts => main(accounts))
