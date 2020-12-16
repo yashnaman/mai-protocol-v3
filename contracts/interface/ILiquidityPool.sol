@@ -5,6 +5,38 @@ pragma experimental ABIEncoderV2;
 import "../Type.sol";
 
 interface ILiquidityPool {
+    function liquidityPoolInfo()
+        external
+        view
+        returns (
+            address factory,
+            address operator,
+            address collateral,
+            address vault,
+            int256 vaultFeeRate,
+            int256 insuranceFund,
+            int256 insuranceFundCap,
+            int256 donatedInsuranceFund,
+            int256 totalClaimableFee,
+            int256 poolCashBalance,
+            uint256 fundingTime,
+            uint256 priceUpdateTime,
+            uint256 marketCount
+        );
+
+    function marketInfo(uint256 marketIndex)
+        external
+        returns (
+            MarketState state,
+            address oracle,
+            int256 markPrice,
+            int256 indexPrice,
+            int256 unitAccumulativeFunding,
+            int256 fundingRate,
+            int256[8] memory coreParameters,
+            int256[5] memory riskParameters
+        );
+
     function initialize(
         address operator,
         address collateral,
@@ -27,4 +59,17 @@ interface ILiquidityPool {
         int256 amount,
         bytes memory signature
     ) external;
+
+    function activeAccountCount(uint256 marketIndex) external view returns (uint256);
+
+    function listActiveAccounts(
+        uint256 marketIndex,
+        uint256 start,
+        uint256 count
+    ) external view returns (address[] memory result);
+
+    function marginAccount(uint256 marketIndex, address trader)
+        external
+        view
+        returns (int256 cashBalance, int256 positionAmount);
 }
