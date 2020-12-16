@@ -5,6 +5,11 @@ pragma experimental ABIEncoderV2;
 import "../Type.sol";
 
 interface ILiquidityPool {
+
+    function governor() external view returns (address);
+
+    function shareToken() external view returns (address);
+
     function liquidityPoolInfo()
         external
         view
@@ -14,14 +19,20 @@ interface ILiquidityPool {
             address collateral,
             address vault,
             int256 vaultFeeRate,
-            int256 insuranceFund,
             int256 insuranceFundCap,
+            uint256 marketCount
+        );
+
+    function liquidityPoolState()
+        external
+        view
+        returns (
+            int256 insuranceFund,
             int256 donatedInsuranceFund,
             int256 totalClaimableFee,
             int256 poolCashBalance,
-            uint256 fundingTime,
-            uint256 priceUpdateTime,
-            uint256 marketCount
+            int256 poolCollateral,
+            uint256 fundingTime
         );
 
     function marketInfo(uint256 marketIndex)

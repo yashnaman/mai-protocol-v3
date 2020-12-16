@@ -46,13 +46,8 @@ contract Getter is Storage {
             address collateral,
             address vault,
             int256 vaultFeeRate,
-            int256 insuranceFund,
             int256 insuranceFundCap,
-            int256 donatedInsuranceFund,
-            int256 totalClaimableFee,
-            int256 poolCashBalance,
-            int256 poolCollateral,
-            int256 marketCount
+            uint256 marketCount
         )
     {
         factory = _core.factory;
@@ -60,13 +55,28 @@ contract Getter is Storage {
         collateral = _core.collateral;
         vault = _core.vault;
         vaultFeeRate = _core.vaultFeeRate;
-        insuranceFund = _core.insuranceFund;
         insuranceFundCap = _core.insuranceFundCap;
+        marketCount = _core.markets.length;
+    }
+
+    function liquidityPoolState()
+        public
+        view
+        returns (
+            int256 insuranceFund,
+            int256 donatedInsuranceFund,
+            int256 totalClaimableFee,
+            int256 poolCashBalance,
+            int256 poolCollateral,
+            uint256 fundingTime
+        )
+    {
+        insuranceFund = _core.insuranceFund;
         donatedInsuranceFund = _core.donatedInsuranceFund;
         totalClaimableFee = _core.totalClaimableFee;
         poolCashBalance = _core.poolCashBalance;
         poolCollateral = _core.poolCollateral;
-        marketCount = _core.markets.length.toInt256();
+        fundingTime = _core.fundingTime;
     }
 
     function marketInfo(uint256 marketIndex)
@@ -80,8 +90,6 @@ contract Getter is Storage {
             int256 markPrice,
             int256 indexPrice,
             int256 unitAccumulativeFunding,
-            int256 fundingRate,
-            uint256 fundingTime,
             int256[10] memory coreParameters,
             int256[5] memory riskParameters
         )
@@ -94,8 +102,6 @@ contract Getter is Storage {
         markPrice = market.markPrice();
         indexPrice = market.indexPrice();
         unitAccumulativeFunding = market.unitAccumulativeFunding;
-        fundingRate = market.fundingRate;
-        fundingTime = _core.fundingTime;
         coreParameters = [
             market.initialMarginRate,
             market.maintenanceMarginRate,
