@@ -109,7 +109,6 @@ describe('Funding', () => {
                 cashBalance: _0,
                 positionAmount1: _0,
                 positionAmount2: _0,
-                openSlippageFactor: params.openSlippageFactor,
                 targetFundingRate1: _0,
                 targetFundingRate2: _0
             },
@@ -118,7 +117,6 @@ describe('Funding', () => {
                 cashBalance: toWad('17692'),
                 positionAmount1: toWad('-80'),
                 positionAmount2: toWad('10'),
-                openSlippageFactor: params.openSlippageFactor,
                 targetFundingRate1: params.fundingRateLimit,
                 targetFundingRate2: params.negFundingRateLimit
             },
@@ -127,18 +125,16 @@ describe('Funding', () => {
                 cashBalance: toWad('10100'),
                 positionAmount1: toWad('-10'),
                 positionAmount2: toWad('10'),
-                openSlippageFactor: params.openSlippageFactor,
                 targetFundingRate1: toWad('0.0005'),
                 targetFundingRate2: toWad('-0.0005')
             },
             {
                 name: 'exceed limit',
-                cashBalance: toWad('10019'),
+                cashBalance: toWad('10099'),
                 positionAmount1: toWad('60'),
                 positionAmount2: toWad('-50'),
-                openSlippageFactor: toWad('99'),
                 targetFundingRate1: toWad('-0.005'),
-                targetFundingRate2: toWad('0.0043595621891114659068320239231')
+                targetFundingRate2: toWad('0.00418219559625837230897958914519')
             },
         ]
 
@@ -146,7 +142,7 @@ describe('Funding', () => {
             it(element.name, async () => {
                 await funding.setParams({
                     unitAccumulativeFunding: params.unitAccumulativeFunding,
-                    openSlippageFactor: element.openSlippageFactor,
+                    openSlippageFactor: params.openSlippageFactor,
                     maxLeverage: params.maxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
                     cashBalance: element.cashBalance,

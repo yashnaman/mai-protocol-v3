@@ -111,6 +111,15 @@ const amm6 = {
     // pool margin = unsafe
 }
 
+// [7] negative price
+const amm7 = {
+    cashBalance: toWad('9733.5'),
+    positionAmount1: toWad('60'),
+    positionAmount2: toWad('-50'),
+    // available cash = 9733.5 - 1.9 * (60) - 1.9 * (-50) = 9714.5
+    // pool margin = open unsafe, close 5368.54
+}
+
 describe('AMM', () => {
     let amm;
 
@@ -378,6 +387,13 @@ describe('AMM', () => {
                 amount: toWad('-1'),
                 deltaMargin: toWad('100.1'), // trader buy, 100 (1 + α)
                 deltaPosition: toWad('-1')
+            },
+            {
+                name: 'close negative price, clip to 0',
+                amm: amm7,
+                amount: toWad('-0.01'),
+                deltaMargin: _0, // trader buy, 0 (1 + α)
+                deltaPosition: toWad('-0.01')
             },
             {
                 name: 'open 0 -> -141.422, partialFill',
@@ -682,6 +698,7 @@ describe('AMM', () => {
                 restShare: toWad('100'), // total 100
                 shareBalance: _0,
                 shareToRemove: _0,
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'share to remove must be positive',
             },
             {
@@ -690,6 +707,7 @@ describe('AMM', () => {
                 restShare: _0, // total 100
                 shareBalance: toWad('100'),
                 shareToRemove: toWad('100.1'),
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'insufficient share balance',
             },
             {
@@ -698,6 +716,7 @@ describe('AMM', () => {
                 restShare: toWad('90'), // total 100
                 shareBalance: toWad('10'),
                 shareToRemove: toWad('10'),
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'amm is unsafe before removing liquidity',
             },
             {
@@ -706,6 +725,7 @@ describe('AMM', () => {
                 restShare: toWad('90'), // total 100
                 shareBalance: toWad('10'),
                 shareToRemove: toWad('10'),
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'amm is unsafe before removing liquidity',
             },
             {
@@ -714,6 +734,7 @@ describe('AMM', () => {
                 restShare: toWad('9.999'), // total 100
                 shareBalance: toWad('90.001'),
                 shareToRemove: toWad('90.001'),
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'amm is unsafe after removing liquidity',
             },
             {
@@ -722,7 +743,26 @@ describe('AMM', () => {
                 restShare: toWad('9.999'), // total 100
                 shareBalance: toWad('90.001'),
                 shareToRemove: toWad('90.001'),
+                maxLeverage: params.maxLeverage,
                 errorMsg: 'amm is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after negative price',
+                amm: amm5,
+                restShare: toWad('99.999'), // total 100
+                shareBalance: toWad('0.001'),
+                shareToRemove: toWad('0.001'),
+                maxLeverage: params.maxLeverage,
+                errorMsg: 'amm is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after exceed leverage',
+                amm: amm4,
+                restShare: toWad('99.999'), // total 100
+                shareBalance: toWad('0.001'),
+                shareToRemove: toWad('0.001'),
+                maxLeverage: toWad('0.1'),
+                errorMsg: 'amm exceeds max leverage after removing liquidity',
             }
         ]
 
@@ -739,7 +779,7 @@ describe('AMM', () => {
                 await shareTokenUser1.mint(user1.address, element.shareBalance);
                 await shareTokenUser1.mint(user2.address, element.restShare);
                 await amm.setConfig(ctk.address, shareToken.address, 1);
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
                 await expect(ammUser1.removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
             })
