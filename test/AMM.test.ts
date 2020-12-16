@@ -606,7 +606,7 @@ describe('AMM', () => {
                 name: 'invalid margin to add',
                 totalShare: toWad('100'),
                 marginToAdd: _0,
-                errorMsg: 'margin to add must be positive'
+                errorMsg: 'total cashAmount must be positive'
             },
             {
                 name: 'poolMargin = 0 && totalShare != 0',
@@ -622,6 +622,9 @@ describe('AMM', () => {
                 const user1 = accounts[1];
                 const user2 = accounts[2];
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+                await ctk.mint(user1.address, element.marginToAdd);
+                const ctkUser1 = await CustomErc20Factory.connect(ctk.address, user1);
+                await ctkUser1.approve(amm.address, toWad("1000000"));
                 var shareToken = await createContract("TestShareToken");
                 await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
