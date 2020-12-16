@@ -20,7 +20,6 @@ struct MarginAccount {
 }
 
 enum MarketState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
-enum ActionOnFailure { IGNORE, REVERT }
 enum OrderType { LIMIT, MARKET, STOP }
 enum Side { LONG, SHORT }
 
@@ -28,13 +27,15 @@ struct Order {
     address trader;
     address broker;
     address relayer;
+    address referrer;
     address liquidityPool;
     uint256 marketIndex;
-    address referrer;
     int256 amount;
     int256 priceLimit;
-    bytes32 data;
+    int256 minTradeAmount;
+    uint256 tradeGasLimit;
     uint256 chainID;
+    bytes32 data;
 }
 
 struct Receipt {
@@ -77,6 +78,7 @@ struct Core {
     mapping(bytes32 => bool) orderCanceled;
     // funding
     uint256 fundingTime;
+    uint256 priceUpdateTime;
 }
 
 struct Market {
@@ -88,7 +90,6 @@ struct Market {
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;
     OraclePriceData settlementPriceData;
-    uint256 priceUpdateTime;
     // funding state
     int256 fundingRate;
     int256 unitAccumulativeFunding;
@@ -112,7 +113,7 @@ struct Market {
     int256 totalMarginWithPosition;
     int256 redemptionRateWithoutPosition;
     int256 redemptionRateWithPosition;
-    EnumerableSetUpgradeable.AddressSet registeredTraders;
+    EnumerableSetUpgradeable.AddressSet activeAccounts;
     EnumerableSetUpgradeable.AddressSet clearedTraders;
     // accounts
     mapping(address => MarginAccount) marginAccounts;

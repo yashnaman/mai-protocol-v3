@@ -15,6 +15,7 @@ contract Governance is Storage, Events {
     using SafeMathUpgradeable for uint256;
     using MarketModule for Market;
     using ParameterModule for Market;
+    using ParameterModule for Core;
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
 
@@ -26,6 +27,11 @@ contract Governance is Storage, Events {
     modifier onlyOperator() {
         require(msg.sender == _core.operator, "only operator is allowed");
         _;
+    }
+
+    function updateLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
+        _core.updateLiquidityPoolParameter(key, newValue);
+        emit UpdateLiquidityPoolParameter(key, newValue);
     }
 
     function updateMarketParameter(

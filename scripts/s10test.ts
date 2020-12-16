@@ -49,6 +49,13 @@ async function main(accounts: any[]) {
     const pool2 = await set2(accounts, poolCreator, weth);
 
     await reader(accounts, { pool1, pool2 });
+    await set1(accounts, poolCreator, weth);
+    await set2(accounts, poolCreator, weth);
+
+    const addresses = [
+        ["poolCreator", poolCreator.address],
+    ]
+    console.table(addresses)
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
@@ -75,6 +82,8 @@ async function set1(accounts: any[], poolCreator, weth) {
         [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
     )
     await liquidityPool.finalize();
+
+    await liquidityPool.addLiquidity(toWei("0"), { value: toWei("4310") });
 
     const addresses = [
         ["WETH9", weth.address],
@@ -128,6 +137,10 @@ async function set2(accounts: any[], poolCreator, weth) {
     )
     await liquidityPool.finalize();
 
+    await usd.mint(accounts[0].address, toWei("12500000"));
+    await usd.approve(liquidityPool.address, toWei("2500000"));
+    await liquidityPool.addLiquidity(toWei("2500000"));
+
     const addresses = [
         ["Collateral (USD)", usd.address],
         ["Oracle  'USD / ETH'  ", "0x2dccA2b995651158Fe129Ddd23D658410CEa8254"],
@@ -155,12 +168,8 @@ async function reader(accounts: any[], pools) {
     console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool1.address))
     console.log('reader test: pool2')
     console.log(await reader.callStatic.getLiquidityPoolStorage(pools.pool2.address))
-    
+
     return { reader }
-}
-
-async function init(accounts: any[]) {
-
 }
 
 ethers.getSigners()

@@ -76,15 +76,15 @@ library AMMModule {
     }
 
     function addLiquidity(Core storage core, int256 cashAmount) public {
-        require(cashAmount > 0, "margin to add must be positive");
+        int256 totalCashAmount = core.transferFromUser(msg.sender, cashAmount);
+        require(totalCashAmount > 0, "total cashAmount must be positive");
         int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
-        int256 shareAmount = calculateShareToMint(core, shareTotalSupply, cashAmount);
+        int256 shareAmount = calculateShareToMint(core, shareTotalSupply, totalCashAmount);
         require(shareAmount > 0, "received share must be positive");
-        core.transferFromUser(msg.sender, cashAmount);
-        core.poolCashBalance = core.poolCashBalance.add(cashAmount);
-        core.poolCollateral = core.poolCollateral.add(cashAmount);
+        core.poolCashBalance = core.poolCashBalance.add(totalCashAmount);
+        core.poolCollateral = core.poolCollateral.add(totalCashAmount);
         IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
-        emit AddLiquidity(msg.sender, cashAmount, shareAmount);
+        emit AddLiquidity(msg.sender, totalCashAmount, shareAmount);
     }
 
     function calculateShareToMint(

@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
@@ -14,6 +15,7 @@ import "../Type.sol";
 
 library OrderModule {
     using SignedSafeMathUpgradeable for int256;
+    using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
     using OrderData for Order;
     using MarginModule for Market;
@@ -29,7 +31,7 @@ library OrderModule {
         int256 amount
     ) public view {
         require(amount != 0, "amount is 0");
-
+        require(amount.abs() >= order.minTradeAmount, "amount is less than min trade amount");
         require(order.amount != 0, "order amount is 0");
         require(Utils.hasSameSign(amount, order.amount), "side mismatch");
         require(order.broker == msg.sender, "broker mismatch");
@@ -37,7 +39,6 @@ library OrderModule {
         require(order.liquidityPool == address(this), "liquidityPool mismatch");
         require(order.chainID == Utils.chainID(), "chainid mismatch");
         require(order.deadline() >= block.timestamp, "order is expired");
-        require(order.version() == SUPPORTED_ORDER_VERSION, "order version is not supported");
 
         bytes32 orderHash = order.orderHash();
         require(!core.orderCanceled[orderHash], "order is canceled");

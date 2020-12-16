@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 contract Events {
     // governance
+    event UpdateLiquidityPoolParameter(bytes32 key, int256 value);
     event UpdateMarketParameter(uint256 marketIndex, bytes32 key, int256 value);
     event UpdateMarketRiskParameter(
         uint256 marketIndex,
@@ -12,6 +13,7 @@ contract Events {
         int256 minValue,
         int256 maxValue
     );
+
     event AdjustMarketRiskSetting(uint256 marketIndex, bytes32 key, int256 value);
 
     // settle

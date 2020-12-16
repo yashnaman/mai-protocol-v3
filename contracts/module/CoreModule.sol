@@ -35,10 +35,10 @@ library CoreModule {
     event ClaimFee(address claimer, int256 amount);
 
     function donateInsuranceFund(Core storage core, int256 amount) external {
-        require(amount > 0, "amount is 0");
-        core.transferFromUser(msg.sender, amount);
-        core.donatedInsuranceFund = core.donatedInsuranceFund.add(amount);
-        emit DonateInsuranceFund(msg.sender, amount);
+        int256 totalAmount = core.transferFromUser(msg.sender, amount);
+        require(totalAmount > 0, "total amount is 0");
+        core.donatedInsuranceFund = core.donatedInsuranceFund.add(totalAmount);
+        emit DonateInsuranceFund(msg.sender, totalAmount);
     }
 
     function initialize(

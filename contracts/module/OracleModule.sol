@@ -7,19 +7,23 @@ import "../Type.sol";
 
 library OracleModule {
     function updatePrice(Core storage core, uint256 currentTime) internal {
+        if (core.priceUpdateTime >= currentTime) {
+            return;
+        }
         uint256 length = core.markets.length;
         for (uint256 i = 0; i < length; i++) {
-            updatePrice(core.markets[i], currentTime);
+            updatePrice(core.markets[i]);
         }
+        core.priceUpdateTime = currentTime;
     }
 
-    function updatePrice(Market storage market, uint256 currentTime) internal {
+    function updatePrice(Market storage market) internal {
         // no longer update price after emergency
-        if (currentTime != market.priceUpdateTime && market.state == MarketState.NORMAL) {
-            updatePriceData(market.markPriceData, IOracle(market.oracle).priceTWAPLong);
-            updatePriceData(market.indexPriceData, IOracle(market.oracle).priceTWAPShort);
-            market.priceUpdateTime = currentTime;
+        if (market.state != MarketState.NORMAL) {
+            return;
         }
+        updatePriceData(market.markPriceData, IOracle(market.oracle).priceTWAPLong);
+        updatePriceData(market.indexPriceData, IOracle(market.oracle).priceTWAPShort);
     }
 
     function markPrice(Market storage market) internal view returns (int256) {
@@ -48,8 +52,7 @@ library OracleModule {
         }
     }
 
-    function freezeOraclePrice(Market storage market, uint256 currentTime) public {
+    function freezeOraclePrice(Market storage market) public {
         market.settlementPriceData = market.indexPriceData;
-        market.priceUpdateTime = currentTime;
     }
 }

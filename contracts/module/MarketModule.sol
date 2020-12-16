@@ -87,10 +87,9 @@ library MarketModule {
 
     function enterEmergencyState(Market storage market) internal {
         require(market.state == MarketState.NORMAL, "market should be in normal state");
-        uint256 currentTime = block.timestamp;
-        market.updatePrice(currentTime);
+        market.updatePrice();
+        market.freezeOraclePrice();
         market.state = MarketState.EMERGENCY;
-        market.freezeOraclePrice(currentTime);
         emit EnterEmergencyState(market.settlementPriceData.price, market.settlementPriceData.time);
     }
 

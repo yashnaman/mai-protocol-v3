@@ -73,8 +73,8 @@ describe('Settlement', () => {
 
         await settlement.setEmergency();
 
-        expect(await settlement.unclearedTraderCount()).to.equal(3);
-        const traders = await settlement.listUnclearedTraders(0, 3);
+        expect(await settlement.activeAccountCount()).to.equal(3);
+        const traders = await settlement.listActiveAccounts(0, 3);
         expect(traders[0]).to.equal(user1.address);
         expect(traders[1]).to.equal(user2.address);
         expect(traders[2]).to.equal(user3.address);
@@ -82,7 +82,7 @@ describe('Settlement', () => {
         await expect(settlement.clearMarginAccount("0x0000000000000000000000000000000000000000")).to.be.revertedWith("invalid trader address");
         await expect(settlement.clearMarginAccount(user0.address)).to.be.revertedWith("trader is not registered");
         await settlement.clearMarginAccount(user1.address);
-        expect(await settlement.unclearedTraderCount()).to.equal(2);
+        expect(await settlement.activeAccountCount()).to.equal(2);
 
     })
 });

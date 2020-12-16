@@ -36,7 +36,7 @@ library SettlementModule {
         address trader
     ) public {
         Market storage market = core.markets[marketIndex];
-        require(market.registeredTraders.contains(trader), "trader is not registered");
+        require(market.activeAccounts.contains(trader), "trader is not registered");
         require(!market.clearedTraders.contains(trader), "trader is already cleared");
         int256 margin = market.margin(trader, market.markPrice());
         if (margin > 0) {
@@ -46,11 +46,11 @@ library SettlementModule {
                 market.totalMarginWithoutPosition = market.totalMarginWithoutPosition.add(margin);
             }
         }
-        market.registeredTraders.remove(trader);
+        market.activeAccounts.remove(trader);
         market.clearedTraders.add(trader);
         emit Clear(marketIndex, trader);
 
-        if (market.registeredTraders.length() == 0) {
+        if (market.activeAccounts.length() == 0) {
             settleWithdrawableMargin(market, 0);
             market.enterClearedState();
         }
@@ -70,11 +70,11 @@ library SettlementModule {
     }
 
     function registerTrader(Market storage market, address trader) internal {
-        market.registeredTraders.add(trader);
+        market.activeAccounts.add(trader);
     }
 
     function deregisterTrader(Market storage market, address trader) internal {
-        market.registeredTraders.remove(trader);
+        market.activeAccounts.remove(trader);
     }
 
     function settledMarginAccount(Market storage market, address trader)

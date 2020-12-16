@@ -38,6 +38,9 @@ library FundingModule {
     }
 
     function updateFundingState(Market storage market, int256 timeElapsed) public {
+        if (market.state != MarketState.NORMAL) {
+            return;
+        }
         int256 deltaUnitLoss = market.indexPrice().wfrac(
             market.fundingRate.wmul(timeElapsed),
             FUNDING_INTERVAL
@@ -57,6 +60,9 @@ library FundingModule {
     }
 
     function updateFundingRate(Market storage market, int256 poolMargin) public {
+        if (market.state != MarketState.NORMAL) {
+            return;
+        }
         int256 newFundingRate;
         int256 positionAmount = market.positionAmount(address(this));
         if (positionAmount == 0) {

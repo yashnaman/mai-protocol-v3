@@ -32,7 +32,7 @@ contract AMM is Storage, ReentrancyGuardUpgradeable {
     }
 
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
-        require(cashToAdd > 0, "amount is invalid");
+        require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
         _core.addLiquidity(cashToAdd);
     }
 

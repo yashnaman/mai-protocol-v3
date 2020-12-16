@@ -18,7 +18,7 @@ library OrderData {
     );
     bytes32 internal constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
-            "Order(address trader,address broker,address relayer,address liquidityPool,address referrer,int256 amount,int256 priceLimit,bytes32 data,uint256 chainID)"
+            "Order(address trader,address broker,address relayer,address referrer,address liquidityPool,uint256 marketIndex,int256 amount,int256 priceLimit,int256 minTradeAmount,uint256 tradeGasLimit,uint256 chainID,bytes32 data)"
         )
     );
 
@@ -26,20 +26,16 @@ library OrderData {
         return uint64(bytes8(order.data));
     }
 
-    function version(Order memory order) internal pure returns (uint32) {
-        return uint32(bytes4(order.data << (8 * 8)));
-    }
-
     function orderType(Order memory order) internal pure returns (OrderType) {
-        return OrderType(uint8(order.data[12]));
+        return OrderType(uint8(order.data[8]));
     }
 
     function isCloseOnly(Order memory order) internal pure returns (bool) {
-        return uint8(order.data[13]) > 0;
+        return uint8(order.data[9]) > 0;
     }
 
     function salt(Order memory order) internal pure returns (uint64) {
-        return uint64(bytes8(order.data << (8 * 14)));
+        return uint64(bytes8(order.data << (8 * 10)));
     }
 
     function orderHash(Order memory order) internal pure returns (bytes32) {
@@ -53,24 +49,5 @@ library OrderData {
                 ECDSAUpgradeable.toEthSignedMessageHash(orderHash(order)),
                 signature
             );
-    }
-
-    function orderHashDebug(Order memory order)
-        internal
-        pure
-        returns (
-            bytes32,
-            bytes32,
-            bytes32
-        )
-    {
-        bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
-        return (
-            result,
-            keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result)),
-            ECDSAUpgradeable.toEthSignedMessageHash(
-                keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result))
-            )
-        );
     }
 }

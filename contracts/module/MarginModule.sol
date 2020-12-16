@@ -128,6 +128,7 @@ library MarginModule {
         Market storage market = core.markets[marketIndex];
         bool isInitial = isEmptyAccount(market, trader);
         int256 totalAmount = core.transferFromUser(trader, amount);
+        require(totalAmount > 0, "total amount is 0");
         market.increaseDepositedCollateral(totalAmount);
         updateCashBalance(market, trader, totalAmount);
         if (isInitial) {

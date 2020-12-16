@@ -48,24 +48,25 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function unclearedTraderCount(uint256 marketIndex) public view returns (uint256) {
-        return _core.markets[marketIndex].registeredTraders.length();
+    function activeAccountCount(uint256 marketIndex) public view returns (uint256) {
+        return _core.markets[marketIndex].activeAccounts.length();
     }
 
-    function listUnclearedTraders(
+    function listActiveAccounts(
         uint256 marketIndex,
         uint256 start,
-        uint256 count
+        uint256 end
     ) public view returns (address[] memory result) {
+        require(start < end, "invalid range");
         Market storage market = _core.markets[marketIndex];
-        uint256 total = market.registeredTraders.length();
+        uint256 total = market.activeAccounts.length();
         if (start >= total) {
             return result;
         }
-        uint256 stop = start.add(count).min(total);
-        result = new address[](stop.sub(start));
-        for (uint256 i = start; i < stop; i++) {
-            result[i.sub(start)] = market.registeredTraders.at(i);
+        end = end.min(total);
+        result = new address[](end.sub(start));
+        for (uint256 i = start; i < end; i++) {
+            result[i.sub(start)] = market.activeAccounts.at(i);
         }
     }
 

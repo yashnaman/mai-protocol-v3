@@ -25,10 +25,6 @@ contract TestOrder is Storage {
         return order.deadline();
     }
 
-    function version(Order memory order) public pure returns (uint32) {
-        return order.version();
-    }
-
     function orderType(Order memory order) public pure returns (OrderType) {
         return order.orderType();
     }
@@ -39,18 +35,6 @@ contract TestOrder is Storage {
 
     function salt(Order memory order) public pure returns (uint64) {
         return order.salt();
-    }
-
-    function orderHashDebug(Order memory order)
-        public
-        pure
-        returns (
-            bytes32,
-            bytes32,
-            bytes32
-        )
-    {
-        return order.orderHashDebug();
     }
 
     function truncateAmount(

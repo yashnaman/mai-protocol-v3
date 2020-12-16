@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../interface/ILiquidityPool.sol";
@@ -19,20 +20,18 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
+    using SafeCastUpgradeable for int256;
     using OrderData for Order;
 
     uint256 internal _claimableFees;
     mapping(address => uint256) internal _balances;
-
-    uint32 public constant SUPPORTED_MIN_ORDER_VERSION = 1;
-    uint32 public constant SUPPORTED_MAX_ORDER_VERSION = 1;
 
     uint256 internal _chainID;
 
     event Deposit(address trader, uint256 amount);
     event Withdraw(address trader, uint256 amount);
     event Transfer(address sender, address recipient, uint256 amount);
-    event TradeFailed(bytes32 orderHash, Order order, int256 amount);
+    event TradeFailed(bytes32 orderHash, Order order, int256 amount, string reason);
     event TradeSuccess(bytes32 orderHash, Order order, int256 amount, uint256 gasReward);
 
     // constructor() {
@@ -80,17 +79,30 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     ) external {
         uint256 orderCount = orders.length;
         for (uint256 i = 0; i < orderCount; i++) {
-            uint256 gasReward = gasRewards[i];
-            require(gasRewards[i] <= balanceOf(orders[i].trader), "insufficient fee");
             Order memory order = orders[i];
             int256 amount = amounts[i];
+            uint256 gasReward = gasRewards[i];
             bytes32 orderHash = order.orderHash();
-
+            if (gasReward > balanceOf(order.trader)) {
+                emit TradeFailed(orderHash, order, amount, "insufficient fee");
+                return;
+            }
+            if (gasReward > order.tradeGasLimit) {
+                emit TradeFailed(orderHash, order, amount, "fee exceeds trade gas limit");
+                return;
+            }
+            if (amount.abs() < order.minTradeAmount) {
+                emit TradeFailed(orderHash, order, amount, "amount is less than min trade amount");
+                return;
+            }
             try ILiquidityPool(order.liquidityPool).brokerTrade(order, amount, signatures[i])  {
                 _transfer(order.trader, order.broker, gasReward);
                 emit TradeSuccess(orderHash, order, amount, gasReward);
+            } catch Error(string memory reason) {
+                emit TradeFailed(orderHash, order, amount, reason);
+                return;
             } catch {
-                emit TradeFailed(orderHash, order, amount);
+                emit TradeFailed(orderHash, order, amount, "transaction failed");
                 return;
             }
         }
