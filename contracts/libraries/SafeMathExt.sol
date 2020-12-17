@@ -9,10 +9,8 @@ import "./Constant.sol";
 enum Round { UP, DOWN }
 
 library SafeMathExt {
-
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
-
 
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
@@ -55,11 +53,19 @@ library SafeMathExt {
         r = roundHalfUp(t, z).div(z);
     }
 
-    function wmul(int256 x, int256 y, Round round) internal pure returns (int256 z) {
+    function wmul(
+        int256 x,
+        int256 y,
+        Round round
+    ) internal pure returns (int256 z) {
         z = div(x.mul(y), Constant.SIGNED_ONE, round);
     }
 
-    function wdiv(int256 x, int256 y, Round round) internal pure returns (int256 z) {
+    function wdiv(
+        int256 x,
+        int256 y,
+        Round round
+    ) internal pure returns (int256 z) {
         z = div(x.mul(Constant.SIGNED_ONE), y, round);
     }
 
@@ -92,7 +98,11 @@ library SafeMathExt {
         return x.sub(y / 2);
     }
 
-    function div(int256 x, int256 y, Round round) internal pure returns (int256) {
+    function div(
+        int256 x,
+        int256 y,
+        Round round
+    ) internal pure returns (int256) {
         require(y != 0, "division by zero");
         int256 divResult = x.div(y);
         int256 mulResult = x.mul(y);

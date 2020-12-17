@@ -1,10 +1,7 @@
-import { expect, use } from "chai";
-import { waffleChai } from "@ethereum-waffle/chai";
+import { expect } from "chai";
 
 import './helper';
 import { createContract } from '../scripts/utils';
-
-use(waffleChai);
 
 describe('LibMath', () => {
     let libMath;

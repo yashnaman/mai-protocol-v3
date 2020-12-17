@@ -135,7 +135,6 @@ library AMMModule {
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
         Context memory context = prepareContext(core);
-        int256 positionAmount = context.positionAmount;
         require(isAMMMarginSafe(context, 0), "amm is unsafe before removing liquidity");
         int256 poolMargin = regress(context, 0);
         if (poolMargin == 0) {

@@ -1,15 +1,10 @@
-import BigNumber from 'bignumber.js'
-import { ethers } from "hardhat";
-import { waffleChai } from "@ethereum-waffle/chai";
-import { expect, use } from "chai";
+import BigNumber from 'bignumber.js';
+import { expect } from "chai";
 
 import "./helper";
 import {
-    getAccounts,
     createContract,
 } from '../scripts/utils';
-
-use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {
@@ -32,9 +27,9 @@ describe('Funding', () => {
 
     beforeEach(async () => {
         const collateralModule = await createContract("CollateralModule")
-        const ammModule = await createContract("AMMModule", [], {"CollateralModule": collateralModule})
-        const fundingModule = await createContract("FundingModule", [], {"AMMModule": ammModule});
-        funding = await createContract("TestFunding", [], {"FundingModule": fundingModule});
+        const ammModule = await createContract("AMMModule", [], { "CollateralModule": collateralModule })
+        const fundingModule = await createContract("FundingModule", [], { "AMMModule": ammModule });
+        funding = await createContract("TestFunding", [], { "FundingModule": fundingModule });
     });
 
     describe('updateFundingState', function () {

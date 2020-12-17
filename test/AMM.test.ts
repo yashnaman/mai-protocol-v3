@@ -1,19 +1,13 @@
-import BigNumber from 'bignumber.js'
+import BigNumber from 'bignumber.js';
 import { ethers } from "hardhat";
-import { waffleChai } from "@ethereum-waffle/chai";
-import { expect, use } from "chai";
+import { expect } from "chai";
 
 import "./helper";
-import {
-    getAccounts,
-    createContract,
-} from '../scripts/utils';
+import { createContract } from '../scripts/utils';
 
 import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
 import { TestShareTokenFactory } from "../typechain/TestShareTokenFactory"
 import { TestAmmFactory } from "../typechain/TestAmmFactory"
-
-use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {
@@ -125,8 +119,8 @@ describe('AMM', () => {
 
     beforeEach(async () => {
         const collateralModule = await createContract("CollateralModule")
-        const ammModule = await createContract("AMMModule", [], {"CollateralModule": collateralModule})
-        amm = await createContract("TestAMM", [], {"AMMModule": ammModule});
+        const ammModule = await createContract("AMMModule", [], { "CollateralModule": collateralModule })
+        amm = await createContract("TestAMM", [], { "AMMModule": ammModule });
     });
 
     describe('isAMMSafe', function () {
@@ -449,8 +443,8 @@ describe('AMM', () => {
             it(element.name, async () => {
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 const context = await amm.tradeWithAMM(element.amount, element.partialFill)
-                expect(context.deltaMargin).approximateBigNumber(element.deltaMargin)
-                expect(context.deltaPosition).approximateBigNumber(element.deltaPosition)
+                expect(context[0]).approximateBigNumber(element.deltaMargin)
+                expect(context[1]).approximateBigNumber(element.deltaPosition)
             })
         })
     })
@@ -623,16 +617,16 @@ describe('AMM', () => {
                 const user2 = accounts[2];
                 var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 await ctk.mint(user1.address, element.marginToAdd);
-                const ctkUser1 = await CustomErc20Factory.connect(ctk.address, user1);
+                const ctkUser1 = CustomErc20Factory.connect(ctk.address, user1);
                 await ctkUser1.approve(amm.address, toWad("1000000"));
                 var shareToken = await createContract("TestShareToken");
                 await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
-                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                const shareTokenUser1 = TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user2.address, element.totalShare);
                 await amm.setConfig(ctk.address, shareToken.address, 1);
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, ammInit.cashBalance, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
+                const ammUser1 = TestAmmFactory.connect(amm.address, user1);
                 await expect(ammUser1.addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
             })
         })
@@ -688,12 +682,12 @@ describe('AMM', () => {
                 var shareToken = await createContract("TestShareToken");
                 await shareToken.initialize("TEST", "TEST", amm.address);
                 await shareToken.setAdmin(user1.address);
-                const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
+                const shareTokenUser1 = TestShareTokenFactory.connect(shareToken.address, user1);
                 await shareTokenUser1.mint(user1.address, element.shareToRemove);
                 await shareTokenUser1.mint(user2.address, element.restShare);
                 await amm.setConfig(ctk.address, shareToken.address, 1);
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.maxLeverage, element.amm.cashBalance, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
+                const ammUser1 = TestAmmFactory.connect(amm.address, user1);
                 await ammUser1.removeLiquidity(element.shareToRemove);
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
                 expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(_0);

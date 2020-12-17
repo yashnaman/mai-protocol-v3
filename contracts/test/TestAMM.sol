@@ -76,10 +76,10 @@ contract TestAMM {
     function deltaMargin(int256 amount)
         public
         view
-        returns (int256 deltaMargin)
+        returns (int256)
     {
         Perpetual storage perpetual = core.perpetuals[0];
-        deltaMargin = AMMModule._deltaMargin(
+        return AMMModule._deltaMargin(
             regress(),
             perpetual.marginAccounts[address(this)].positionAmount,
             perpetual.marginAccounts[address(this)].positionAmount.add(amount),
@@ -104,9 +104,9 @@ contract TestAMM {
     function tradeWithAMM(int256 tradingAmount, bool partialFill)
         public
         view
-        returns (int256 deltaMargin, int256 deltaPosition)
+        returns (int256, int256)
     {
-        (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
+        return AMMModule.tradeWithAMM(
             core,
             0,
             tradingAmount,
@@ -116,14 +116,12 @@ contract TestAMM {
 
     function addLiquidity(int256 marginToAdd)
         public
-        returns (int256 share)
     {
         AMMModule.addLiquidity(core, marginToAdd);
     }
 
     function removeLiquidity(int256 shareToRemove)
         public
-        returns (int256 marginToRemove)
     {
         AMMModule.removeLiquidity(core, shareToRemove);
     }

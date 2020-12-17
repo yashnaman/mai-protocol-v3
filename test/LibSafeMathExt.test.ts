@@ -1,11 +1,8 @@
 import BigNumber from 'bignumber.js'
-import { expect, use } from "chai";
-import { waffleChai } from "@ethereum-waffle/chai";
+import { expect } from "chai";
 
 import './helper';
 import { createContract } from '../scripts/utils';
-
-use(waffleChai);
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {

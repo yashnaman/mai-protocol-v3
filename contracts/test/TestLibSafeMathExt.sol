@@ -5,7 +5,6 @@ pragma solidity >=0.7.4;
 import "../libraries/SafeMathExt.sol";
 
 contract TestLibSafeMathExt {
-
     function uwmul(uint256 x, uint256 y) public pure returns (uint256) {
         return SafeMathExt.wmul(x, y);
     }
@@ -14,7 +13,11 @@ contract TestLibSafeMathExt {
         return SafeMathExt.wdiv(x, y);
     }
 
-    function uwfrac(uint256 x, uint256 y, uint256 z) public pure returns (uint256) {
+    function uwfrac(
+        uint256 x,
+        uint256 y,
+        uint256 z
+    ) public pure returns (uint256) {
         return SafeMathExt.wfrac(x, y, z);
     }
 
@@ -26,19 +29,36 @@ contract TestLibSafeMathExt {
         return SafeMathExt.wdiv(x, y);
     }
 
-    function wfrac(int256 x, int256 y, int256 z) public pure returns (int256) {
+    function wfrac(
+        int256 x,
+        int256 y,
+        int256 z
+    ) public pure returns (int256) {
         return SafeMathExt.wfrac(x, y, z);
     }
 
-    function wmul(int256 x, int256 y, Round round) public pure returns (int256) {
+    function wmul(
+        int256 x,
+        int256 y,
+        Round round
+    ) public pure returns (int256) {
         return SafeMathExt.wmul(x, y, round);
     }
 
-    function wdiv(int256 x, int256 y, Round round) public pure returns (int256) {
+    function wdiv(
+        int256 x,
+        int256 y,
+        Round round
+    ) public pure returns (int256) {
         return SafeMathExt.wdiv(x, y, round);
     }
 
-    function wfrac(int256 x, int256 y, int256 z, Round round) public pure returns (int256) {
+    function wfrac(
+        int256 x,
+        int256 y,
+        int256 z,
+        Round round
+    ) public pure returns (int256) {
         return SafeMathExt.wfrac(x, y, z, round);
     }
 
@@ -50,7 +70,11 @@ contract TestLibSafeMathExt {
         return SafeMathExt.neg(x);
     }
 
-    function div(int256 x, int256 y, Round round) public pure returns (int256) {
+    function div(
+        int256 x,
+        int256 y,
+        Round round
+    ) public pure returns (int256) {
         return SafeMathExt.div(x, y, round);
     }
 
@@ -69,5 +93,4 @@ contract TestLibSafeMathExt {
     function umin(uint256 x, uint256 y) public pure returns (uint256) {
         return SafeMathExt.min(x, y);
     }
-
 }
