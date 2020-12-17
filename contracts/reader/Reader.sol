@@ -7,7 +7,6 @@ import "../interface/ILiquidityPool.sol";
 import "../interface/IOracle.sol";
 
 contract Reader {
-
     struct LiquidityPoolStorage {
         address operator;
         address collateral;
@@ -21,13 +20,12 @@ contract Reader {
         int256 totalClaimableFee;
         int256 poolCashBalance;
         uint256 fundingTime;
-
-        MarketStorage[] marketStorages;
+        PerpetualStorage[] perpetualStorages;
     }
 
-    struct MarketStorage {
+    struct PerpetualStorage {
         string underlyingAsset;
-        MarketState state;
+        PerpetualState state;
         address oracle;
         int256 markPrice;
         int256 indexPrice;
@@ -50,27 +48,23 @@ contract Reader {
 
     function getAccountStorage(
         address liquidityPool,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address account
     ) public view returns (MarginAccount memory marginAccount) {
         (marginAccount.cashBalance, marginAccount.positionAmount) = ILiquidityPool(liquidityPool)
-            .marginAccount(marketIndex, account);
+            .marginAccount(perpetualIndex, account);
     }
 
     function getLiquidityPoolStorage(address liquidityPool)
         public
         returns (LiquidityPoolStorage memory pool)
     {
-        uint256 marketCount;
+        uint256 perpetualCount;
         {
             address[6] memory addresses;
             int256[7] memory nums;
-            (
-                addresses,
-                nums,
-                marketCount,
-                pool.fundingTime
-            ) = ILiquidityPool(liquidityPool).liquidityPoolInfo();
+            (addresses, nums, perpetualCount, pool.fundingTime) = ILiquidityPool(liquidityPool)
+                .liquidityPoolInfo();
             pool.operator = addresses[1];
             pool.collateral = addresses[2];
             pool.vault = addresses[3];
@@ -83,38 +77,37 @@ contract Reader {
             pool.totalClaimableFee = nums[4];
             pool.poolCashBalance = nums[5];
         }
-        
-        pool.marketStorages = new MarketStorage[](marketCount);
-        for (uint256 i = 0; i < marketCount; i++) {
+
+        pool.perpetualStorages = new PerpetualStorage[](perpetualCount);
+        for (uint256 i = 0; i < perpetualCount; i++) {
             {
                 int256[17] memory nums;
                 (
-                    pool.marketStorages[i].state,
-                    pool.marketStorages[i].oracle,
+                    pool.perpetualStorages[i].state,
+                    pool.perpetualStorages[i].oracle,
                     nums
-                ) = ILiquidityPool(liquidityPool).marketInfo(i);
-                pool.marketStorages[i].markPrice = nums[1];
-                pool.marketStorages[i].indexPrice = nums[2];
-                pool.marketStorages[i].unitAccumulativeFunding = nums[3];
-                pool.marketStorages[i].initialMarginRate = nums[4];
-                pool.marketStorages[i].maintenanceMarginRate = nums[5];
-                pool.marketStorages[i].operatorFeeRate = nums[6];
-                pool.marketStorages[i].lpFeeRate = nums[7];
-                pool.marketStorages[i].referrerRebateRate = nums[8];
-                pool.marketStorages[i].liquidationPenaltyRate = nums[9];
-                pool.marketStorages[i].keeperGasReward = nums[10];
-                pool.marketStorages[i].insuranceFundRate = nums[11];
-                pool.marketStorages[i].halfSpread = nums[12];
-                pool.marketStorages[i].openSlippageFactor = nums[13];
-                pool.marketStorages[i].closeSlippageFactor = nums[14];
-                pool.marketStorages[i].fundingRateLimit = nums[15];
-                pool.marketStorages[i].maxLeverage = nums[16];
+                ) = ILiquidityPool(liquidityPool).perpetualInfo(i);
+                pool.perpetualStorages[i].markPrice = nums[1];
+                pool.perpetualStorages[i].indexPrice = nums[2];
+                pool.perpetualStorages[i].unitAccumulativeFunding = nums[3];
+                pool.perpetualStorages[i].initialMarginRate = nums[4];
+                pool.perpetualStorages[i].maintenanceMarginRate = nums[5];
+                pool.perpetualStorages[i].operatorFeeRate = nums[6];
+                pool.perpetualStorages[i].lpFeeRate = nums[7];
+                pool.perpetualStorages[i].referrerRebateRate = nums[8];
+                pool.perpetualStorages[i].liquidationPenaltyRate = nums[9];
+                pool.perpetualStorages[i].keeperGasReward = nums[10];
+                pool.perpetualStorages[i].insuranceFundRate = nums[11];
+                pool.perpetualStorages[i].halfSpread = nums[12];
+                pool.perpetualStorages[i].openSlippageFactor = nums[13];
+                pool.perpetualStorages[i].closeSlippageFactor = nums[14];
+                pool.perpetualStorages[i].fundingRateLimit = nums[15];
+                pool.perpetualStorages[i].maxLeverage = nums[16];
             }
-            pool.marketStorages[i].underlyingAsset = IOracle(pool.marketStorages[i].oracle).underlyingAsset();
-            (
-                ,
-                pool.marketStorages[i].ammPositionAmount
-            ) = ILiquidityPool(liquidityPool).marginAccount(i, liquidityPool);
+            pool.perpetualStorages[i].underlyingAsset = IOracle(pool.perpetualStorages[i].oracle)
+                .underlyingAsset();
+            (, pool.perpetualStorages[i].ammPositionAmount) = ILiquidityPool(liquidityPool)
+                .marginAccount(i, liquidityPool);
         }
     }
 }

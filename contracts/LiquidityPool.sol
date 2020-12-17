@@ -7,25 +7,25 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "./interface/IFactory.sol";
 
 import "./module/CoreModule.sol";
-import "./module/MarketModule.sol";
+import "./module/PerpetualModule.sol";
 
-import "./Events.sol";
 import "./AMM.sol";
+import "./Events.sol";
+import "./Getter.sol";
 import "./Governance.sol";
-import "./Trade.sol";
-import "./Type.sol";
+import "./Perpetual.sol";
 import "./Settlement.sol";
 import "./Storage.sol";
-import "./Getter.sol";
+import "./Type.sol";
 
 contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    using MarketModule for Market;
+    using PerpetualModule for Perpetual;
     using CoreModule for Core;
 
     event Finalize();
-    event CreateMarket(
-        uint256 marketIndex,
+    event CreatePerpetual(
+        uint256 perpetualIndex,
         address governor,
         address shareToken,
         address operator,
@@ -44,7 +44,7 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
         _core.initialize(collateral, operator, governor, shareToken);
     }
 
-    function createMarket(
+    function createPerpetual(
         address oracle,
         int256[8] calldata coreParams,
         int256[5] calldata riskParams,
@@ -55,18 +55,18 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
             (!_core.isFinalized && msg.sender == _core.operator) || msg.sender == _core.governor,
             "operation is forbidden after finalized"
         );
-        uint256 marketIndex = _core.markets.length;
-        Market storage market = _core.markets.push();
-        market.initialize(
-            marketIndex,
+        uint256 perpetualIndex = _core.perpetuals.length;
+        Perpetual storage perpetual = _core.perpetuals.push();
+        perpetual.initialize(
+            perpetualIndex,
             oracle,
             coreParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues
         );
-        emit CreateMarket(
-            marketIndex,
+        emit CreatePerpetual(
+            perpetualIndex,
             _core.governor,
             _core.shareToken,
             _core.operator,
@@ -79,9 +79,9 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
 
     function finalize() external onlyOperator {
         require(!_core.isFinalized, "core is already finalized");
-        uint256 length = _core.markets.length;
+        uint256 length = _core.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            _core.markets[i].enterNormalState();
+            _core.perpetuals[i].enterNormalState();
         }
         _core.isFinalized = true;
         emit Finalize();

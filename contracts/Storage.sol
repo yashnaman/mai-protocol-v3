@@ -18,15 +18,15 @@ contract Storage {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using FundingModule for Core;
     using OracleModule for Core;
-    using OracleModule for Market;
+    using OracleModule for Perpetual;
     using SettlementModule for Core;
 
     Core internal _core;
     address internal _governor;
     address internal _shareToken;
 
-    modifier onlyExistedMarket(uint256 marketIndex) {
-        require(marketIndex < _core.markets.length, "market not exist");
+    modifier onlyExistedPerpetual(uint256 perpetualIndex) {
+        require(perpetualIndex < _core.perpetuals.length, "perpetual not exist");
         _;
     }
 
@@ -38,13 +38,19 @@ contract Storage {
         _core.updateFundingRate();
     }
 
-    modifier onlyWhen(uint256 marketIndex, MarketState allowedState) {
-        require(_core.markets[marketIndex].state == allowedState, "operation is disallowed now");
+    modifier onlyWhen(uint256 perpetualIndex, PerpetualState allowedState) {
+        require(
+            _core.perpetuals[perpetualIndex].state == allowedState,
+            "operation is disallowed now"
+        );
         _;
     }
 
-    modifier onlyNotWhen(uint256 marketIndex, MarketState disallowedState) {
-        require(_core.markets[marketIndex].state != disallowedState, "operation is disallow now");
+    modifier onlyNotWhen(uint256 perpetualIndex, PerpetualState disallowedState) {
+        require(
+            _core.perpetuals[perpetualIndex].state != disallowedState,
+            "operation is disallow now"
+        );
         _;
     }
 

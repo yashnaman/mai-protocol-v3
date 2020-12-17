@@ -3,7 +3,7 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-import "./module/MarketModule.sol";
+import "./module/PerpetualModule.sol";
 import "./module/ParameterModule.sol";
 
 import "./Type.sol";
@@ -13,8 +13,8 @@ import "./Storage.sol";
 // @title Goovernance is the contract to maintain liquidityPool parameters.
 contract Governance is Storage, Events {
     using SafeMathUpgradeable for uint256;
-    using MarketModule for Market;
-    using ParameterModule for Market;
+    using PerpetualModule for Perpetual;
+    using ParameterModule for Perpetual;
     using ParameterModule for Core;
 
     uint256 internal constant INDEX_PRICE_TIMEOUT = 24 * 3600;
@@ -34,36 +34,41 @@ contract Governance is Storage, Events {
         emit UpdateLiquidityPoolParameter(key, newValue);
     }
 
-    function updateMarketParameter(
-        uint256 marketIndex,
+    function updatePerpetualParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyGovernor onlyExistedMarket(marketIndex) {
-        _core.markets[marketIndex].updateMarketParameter(key, newValue);
-        _core.markets[marketIndex].validateCoreParameters();
-        emit UpdateMarketParameter(marketIndex, key, newValue);
+    ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
+        _core.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
+        _core.perpetuals[perpetualIndex].validateCoreParameters();
+        emit UpdatePerpetualParameter(perpetualIndex, key, newValue);
     }
 
-    function updateMarketRiskParameter(
-        uint256 marketIndex,
+    function updatePerpetualRiskParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external onlyGovernor onlyExistedMarket(marketIndex) {
-        _core.markets[marketIndex].updateMarketRiskParameter(key, newValue, minValue, maxValue);
-        _core.markets[marketIndex].validateRiskParameters();
-        emit UpdateMarketRiskParameter(marketIndex, key, newValue, minValue, maxValue);
+    ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
+        _core.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
+            key,
+            newValue,
+            minValue,
+            maxValue
+        );
+        _core.perpetuals[perpetualIndex].validateRiskParameters();
+        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
-    function adjustMarketRiskParameter(
-        uint256 marketIndex,
+    function adjustPerpetualRiskParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyOperator onlyExistedMarket(marketIndex) {
-        _core.markets[marketIndex].adjustMarketRiskParameter(key, newValue);
-        _core.markets[marketIndex].validateRiskParameters();
-        emit AdjustMarketRiskSetting(marketIndex, key, newValue);
+    ) external onlyOperator onlyExistedPerpetual(perpetualIndex) {
+        _core.perpetuals[perpetualIndex].adjustPerpetualRiskParameter(key, newValue);
+        _core.perpetuals[perpetualIndex].validateRiskParameters();
+        emit AdjustPerpetualRiskSetting(perpetualIndex, key, newValue);
     }
 
     bytes[50] private __gap;

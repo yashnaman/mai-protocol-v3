@@ -105,25 +105,25 @@ describe("integration", () => {
     //     }
     //     await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
-    //     await perp.createMarket(oracle1.address,
+    //     await perp.createPerpetual(oracle1.address,
     //         [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
     //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
     //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
     //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
     //     )
-    //     await perp.createMarket(oracle2.address,
+    //     await perp.createPerpetual(oracle2.address,
     //         [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
     //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
     //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
     //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
     //     )
-    //     await perp.createMarket(oracle3.address,
+    //     await perp.createPerpetual(oracle3.address,
     //         [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
     //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
     //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
     //         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
     //     )
-    //     await perp.createMarket(oracle4.address,
+    //     await perp.createPerpetual(oracle4.address,
     //         [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
     //         [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
     //         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -133,7 +133,7 @@ describe("integration", () => {
 
     //     // overview
     //     print(await perp.callStatic.liquidityPoolInfo());
-    //     print(await perp.callStatic.marketInfo(0));
+    //     print(await perp.callStatic.perpetualInfo(0));
 
     //     // get initial coins
     //     await ctk.mint(user1.address, toWei("10000"));
@@ -190,7 +190,7 @@ describe("integration", () => {
     //         broker: broker.address, // broker
     //         relayer: user1.address, // relayer
     //         liquidityPool: perpUser1.address, // liquidityPool
-    //         marketIndex: 0,
+    //         perpetualIndex: 0,
     //         referrer: "0x0000000000000000000000000000000000000000", // referrer
     //         amount: toWei("0.1"),
     //         priceLimit: toWei("1000"),
@@ -277,25 +277,25 @@ describe("integration", () => {
         }
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
-        await perp.createMarket(oracle1.address,
+        await perp.createPerpetual(oracle1.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createMarket(oracle2.address,
+        await perp.createPerpetual(oracle2.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createMarket(oracle3.address,
+        await perp.createPerpetual(oracle3.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.createMarket(oracle4.address,
+        await perp.createPerpetual(oracle4.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -305,7 +305,7 @@ describe("integration", () => {
 
         // overview
         print(await perp.callStatic.liquidityPoolInfo());
-        print(await perp.callStatic.marketInfo(0));
+        print(await perp.callStatic.perpetualInfo(0));
 
         // get initial coins
         // await ctk.mint(user1.address, toWei("10000"));

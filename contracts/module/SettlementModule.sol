@@ -12,7 +12,7 @@ import "../libraries/SafeMathExt.sol";
 import "./CollateralModule.sol";
 import "./CoreModule.sol";
 import "./MarginModule.sol";
-import "./MarketModule.sol";
+import "./PerpetualModule.sol";
 import "./OracleModule.sol";
 
 library SettlementModule {
@@ -21,96 +21,98 @@ library SettlementModule {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    using MarginModule for Market;
-    using MarketModule for Market;
-    using OracleModule for Market;
+    using MarginModule for Perpetual;
+    using PerpetualModule for Perpetual;
+    using OracleModule for Perpetual;
     using CollateralModule for Core;
     using CoreModule for Core;
 
-    event Clear(uint256 marketIndex, address trader);
-    event Settle(uint256 marketIndex, address trader, int256 amount);
+    event Clear(uint256 perpetualIndex, address trader);
+    event Settle(uint256 perpetualIndex, address trader, int256 amount);
 
     function clear(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader
     ) public {
-        Market storage market = core.markets[marketIndex];
-        require(market.activeAccounts.contains(trader), "trader is not registered");
-        require(!market.clearedTraders.contains(trader), "trader is already cleared");
-        int256 margin = market.margin(trader, market.markPrice());
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        require(perpetual.activeAccounts.contains(trader), "trader is not registered");
+        require(!perpetual.clearedTraders.contains(trader), "trader is already cleared");
+        int256 margin = perpetual.margin(trader, perpetual.markPrice());
         if (margin > 0) {
-            if (market.marginAccounts[trader].positionAmount != 0) {
-                market.totalMarginWithPosition = market.totalMarginWithPosition.add(margin);
+            if (perpetual.marginAccounts[trader].positionAmount != 0) {
+                perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
             } else {
-                market.totalMarginWithoutPosition = market.totalMarginWithoutPosition.add(margin);
+                perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
+                    margin
+                );
             }
         }
-        market.activeAccounts.remove(trader);
-        market.clearedTraders.add(trader);
-        emit Clear(marketIndex, trader);
+        perpetual.activeAccounts.remove(trader);
+        perpetual.clearedTraders.add(trader);
+        emit Clear(perpetualIndex, trader);
 
-        if (market.activeAccounts.length() == 0) {
-            settleWithdrawableMargin(market, 0);
-            market.enterClearedState();
+        if (perpetual.activeAccounts.length() == 0) {
+            settleWithdrawableMargin(perpetual, 0);
+            perpetual.enterClearedState();
         }
     }
 
     function settle(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader
     ) public {
         require(trader != address(0), "trader is invalid");
-        Market storage market = core.markets[marketIndex];
-        int256 withdrawable = settledMarginAccount(market, trader);
-        market.updateCashBalance(trader, withdrawable.neg());
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        int256 withdrawable = settledMarginAccount(perpetual, trader);
+        perpetual.updateCashBalance(trader, withdrawable.neg());
         core.transferToUser(payable(trader), withdrawable);
-        emit Settle(marketIndex, trader, withdrawable);
+        emit Settle(perpetualIndex, trader, withdrawable);
     }
 
-    function registerTrader(Market storage market, address trader) internal {
-        market.activeAccounts.add(trader);
+    function registerTrader(Perpetual storage perpetual, address trader) internal {
+        perpetual.activeAccounts.add(trader);
     }
 
-    function deregisterTrader(Market storage market, address trader) internal {
-        market.activeAccounts.remove(trader);
+    function deregisterTrader(Perpetual storage perpetual, address trader) internal {
+        perpetual.activeAccounts.remove(trader);
     }
 
-    function settledMarginAccount(Market storage market, address trader)
+    function settledMarginAccount(Perpetual storage perpetual, address trader)
         public
         returns (int256 amount)
     {
-        int256 margin = market.margin(trader, market.markPrice());
-        int256 positionAmount = market.positionAmount(trader);
+        int256 margin = perpetual.margin(trader, perpetual.markPrice());
+        int256 positionAmount = perpetual.positionAmount(trader);
         // nothing to withdraw
         if (margin < 0) {
             return 0;
         }
         int256 rate = positionAmount == 0
-            ? market.redemptionRateWithoutPosition
-            : market.redemptionRateWithPosition;
+            ? perpetual.redemptionRateWithoutPosition
+            : perpetual.redemptionRateWithPosition;
         int256 withdrawable = margin.wmul(rate);
-        market.updateCashBalance(trader, margin.neg());
+        perpetual.updateCashBalance(trader, margin.neg());
         return withdrawable;
     }
 
-    function settleWithdrawableMargin(Market storage market, int256 totalBalance) public {
+    function settleWithdrawableMargin(Perpetual storage perpetual, int256 totalBalance) public {
         // 2. cover margin without position
-        if (totalBalance < market.totalMarginWithoutPosition) {
+        if (totalBalance < perpetual.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin
-            market.redemptionRateWithoutPosition = totalBalance.wdiv(
-                market.totalMarginWithoutPosition
+            perpetual.redemptionRateWithoutPosition = totalBalance.wdiv(
+                perpetual.totalMarginWithoutPosition
             );
             // margin with positions will get nothing
-            market.redemptionRateWithPosition = 0;
+            perpetual.redemptionRateWithPosition = 0;
             return;
         } else {
             // 3. covere margin with position
-            market.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
-            market.redemptionRateWithPosition = totalBalance
-                .sub(market.totalMarginWithoutPosition)
-                .wdiv(market.totalMarginWithPosition);
+            perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
+            perpetual.redemptionRateWithPosition = totalBalance
+                .sub(perpetual.totalMarginWithoutPosition)
+                .wdiv(perpetual.totalMarginWithPosition);
         }
     }
 }

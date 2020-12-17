@@ -26,32 +26,32 @@ contract TestFunding {
     }
 
     constructor() {
-        core.markets.push();
-        core.markets.push();
+        core.perpetuals.push();
+        core.perpetuals.push();
     }
 
     function setParams(
         Params memory params
     ) public {
-        core.markets[0].id = 0;
-        core.markets[0].state = MarketState.NORMAL;
-        core.markets[0].unitAccumulativeFunding = params.unitAccumulativeFunding;
-        core.markets[0].openSlippageFactor.value = params.openSlippageFactor;
-        core.markets[0].maxLeverage.value = params.maxLeverage;
-        core.markets[0].fundingRateLimit.value = params.fundingRateLimit;
-        core.markets[0].marginAccounts[address(this)].positionAmount = params.positionAmount1;
-        core.markets[0].indexPriceData.price = params.indexPrice1;
-        core.markets[0].fundingRate = params.fundingRate;
+        core.perpetuals[0].id = 0;
+        core.perpetuals[0].state = PerpetualState.NORMAL;
+        core.perpetuals[0].unitAccumulativeFunding = params.unitAccumulativeFunding;
+        core.perpetuals[0].openSlippageFactor.value = params.openSlippageFactor;
+        core.perpetuals[0].maxLeverage.value = params.maxLeverage;
+        core.perpetuals[0].fundingRateLimit.value = params.fundingRateLimit;
+        core.perpetuals[0].marginAccounts[address(this)].positionAmount = params.positionAmount1;
+        core.perpetuals[0].indexPriceData.price = params.indexPrice1;
+        core.perpetuals[0].fundingRate = params.fundingRate;
 
-        core.markets[1].id = 1;
-        core.markets[1].state = MarketState.NORMAL;
-        core.markets[1].unitAccumulativeFunding = params.unitAccumulativeFunding;
-        core.markets[1].openSlippageFactor.value = params.openSlippageFactor;
-        core.markets[1].maxLeverage.value = params.maxLeverage;
-        core.markets[1].fundingRateLimit.value = params.fundingRateLimit;
-        core.markets[1].marginAccounts[address(this)].positionAmount = params.positionAmount2;
-        core.markets[1].indexPriceData.price = params.indexPrice2;
-        core.markets[1].fundingRate = params.fundingRate;
+        core.perpetuals[1].id = 1;
+        core.perpetuals[1].state = PerpetualState.NORMAL;
+        core.perpetuals[1].unitAccumulativeFunding = params.unitAccumulativeFunding;
+        core.perpetuals[1].openSlippageFactor.value = params.openSlippageFactor;
+        core.perpetuals[1].maxLeverage.value = params.maxLeverage;
+        core.perpetuals[1].fundingRateLimit.value = params.fundingRateLimit;
+        core.perpetuals[1].marginAccounts[address(this)].positionAmount = params.positionAmount2;
+        core.perpetuals[1].indexPriceData.price = params.indexPrice2;
+        core.perpetuals[1].fundingRate = params.fundingRate;
 
         core.poolCashBalance = params.cashBalance;
         core.fundingTime = params.fundingTime;
@@ -60,11 +60,11 @@ contract TestFunding {
 
     function updateFundingState() public returns (int256, int256, uint256) {
         FundingModule.updateFundingState(core, currentTime);
-        return (core.markets[0].unitAccumulativeFunding, core.markets[1].unitAccumulativeFunding, core.fundingTime);
+        return (core.perpetuals[0].unitAccumulativeFunding, core.perpetuals[1].unitAccumulativeFunding, core.fundingTime);
     }
 
     function updateFundingRate() public returns (int256, int256) {
         FundingModule.updateFundingRate(core);
-        return (core.markets[0].fundingRate, core.markets[1].fundingRate);
+        return (core.perpetuals[0].fundingRate, core.perpetuals[1].fundingRate);
     }
 }

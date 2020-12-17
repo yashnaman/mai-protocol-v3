@@ -18,7 +18,7 @@ library OrderModule {
     using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
     using OrderData for Order;
-    using MarginModule for Market;
+    using MarginModule for Perpetual;
 
     uint32 internal constant SUPPORTED_ORDER_VERSION = 3;
 
@@ -50,11 +50,11 @@ library OrderModule {
 
     function truncateAmount(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 amount
     ) public view returns (int256 alignedAmount) {
-        int256 maxAmount = core.markets[marketIndex].positionAmount(trader);
+        int256 maxAmount = core.perpetuals[perpetualIndex].positionAmount(trader);
         require(!Utils.hasSameSign(maxAmount, amount), "not closing order");
         require(amount.abs() <= maxAmount.abs(), "no enough amount to close");
         alignedAmount = amount.abs() > maxAmount.abs() ? maxAmount : amount;

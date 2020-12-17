@@ -19,7 +19,7 @@ struct MarginAccount {
     int256 positionAmount;
 }
 
-enum MarketState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
+enum PerpetualState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
 enum OrderType { LIMIT, MARKET, STOP }
 
 struct Order {
@@ -28,7 +28,7 @@ struct Order {
     address relayer;
     address referrer;
     address liquidityPool;
-    uint256 marketIndex;
+    uint256 perpetualIndex;
     int256 amount;
     int256 priceLimit;
     int256 minTradeAmount;
@@ -70,8 +70,8 @@ struct Core {
     // fee
     int256 totalClaimableFee;
     mapping(address => int256) claimableFees;
-    // markets
-    Market[] markets;
+    // perpetuals
+    Perpetual[] perpetuals;
     // order
     mapping(bytes32 => int256) orderFilled;
     mapping(bytes32 => bool) orderCanceled;
@@ -80,9 +80,9 @@ struct Core {
     uint256 priceUpdateTime;
 }
 
-struct Market {
+struct Perpetual {
     uint256 id;
-    MarketState state;
+    PerpetualState state;
     address oracle;
     int256 depositedCollateral;
     // prices

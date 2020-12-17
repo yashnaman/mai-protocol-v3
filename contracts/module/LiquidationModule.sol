@@ -10,7 +10,7 @@ import "../libraries/Utils.sol";
 import "./AMMModule.sol";
 import "./CoreModule.sol";
 import "./MarginModule.sol";
-import "./MarketModule.sol";
+import "./PerpetualModule.sol";
 import "./OracleModule.sol";
 import "./TradeModule.sol";
 import "./CollateralModule.sol";
@@ -22,15 +22,15 @@ library LiquidationModule {
     using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
     using CoreModule for Core;
-    using MarginModule for Market;
-    using OracleModule for Market;
-    using MarketModule for Market;
+    using MarginModule for Perpetual;
+    using OracleModule for Perpetual;
+    using PerpetualModule for Perpetual;
     using CollateralModule for Core;
 
     address internal constant INVALID_ADDRESS = address(0);
 
     event Liquidate(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address indexed liquidator,
         address indexed trader,
         int256 amount,
@@ -39,84 +39,86 @@ library LiquidationModule {
 
     function liquidateByAMM(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader
     ) public returns (int256) {
-        Market storage market = core.markets[marketIndex];
-        require(!market.isMaintenanceMarginSafe(trader), "trader is safe");
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        require(!perpetual.isMaintenanceMarginSafe(trader), "trader is safe");
         Receipt memory receipt;
-        int256 maxAmount = market.marginAccounts[trader].positionAmount;
+        int256 maxAmount = perpetual.marginAccounts[trader].positionAmount;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
-            marketIndex,
+            perpetualIndex,
             maxAmount,
             false
         );
         // 1. fee
-        TradeModule.updateTradingFees(core, market, receipt, INVALID_ADDRESS);
+        TradeModule.updateTradingFees(core, perpetual, receipt, INVALID_ADDRESS);
         // 2. execute
-        TradeModule.updateTradingResult(market, receipt, trader, address(this));
+        TradeModule.updateTradingResult(perpetual, receipt, trader, address(this));
         // 3. penalty
         updateLiquidationPenalty(
             core,
-            market,
+            perpetual,
             trader,
-            market.markPrice().wmul(receipt.tradingAmount).wmul(market.liquidationPenaltyRate),
-            market.keeperGasReward
+            perpetual.markPrice().wmul(receipt.tradingAmount).wmul(
+                perpetual.liquidationPenaltyRate
+            ),
+            perpetual.keeperGasReward
         );
-        core.transferToUser(msg.sender, market.keeperGasReward);
+        core.transferToUser(msg.sender, perpetual.keeperGasReward);
         // 4. events
         emit Liquidate(
-            marketIndex,
+            perpetualIndex,
             address(this),
             trader,
             receipt.tradingAmount,
             receipt.tradingValue.wdiv(receipt.tradingAmount).abs()
         );
-        return market.keeperGasReward;
+        return perpetual.keeperGasReward;
     }
 
     function liquidateByTrader(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address taker,
         address maker,
         int256 amount,
         int256 priceLimit
     ) public returns (int256) {
-        Market storage market = core.markets[marketIndex];
-        require(!market.isMaintenanceMarginSafe(maker), "trader is safe");
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        require(!perpetual.isMaintenanceMarginSafe(maker), "trader is safe");
         Receipt memory receipt;
         // 0. price / amountyo
-        int256 tradingPrice = market.markPrice();
-        bool isOpeningPosition = Utils.isOpeningPosition(market.positionAmount(taker), amount);
+        int256 tradingPrice = perpetual.markPrice();
+        bool isOpeningPosition = Utils.isOpeningPosition(perpetual.positionAmount(taker), amount);
         TradeModule.validatePrice(amount, tradingPrice, priceLimit);
         (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
         // 1. execute
-        TradeModule.updateTradingResult(market, receipt, taker, maker);
+        TradeModule.updateTradingResult(perpetual, receipt, taker, maker);
         // 2. penalty
         updateLiquidationPenalty(
             core,
-            market,
+            perpetual,
             maker,
-            receipt.tradingValue.wmul(market.liquidationPenaltyRate),
+            receipt.tradingValue.wmul(perpetual.liquidationPenaltyRate),
             0
         );
         // 3. safe
         if (isOpeningPosition) {
-            require(market.isInitialMarginSafe(taker), "trader initial margin unsafe");
+            require(perpetual.isInitialMarginSafe(taker), "trader initial margin unsafe");
         } else {
-            require(market.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
+            require(perpetual.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
         }
         // 6. events
-        emit Liquidate(marketIndex, taker, maker, receipt.tradingAmount, tradingPrice.abs());
+        emit Liquidate(perpetualIndex, taker, maker, receipt.tradingAmount, tradingPrice.abs());
         return 0;
     }
 
     function updateLiquidationPenalty(
         Core storage core,
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 softPenalty,
         int256 hardPenalty
@@ -125,21 +127,21 @@ library LiquidationModule {
         int256 penaltyToFund;
         int256 penaltyToTaker;
         int256 fullPenalty = hardPenalty.add(softPenalty);
-        int256 traderMargin = market.margin(trader, market.markPrice());
+        int256 traderMargin = perpetual.margin(trader, perpetual.markPrice());
         penaltyFromTrader = fullPenalty.min(traderMargin);
         int256 effectivePenalty = penaltyFromTrader.sub(hardPenalty);
         if (effectivePenalty > 0) {
-            penaltyToFund = effectivePenalty.wmul(market.insuranceFundRate);
+            penaltyToFund = effectivePenalty.wmul(perpetual.insuranceFundRate);
             penaltyToTaker = effectivePenalty.sub(penaltyToFund);
         } else {
             penaltyToFund = effectivePenalty;
             penaltyToTaker = 0;
         }
-        market.updateCashBalance(address(this), penaltyToTaker);
-        market.updateCashBalance(trader, penaltyFromTrader.neg());
+        perpetual.updateCashBalance(address(this), penaltyToTaker);
+        perpetual.updateCashBalance(trader, penaltyFromTrader.neg());
         updateInsuranceFund(core, penaltyToFund);
         if (core.donatedInsuranceFund < 0) {
-            market.enterEmergencyState();
+            perpetual.enterEmergencyState();
         }
     }
 

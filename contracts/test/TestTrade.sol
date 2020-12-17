@@ -3,7 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../module/MarginModule.sol";
-import "../module/MarketModule.sol";
+import "../module/PerpetualModule.sol";
 import "../module/TradeModule.sol";
 import "../module/ParameterModule.sol";
 
@@ -12,39 +12,39 @@ import "../Storage.sol";
 import "../Getter.sol";
 
 contract TestTrade is Storage, Getter {
-    using MarketModule for Market;
+    using PerpetualModule for Perpetual;
     using MarginModule for Core;
     using TradeModule for Core;
-    using TradeModule for Market;
+    using TradeModule for Perpetual;
     using ParameterModule for Core;
-    using ParameterModule for Market;
+    using ParameterModule for Perpetual;
 
     Receipt public tempReceipt;
 
-    function createMarket(
+    function createPerpetual(
         address oracle,
         int256[8] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        uint256 marketIndex = _core.markets.length;
-        Market storage market = _core.markets.push();
-        market.initialize(
-            marketIndex,
+        uint256 perpetualIndex = _core.perpetuals.length;
+        Perpetual storage perpetual = _core.perpetuals.push();
+        perpetual.initialize(
+            perpetualIndex,
             oracle,
             coreParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues
         );
-        market.state = MarketState.NORMAL;
+        perpetual.state = PerpetualState.NORMAL;
     }
 
-    function setUnitAccumulativeFunding(uint256 marketIndex, int256 unitAccumulativeFunding)
+    function setUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding)
         public
     {
-        _core.markets[marketIndex].unitAccumulativeFunding = unitAccumulativeFunding;
+        _core.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
     }
 
     function setOperator(address operator) public {
@@ -60,59 +60,64 @@ contract TestTrade is Storage, Getter {
         _core.updateLiquidityPoolParameter(key, newValue);
     }
 
-    function updateMarketParameter(
-        uint256 marketIndex,
+    function updatePerpetualParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external {
-        _core.markets[marketIndex].updateMarketParameter(key, newValue);
+        _core.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
     }
 
-    function updateMarketRiskParameter(
-        uint256 marketIndex,
+    function updatePerpetualRiskParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external {
-        _core.markets[marketIndex].updateMarketRiskParameter(key, newValue, newValue, newValue);
+        _core.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
+            key,
+            newValue,
+            newValue,
+            newValue
+        );
     }
 
     function initializeMarginAccount(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 cashBalance,
         int256 positionAmount
     ) external {
-        _core.markets[marketIndex].marginAccounts[trader].cashBalance = cashBalance;
-        _core.markets[marketIndex].marginAccounts[trader].positionAmount = positionAmount;
+        _core.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance = cashBalance;
+        _core.perpetuals[perpetualIndex].marginAccounts[trader].positionAmount = positionAmount;
     }
 
     function trade(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
         address referrer
     ) public syncState {
-        _core.trade(marketIndex, trader, amount, priceLimit, referrer);
+        _core.trade(perpetualIndex, trader, amount, priceLimit, referrer);
     }
 
     function updateTradingFees(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         Receipt memory receipt,
         address referrer
     ) public {
-        Market storage market = _core.markets[marketIndex];
-        _core.updateTradingFees(market, receipt, referrer);
+        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        _core.updateTradingFees(perpetual, receipt, referrer);
     }
 
     function updateTradingResult(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         Receipt memory receipt,
         address taker,
         address maker
     ) public {
-        Market storage market = _core.markets[marketIndex];
-        market.updateTradingResult(receipt, taker, maker);
+        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        perpetual.updateTradingResult(receipt, taker, maker);
     }
 
     function validatePrice(

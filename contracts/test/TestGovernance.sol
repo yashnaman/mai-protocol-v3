@@ -3,12 +3,12 @@
 pragma solidity >=0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "../module/MarketModule.sol";
+import "../module/PerpetualModule.sol";
 
 import "../Governance.sol";
 
 contract TestGovernance is Governance {
-    using MarketModule for Market;
+    using PerpetualModule for Perpetual;
 
     function setGovernor(address governor) public {
         _governor = governor;
@@ -25,8 +25,8 @@ contract TestGovernance is Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) public {
-        _core.markets.push();
-        _core.markets[0].initialize(
+        _core.perpetuals.push();
+        _core.perpetuals[0].initialize(
             0,
             oracle,
             coreParams,
@@ -36,51 +36,51 @@ contract TestGovernance is Governance {
         );
     }
 
-    function initialMarginRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].initialMarginRate;
+    function initialMarginRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].initialMarginRate;
     }
 
-    function maintenanceMarginRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].maintenanceMarginRate;
+    function maintenanceMarginRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].maintenanceMarginRate;
     }
 
-    function operatorFeeRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].operatorFeeRate;
+    function operatorFeeRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].operatorFeeRate;
     }
 
-    function lpFeeRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].lpFeeRate;
+    function lpFeeRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].lpFeeRate;
     }
 
-    function referrerRebateRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].referrerRebateRate;
+    function referrerRebateRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].referrerRebateRate;
     }
 
-    function liquidationPenaltyRate(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].liquidationPenaltyRate;
+    function liquidationPenaltyRate(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].liquidationPenaltyRate;
     }
 
-    function keeperGasReward(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].keeperGasReward;
+    function keeperGasReward(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].keeperGasReward;
     }
 
-    function halfSpread(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].halfSpread.value;
+    function halfSpread(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].halfSpread.value;
     }
 
-    function openSlippageFactor(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].openSlippageFactor.value;
+    function openSlippageFactor(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].openSlippageFactor.value;
     }
 
-    function closeSlippageFactor(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].closeSlippageFactor.value;
+    function closeSlippageFactor(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].closeSlippageFactor.value;
     }
 
-    function fundingRateLimit(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].fundingRateLimit.value;
+    function fundingRateLimit(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].fundingRateLimit.value;
     }
 
-    function maxLeverage(uint256 marketIndex) public view returns (int256) {
-        return _core.markets[marketIndex].maxLeverage.value;
+    function maxLeverage(uint256 perpetualIndex) public view returns (int256) {
+        return _core.perpetuals[perpetualIndex].maxLeverage.value;
     }
 }

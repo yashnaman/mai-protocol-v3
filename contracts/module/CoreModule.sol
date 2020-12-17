@@ -13,7 +13,7 @@ import "../interface/IDecimals.sol";
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
 import "./MarginModule.sol";
-import "./MarketModule.sol";
+import "./PerpetualModule.sol";
 import "./SettlementModule.sol";
 
 import "../Type.sol";
@@ -25,8 +25,8 @@ library CoreModule {
     using SignedSafeMathUpgradeable for int256;
     using CollateralModule for Core;
     using OracleModule for Core;
-    using MarginModule for Market;
-    using OracleModule for Market;
+    using MarginModule for Perpetual;
+    using OracleModule for Perpetual;
 
     uint256 internal constant MAX_COLLATERAL_DECIMALS = 18;
 
@@ -93,14 +93,14 @@ library CoreModule {
         emit ClaimFee(claimer, amount);
     }
 
-    function rebalance(Core storage core, Market storage market) public {
-        int256 rebalancingAmount = market.initialMargin(address(this), market.markPrice()).sub(
-            market.margin(address(this), market.markPrice())
-        );
-        // pool => market
+    function rebalance(Core storage core, Perpetual storage perpetual) public {
+        int256 rebalancingAmount = perpetual
+            .initialMargin(address(this), perpetual.markPrice())
+            .sub(perpetual.margin(address(this), perpetual.markPrice()));
+        // pool => perpetual
         if (rebalancingAmount != 0) {
             core.poolCollateral = core.poolCollateral.sub(rebalancingAmount);
-            market.depositedCollateral = market.depositedCollateral.add(rebalancingAmount);
+            perpetual.depositedCollateral = perpetual.depositedCollateral.add(rebalancingAmount);
         }
     }
 }

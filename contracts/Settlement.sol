@@ -43,52 +43,52 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using AMMModule for Core;
     using TradeModule for Core;
     using CoreModule for Core;
-    using MarginModule for Market;
+    using MarginModule for Perpetual;
     using CollateralModule for Core;
     using SettlementModule for Core;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function activeAccountCount(uint256 marketIndex) public view returns (uint256) {
-        return _core.markets[marketIndex].activeAccounts.length();
+    function activeAccountCount(uint256 perpetualIndex) public view returns (uint256) {
+        return _core.perpetuals[perpetualIndex].activeAccounts.length();
     }
 
     function listActiveAccounts(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         uint256 start,
         uint256 end
     ) public view returns (address[] memory result) {
         require(start < end, "invalid range");
-        Market storage market = _core.markets[marketIndex];
-        uint256 total = market.activeAccounts.length();
+        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        uint256 total = perpetual.activeAccounts.length();
         if (start >= total) {
             return result;
         }
         end = end.min(total);
         result = new address[](end.sub(start));
         for (uint256 i = start; i < end; i++) {
-            result[i.sub(start)] = market.activeAccounts.at(i);
+            result[i.sub(start)] = perpetual.activeAccounts.at(i);
         }
     }
 
-    function clear(uint256 marketIndex, address trader)
+    function clear(uint256 perpetualIndex, address trader)
         public
-        onlyWhen(marketIndex, MarketState.EMERGENCY)
-        onlyExistedMarket(marketIndex)
+        onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
+        onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.clear(marketIndex, trader);
+        _core.clear(perpetualIndex, trader);
     }
 
-    function settle(uint256 marketIndex, address trader)
+    function settle(uint256 perpetualIndex, address trader)
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        onlyWhen(marketIndex, MarketState.CLEARED)
-        onlyExistedMarket(marketIndex)
+        onlyWhen(perpetualIndex, PerpetualState.CLEARED)
+        onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.settle(marketIndex, trader);
+        _core.settle(perpetualIndex, trader);
     }
 
     bytes[50] private __gap;

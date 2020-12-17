@@ -14,7 +14,7 @@ contract TestOrder is Storage {
     using OrderModule for Core;
 
     constructor() {
-        _core.markets.push();
+        _core.perpetuals.push();
     }
 
     function orderHash(Order memory order) public pure returns (bytes32) {
@@ -57,6 +57,6 @@ contract TestOrder is Storage {
     }
 
     function setPositionAmount(address trader, int256 amount) public {
-        _core.markets[0].marginAccounts[trader].positionAmount = amount;
+        _core.perpetuals[0].marginAccounts[trader].positionAmount = amount;
     }
 }

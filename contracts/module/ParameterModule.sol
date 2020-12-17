@@ -25,77 +25,77 @@ library ParameterModule {
         }
     }
 
-    function updateMarketParameter(
-        Market storage market,
+    function updatePerpetualParameter(
+        Perpetual storage perpetual,
         bytes32 key,
         int256 newValue
     ) public {
         if (key == "initialMarginRate") {
             require(
-                market.initialMarginRate == 0 || newValue < market.initialMarginRate,
+                perpetual.initialMarginRate == 0 || newValue < perpetual.initialMarginRate,
                 "increasing initial margin rate is not allowed"
             );
-            market.initialMarginRate = newValue;
+            perpetual.initialMarginRate = newValue;
         } else if (key == "maintenanceMarginRate") {
             require(
-                market.maintenanceMarginRate == 0 || newValue < market.maintenanceMarginRate,
+                perpetual.maintenanceMarginRate == 0 || newValue < perpetual.maintenanceMarginRate,
                 "increasing maintenance margin rate is not allowed"
             );
-            market.maintenanceMarginRate = newValue;
+            perpetual.maintenanceMarginRate = newValue;
         } else if (key == "operatorFeeRate") {
-            market.operatorFeeRate = newValue;
+            perpetual.operatorFeeRate = newValue;
         } else if (key == "lpFeeRate") {
-            market.lpFeeRate = newValue;
+            perpetual.lpFeeRate = newValue;
         } else if (key == "liquidationPenaltyRate") {
-            market.liquidationPenaltyRate = newValue;
+            perpetual.liquidationPenaltyRate = newValue;
         } else if (key == "keeperGasReward") {
-            market.keeperGasReward = newValue;
+            perpetual.keeperGasReward = newValue;
         } else if (key == "referrerRebateRate") {
-            market.referrerRebateRate = newValue;
+            perpetual.referrerRebateRate = newValue;
         } else if (key == "insuranceFundRate") {
-            market.insuranceFundRate = newValue;
+            perpetual.insuranceFundRate = newValue;
         } else {
             revert("key not found");
         }
     }
 
-    function adjustMarketRiskParameter(
-        Market storage market,
+    function adjustPerpetualRiskParameter(
+        Perpetual storage perpetual,
         bytes32 key,
         int256 newValue
     ) public {
         if (key == "halfSpread") {
-            adjustOption(market.halfSpread, newValue);
+            adjustOption(perpetual.halfSpread, newValue);
         } else if (key == "openSlippageFactor") {
-            adjustOption(market.openSlippageFactor, newValue);
+            adjustOption(perpetual.openSlippageFactor, newValue);
         } else if (key == "closeSlippageFactor") {
-            adjustOption(market.closeSlippageFactor, newValue);
+            adjustOption(perpetual.closeSlippageFactor, newValue);
         } else if (key == "fundingRateLimit") {
-            adjustOption(market.fundingRateLimit, newValue);
+            adjustOption(perpetual.fundingRateLimit, newValue);
         } else if (key == "maxLeverage") {
-            adjustOption(market.maxLeverage, newValue);
+            adjustOption(perpetual.maxLeverage, newValue);
         } else {
             revert("key not found");
         }
     }
 
-    function updateMarketRiskParameter(
-        Market storage market,
+    function updatePerpetualRiskParameter(
+        Perpetual storage perpetual,
         bytes32 key,
         int256 newValue,
         int256 newMinValue,
         int256 newMaxValue
     ) public {
         if (key == "halfSpread") {
-            updateOption(market.halfSpread, newValue, newMinValue, newMaxValue);
+            updateOption(perpetual.halfSpread, newValue, newMinValue, newMaxValue);
         } else if (key == "openSlippageFactor") {
-            updateOption(market.openSlippageFactor, newValue, newMinValue, newMaxValue);
+            updateOption(perpetual.openSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "closeSlippageFactor") {
-            updateOption(market.closeSlippageFactor, newValue, newMinValue, newMaxValue);
+            updateOption(perpetual.closeSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "fundingRateLimit") {
-            updateOption(market.fundingRateLimit, newValue, newMinValue, newMaxValue);
+            updateOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
         } else if (key == "maxLeverage") {
-            updateOption(market.maxLeverage, newValue, newMinValue, newMaxValue);
+            updateOption(perpetual.maxLeverage, newValue, newMinValue, newMaxValue);
         } else {
             revert("key not found");
         }
@@ -121,41 +121,42 @@ library ParameterModule {
         option.maxValue = newMaxValue;
     }
 
-    function validateCoreParameters(Market storage market) public view {
-        require(market.initialMarginRate > 0, "imr should be greater than 0");
-        require(market.maintenanceMarginRate > 0, "mmr should be greater than 0");
+    function validateCoreParameters(Perpetual storage perpetual) public view {
+        require(perpetual.initialMarginRate > 0, "imr should be greater than 0");
+        require(perpetual.maintenanceMarginRate > 0, "mmr should be greater than 0");
         require(
-            market.maintenanceMarginRate <= market.initialMarginRate,
+            perpetual.maintenanceMarginRate <= perpetual.initialMarginRate,
             "mmr should be lower than imr"
         );
         require(
-            market.operatorFeeRate >= 0 && market.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
+            perpetual.operatorFeeRate >= 0 &&
+                perpetual.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
             "ofr should be within [0, 0.01]"
         );
         require(
-            market.lpFeeRate >= 0 && market.lpFeeRate <= (Constant.SIGNED_ONE / 100),
+            perpetual.lpFeeRate >= 0 && perpetual.lpFeeRate <= (Constant.SIGNED_ONE / 100),
             "lp should be within [0, 0.01]"
         );
         require(
-            market.liquidationPenaltyRate >= 0 &&
-                market.liquidationPenaltyRate < market.maintenanceMarginRate,
+            perpetual.liquidationPenaltyRate >= 0 &&
+                perpetual.liquidationPenaltyRate < perpetual.maintenanceMarginRate,
             "lpr should be non-negative and lower than mmr"
         );
-        require(market.keeperGasReward >= 0, "kgr should be non-negative");
+        require(perpetual.keeperGasReward >= 0, "kgr should be non-negative");
     }
 
-    function validateRiskParameters(Market storage market) public view {
-        require(market.halfSpread.value >= 0, "hsr shoud be greater than 0");
-        require(market.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
+    function validateRiskParameters(Perpetual storage perpetual) public view {
+        require(perpetual.halfSpread.value >= 0, "hsr shoud be greater than 0");
+        require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(
-            market.closeSlippageFactor.value > 0 &&
-                market.closeSlippageFactor.value < market.openSlippageFactor.value,
+            perpetual.closeSlippageFactor.value > 0 &&
+                perpetual.closeSlippageFactor.value < perpetual.openSlippageFactor.value,
             "beta2 should be within (0, b1)"
         );
-        require(market.fundingRateLimit.value >= 0, "frc should be greater than 0");
+        require(perpetual.fundingRateLimit.value >= 0, "frc should be greater than 0");
         require(
-            market.maxLeverage.value > Constant.SIGNED_ONE &&
-                market.maxLeverage.value < Constant.SIGNED_ONE * 10,
+            perpetual.maxLeverage.value > Constant.SIGNED_ONE &&
+                perpetual.maxLeverage.value < Constant.SIGNED_ONE * 10,
             "tl should be within (1, 10)"
         );
     }

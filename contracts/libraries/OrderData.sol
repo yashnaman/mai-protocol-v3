@@ -18,7 +18,7 @@ library OrderData {
     );
     bytes32 internal constant EIP712_ORDER_TYPE = keccak256(
         abi.encodePacked(
-            "Order(address trader,address broker,address relayer,address referrer,address liquidityPool,uint256 marketIndex,int256 amount,int256 priceLimit,int256 minTradeAmount,uint256 tradeGasLimit,uint256 chainID,bytes32 data)"
+            "Order(address trader,address broker,address relayer,address referrer,address liquidityPool,uint256 perpetualIndex,int256 amount,int256 priceLimit,int256 minTradeAmount,uint256 tradeGasLimit,uint256 chainID,bytes32 data)"
         )
     );
 

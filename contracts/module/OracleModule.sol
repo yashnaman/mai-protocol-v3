@@ -10,34 +10,34 @@ library OracleModule {
         if (core.priceUpdateTime >= currentTime) {
             return;
         }
-        uint256 length = core.markets.length;
+        uint256 length = core.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updatePrice(core.markets[i]);
+            updatePrice(core.perpetuals[i]);
         }
         core.priceUpdateTime = currentTime;
     }
 
-    function updatePrice(Market storage market) internal {
+    function updatePrice(Perpetual storage perpetual) internal {
         // no longer update price after emergency
-        if (market.state != MarketState.NORMAL) {
+        if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
-        updatePriceData(market.markPriceData, IOracle(market.oracle).priceTWAPLong);
-        updatePriceData(market.indexPriceData, IOracle(market.oracle).priceTWAPShort);
+        updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
+        updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
     }
 
-    function markPrice(Market storage market) internal view returns (int256) {
+    function markPrice(Perpetual storage perpetual) internal view returns (int256) {
         return
-            market.state == MarketState.NORMAL
-                ? market.markPriceData.price
-                : market.settlementPriceData.price;
+            perpetual.state == PerpetualState.NORMAL
+                ? perpetual.markPriceData.price
+                : perpetual.settlementPriceData.price;
     }
 
-    function indexPrice(Market storage market) internal view returns (int256) {
+    function indexPrice(Perpetual storage perpetual) internal view returns (int256) {
         return
-            market.state == MarketState.NORMAL
-                ? market.indexPriceData.price
-                : market.settlementPriceData.price;
+            perpetual.state == PerpetualState.NORMAL
+                ? perpetual.indexPriceData.price
+                : perpetual.settlementPriceData.price;
     }
 
     // prettier-ignore
@@ -52,7 +52,7 @@ library OracleModule {
         }
     }
 
-    function freezeOraclePrice(Market storage market) public {
-        market.settlementPriceData = market.indexPriceData;
+    function freezeOraclePrice(Perpetual storage perpetual) public {
+        perpetual.settlementPriceData = perpetual.indexPriceData;
     }
 }

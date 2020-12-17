@@ -11,13 +11,13 @@ contract TestAMM {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     // using MarginModule for Core;
-    using OracleModule for Market;
+    using OracleModule for Perpetual;
 
     Core core;
 
     constructor() {
-        core.markets.push();
-        core.markets.push();
+        core.perpetuals.push();
+        core.perpetuals.push();
     }
 
     function setParams(
@@ -32,26 +32,26 @@ contract TestAMM {
         int256 indexPrice1,
         int256 indexPrice2
     ) public {
-        core.markets[0].id = 0;
-        core.markets[0].state = MarketState.NORMAL;
-        core.markets[0].unitAccumulativeFunding = unitAccumulativeFunding;
-        core.markets[0].halfSpread.value = halfSpread;
-        core.markets[0].openSlippageFactor.value = openSlippageFactor;
-        core.markets[0].closeSlippageFactor.value = closeSlippageFactor;
-        core.markets[0].maxLeverage.value = maxLeverage;
+        core.perpetuals[0].id = 0;
+        core.perpetuals[0].state = PerpetualState.NORMAL;
+        core.perpetuals[0].unitAccumulativeFunding = unitAccumulativeFunding;
+        core.perpetuals[0].halfSpread.value = halfSpread;
+        core.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
+        core.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
+        core.perpetuals[0].maxLeverage.value = maxLeverage;
         core.poolCashBalance = cashBalance;
-        core.markets[0].marginAccounts[address(this)].positionAmount = positionAmount1;
-        core.markets[0].indexPriceData.price = indexPrice1;
+        core.perpetuals[0].marginAccounts[address(this)].positionAmount = positionAmount1;
+        core.perpetuals[0].indexPriceData.price = indexPrice1;
 
-        core.markets[1].id = 1;
-        core.markets[1].state = MarketState.NORMAL;
-        core.markets[1].unitAccumulativeFunding = unitAccumulativeFunding;
-        core.markets[1].halfSpread.value = halfSpread;
-        core.markets[1].openSlippageFactor.value = openSlippageFactor;
-        core.markets[1].closeSlippageFactor.value = closeSlippageFactor;
-        core.markets[1].maxLeverage.value = maxLeverage;
-        core.markets[1].marginAccounts[address(this)].positionAmount = positionAmount2;
-        core.markets[1].indexPriceData.price = indexPrice2;
+        core.perpetuals[1].id = 1;
+        core.perpetuals[1].state = PerpetualState.NORMAL;
+        core.perpetuals[1].unitAccumulativeFunding = unitAccumulativeFunding;
+        core.perpetuals[1].halfSpread.value = halfSpread;
+        core.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
+        core.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
+        core.perpetuals[1].maxLeverage.value = maxLeverage;
+        core.perpetuals[1].marginAccounts[address(this)].positionAmount = positionAmount2;
+        core.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
     function setConfig(address collateral, address shareToken, uint256 scaler) public {
@@ -61,15 +61,15 @@ contract TestAMM {
     }
 
     function isAMMMarginSafe() public view returns (bool) {
-        Market storage market = core.markets[0];
+        Perpetual storage perpetual = core.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
-        return AMMModule.isAMMMarginSafe(context, market.openSlippageFactor.value);
+        return AMMModule.isAMMMarginSafe(context, perpetual.openSlippageFactor.value);
     }
 
     function regress() public view returns (int256) {
-        Market storage market = core.markets[0];
+        Perpetual storage perpetual = core.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
-        return AMMModule.regress(context, market.openSlippageFactor.value);
+        return AMMModule.regress(context, perpetual.openSlippageFactor.value);
     }
 
 
@@ -78,25 +78,25 @@ contract TestAMM {
         view
         returns (int256 deltaMargin)
     {
-        Market storage market = core.markets[0];
+        Perpetual storage perpetual = core.perpetuals[0];
         deltaMargin = AMMModule._deltaMargin(
             regress(),
-            market.marginAccounts[address(this)].positionAmount,
-            market.marginAccounts[address(this)].positionAmount.add(amount),
-            market.indexPrice(),
-            market.openSlippageFactor.value
+            perpetual.marginAccounts[address(this)].positionAmount,
+            perpetual.marginAccounts[address(this)].positionAmount.add(amount),
+            perpetual.indexPrice(),
+            perpetual.openSlippageFactor.value
         );
     }
 
     function maxPosition(bool isLongSide) public view returns (int256) {
-        Market storage market = core.markets[0];
+        Perpetual storage perpetual = core.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
         return
             AMMModule._maxPosition(
                 context,
                 regress(),
-                market.maxLeverage.value,
-                market.openSlippageFactor.value,
+                perpetual.maxLeverage.value,
+                perpetual.openSlippageFactor.value,
                 isLongSide
             );
     }

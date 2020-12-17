@@ -20,8 +20,8 @@ library FundingModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
-    using MarginModule for Market;
-    using OracleModule for Market;
+    using MarginModule for Perpetual;
+    using OracleModule for Perpetual;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
@@ -30,22 +30,22 @@ library FundingModule {
             return;
         }
         int256 timeElapsed = currentTime.sub(core.fundingTime).toInt256();
-        uint256 length = core.markets.length;
+        uint256 length = core.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updateFundingState(core.markets[i], timeElapsed);
+            updateFundingState(core.perpetuals[i], timeElapsed);
         }
         core.fundingTime = currentTime;
     }
 
-    function updateFundingState(Market storage market, int256 timeElapsed) public {
-        if (market.state != MarketState.NORMAL) {
+    function updateFundingState(Perpetual storage perpetual, int256 timeElapsed) public {
+        if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
-        int256 deltaUnitLoss = market.indexPrice().wfrac(
-            market.fundingRate.wmul(timeElapsed),
+        int256 deltaUnitLoss = perpetual.indexPrice().wfrac(
+            perpetual.fundingRate.wmul(timeElapsed),
             FUNDING_INTERVAL
         );
-        market.unitAccumulativeFunding = market.unitAccumulativeFunding.add(deltaUnitLoss);
+        perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
     }
 
     function updateFundingRate(Core storage core) public {
@@ -53,26 +53,28 @@ library FundingModule {
         int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
             ? AMMModule.regress(context, 0)
             : 0;
-        uint256 length = core.markets.length;
+        uint256 length = core.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updateFundingRate(core.markets[i], poolMargin);
+            updateFundingRate(core.perpetuals[i], poolMargin);
         }
     }
 
-    function updateFundingRate(Market storage market, int256 poolMargin) public {
-        if (market.state != MarketState.NORMAL) {
+    function updateFundingRate(Perpetual storage perpetual, int256 poolMargin) public {
+        if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
         int256 newFundingRate;
-        int256 positionAmount = market.positionAmount(address(this));
+        int256 positionAmount = perpetual.positionAmount(address(this));
         if (positionAmount == 0) {
             newFundingRate = 0;
         } else {
-            int256 fundingRateLimit = market.fundingRateLimit.value;
+            int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
-                newFundingRate = market.indexPrice().wfrac(positionAmount, poolMargin).neg().wmul(
-                    market.fundingRateLimit.value
-                );
+                newFundingRate = perpetual
+                    .indexPrice()
+                    .wfrac(positionAmount, poolMargin)
+                    .neg()
+                    .wmul(perpetual.fundingRateLimit.value);
                 newFundingRate = newFundingRate > fundingRateLimit
                     ? fundingRateLimit
                     : newFundingRate;
@@ -85,6 +87,6 @@ library FundingModule {
                 newFundingRate = fundingRateLimit;
             }
         }
-        market.fundingRate = newFundingRate;
+        perpetual.fundingRate = newFundingRate;
     }
 }

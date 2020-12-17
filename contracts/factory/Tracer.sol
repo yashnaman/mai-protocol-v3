@@ -20,7 +20,7 @@ contract Tracer {
 
     struct MUID {
         address liquidityPool;
-        uint256 marketIndex;
+        uint256 perpetualIndex;
     }
 
     uint256 internal nextGUID;
@@ -85,11 +85,11 @@ contract Tracer {
     function isActiveLiquidityPoolOf(
         address trader,
         address liquidityPool,
-        uint256 marketIndex
+        uint256 perpetualIndex
     ) public view returns (bool) {
         return
             _traderActiveLiquidityPools[trader].contains(
-                _poolMarketKey(liquidityPool, marketIndex)
+                _poolPerpetualKey(liquidityPool, perpetualIndex)
             );
     }
 
@@ -111,31 +111,34 @@ contract Tracer {
         return result;
     }
 
-    function activateLiquidityPoolFor(address trader, uint256 marketIndex)
+    function activateLiquidityPoolFor(address trader, uint256 perpetualIndex)
         external
         onlyLiquidityPool
         returns (bool)
     {
-        bytes32 key = _poolMarketKey(msg.sender, marketIndex);
+        bytes32 key = _poolPerpetualKey(msg.sender, perpetualIndex);
         if (_muids[key].liquidityPool == address(0)) {
-            _muids[key] = MUID({ liquidityPool: msg.sender, marketIndex: marketIndex });
+            _muids[key] = MUID({ liquidityPool: msg.sender, perpetualIndex: perpetualIndex });
         }
         return _traderActiveLiquidityPools[trader].add(key);
     }
 
-    function deactivateLiquidityPoolFor(address trader, uint256 marketIndex)
+    function deactivateLiquidityPoolFor(address trader, uint256 perpetualIndex)
         external
         onlyLiquidityPool
         returns (bool)
     {
-        return _traderActiveLiquidityPools[trader].remove(_poolMarketKey(msg.sender, marketIndex));
+        return
+            _traderActiveLiquidityPools[trader].remove(
+                _poolPerpetualKey(msg.sender, perpetualIndex)
+            );
     }
 
-    function _poolMarketKey(address liquidityPool, uint256 marketIndex)
+    function _poolPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal
         pure
         returns (bytes32)
     {
-        return keccak256(abi.encodePacked(liquidityPool, marketIndex));
+        return keccak256(abi.encodePacked(liquidityPool, perpetualIndex));
     }
 }

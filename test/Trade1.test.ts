@@ -39,9 +39,9 @@ describe('TradeModule1', () => {
             const FundingModule = await createContract("FundingModule", [], { AMMModule });
             const ParameterModule = await createContract("ParameterModule");
             const CoreModule = await createContract("CoreModule", [], { CollateralModule });
-            const MarketModule = await createContract("MarketModule", [], { ParameterModule });
+            const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
             const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
-            testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, MarketModule });
+            testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, PerpetualModule });
 
             user0 = accounts[0];
             user1 = accounts[1];
@@ -53,7 +53,7 @@ describe('TradeModule1', () => {
 
         // it('updateTradingFees', async () => {
 
-        //     await testTrade.createMarket(
+        //     await testTrade.createPerpetual(
         //         oracle.address,
         //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
         //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
@@ -77,7 +77,7 @@ describe('TradeModule1', () => {
         //     expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("2"));
         //     expect(await testTrade.claimableFee(user0.address)).to.equal(toWei("1"));
 
-        //     await testTrade.updateMarketParameter(0, toBytes32("referrerRebateRate"), toWei("0.5"));
+        //     await testTrade.updatePerpetualParameter(0, toBytes32("referrerRebateRate"), toWei("0.5"));
         //     await testTrade.updateTradingFees(0, receipt, none);
         //     expect(await testTrade.claimableFee(user4.address)).to.equal(toWei("4")); // 2+2
         //     expect(await testTrade.claimableFee(user0.address)).to.equal(toWei("2")); // 1+1
@@ -100,7 +100,7 @@ describe('TradeModule1', () => {
         // })
 
         // it("updateTradingResult - case 1", async () => {
-        //     await testTrade.createMarket(
+        //     await testTrade.createPerpetual(
         //         oracle.address,
         //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
         //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
@@ -130,7 +130,7 @@ describe('TradeModule1', () => {
         // })
 
         // it("updateTradingResult - case 2", async () => {
-        //     await testTrade.createMarket(
+        //     await testTrade.createPerpetual(
         //         oracle.address,
         //         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
         //         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
@@ -160,7 +160,7 @@ describe('TradeModule1', () => {
         // })
 
         //     it("updateTradingResult - case 3", async () => {
-        //         await testTrade.createMarket(
+        //         await testTrade.createPerpetual(
         //             oracle.address,
         //             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
         //             [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
@@ -213,9 +213,9 @@ describe('TradeModule1', () => {
                 const FundingModule = await createContract("FundingModule", [], { AMMModule });
                 const ParameterModule = await createContract("ParameterModule");
                 const CoreModule = await createContract("CoreModule", [], { CollateralModule });
-                const MarketModule = await createContract("MarketModule", [], { ParameterModule });
+                const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
                 const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
-                testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, MarketModule });
+                testTrade = await createContract("TestTrade", [], { FundingModule, ParameterModule, TradeModule, PerpetualModule });
 
                 user0 = accounts[0];
                 user1 = accounts[1];
@@ -322,7 +322,7 @@ describe('TradeModule1', () => {
 
             testCases.forEach((testCase) => {
                 it(testCase.name, async () => {
-                    await testTrade.createMarket(
+                    await testTrade.createPerpetual(
                         oracle.address,
                         // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                         [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],

@@ -23,7 +23,7 @@ contract Getter is Storage {
     using CollateralModule for address;
     using FundingModule for Core;
     using MarginModule for Core;
-    using OracleModule for Market;
+    using OracleModule for Perpetual;
     using OracleModule for Core;
     using ParameterModule for Core;
     using SettlementModule for Core;
@@ -48,7 +48,7 @@ contract Getter is Storage {
             // [5] poolCashBalance,
             // [6] poolCollateral,
             int256[7] memory nums,
-            uint256 marketCount,
+            uint256 perpetualCount,
             uint256 fundingTime
         )
     {
@@ -69,16 +69,16 @@ contract Getter is Storage {
             _core.poolCashBalance,
             _core.poolCollateral
         ];
-        marketCount = _core.markets.length;
+        perpetualCount = _core.perpetuals.length;
         fundingTime = _core.fundingTime;
     }
 
-    function marketInfo(uint256 marketIndex)
+    function perpetualInfo(uint256 perpetualIndex)
         public
         syncState
-        onlyExistedMarket(marketIndex)
+        onlyExistedPerpetual(perpetualIndex)
         returns (
-            MarketState state,
+            PerpetualState state,
             address oracle,
             // [0] depositedCollateral
             // [1] markPrice,
@@ -100,41 +100,39 @@ contract Getter is Storage {
             int256[17] memory nums
         )
     {
-        Market storage market = _core.markets[marketIndex];
+        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
 
-        state = market.state;
-        oracle = market.oracle;
+        state = perpetual.state;
+        oracle = perpetual.oracle;
         nums = [
-            market.depositedCollateral,
-            market.markPrice(),
-            market.indexPrice(),
-            market.unitAccumulativeFunding,
-
-            market.initialMarginRate,
-            market.maintenanceMarginRate,
-            market.operatorFeeRate,
-            market.lpFeeRate,
-            market.referrerRebateRate,
-            market.liquidationPenaltyRate,
-            market.keeperGasReward,
-            market.insuranceFundRate,
-
-            market.halfSpread.value,
-            market.openSlippageFactor.value,
-            market.closeSlippageFactor.value,
-            market.fundingRateLimit.value,
-            market.maxLeverage.value
+            perpetual.depositedCollateral,
+            perpetual.markPrice(),
+            perpetual.indexPrice(),
+            perpetual.unitAccumulativeFunding,
+            perpetual.initialMarginRate,
+            perpetual.maintenanceMarginRate,
+            perpetual.operatorFeeRate,
+            perpetual.lpFeeRate,
+            perpetual.referrerRebateRate,
+            perpetual.liquidationPenaltyRate,
+            perpetual.keeperGasReward,
+            perpetual.insuranceFundRate,
+            perpetual.halfSpread.value,
+            perpetual.openSlippageFactor.value,
+            perpetual.closeSlippageFactor.value,
+            perpetual.fundingRateLimit.value,
+            perpetual.maxLeverage.value
         ];
     }
 
-    function marginAccount(uint256 marketIndex, address trader)
+    function marginAccount(uint256 perpetualIndex, address trader)
         public
         view
-        onlyExistedMarket(marketIndex)
+        onlyExistedPerpetual(perpetualIndex)
         returns (int256 cashBalance, int256 positionAmount)
     {
-        cashBalance = _core.markets[marketIndex].marginAccounts[trader].cashBalance;
-        positionAmount = _core.markets[marketIndex].marginAccounts[trader].positionAmount;
+        cashBalance = _core.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
+        positionAmount = _core.perpetuals[perpetualIndex].marginAccounts[trader].positionAmount;
     }
 
     function claimableFee(address claimer) public view returns (int256) {

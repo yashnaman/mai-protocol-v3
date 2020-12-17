@@ -383,7 +383,7 @@ describe('MarginModule', () => {
                     testCase.marginAccount.cashBalance,
                     testCase.marginAccount.positionAmount);
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.updateMarketParameter(toBytes32(key), testCase.parameters[key]);
+                    await testMargin.updatePerpetualParameter(toBytes32(key), testCase.parameters[key]);
                 }
                 await testMargin.updateUnitAccumulativeFunding(testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
@@ -437,7 +437,7 @@ describe('MarginModule', () => {
             await testMargin.updateUnitAccumulativeFunding(toWei("-100"));
             await testMargin.updateMarginAccount(trader, toWei("-5"), toWei("-100"))
             var { cashBalance, positionAmount } = await testMargin.marginAccount(trader);
-            expect(cashBalance).to.equal(toWei("1800")); // -100 - 5*-100 
+            expect(cashBalance).to.equal(toWei("1800")); // -100 - 5*-100
             expect(positionAmount).to.equal(toWei("-3.5"));
         })
     })

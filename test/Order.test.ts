@@ -33,7 +33,7 @@ describe("Order", () => {
             broker: "0x0000000000000000000000000000000000000002", // broker
             relayer: "0x0000000000000000000000000000000000000003", // relayer
             liquidityPool: "0x0000000000000000000000000000000000000004", // liquidityPool
-            marketIndex: 0,
+            perpetualIndex: 0,
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: 1000,
             priceLimit: 2000,
@@ -55,7 +55,7 @@ describe("Order", () => {
             broker: accounts[0].address, // broker
             relayer: accounts[0].address, // relayer
             liquidityPool: testOrder.address, // liquidityPool
-            marketIndex: 0,
+            perpetualIndex: 0,
             referrer: "0x0000000000000000000000000000000000000005", // referrer
             amount: toWei("1"),
             priceLimit: toWei("500"),

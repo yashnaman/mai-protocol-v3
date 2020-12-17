@@ -5,32 +5,32 @@ pragma experimental ABIEncoderV2;
 contract Events {
     // governance
     event UpdateLiquidityPoolParameter(bytes32 key, int256 value);
-    event UpdateMarketParameter(uint256 marketIndex, bytes32 key, int256 value);
-    event UpdateMarketRiskParameter(
-        uint256 marketIndex,
+    event UpdatePerpetualParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event UpdatePerpetualRiskParameter(
+        uint256 perpetualIndex,
         bytes32 key,
         int256 value,
         int256 minValue,
         int256 maxValue
     );
 
-    event AdjustMarketRiskSetting(uint256 marketIndex, bytes32 key, int256 value);
+    event AdjustPerpetualRiskSetting(uint256 perpetualIndex, bytes32 key, int256 value);
 
     // settle
-    event Clear(uint256 marketIndex, address trader);
-    event Settle(uint256 marketIndex, address trader, int256 amount);
+    event Clear(uint256 perpetualIndex, address trader);
+    event Settle(uint256 perpetualIndex, address trader, int256 amount);
     // trade
-    event Deposit(uint256 marketIndex, address trader, int256 amount);
-    event Withdraw(uint256 marketIndex, address trader, int256 amount);
+    event Deposit(uint256 perpetualIndex, address trader, int256 amount);
+    event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
     event Trade(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address indexed trader,
         int256 positionAmount,
         int256 price,
         int256 fee
     );
     event Liquidate(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address indexed liquidator,
         address indexed trader,
         int256 amount,

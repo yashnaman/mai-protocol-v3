@@ -12,7 +12,7 @@ import "../interface/IFactory.sol";
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
 import "./CoreModule.sol";
-import "./MarketModule.sol";
+import "./PerpetualModule.sol";
 import "./SettlementModule.sol";
 
 import "../Type.sol";
@@ -24,160 +24,174 @@ library MarginModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    using MarketModule for Market;
-    using OracleModule for Market;
-    using CollateralModule for Market;
-    using SettlementModule for Market;
+    using PerpetualModule for Perpetual;
+    using OracleModule for Perpetual;
+    using CollateralModule for Perpetual;
+    using SettlementModule for Perpetual;
     using CollateralModule for Core;
     using CoreModule for Core;
 
-    event Deposit(uint256 marketIndex, address trader, int256 amount);
-    event Withdraw(uint256 marketIndex, address trader, int256 amount);
+    event Deposit(uint256 perpetualIndex, address trader, int256 amount);
+    event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
 
     // atribute
     function initialMargin(
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
         return
-            market.marginAccounts[trader]
+            perpetual.marginAccounts[trader]
                 .positionAmount
                 .wmul(indexPrice)
-                .wmul(market.initialMarginRate)
+                .wmul(perpetual.initialMarginRate)
                 .abs()
-                .max(market.keeperGasReward);
+                .max(perpetual.keeperGasReward);
     }
 
     function maintenanceMargin(
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
         return
-            market.marginAccounts[trader]
+            perpetual.marginAccounts[trader]
                 .positionAmount
                 .wmul(indexPrice)
-                .wmul(market.maintenanceMarginRate)
+                .wmul(perpetual.maintenanceMarginRate)
                 .abs()
-                .max(market.keeperGasReward);
+                .max(perpetual.keeperGasReward);
     }
 
-    function availableCashBalance(Market storage market, address trader)
+    function availableCashBalance(Perpetual storage perpetual, address trader)
         internal
         view
         returns (int256)
     {
         return
-            market.marginAccounts[trader].cashBalance.sub(
-                market.marginAccounts[trader].positionAmount.wmul(market.unitAccumulativeFunding)
+            perpetual.marginAccounts[trader].cashBalance.sub(
+                perpetual.marginAccounts[trader].positionAmount.wmul(
+                    perpetual.unitAccumulativeFunding
+                )
             );
     }
 
-    function positionAmount(Market storage market, address trader) internal view returns (int256) {
-        return market.marginAccounts[trader].positionAmount;
+    function positionAmount(Perpetual storage perpetual, address trader)
+        internal
+        view
+        returns (int256)
+    {
+        return perpetual.marginAccounts[trader].positionAmount;
     }
 
     function margin(
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
         return
-            market.marginAccounts[trader].positionAmount.wmul(indexPrice).add(
-                availableCashBalance(market, trader)
+            perpetual.marginAccounts[trader].positionAmount.wmul(indexPrice).add(
+                availableCashBalance(perpetual, trader)
             );
     }
 
-    function isInitialMarginSafe(Market storage market, address trader)
+    function isInitialMarginSafe(Perpetual storage perpetual, address trader)
         internal
         view
         returns (bool)
     {
         return
-            margin(market, trader, market.markPrice()) >=
-            initialMargin(market, trader, market.markPrice());
+            margin(perpetual, trader, perpetual.markPrice()) >=
+            initialMargin(perpetual, trader, perpetual.markPrice());
     }
 
-    function isMaintenanceMarginSafe(Market storage market, address trader)
+    function isMaintenanceMarginSafe(Perpetual storage perpetual, address trader)
         internal
         view
         returns (bool)
     {
         return
-            margin(market, trader, market.markPrice()) >=
-            maintenanceMargin(market, trader, market.markPrice());
+            margin(perpetual, trader, perpetual.markPrice()) >=
+            maintenanceMargin(perpetual, trader, perpetual.markPrice());
     }
 
-    function isMarginSafe(Market storage market, address trader) internal view returns (bool) {
-        return margin(market, trader, market.markPrice()) >= 0;
+    function isMarginSafe(Perpetual storage perpetual, address trader)
+        internal
+        view
+        returns (bool)
+    {
+        return margin(perpetual, trader, perpetual.markPrice()) >= 0;
     }
 
-    function isEmptyAccount(Market storage market, address trader) internal view returns (bool) {
+    function isEmptyAccount(Perpetual storage perpetual, address trader)
+        internal
+        view
+        returns (bool)
+    {
         return
-            market.marginAccounts[trader].cashBalance == 0 &&
-            market.marginAccounts[trader].positionAmount == 0;
+            perpetual.marginAccounts[trader].cashBalance == 0 &&
+            perpetual.marginAccounts[trader].positionAmount == 0;
     }
 
     function deposit(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 amount
     ) public {
-        Market storage market = core.markets[marketIndex];
-        bool isInitial = isEmptyAccount(market, trader);
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        bool isInitial = isEmptyAccount(perpetual, trader);
         int256 totalAmount = core.transferFromUser(trader, amount);
         require(totalAmount > 0, "total amount is 0");
-        market.increaseDepositedCollateral(totalAmount);
-        updateCashBalance(market, trader, totalAmount);
+        perpetual.increaseDepositedCollateral(totalAmount);
+        updateCashBalance(perpetual, trader, totalAmount);
         if (isInitial) {
-            market.registerTrader(trader);
-            IFactory(core.factory).activateLiquidityPoolFor(trader, marketIndex);
+            perpetual.registerTrader(trader);
+            IFactory(core.factory).activateLiquidityPoolFor(trader, perpetualIndex);
         }
-        emit Deposit(marketIndex, trader, totalAmount);
+        emit Deposit(perpetualIndex, trader, totalAmount);
     }
 
     function withdraw(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 amount
     ) public {
-        Market storage market = core.markets[marketIndex];
-        core.rebalance(market);
-        updateCashBalance(market, trader, amount.neg());
-        market.decreaseDepositedCollateral(amount);
-        require(isInitialMarginSafe(market, trader), "margin is unsafe after withdrawal");
-        bool isDrained = isEmptyAccount(market, trader);
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        core.rebalance(perpetual);
+        updateCashBalance(perpetual, trader, amount.neg());
+        perpetual.decreaseDepositedCollateral(amount);
+        require(isInitialMarginSafe(perpetual, trader), "margin is unsafe after withdrawal");
+        bool isDrained = isEmptyAccount(perpetual, trader);
         if (isDrained) {
-            market.deregisterTrader(trader);
-            IFactory(core.factory).deactivateLiquidityPoolFor(trader, marketIndex);
+            perpetual.deregisterTrader(trader);
+            IFactory(core.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
         }
         core.transferToUser(payable(trader), amount);
-        emit Withdraw(marketIndex, trader, amount);
+        emit Withdraw(perpetualIndex, trader, amount);
     }
 
     function updateCashBalance(
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 deltaCashBalance
     ) internal {
-        market.marginAccounts[trader].cashBalance = market.marginAccounts[trader].cashBalance.add(
-            deltaCashBalance
-        );
+        perpetual.marginAccounts[trader].cashBalance = perpetual.marginAccounts[trader]
+            .cashBalance
+            .add(deltaCashBalance);
     }
 
     function updateMarginAccount(
-        Market storage market,
+        Perpetual storage perpetual,
         address trader,
         int256 deltaPositionAmount,
         int256 deltaCashBalance
     ) internal {
-        MarginAccount storage account = market.marginAccounts[trader];
+        MarginAccount storage account = perpetual.marginAccounts[trader];
         account.positionAmount = account.positionAmount.add(deltaPositionAmount);
         account.cashBalance = account.cashBalance.add(deltaCashBalance).add(
-            market.unitAccumulativeFunding.wmul(deltaPositionAmount)
+            perpetual.unitAccumulativeFunding.wmul(deltaPositionAmount)
         );
     }
 }

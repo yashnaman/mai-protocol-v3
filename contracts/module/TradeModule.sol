@@ -21,14 +21,14 @@ library TradeModule {
     using SignedSafeMathUpgradeable for int256;
     using AMMModule for Core;
     using CoreModule for Core;
-    using MarginModule for Market;
-    using OracleModule for Market;
+    using MarginModule for Perpetual;
+    using OracleModule for Perpetual;
     using MarginModule for MarginAccount;
 
     address internal constant INVALID_ADDRESS = address(0);
 
     event Trade(
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address indexed trader,
         int256 positionAmount,
         int256 price,
@@ -37,39 +37,39 @@ library TradeModule {
 
     function trade(
         Core storage core,
-        uint256 marketIndex,
+        uint256 perpetualIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
         address referrer
     ) public {
-        Market storage market = core.markets[marketIndex];
+        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
         // 0. price / amount
         Receipt memory receipt;
         (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
-            marketIndex,
+            perpetualIndex,
             amount.neg(),
             false
         );
         bool isOpeningPosition = Utils.isOpeningPosition(
-            market.positionAmount(trader),
+            perpetual.positionAmount(trader),
             receipt.tradingAmount.neg()
         );
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
         // 1. fee
-        updateTradingFees(core, market, receipt, referrer);
+        updateTradingFees(core, perpetual, receipt, referrer);
         // 2. execute
-        updateTradingResult(market, receipt, trader, address(this));
+        updateTradingResult(perpetual, receipt, trader, address(this));
         // 3. safe
         if (isOpeningPosition) {
-            require(market.isInitialMarginSafe(trader), "trader initial margin is unsafe");
+            require(perpetual.isInitialMarginSafe(trader), "trader initial margin is unsafe");
         } else {
-            require(market.isMarginSafe(trader), "trader margin is unsafe");
+            require(perpetual.isMarginSafe(trader), "trader margin is unsafe");
         }
         // 4. event
         emit Trade(
-            marketIndex,
+            perpetualIndex,
             trader,
             receipt.tradingAmount,
             tradingPrice,
@@ -79,17 +79,17 @@ library TradeModule {
 
     function updateTradingFees(
         Core storage core,
-        Market storage market,
+        Perpetual storage perpetual,
         Receipt memory receipt,
         address referrer
     ) public {
         int256 tradingValue = receipt.tradingValue.abs();
         receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);
-        receipt.lpFee = tradingValue.wmul(market.lpFeeRate);
-        receipt.operatorFee = tradingValue.wmul(market.operatorFeeRate);
-        if (market.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
-            int256 lpFeeRebate = receipt.lpFee.wmul(market.referrerRebateRate);
-            int256 operatorFeeRabate = receipt.operatorFee.wmul(market.referrerRebateRate);
+        receipt.lpFee = tradingValue.wmul(perpetual.lpFeeRate);
+        receipt.operatorFee = tradingValue.wmul(perpetual.operatorFeeRate);
+        if (perpetual.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
+            int256 lpFeeRebate = receipt.lpFee.wmul(perpetual.referrerRebateRate);
+            int256 operatorFeeRabate = receipt.operatorFee.wmul(perpetual.referrerRebateRate);
             receipt.lpFee = receipt.lpFee.sub(lpFeeRebate);
             receipt.operatorFee = receipt.operatorFee.sub(operatorFeeRabate);
             receipt.referrerFee = lpFeeRebate.add(operatorFeeRabate);
@@ -100,12 +100,12 @@ library TradeModule {
     }
 
     function updateTradingResult(
-        Market storage market,
+        Perpetual storage perpetual,
         Receipt memory receipt,
         address taker,
         address maker
     ) internal {
-        market.updateMarginAccount(
+        perpetual.updateMarginAccount(
             taker,
             receipt.tradingAmount.neg(),
             receipt
@@ -116,7 +116,7 @@ library TradeModule {
                 .sub(receipt.operatorFee)
                 .sub(receipt.referrerFee)
         );
-        market.updateMarginAccount(
+        perpetual.updateMarginAccount(
             maker,
             receipt.tradingAmount,
             receipt.tradingValue.add(receipt.lpFee)

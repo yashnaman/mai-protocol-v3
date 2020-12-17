@@ -8,19 +8,19 @@ import "../module/OracleModule.sol";
 import "../Storage.sol";
 
 contract TestMargin is Storage {
-    using MarginModule for Market;
-    using ParameterModule for Market;
-    using OracleModule for Market;
+    using MarginModule for Perpetual;
+    using ParameterModule for Perpetual;
+    using OracleModule for Perpetual;
 
-    Market internal _market;
+    Perpetual internal _perpetual;
 
     constructor(address oracle) {
-        _market.oracle = oracle;
-        _market.state = MarketState.NORMAL;
+        _perpetual.oracle = oracle;
+        _perpetual.state = PerpetualState.NORMAL;
     }
 
     function updateMarkPrice(int256 price) external {
-        _market.markPriceData.price = price;
+        _perpetual.markPriceData.price = price;
     }
 
     function initializeMarginAccount(
@@ -28,16 +28,16 @@ contract TestMargin is Storage {
         int256 cashBalance,
         int256 positionAmount
     ) external {
-        _market.marginAccounts[trader].cashBalance = cashBalance;
-        _market.marginAccounts[trader].positionAmount = positionAmount;
+        _perpetual.marginAccounts[trader].cashBalance = cashBalance;
+        _perpetual.marginAccounts[trader].positionAmount = positionAmount;
     }
 
     function updateUnitAccumulativeFunding(int256 newUnitAccumulativeFunding) external {
-        _market.unitAccumulativeFunding = newUnitAccumulativeFunding;
+        _perpetual.unitAccumulativeFunding = newUnitAccumulativeFunding;
     }
 
-    function updateMarketParameter(bytes32 key, int256 newValue) external {
-        _market.updateMarketParameter(key, newValue);
+    function updatePerpetualParameter(bytes32 key, int256 newValue) external {
+        _perpetual.updatePerpetualParameter(key, newValue);
     }
 
     function marginAccount(address trader)
@@ -45,40 +45,40 @@ contract TestMargin is Storage {
         view
         returns (int256 cashBalance, int256 positionAmount)
     {
-        cashBalance = _market.marginAccounts[trader].cashBalance;
-        positionAmount = _market.marginAccounts[trader].positionAmount;
+        cashBalance = _perpetual.marginAccounts[trader].cashBalance;
+        positionAmount = _perpetual.marginAccounts[trader].positionAmount;
     }
 
     function initialMargin(address trader) external view returns (int256) {
-        return _market.initialMargin(trader, _market.markPrice());
+        return _perpetual.initialMargin(trader, _perpetual.markPrice());
     }
 
     function maintenanceMargin(address trader) external view returns (int256) {
-        return _market.maintenanceMargin(trader, _market.markPrice());
+        return _perpetual.maintenanceMargin(trader, _perpetual.markPrice());
     }
 
     function availableCashBalance(address trader) external view returns (int256) {
-        return _market.availableCashBalance(trader);
+        return _perpetual.availableCashBalance(trader);
     }
 
     function positionAmount(address trader) external view returns (int256) {
-        return _market.positionAmount(trader);
+        return _perpetual.positionAmount(trader);
     }
 
     function margin(address trader) external syncState returns (int256) {
-        return _market.margin(trader, _market.markPrice());
+        return _perpetual.margin(trader, _perpetual.markPrice());
     }
 
     function isInitialMarginSafe(address trader) external view returns (bool) {
-        return _market.isInitialMarginSafe(trader);
+        return _perpetual.isInitialMarginSafe(trader);
     }
 
     function isMaintenanceMarginSafe(address trader) external view returns (bool) {
-        return _market.isMaintenanceMarginSafe(trader);
+        return _perpetual.isMaintenanceMarginSafe(trader);
     }
 
     function isEmptyAccount(address trader) external view returns (bool) {
-        return _market.isEmptyAccount(trader);
+        return _perpetual.isEmptyAccount(trader);
     }
 
     function updateMarginAccount(
@@ -86,7 +86,7 @@ contract TestMargin is Storage {
         int256 deltaPositionAmount,
         int256 deltaMargin
     ) external returns (int256, int256){
-        _market.updateMarginAccount(trader, deltaPositionAmount, deltaMargin);
+        _perpetual.updateMarginAccount(trader, deltaPositionAmount, deltaMargin);
         return marginAccount(trader);
     }
 }

@@ -27,15 +27,15 @@ describe('Storage', () => {
         const CollateralModule = await createContract("CollateralModule")
         const AMMModule = await createContract("AMMModule", [], { CollateralModule })
         const FundingModule = await createContract("FundingModule", [], { AMMModule })
-        const MarketModule = await createContract("MarketModule", [], { ParameterModule })
-        TestStorage = await createFactory("TestStorage", { FundingModule, MarketModule });
+        const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule })
+        TestStorage = await createFactory("TestStorage", { FundingModule, PerpetualModule });
         storage = await TestStorage.deploy();
     })
 
     it("initialize", async () => {
         const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         const oracle = await createContract("OracleWrapper", [erc20.address]);
-        await storage.initializeMarket(
+        await storage.initializePerpetual(
             oracle.address,
             [
                 toWei("0.1"),
@@ -74,7 +74,7 @@ describe('Storage', () => {
         await oracle.setMarkPrice(500, now);
         await oracle.setIndexPrice(500, now);
 
-        const result = await storage.callStatic.marketInfo(0);
+        const result = await storage.callStatic.perpetualInfo(0);
 
         expect(result.oracle).to.equal(oracle.address);
         expect(result.markPrice).to.equal(500);
