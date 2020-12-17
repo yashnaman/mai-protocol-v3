@@ -27,7 +27,7 @@ library SafeMathExt {
         uint256 y,
         uint256 z
     ) internal pure returns (uint256 r) {
-        r = x.mul(y).div(z);
+        r = x.mul(y).add(z / 2).div(z);
     }
 
     function wmul(int256 x, int256 y) internal pure returns (int256 z) {

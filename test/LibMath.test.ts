@@ -1,25 +1,16 @@
 import { expect, use } from "chai";
 import { waffleChai } from "@ethereum-waffle/chai";
-import { ethers } from "hardhat";
-import { Signer } from "ethers";
 
 import './helper';
+import { createContract } from '../scripts/utils';
 
 use(waffleChai);
 
 describe('LibMath', () => {
-    let accounts: Signer[];
     let libMath;
 
-    let createFromFactory = async (path, libraries = {}) => {
-        const factory = await ethers.getContractFactory(path, { libraries: libraries });
-        const deployed = await factory.deploy();
-        return deployed;
-    }
-
     beforeEach(async () => {
-        accounts = await ethers.getSigners();
-        libMath = await createFromFactory("contracts/test/TestLibMath.sol:TestLibMath");
+        libMath = await createContract("TestLibMath");
     });
 
     describe('mostSignificantBit', () => {
