@@ -9,41 +9,45 @@ contract AccessControl {
     using Bitwise for uint256;
     using EnumerableMapExt for EnumerableMapExt.AddressToUintMap;
 
-    mapping(address => EnumerableMapExt.AddressToUintMap) _accessControls;
+    mapping(address => EnumerableMapExt.AddressToUintMap) internal _accessControls;
 
     // privilege
-    event GrantPrivilege(address indexed owner, address indexed trader, uint256 privilege);
-    event RevokePrivilege(address indexed owner, address indexed trader, uint256 privilege);
+    event GrantPrivilege(address indexed account, address indexed grantor, uint256 privilege);
+    event RevokePrivilege(address indexed account, address indexed grantor, uint256 privilege);
 
-    function grantPrivilege(address trader, uint256 privilege) external {
+    function grantPrivilege(address grantor, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        require(!isGranted(msg.sender, trader, privilege), "privilege is already granted");
-        _accessControls[msg.sender].set(
-            trader,
-            _accessControls[msg.sender].get(trader).set(privilege)
-        );
-        emit GrantPrivilege(msg.sender, trader, privilege);
+        require(!isGranted(msg.sender, grantor, privilege), "privilege is already granted");
+        uint256 grantedPrivileges = _accessControls[msg.sender].contains(grantor)
+            ? _accessControls[msg.sender].get(grantor)
+            : 0;
+        grantedPrivileges = grantedPrivileges.set(privilege);
+        _accessControls[msg.sender].set(grantor, grantedPrivileges);
+        emit GrantPrivilege(msg.sender, grantor, privilege);
     }
 
-    function revokePrivilege(address trader, uint256 privilege) external {
+    function revokePrivilege(address grantor, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        require(isGranted(msg.sender, trader, privilege), "privilege is not granted");
+        require(isGranted(msg.sender, grantor, privilege), "privilege is not granted");
         _accessControls[msg.sender].set(
-            trader,
-            _accessControls[msg.sender].get(trader).clean(privilege)
+            grantor,
+            _accessControls[msg.sender].get(grantor).clean(privilege)
         );
-        emit RevokePrivilege(msg.sender, trader, privilege);
+        emit RevokePrivilege(msg.sender, grantor, privilege);
     }
 
     function isGranted(
-        address owner,
+        address account,
         address trader,
         uint256 privilege
     ) public view returns (bool) {
         if (!_isValid(privilege)) {
             return false;
         }
-        uint256 granted = _accessControls[owner].get(trader);
+        if (!_accessControls[account].contains(trader)) {
+            return false;
+        }
+        uint256 granted = _accessControls[account].get(trader);
         return granted > 0 && granted.test(privilege);
     }
 

@@ -12,12 +12,12 @@ import "../Storage.sol";
 import "../Getter.sol";
 
 contract TestTrade is Storage, Getter {
-    using PerpetualModule for Perpetual;
-    using MarginModule for Core;
-    using TradeModule for Core;
-    using TradeModule for Perpetual;
-    using ParameterModule for Core;
-    using ParameterModule for Perpetual;
+    using PerpetualModule for PerpetualStorage;
+    using MarginModule for LiquidityPoolStorage;
+    using TradeModule for LiquidityPoolStorage;
+    using TradeModule for PerpetualStorage;
+    using ParameterModule for LiquidityPoolStorage;
+    using ParameterModule for PerpetualStorage;
 
     Receipt public tempReceipt;
 
@@ -28,8 +28,8 @@ contract TestTrade is Storage, Getter {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        uint256 perpetualIndex = _core.perpetuals.length;
-        Perpetual storage perpetual = _core.perpetuals.push();
+        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
         perpetual.initialize(
             perpetualIndex,
             oracle,
@@ -44,20 +44,20 @@ contract TestTrade is Storage, Getter {
     function setUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding)
         public
     {
-        _core.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
+        _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
     }
 
     function setOperator(address operator) public {
-        _core.operator = operator;
+        _liquidityPool.operator = operator;
     }
 
     function setVault(address vault, int256 vaultFeeRate) public {
-        _core.vault = vault;
-        _core.vaultFeeRate = vaultFeeRate;
+        _liquidityPool.vault = vault;
+        _liquidityPool.vaultFeeRate = vaultFeeRate;
     }
 
     function updateLiquidityPoolParameter(bytes32 key, int256 newValue) external {
-        _core.updateLiquidityPoolParameter(key, newValue);
+        _liquidityPool.updateLiquidityPoolParameter(key, newValue);
     }
 
     function updatePerpetualParameter(
@@ -65,7 +65,7 @@ contract TestTrade is Storage, Getter {
         bytes32 key,
         int256 newValue
     ) external {
-        _core.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
+        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
     }
 
     function updatePerpetualRiskParameter(
@@ -73,7 +73,7 @@ contract TestTrade is Storage, Getter {
         bytes32 key,
         int256 newValue
     ) external {
-        _core.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
+        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
             key,
             newValue,
             newValue,
@@ -87,8 +87,9 @@ contract TestTrade is Storage, Getter {
         int256 cashBalance,
         int256 positionAmount
     ) external {
-        _core.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance = cashBalance;
-        _core.perpetuals[perpetualIndex].marginAccounts[trader].positionAmount = positionAmount;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance = cashBalance;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
+            .positionAmount = positionAmount;
     }
 
     function trade(
@@ -98,7 +99,7 @@ contract TestTrade is Storage, Getter {
         int256 priceLimit,
         address referrer
     ) public syncState {
-        _core.trade(perpetualIndex, trader, amount, priceLimit, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, priceLimit, referrer);
     }
 
     function updateTradingFees(
@@ -106,8 +107,8 @@ contract TestTrade is Storage, Getter {
         Receipt memory receipt,
         address referrer
     ) public {
-        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
-        _core.updateTradingFees(perpetual, receipt, referrer);
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        _liquidityPool.updateTradingFees(perpetual, receipt, referrer);
     }
 
     function updateTradingResult(
@@ -116,7 +117,7 @@ contract TestTrade is Storage, Getter {
         address taker,
         address maker
     ) public {
-        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateTradingResult(receipt, taker, maker);
     }
 

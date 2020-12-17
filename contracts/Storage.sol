@@ -16,31 +16,31 @@ import "./Type.sol";
 contract Storage {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    using FundingModule for Core;
-    using OracleModule for Core;
-    using OracleModule for Perpetual;
-    using SettlementModule for Core;
+    using FundingModule for LiquidityPoolStorage;
+    using OracleModule for LiquidityPoolStorage;
+    using OracleModule for PerpetualStorage;
+    using SettlementModule for LiquidityPoolStorage;
 
-    Core internal _core;
+    LiquidityPoolStorage internal _liquidityPool;
     address internal _governor;
     address internal _shareToken;
 
     modifier onlyExistedPerpetual(uint256 perpetualIndex) {
-        require(perpetualIndex < _core.perpetuals.length, "perpetual not exist");
+        require(perpetualIndex < _liquidityPool.perpetuals.length, "perpetual not exist");
         _;
     }
 
     modifier syncState() {
         uint256 currentTime = block.timestamp;
-        _core.updateFundingState(currentTime);
-        _core.updatePrice(currentTime);
+        _liquidityPool.updateFundingState(currentTime);
+        _liquidityPool.updatePrice(currentTime);
         _;
-        _core.updateFundingRate();
+        _liquidityPool.updateFundingRate();
     }
 
     modifier onlyWhen(uint256 perpetualIndex, PerpetualState allowedState) {
         require(
-            _core.perpetuals[perpetualIndex].state == allowedState,
+            _liquidityPool.perpetuals[perpetualIndex].state == allowedState,
             "operation is disallowed now"
         );
         _;
@@ -48,7 +48,7 @@ contract Storage {
 
     modifier onlyNotWhen(uint256 perpetualIndex, PerpetualState disallowedState) {
         require(
-            _core.perpetuals[perpetualIndex].state != disallowedState,
+            _liquidityPool.perpetuals[perpetualIndex].state != disallowedState,
             "operation is disallow now"
         );
         _;
@@ -57,7 +57,11 @@ contract Storage {
     modifier onlyAuthorized(address trader, uint256 privilege) {
         require(
             trader == msg.sender ||
-                IAccessController(_core.accessController).isGranted(trader, msg.sender, privilege),
+                IAccessController(_liquidityPool.accessController).isGranted(
+                    trader,
+                    msg.sender,
+                    privilege
+                ),
             "unauthorized operation"
         );
         _;

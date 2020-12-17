@@ -11,7 +11,7 @@ import "../interface/IFactory.sol";
 
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
-import "./CoreModule.sol";
+import "./LiquidityPoolModule.sol";
 import "./PerpetualModule.sol";
 import "./SettlementModule.sol";
 
@@ -24,19 +24,19 @@ library MarginModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    using PerpetualModule for Perpetual;
-    using OracleModule for Perpetual;
-    using CollateralModule for Perpetual;
-    using SettlementModule for Perpetual;
-    using CollateralModule for Core;
-    using CoreModule for Core;
+    using PerpetualModule for PerpetualStorage;
+    using OracleModule for PerpetualStorage;
+    using CollateralModule for PerpetualStorage;
+    using SettlementModule for PerpetualStorage;
+    using CollateralModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
 
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
 
     // atribute
     function initialMargin(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
@@ -50,7 +50,7 @@ library MarginModule {
     }
 
     function maintenanceMargin(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
@@ -63,7 +63,7 @@ library MarginModule {
                 .max(perpetual.keeperGasReward);
     }
 
-    function availableCashBalance(Perpetual storage perpetual, address trader)
+    function availableCashBalance(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
@@ -76,7 +76,7 @@ library MarginModule {
             );
     }
 
-    function positionAmount(Perpetual storage perpetual, address trader)
+    function positionAmount(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
@@ -85,7 +85,7 @@ library MarginModule {
     }
 
     function margin(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         address trader,
         int256 indexPrice
     ) internal view returns (int256) {
@@ -95,7 +95,7 @@ library MarginModule {
             );
     }
 
-    function isInitialMarginSafe(Perpetual storage perpetual, address trader)
+    function isInitialMarginSafe(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (bool)
@@ -105,7 +105,7 @@ library MarginModule {
             initialMargin(perpetual, trader, perpetual.markPrice());
     }
 
-    function isMaintenanceMarginSafe(Perpetual storage perpetual, address trader)
+    function isMaintenanceMarginSafe(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (bool)
@@ -115,7 +115,7 @@ library MarginModule {
             maintenanceMargin(perpetual, trader, perpetual.markPrice());
     }
 
-    function isMarginSafe(Perpetual storage perpetual, address trader)
+    function isMarginSafe(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (bool)
@@ -123,7 +123,7 @@ library MarginModule {
         return margin(perpetual, trader, perpetual.markPrice()) >= 0;
     }
 
-    function isEmptyAccount(Perpetual storage perpetual, address trader)
+    function isEmptyAccount(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (bool)
@@ -134,46 +134,46 @@ library MarginModule {
     }
 
     function deposit(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
         int256 amount
     ) public {
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         bool isInitial = isEmptyAccount(perpetual, trader);
-        int256 totalAmount = core.transferFromUser(trader, amount);
+        int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
         require(totalAmount > 0, "total amount is 0");
         perpetual.increaseDepositedCollateral(totalAmount);
         updateCashBalance(perpetual, trader, totalAmount);
         if (isInitial) {
-            perpetual.registerTrader(trader);
-            IFactory(core.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+            perpetual.registerActiveAccount(trader);
+            IFactory(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
         }
         emit Deposit(perpetualIndex, trader, totalAmount);
     }
 
     function withdraw(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
         int256 amount
     ) public {
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
-        core.rebalance(perpetual);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        liquidityPool.rebalance(perpetual);
         updateCashBalance(perpetual, trader, amount.neg());
         perpetual.decreaseDepositedCollateral(amount);
         require(isInitialMarginSafe(perpetual, trader), "margin is unsafe after withdrawal");
         bool isDrained = isEmptyAccount(perpetual, trader);
         if (isDrained) {
-            perpetual.deregisterTrader(trader);
-            IFactory(core.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+            perpetual.deregisterActiveAccount(trader);
+            IFactory(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
         }
-        core.transferToUser(payable(trader), amount);
+        liquidityPool.transferToUser(payable(trader), amount);
         emit Withdraw(perpetualIndex, trader, amount);
     }
 
     function updateCashBalance(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         address trader,
         int256 deltaCashBalance
     ) internal {
@@ -183,7 +183,7 @@ library MarginModule {
     }
 
     function updateMarginAccount(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         address trader,
         int256 deltaPositionAmount,
         int256 deltaCashBalance

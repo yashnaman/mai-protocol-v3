@@ -19,25 +19,27 @@ library FundingModule {
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
-    using AMMModule for Core;
-    using MarginModule for Perpetual;
-    using OracleModule for Perpetual;
+    using AMMModule for LiquidityPoolStorage;
+    using MarginModule for PerpetualStorage;
+    using OracleModule for PerpetualStorage;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    function updateFundingState(Core storage core, uint256 currentTime) public {
-        if (core.fundingTime >= currentTime) {
+    function updateFundingState(LiquidityPoolStorage storage liquidityPool, uint256 currentTime)
+        public
+    {
+        if (liquidityPool.fundingTime >= currentTime) {
             return;
         }
-        int256 timeElapsed = currentTime.sub(core.fundingTime).toInt256();
-        uint256 length = core.perpetuals.length;
+        int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updateFundingState(core.perpetuals[i], timeElapsed);
+            updateFundingState(liquidityPool.perpetuals[i], timeElapsed);
         }
-        core.fundingTime = currentTime;
+        liquidityPool.fundingTime = currentTime;
     }
 
-    function updateFundingState(Perpetual storage perpetual, int256 timeElapsed) public {
+    function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
         if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
@@ -48,18 +50,18 @@ library FundingModule {
         perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
     }
 
-    function updateFundingRate(Core storage core) public {
-        AMMModule.Context memory context = core.prepareContext();
+    function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
+        AMMModule.Context memory context = liquidityPool.prepareContext();
         int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
             ? AMMModule.regress(context, 0)
             : 0;
-        uint256 length = core.perpetuals.length;
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updateFundingRate(core.perpetuals[i], poolMargin);
+            updateFundingRate(liquidityPool.perpetuals[i], poolMargin);
         }
     }
 
-    function updateFundingRate(Perpetual storage perpetual, int256 poolMargin) public {
+    function updateFundingRate(PerpetualStorage storage perpetual, int256 poolMargin) public {
         if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }

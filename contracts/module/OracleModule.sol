@@ -6,18 +6,18 @@ import "../interface/IOracle.sol";
 import "../Type.sol";
 
 library OracleModule {
-    function updatePrice(Core storage core, uint256 currentTime) internal {
-        if (core.priceUpdateTime >= currentTime) {
+    function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) internal {
+        if (liquidityPool.priceUpdateTime >= currentTime) {
             return;
         }
-        uint256 length = core.perpetuals.length;
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            updatePrice(core.perpetuals[i]);
+            updatePrice(liquidityPool.perpetuals[i]);
         }
-        core.priceUpdateTime = currentTime;
+        liquidityPool.priceUpdateTime = currentTime;
     }
 
-    function updatePrice(Perpetual storage perpetual) internal {
+    function updatePrice(PerpetualStorage storage perpetual) internal {
         // no longer update price after emergency
         if (perpetual.state != PerpetualState.NORMAL) {
             return;
@@ -26,14 +26,14 @@ library OracleModule {
         updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
     }
 
-    function markPrice(Perpetual storage perpetual) internal view returns (int256) {
+    function markPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
                 ? perpetual.markPriceData.price
                 : perpetual.settlementPriceData.price;
     }
 
-    function indexPrice(Perpetual storage perpetual) internal view returns (int256) {
+    function indexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
                 ? perpetual.indexPriceData.price
@@ -52,7 +52,7 @@ library OracleModule {
         }
     }
 
-    function freezeOraclePrice(Perpetual storage perpetual) public {
+    function freezeOraclePrice(PerpetualStorage storage perpetual) public {
         perpetual.settlementPriceData = perpetual.indexPriceData;
     }
 }

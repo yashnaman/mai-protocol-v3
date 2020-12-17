@@ -27,9 +27,9 @@ library AMMModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeCastUpgradeable for int256;
     using SafeMathUpgradeable for uint256;
-    using OracleModule for Perpetual;
-    using MarginModule for Perpetual;
-    using CollateralModule for Core;
+    using OracleModule for PerpetualStorage;
+    using MarginModule for PerpetualStorage;
+    using CollateralModule for LiquidityPoolStorage;
 
     struct Context {
         int256 indexPrice;
@@ -44,14 +44,14 @@ library AMMModule {
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
 
     function tradeWithAMM(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         int256 tradingAmount,
         bool partialFill
     ) public view returns (int256 deltaMargin, int256 deltaPosition) {
         require(tradingAmount != 0, "trade amount is zero");
-        Context memory context = prepareContext(core, perpetualIndex);
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        Context memory context = prepareContext(liquidityPool, perpetualIndex);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
             context.positionAmount,
             tradingAmount
@@ -75,36 +75,38 @@ library AMMModule {
         deltaMargin = deltaMargin > 0 ? deltaMargin.add(halfSpread) : deltaMargin.sub(halfSpread);
     }
 
-    function addLiquidity(Core storage core, int256 cashAmount) public {
-        int256 totalCashAmount = core.transferFromUser(msg.sender, cashAmount);
+    function addLiquidity(LiquidityPoolStorage storage liquidityPool, int256 cashAmount) public {
+        int256 totalCashAmount = liquidityPool.transferFromUser(msg.sender, cashAmount);
         require(totalCashAmount > 0, "total cashAmount must be positive");
-        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
-        int256 shareAmount = calculateShareToMint(core, shareTotalSupply, totalCashAmount);
+        int256 shareTotalSupply = IERC20Upgradeable(liquidityPool.shareToken)
+            .totalSupply()
+            .toInt256();
+        int256 shareAmount = calculateShareToMint(liquidityPool, shareTotalSupply, totalCashAmount);
         require(shareAmount > 0, "received share must be positive");
-        core.poolCashBalance = core.poolCashBalance.add(totalCashAmount);
-        core.poolCollateral = core.poolCollateral.add(totalCashAmount);
-        IShareToken(core.shareToken).mint(msg.sender, shareAmount.toUint256());
+        liquidityPool.poolCashBalance = liquidityPool.poolCashBalance.add(totalCashAmount);
+        liquidityPool.poolCollateral = liquidityPool.poolCollateral.add(totalCashAmount);
+        IShareToken(liquidityPool.shareToken).mint(msg.sender, shareAmount.toUint256());
         emit AddLiquidity(msg.sender, totalCashAmount, shareAmount);
     }
 
     function calculateShareToMint(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 cashToAdd
     ) internal view returns (int256 shareToMint) {
-        Context memory context = prepareContext(core);
+        Context memory context = prepareContext(liquidityPool);
         int256 poolMargin;
         int256 newPoolMargin;
         if (isAMMMarginSafe(context, 0)) {
             poolMargin = regress(context, 0);
         } else {
-            poolMargin = poolMarginBalance(core).div(2);
+            poolMargin = poolMarginBalance(liquidityPool).div(2);
         }
         context.availableCashBalance = context.availableCashBalance.add(cashToAdd);
         if (isAMMMarginSafe(context, 0)) {
             newPoolMargin = regress(context, 0);
         } else {
-            newPoolMargin = poolMarginBalance(core).add(cashToAdd).div(2);
+            newPoolMargin = poolMarginBalance(liquidityPool).add(cashToAdd).div(2);
         }
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
@@ -114,27 +116,32 @@ library AMMModule {
         }
     }
 
-    function removeLiquidity(Core storage core, int256 shareToRemove) public {
+    function removeLiquidity(LiquidityPoolStorage storage liquidityPool, int256 shareToRemove)
+        public
+    {
         require(shareToRemove > 0, "share to remove must be positive");
         require(
-            shareToRemove <= IERC20Upgradeable(core.shareToken).balanceOf(msg.sender).toInt256(),
+            shareToRemove <=
+                IERC20Upgradeable(liquidityPool.shareToken).balanceOf(msg.sender).toInt256(),
             "insufficient share balance"
         );
-        int256 shareTotalSupply = IERC20Upgradeable(core.shareToken).totalSupply().toInt256();
-        int256 cashToReturn = calculateCashToReturn(core, shareTotalSupply, shareToRemove);
-        IShareToken(core.shareToken).burn(msg.sender, shareToRemove.toUint256());
-        core.poolCashBalance = core.poolCashBalance.sub(cashToReturn);
-        core.poolCollateral = core.poolCollateral.sub(cashToReturn);
-        core.transferToUser(payable(msg.sender), cashToReturn);
+        int256 shareTotalSupply = IERC20Upgradeable(liquidityPool.shareToken)
+            .totalSupply()
+            .toInt256();
+        int256 cashToReturn = calculateCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
+        IShareToken(liquidityPool.shareToken).burn(msg.sender, shareToRemove.toUint256());
+        liquidityPool.poolCashBalance = liquidityPool.poolCashBalance.sub(cashToReturn);
+        liquidityPool.poolCollateral = liquidityPool.poolCollateral.sub(cashToReturn);
+        liquidityPool.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
 
     function calculateCashToReturn(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
-        Context memory context = prepareContext(core);
+        Context memory context = prepareContext(liquidityPool);
         require(isAMMMarginSafe(context, 0), "amm is unsafe before removing liquidity");
         int256 poolMargin = regress(context, 0);
         if (poolMargin == 0) {
@@ -147,10 +154,10 @@ library AMMModule {
         }
         cashToReturn = marginToRemove(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
-        int256 newMarginBalance = poolMarginBalance(core).sub(cashToReturn);
-        uint256 length = core.perpetuals.length;
+        int256 newMarginBalance = poolMarginBalance(liquidityPool).sub(cashToReturn);
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            Perpetual storage perpetual = core.perpetuals[i];
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             require(
                 perpetual.positionAmount(address(this)) <=
                     poolMargin.wdiv(perpetual.openSlippageFactor.value),
@@ -189,17 +196,21 @@ library AMMModule {
         return context.availableCashBalance >= minAvailableCashBalance;
     }
 
-    function poolCashBalance(Core storage core) internal view returns (int256 cashBalance) {
-        uint256 length = core.perpetuals.length;
+    function poolCashBalance(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (int256 cashBalance)
+    {
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            Perpetual storage perpetual = core.perpetuals[i];
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             cashBalance = cashBalance.add(perpetual.availableCashBalance(address(this)));
         }
-        cashBalance = cashBalance.add(core.poolCashBalance);
+        cashBalance = cashBalance.add(liquidityPool.poolCashBalance);
     }
 
     function closePosition(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         Context memory context,
         int256 tradingAmount
     ) public view returns (int256 deltaMargin) {
@@ -225,7 +236,7 @@ library AMMModule {
     }
 
     function openPosition(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         Context memory context,
         int256 tradingAmount,
         bool partialFill
@@ -282,18 +293,22 @@ library AMMModule {
         );
     }
 
-    function prepareContext(Core storage core) internal view returns (Context memory context) {
-        return prepareContext(core, core.perpetuals.length);
-    }
-
-    function prepareContext(Core storage core, uint256 perpetualIndex)
+    function prepareContext(LiquidityPoolStorage storage liquidityPool)
         internal
         view
         returns (Context memory context)
     {
-        uint256 length = core.perpetuals.length;
+        return prepareContext(liquidityPool, liquidityPool.perpetuals.length);
+    }
+
+    function prepareContext(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        internal
+        view
+        returns (Context memory context)
+    {
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            Perpetual storage perpetual = core.perpetuals[i];
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             int256 positionAmount = perpetual.positionAmount(address(this));
             int256 indexPrice = perpetual.indexPrice();
             if (i == perpetualIndex) {
@@ -314,7 +329,7 @@ library AMMModule {
                 );
             }
         }
-        context.availableCashBalance = poolCashBalance(core);
+        context.availableCashBalance = poolCashBalance(liquidityPool);
         require(
             context.availableCashBalance.add(context.positionValue).add(
                 context.indexPrice.wmul(context.positionAmount)
@@ -375,15 +390,19 @@ library AMMModule {
         }
     }
 
-    function poolMarginBalance(Core storage core) private view returns (int256 marginBalance) {
-        uint256 length = core.perpetuals.length;
+    function poolMarginBalance(LiquidityPoolStorage storage liquidityPool)
+        private
+        view
+        returns (int256 marginBalance)
+    {
+        uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            Perpetual storage perpetual = core.perpetuals[i];
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             marginBalance = marginBalance.add(
                 perpetual.margin(address(this), perpetual.indexPrice())
             );
         }
-        marginBalance = marginBalance.add(core.poolCashBalance);
+        marginBalance = marginBalance.add(liquidityPool.poolCashBalance);
     }
 
     function marginToRemove(Context memory context, int256 poolMargin)

@@ -8,7 +8,7 @@ import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
 import "./AMMModule.sol";
-import "./CoreModule.sol";
+import "./LiquidityPoolModule.sol";
 import "./MarginModule.sol";
 import "./OracleModule.sol";
 
@@ -19,10 +19,10 @@ import "hardhat/console.sol";
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
-    using AMMModule for Core;
-    using CoreModule for Core;
-    using MarginModule for Perpetual;
-    using OracleModule for Perpetual;
+    using AMMModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
+    using MarginModule for PerpetualStorage;
+    using OracleModule for PerpetualStorage;
     using MarginModule for MarginAccount;
 
     address internal constant INVALID_ADDRESS = address(0);
@@ -36,17 +36,17 @@ library TradeModule {
     );
 
     function trade(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
         int256 amount,
         int256 priceLimit,
         address referrer
     ) public {
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // 0. price / amount
         Receipt memory receipt;
-        (receipt.tradingValue, receipt.tradingAmount) = core.tradeWithAMM(
+        (receipt.tradingValue, receipt.tradingAmount) = liquidityPool.tradeWithAMM(
             perpetualIndex,
             amount.neg(),
             false
@@ -58,7 +58,7 @@ library TradeModule {
         int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
         validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
         // 1. fee
-        updateTradingFees(core, perpetual, receipt, referrer);
+        updateTradingFees(liquidityPool, perpetual, receipt, referrer);
         // 2. execute
         updateTradingResult(perpetual, receipt, trader, address(this));
         // 3. safe
@@ -78,13 +78,13 @@ library TradeModule {
     }
 
     function updateTradingFees(
-        Core storage core,
-        Perpetual storage perpetual,
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
         Receipt memory receipt,
         address referrer
     ) public {
         int256 tradingValue = receipt.tradingValue.abs();
-        receipt.vaultFee = tradingValue.wmul(core.vaultFeeRate);
+        receipt.vaultFee = tradingValue.wmul(liquidityPool.vaultFeeRate);
         receipt.lpFee = tradingValue.wmul(perpetual.lpFeeRate);
         receipt.operatorFee = tradingValue.wmul(perpetual.operatorFeeRate);
         if (perpetual.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
@@ -94,13 +94,17 @@ library TradeModule {
             receipt.operatorFee = receipt.operatorFee.sub(operatorFeeRabate);
             receipt.referrerFee = lpFeeRebate.add(operatorFeeRabate);
         }
-        core.increaseClaimableFee(referrer, receipt.referrerFee);
-        core.increaseClaimableFee(core.vault, receipt.vaultFee);
-        core.increaseClaimableFee(core.operator, receipt.operatorFee);
+        liquidityPool.collectFee(
+            perpetual,
+            referrer,
+            receipt.vaultFee,
+            receipt.operatorFee,
+            receipt.referrerFee
+        );
     }
 
     function updateTradingResult(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         Receipt memory receipt,
         address taker,
         address maker

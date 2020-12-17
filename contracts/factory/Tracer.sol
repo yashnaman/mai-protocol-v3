@@ -18,20 +18,20 @@ contract Tracer {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
-    struct MUID {
+    struct PerpetualUID {
         address liquidityPool;
         uint256 perpetualIndex;
     }
 
-    uint256 internal nextGUID;
-    // hash(muid) => MUID {}
-    mapping(bytes32 => MUID) internal _muids;
-    // guid => liquidity pool address
-    mapping(uint256 => address) internal _liquidityPoolGUIDIndex;
     // liquidity pool address[]
     EnumerableSet.AddressSet internal _liquidityPoolSet;
-    // trader => hash(muid) []
+    // hash(puid) => PerpetualUID {}
+    mapping(bytes32 => PerpetualUID) internal _perpetualUIDs;
+    // trader => hash(puid) []
     mapping(address => EnumerableSet.Bytes32Set) internal _traderActiveLiquidityPools;
+    // operator => address
+    mapping(address => EnumerableSet.AddressSet) internal _operatorOwnedLiquidityPools;
+    mapping(address => address) internal _liquidityPoolOwners;
 
     modifier onlyLiquidityPool() {
         require(isLiquidityPool(msg.sender), "call is not liquidity pool instance");
@@ -52,29 +52,37 @@ contract Tracer {
         view
         returns (address[] memory result)
     {
-        require(end > begin, "begin should be lower than end");
-        uint256 length = _liquidityPoolSet.length();
-        if (begin >= length) {
-            return result;
-        }
-        uint256 safeEnd = begin.add(end).min(length);
-        result = new address[](safeEnd.sub(begin));
-        for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = _liquidityPoolSet.at(i);
-        }
-        return result;
+        return _addressSetToList(_liquidityPoolSet, begin, end);
     }
 
-    function findLiquidityPoolByIndex(uint256 guid) public view returns (address) {
-        return _liquidityPoolGUIDIndex[guid];
+    function listLiquidityPoolOwnedBy(
+        address operator,
+        uint256 begin,
+        uint256 end
+    ) public view returns (address[] memory result) {
+        return _addressSetToList(_operatorOwnedLiquidityPools[operator], begin, end);
     }
 
-    function _registerLiquidityPool(address liquidityPool) internal {
+    function updateLiquidityPoolOwnership(address liquidityPool, address operator)
+        public
+        onlyLiquidityPool
+    {
+        address prevOperator = _liquidityPoolOwners[liquidityPool];
+        require(operator != prevOperator, "user is already operator of liquidity pool");
+        bool exist = _operatorOwnedLiquidityPools[prevOperator].remove(liquidityPool);
+        require(exist, "operator is not owned by previous owner");
+
+        bool success = _operatorOwnedLiquidityPools[operator].add(liquidityPool);
+        require(success, "operator is already owner of this liquidity pool");
+        _liquidityPoolOwners[liquidityPool] = operator;
+    }
+
+    function _registerLiquidityPool(address liquidityPool, address operator) internal {
         require(liquidityPool != address(0), "invalid liquidity pool address");
-        bool notExist = _liquidityPoolSet.add(liquidityPool);
-        require(notExist, "liquidity pool exists");
-        _liquidityPoolGUIDIndex[nextGUID] = liquidityPool;
-        nextGUID = nextGUID.add(1);
+        bool success = _liquidityPoolSet.add(liquidityPool);
+        require(success, "liquidity pool exists");
+        _operatorOwnedLiquidityPools[operator].add(liquidityPool);
+        _liquidityPoolOwners[liquidityPool] = operator;
     }
 
     // =========================== Active Liquidity Pool of Trader ===========================
@@ -97,16 +105,16 @@ contract Tracer {
         address trader,
         uint256 begin,
         uint256 end
-    ) public view returns (MUID[] memory result) {
+    ) public view returns (PerpetualUID[] memory result) {
         require(end > begin, "begin should be lower than end");
         uint256 length = _traderActiveLiquidityPools[trader].length();
         if (begin >= length) {
             return result;
         }
         uint256 safeEnd = begin.add(end).min(length);
-        result = new MUID[](safeEnd.sub(begin));
+        result = new PerpetualUID[](safeEnd.sub(begin));
         for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = _muids[_traderActiveLiquidityPools[trader].at(i)];
+            result[i.sub(begin)] = _perpetualUIDs[_traderActiveLiquidityPools[trader].at(i)];
         }
         return result;
     }
@@ -117,8 +125,11 @@ contract Tracer {
         returns (bool)
     {
         bytes32 key = _poolPerpetualKey(msg.sender, perpetualIndex);
-        if (_muids[key].liquidityPool == address(0)) {
-            _muids[key] = MUID({ liquidityPool: msg.sender, perpetualIndex: perpetualIndex });
+        if (_perpetualUIDs[key].liquidityPool == address(0)) {
+            _perpetualUIDs[key] = PerpetualUID({
+                liquidityPool: msg.sender,
+                perpetualIndex: perpetualIndex
+            });
         }
         return _traderActiveLiquidityPools[trader].add(key);
     }
@@ -132,6 +143,26 @@ contract Tracer {
             _traderActiveLiquidityPools[trader].remove(
                 _poolPerpetualKey(msg.sender, perpetualIndex)
             );
+    }
+
+    // =========================== Active Liquidity Pool of Trader ===========================
+
+    function _addressSetToList(
+        EnumerableSet.AddressSet storage set,
+        uint256 begin,
+        uint256 end
+    ) internal view returns (address[] memory result) {
+        require(end > begin, "begin should be lower than end");
+        uint256 length = set.length();
+        if (begin >= length) {
+            return result;
+        }
+        uint256 safeEnd = begin.add(end).min(length);
+        result = new address[](safeEnd.sub(begin));
+        for (uint256 i = begin; i < end; i++) {
+            result[i.sub(begin)] = set.at(i);
+        }
+        return result;
     }
 
     function _poolPerpetualKey(address liquidityPool, uint256 perpetualIndex)

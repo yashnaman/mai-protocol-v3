@@ -28,13 +28,16 @@ struct Order {
     address relayer;
     address referrer;
     address liquidityPool;
-    uint256 perpetualIndex;
-    int256 amount;
-    int256 priceLimit;
     int256 minTradeAmount;
-    uint256 tradeGasLimit;
+    int256 amount;
+    int256 limitPrice;
+    int256 triggerPrice;
     uint256 chainID;
-    bytes32 data;
+    uint64 expiredAt;
+    uint32 perpetualIndex;
+    uint32 brokerFeeLimit;
+    uint32 flags;
+    uint32 salt;
 }
 
 struct Receipt {
@@ -46,7 +49,7 @@ struct Receipt {
     int256 referrerFee;
 }
 
-struct Core {
+struct LiquidityPoolStorage {
     bool isFinalized;
     // addresses
     address factory;
@@ -71,16 +74,13 @@ struct Core {
     int256 totalClaimableFee;
     mapping(address => int256) claimableFees;
     // perpetuals
-    Perpetual[] perpetuals;
-    // order
-    mapping(bytes32 => int256) orderFilled;
-    mapping(bytes32 => bool) orderCanceled;
+    PerpetualStorage[] perpetuals;
     // funding
     uint256 fundingTime;
     uint256 priceUpdateTime;
 }
 
-struct Perpetual {
+struct PerpetualStorage {
     uint256 id;
     PerpetualState state;
     address oracle;

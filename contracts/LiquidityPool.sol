@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IFactory.sol";
 
-import "./module/CoreModule.sol";
+import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
 
 import "./AMM.sol";
@@ -14,14 +14,15 @@ import "./Events.sol";
 import "./Getter.sol";
 import "./Governance.sol";
 import "./Perpetual.sol";
+import "./Storage.sol";
 import "./Settlement.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
+contract LiquidityPool is Storage, Perpetual, AMM, Settlement, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    using PerpetualModule for Perpetual;
-    using CoreModule for Core;
+    using PerpetualModule for PerpetualStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
 
     event Finalize();
     event CreatePerpetual(
@@ -41,7 +42,7 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
         address governor,
         address shareToken
     ) external initializer {
-        _core.initialize(collateral, operator, governor, shareToken);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken);
     }
 
     function createPerpetual(
@@ -52,11 +53,12 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
         int256[5] calldata maxRiskParamValues
     ) external {
         require(
-            (!_core.isFinalized && msg.sender == _core.operator) || msg.sender == _core.governor,
+            (!_liquidityPool.isFinalized && msg.sender == _liquidityPool.operator) ||
+                msg.sender == _liquidityPool.governor,
             "operation is forbidden after finalized"
         );
-        uint256 perpetualIndex = _core.perpetuals.length;
-        Perpetual storage perpetual = _core.perpetuals.push();
+        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
         perpetual.initialize(
             perpetualIndex,
             oracle,
@@ -67,23 +69,23 @@ contract LiquidityPool is Storage, Trade, AMM, Settlement, Getter, Governance {
         );
         emit CreatePerpetual(
             perpetualIndex,
-            _core.governor,
-            _core.shareToken,
-            _core.operator,
+            _liquidityPool.governor,
+            _liquidityPool.shareToken,
+            _liquidityPool.operator,
             oracle,
-            _core.collateral,
+            _liquidityPool.collateral,
             coreParams,
             riskParams
         );
     }
 
     function finalize() external onlyOperator {
-        require(!_core.isFinalized, "core is already finalized");
-        uint256 length = _core.perpetuals.length;
+        require(!_liquidityPool.isFinalized, "core is already finalized");
+        uint256 length = _liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            _core.perpetuals[i].enterNormalState();
+            _liquidityPool.perpetuals[i].enterNormalState();
         }
-        _core.isFinalized = true;
+        _liquidityPool.isFinalized = true;
         emit Finalize();
     }
 

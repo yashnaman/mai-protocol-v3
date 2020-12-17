@@ -14,19 +14,19 @@ library ParameterModule {
     using SignedSafeMathUpgradeable for int256;
 
     function updateLiquidityPoolParameter(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         bytes32 key,
         int256 newValue
     ) public {
         if (key == "insuranceFundCap") {
-            core.insuranceFundCap = newValue;
+            liquidityPool.insuranceFundCap = newValue;
         } else {
             revert("key not found");
         }
     }
 
     function updatePerpetualParameter(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue
     ) public {
@@ -60,7 +60,7 @@ library ParameterModule {
     }
 
     function adjustPerpetualRiskParameter(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue
     ) public {
@@ -80,7 +80,7 @@ library ParameterModule {
     }
 
     function updatePerpetualRiskParameter(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue,
         int256 newMinValue,
@@ -121,7 +121,7 @@ library ParameterModule {
         option.maxValue = newMaxValue;
     }
 
-    function validateCoreParameters(Perpetual storage perpetual) public view {
+    function validateCoreParameters(PerpetualStorage storage perpetual) public view {
         require(perpetual.initialMarginRate > 0, "imr should be greater than 0");
         require(perpetual.maintenanceMarginRate > 0, "mmr should be greater than 0");
         require(
@@ -145,7 +145,7 @@ library ParameterModule {
         require(perpetual.keeperGasReward >= 0, "kgr should be non-negative");
     }
 
-    function validateRiskParameters(Perpetual storage perpetual) public view {
+    function validateRiskParameters(PerpetualStorage storage perpetual) public view {
         require(perpetual.halfSpread.value >= 0, "hsr shoud be greater than 0");
         require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(

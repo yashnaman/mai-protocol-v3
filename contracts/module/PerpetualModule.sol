@@ -13,16 +13,16 @@ import "../Type.sol";
 
 library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
-    using ParameterModule for Perpetual;
+    using ParameterModule for PerpetualStorage;
     using ParameterModule for Option;
-    using OracleModule for Perpetual;
+    using OracleModule for PerpetualStorage;
 
     event EnterNormalState();
     event EnterEmergencyState(int256 settlementPrice, uint256 settlementTime);
     event EnterClearedState();
 
     function initialize(
-        Perpetual storage perpetual,
+        PerpetualStorage storage perpetual,
         uint256 id,
         address oracle,
         int256[8] calldata coreParams,
@@ -72,18 +72,18 @@ library PerpetualModule {
         perpetual.state = PerpetualState.INITIALIZING;
     }
 
-    function increaseDepositedCollateral(Perpetual storage perpetual, int256 amount) public {
+    function increaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
         perpetual.depositedCollateral = perpetual.depositedCollateral.add(amount);
     }
 
-    function decreaseDepositedCollateral(Perpetual storage perpetual, int256 amount) public {
+    function decreaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
         perpetual.depositedCollateral = perpetual.depositedCollateral.sub(amount);
         require(perpetual.depositedCollateral >= 0, "collateral is negative");
     }
 
-    function enterNormalState(Perpetual storage perpetual) internal {
+    function enterNormalState(PerpetualStorage storage perpetual) internal {
         require(
             perpetual.state == PerpetualState.INITIALIZING,
             "perpetual should be in initializing state"
@@ -92,7 +92,7 @@ library PerpetualModule {
         emit EnterNormalState();
     }
 
-    function enterEmergencyState(Perpetual storage perpetual) internal {
+    function enterEmergencyState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
         perpetual.updatePrice();
         perpetual.freezeOraclePrice();
@@ -103,7 +103,7 @@ library PerpetualModule {
         );
     }
 
-    function enterClearedState(Perpetual storage perpetual) internal {
+    function enterClearedState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
         perpetual.state = PerpetualState.CLEARED;
         emit EnterClearedState();

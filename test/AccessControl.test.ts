@@ -21,8 +21,7 @@ describe('AccessControl', () => {
         user0 = accounts[0];
         user1 = accounts[1];
 
-        const FundingModule = await createContract("FundingModule")
-        TestAccessControl = await createFactory("TestAccessControl", { FundingModule });
+        TestAccessControl = await createFactory("TestAccessControl");
         accessControl = await TestAccessControl.deploy();
     })
 

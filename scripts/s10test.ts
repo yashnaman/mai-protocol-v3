@@ -86,8 +86,8 @@ async function set1(accounts: any[], poolCreator, weth) {
         ["Oracle  'ETH / USD'  ", "0xF34BA0c3c81C88867195143B4368f1cA36AD2571"],
         ["Oracle  'ETH / BTC'  ", "0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82"],
         ["LiquidityPool", `${liquidityPool.address} @ ${tx.blockNumber}`],
-        ["  Perpetual 0", `@ ${mtx1.blockNumber}`],
-        ["  Perpetual 1", `@ ${mtx2.blockNumber}`],
+        ["  PerpetualStorage 0", `@ ${mtx1.blockNumber}`],
+        ["  PerpetualStorage 1", `@ ${mtx2.blockNumber}`],
     ]
     console.table(addresses)
     return liquidityPool
@@ -144,10 +144,10 @@ async function set2(accounts: any[], poolCreator, weth) {
         ["Oracle  'USD / DPI'  ", "0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA"],
         ["Oracle  'USD / SP500'", "0x37398F5C3D11c11386294Dd3e7464717a10Ffb15"],
         ["LiquidityPool", `${liquidityPool.address} @ ${tx.blockNumber}`],
-        ["  Perpetual 0", `@ ${mtx1.blockNumber}`],
-        ["  Perpetual 1", `@ ${mtx2.blockNumber}`],
-        ["  Perpetual 2", `@ ${mtx3.blockNumber}`],
-        ["  Perpetual 3", `@ ${mtx4.blockNumber}`],
+        ["  PerpetualStorage 0", `@ ${mtx1.blockNumber}`],
+        ["  PerpetualStorage 1", `@ ${mtx2.blockNumber}`],
+        ["  PerpetualStorage 2", `@ ${mtx3.blockNumber}`],
+        ["  PerpetualStorage 3", `@ ${mtx4.blockNumber}`],
     ]
     console.table(addresses)
     return liquidityPool

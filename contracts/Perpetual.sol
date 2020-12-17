@@ -24,7 +24,7 @@ import "./module/TradeModule.sol";
 import "./module/LiquidationModule.sol";
 import "./module/SettlementModule.sol";
 import "./module/OrderModule.sol";
-import "./module/CoreModule.sol";
+import "./module/LiquidityPoolModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
@@ -33,7 +33,7 @@ import "./Type.sol";
 
 import "hardhat/console.sol";
 
-contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
+contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using SafeCastUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -44,14 +44,14 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using OrderData for Order;
 
-    using AMMModule for Core;
-    using CollateralModule for Core;
-    using CoreModule for Core;
-    using LiquidationModule for Core;
-    using MarginModule for Core;
-    using OrderModule for Core;
-    using SettlementModule for Core;
-    using TradeModule for Core;
+    using AMMModule for LiquidityPoolStorage;
+    using CollateralModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
+    using LiquidationModule for LiquidityPoolStorage;
+    using MarginModule for LiquidityPoolStorage;
+    using OrderModule for LiquidityPoolStorage;
+    using SettlementModule for LiquidityPoolStorage;
+    using TradeModule for LiquidityPoolStorage;
 
     function deposit(
         uint256 perpetualIndex,
@@ -67,7 +67,7 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0 || msg.value > 0, "amount is invalid");
-        _core.deposit(perpetualIndex, trader, amount);
+        _liquidityPool.deposit(perpetualIndex, trader, amount);
     }
 
     function withdraw(
@@ -84,7 +84,7 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
-        _core.withdraw(perpetualIndex, trader, amount);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount);
     }
 
     function trade(
@@ -106,9 +106,9 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         require(priceLimit >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
         if (isCloseOnly) {
-            amount = _core.truncateAmount(perpetualIndex, trader, amount);
+            amount = _liquidityPool.truncateCloseAmount(perpetualIndex, trader, amount);
         }
-        _core.trade(perpetualIndex, trader, amount, priceLimit, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, priceLimit, referrer);
     }
 
     function brokerTrade(
@@ -116,21 +116,27 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         int256 amount,
         bytes memory signature
     ) external syncState onlyWhen(order.perpetualIndex, PerpetualState.NORMAL) {
-        address signer = order.signer(signature);
+        address signer = order.signer(signature, true);
         require(
             signer == order.trader ||
-                IAccessController(_core.accessController).isGranted(
+                IAccessController(_liquidityPool.accessController).isGranted(
                     order.trader,
                     signer,
                     Constant.PRIVILEGE_TRADE
                 ),
-            "unauthorized"
+            "signer is unauthorized"
         );
-        _core.validateOrder(order, amount);
-        if (order.isCloseOnly() || order.orderType() == OrderType.STOP) {
-            amount = _core.truncateAmount(order.perpetualIndex, order.trader, amount);
+        _liquidityPool.validateOrder(order, amount);
+        if (order.isCloseOnly()) {
+            amount = _liquidityPool.truncateCloseAmount(order.perpetualIndex, order.trader, amount);
         }
-        _core.trade(order.perpetualIndex, order.trader, amount, order.priceLimit, order.referrer);
+        _liquidityPool.trade(
+            order.perpetualIndex,
+            order.trader,
+            amount,
+            order.limitPrice,
+            order.referrer
+        );
     }
 
     function liquidateByAMM(
@@ -140,7 +146,7 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
     ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
         require(trader != address(0), "trader is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _core.liquidateByAMM(perpetualIndex, trader);
+        _liquidityPool.liquidateByAMM(perpetualIndex, trader);
     }
 
     function liquidateByTrader(
@@ -154,7 +160,7 @@ contract Trade is Storage, Events, ReentrancyGuardUpgradeable {
         require(amount != 0, "amount is invalid");
         require(priceLimit >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _core.liquidateByTrader(perpetualIndex, msg.sender, trader, amount, priceLimit);
+        _liquidityPool.liquidateByTrader(perpetualIndex, msg.sender, trader, amount, priceLimit);
     }
 
     bytes[50] private __gap;

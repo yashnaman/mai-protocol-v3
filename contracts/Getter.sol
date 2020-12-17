@@ -21,12 +21,12 @@ contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
     using CollateralModule for address;
-    using FundingModule for Core;
-    using MarginModule for Core;
-    using OracleModule for Perpetual;
-    using OracleModule for Core;
-    using ParameterModule for Core;
-    using SettlementModule for Core;
+    using FundingModule for LiquidityPoolStorage;
+    using MarginModule for LiquidityPoolStorage;
+    using OracleModule for PerpetualStorage;
+    using OracleModule for LiquidityPoolStorage;
+    using ParameterModule for LiquidityPoolStorage;
+    using SettlementModule for LiquidityPoolStorage;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     function liquidityPoolInfo()
@@ -53,24 +53,24 @@ contract Getter is Storage {
         )
     {
         addresses = [
-            _core.factory,
-            _core.operator,
-            _core.collateral,
-            _core.vault,
-            _core.governor,
-            _core.shareToken
+            _liquidityPool.factory,
+            _liquidityPool.operator,
+            _liquidityPool.collateral,
+            _liquidityPool.vault,
+            _liquidityPool.governor,
+            _liquidityPool.shareToken
         ];
         nums = [
-            _core.vaultFeeRate,
-            _core.insuranceFundCap,
-            _core.insuranceFund,
-            _core.donatedInsuranceFund,
-            _core.totalClaimableFee,
-            _core.poolCashBalance,
-            _core.poolCollateral
+            _liquidityPool.vaultFeeRate,
+            _liquidityPool.insuranceFundCap,
+            _liquidityPool.insuranceFund,
+            _liquidityPool.donatedInsuranceFund,
+            _liquidityPool.totalClaimableFee,
+            _liquidityPool.poolCashBalance,
+            _liquidityPool.poolCollateral
         ];
-        perpetualCount = _core.perpetuals.length;
-        fundingTime = _core.fundingTime;
+        perpetualCount = _liquidityPool.perpetuals.length;
+        fundingTime = _liquidityPool.fundingTime;
     }
 
     function perpetualInfo(uint256 perpetualIndex)
@@ -100,7 +100,7 @@ contract Getter is Storage {
             int256[17] memory nums
         )
     {
-        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
 
         state = perpetual.state;
         oracle = perpetual.oracle;
@@ -131,12 +131,13 @@ contract Getter is Storage {
         onlyExistedPerpetual(perpetualIndex)
         returns (int256 cashBalance, int256 positionAmount)
     {
-        cashBalance = _core.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
-        positionAmount = _core.perpetuals[perpetualIndex].marginAccounts[trader].positionAmount;
+        cashBalance = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
+        positionAmount = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
+            .positionAmount;
     }
 
     function claimableFee(address claimer) public view returns (int256) {
-        return _core.claimableFees[claimer];
+        return _liquidityPool.claimableFees[claimer];
     }
 
     bytes[50] private __gap;

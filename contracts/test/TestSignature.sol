@@ -10,4 +10,8 @@ contract TestSignature {
     function recoverMessage(bytes32 hash, bytes memory signature) public pure returns (address) {
         return ECDSAUpgradeable.recover(ECDSAUpgradeable.toEthSignedMessageHash(hash), signature);
     }
+
+    function recoverMessage2(bytes32 hash, bytes memory signature) public pure returns (address) {
+        return ECDSAUpgradeable.recover(hash, signature);
+    }
 }

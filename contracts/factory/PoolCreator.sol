@@ -65,12 +65,13 @@ contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessContro
         address shareToken = _createClone(_shareTokenTemplate);
         address liquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
         // initialize
+        address operator = msg.sender;
         IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
         IGovernor(governor).initialize(shareToken, liquidityPool);
-        ILiquidityPool(liquidityPool).initialize(msg.sender, collateral, governor, shareToken);
+        ILiquidityPool(liquidityPool).initialize(operator, collateral, governor, shareToken);
         // register
-        _registerLiquidityPool(liquidityPool);
-        emit CreateLiquidityPool(liquidityPool, governor, shareToken, msg.sender, collateral);
+        _registerLiquidityPool(liquidityPool, operator);
+        emit CreateLiquidityPool(liquidityPool, governor, shareToken, operator, collateral);
         return liquidityPool;
     }
 }

@@ -2,15 +2,15 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "../module/CoreModule.sol";
+import "../module/LiquidityPoolModule.sol";
 import "../module/PerpetualModule.sol";
 
 import "../Storage.sol";
 import "../Getter.sol";
 
 contract TestStorage is Storage, Getter {
-    using CoreModule for Core;
-    using PerpetualModule for Perpetual;
+    using LiquidityPoolModule for LiquidityPoolStorage;
+    using PerpetualModule for PerpetualStorage;
 
     function initializeCore(
         address collateral,
@@ -18,7 +18,7 @@ contract TestStorage is Storage, Getter {
         address governor,
         address shareToken
     ) external {
-        _core.initialize(collateral, operator, governor, shareToken);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken);
     }
 
     function initializePerpetual(
@@ -28,9 +28,9 @@ contract TestStorage is Storage, Getter {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        uint256 perpetualIndex = _core.perpetuals.length;
-        _core.perpetuals.push();
-        _core.perpetuals[perpetualIndex].initialize(
+        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
+        _liquidityPool.perpetuals.push();
+        _liquidityPool.perpetuals[perpetualIndex].initialize(
             perpetualIndex,
             oracle,
             coreParams,
@@ -38,6 +38,6 @@ contract TestStorage is Storage, Getter {
             minRiskParamValues,
             maxRiskParamValues
         );
-        _core.perpetuals[perpetualIndex].state = PerpetualState.NORMAL;
+        _liquidityPool.perpetuals[perpetualIndex].state = PerpetualState.NORMAL;
     }
 }

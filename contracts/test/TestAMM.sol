@@ -10,14 +10,14 @@ import "../module/AMMModule.sol";
 contract TestAMM {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    // using MarginModule for Core;
-    using OracleModule for Perpetual;
+    // using MarginModule for LiquidityPoolStorage;
+    using OracleModule for PerpetualStorage;
 
-    Core core;
+    LiquidityPoolStorage liquidityPool;
 
     constructor() {
-        core.perpetuals.push();
-        core.perpetuals.push();
+        liquidityPool.perpetuals.push();
+        liquidityPool.perpetuals.push();
     }
 
     function setParams(
@@ -32,43 +32,43 @@ contract TestAMM {
         int256 indexPrice1,
         int256 indexPrice2
     ) public {
-        core.perpetuals[0].id = 0;
-        core.perpetuals[0].state = PerpetualState.NORMAL;
-        core.perpetuals[0].unitAccumulativeFunding = unitAccumulativeFunding;
-        core.perpetuals[0].halfSpread.value = halfSpread;
-        core.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
-        core.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
-        core.perpetuals[0].maxLeverage.value = maxLeverage;
-        core.poolCashBalance = cashBalance;
-        core.perpetuals[0].marginAccounts[address(this)].positionAmount = positionAmount1;
-        core.perpetuals[0].indexPriceData.price = indexPrice1;
+        liquidityPool.perpetuals[0].id = 0;
+        liquidityPool.perpetuals[0].state = PerpetualState.NORMAL;
+        liquidityPool.perpetuals[0].unitAccumulativeFunding = unitAccumulativeFunding;
+        liquidityPool.perpetuals[0].halfSpread.value = halfSpread;
+        liquidityPool.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
+        liquidityPool.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
+        liquidityPool.perpetuals[0].maxLeverage.value = maxLeverage;
+        liquidityPool.poolCashBalance = cashBalance;
+        liquidityPool.perpetuals[0].marginAccounts[address(this)].positionAmount = positionAmount1;
+        liquidityPool.perpetuals[0].indexPriceData.price = indexPrice1;
 
-        core.perpetuals[1].id = 1;
-        core.perpetuals[1].state = PerpetualState.NORMAL;
-        core.perpetuals[1].unitAccumulativeFunding = unitAccumulativeFunding;
-        core.perpetuals[1].halfSpread.value = halfSpread;
-        core.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
-        core.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
-        core.perpetuals[1].maxLeverage.value = maxLeverage;
-        core.perpetuals[1].marginAccounts[address(this)].positionAmount = positionAmount2;
-        core.perpetuals[1].indexPriceData.price = indexPrice2;
+        liquidityPool.perpetuals[1].id = 1;
+        liquidityPool.perpetuals[1].state = PerpetualState.NORMAL;
+        liquidityPool.perpetuals[1].unitAccumulativeFunding = unitAccumulativeFunding;
+        liquidityPool.perpetuals[1].halfSpread.value = halfSpread;
+        liquidityPool.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
+        liquidityPool.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
+        liquidityPool.perpetuals[1].maxLeverage.value = maxLeverage;
+        liquidityPool.perpetuals[1].marginAccounts[address(this)].positionAmount = positionAmount2;
+        liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
     function setConfig(address collateral, address shareToken, uint256 scaler) public {
-        core.collateral = collateral;
-        core.shareToken = shareToken;
-        core.scaler = scaler;
+        liquidityPool.collateral = collateral;
+        liquidityPool.shareToken = shareToken;
+        liquidityPool.scaler = scaler;
     }
 
     function isAMMMarginSafe() public view returns (bool) {
-        Perpetual storage perpetual = core.perpetuals[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
+        AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
         return AMMModule.isAMMMarginSafe(context, perpetual.openSlippageFactor.value);
     }
 
     function regress() public view returns (int256) {
-        Perpetual storage perpetual = core.perpetuals[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
+        AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
         return AMMModule.regress(context, perpetual.openSlippageFactor.value);
     }
 
@@ -78,8 +78,8 @@ contract TestAMM {
         view
         returns (int256)
     {
-        Perpetual storage perpetual = core.perpetuals[0];
-        return AMMModule._deltaMargin(
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
+        deltaMargin = AMMModule._deltaMargin(
             regress(),
             perpetual.marginAccounts[address(this)].positionAmount,
             perpetual.marginAccounts[address(this)].positionAmount.add(amount),
@@ -89,8 +89,8 @@ contract TestAMM {
     }
 
     function maxPosition(bool isLongSide) public view returns (int256) {
-        Perpetual storage perpetual = core.perpetuals[0];
-        AMMModule.Context memory context = AMMModule.prepareContext(core, 0);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
+        AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
         return
             AMMModule._maxPosition(
                 context,
@@ -106,8 +106,8 @@ contract TestAMM {
         view
         returns (int256, int256)
     {
-        return AMMModule.tradeWithAMM(
-            core,
+        (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
+            liquidityPool,
             0,
             tradingAmount,
             partialFill
@@ -117,12 +117,12 @@ contract TestAMM {
     function addLiquidity(int256 marginToAdd)
         public
     {
-        AMMModule.addLiquidity(core, marginToAdd);
+        AMMModule.addLiquidity(liquidityPool, marginToAdd);
     }
 
     function removeLiquidity(int256 shareToRemove)
         public
     {
-        AMMModule.removeLiquidity(core, shareToRemove);
+        AMMModule.removeLiquidity(liquidityPool, shareToRemove);
     }
 }

@@ -8,11 +8,11 @@ import "../module/OracleModule.sol";
 import "../Storage.sol";
 
 contract TestMargin is Storage {
-    using MarginModule for Perpetual;
-    using ParameterModule for Perpetual;
-    using OracleModule for Perpetual;
+    using MarginModule for PerpetualStorage;
+    using ParameterModule for PerpetualStorage;
+    using OracleModule for PerpetualStorage;
 
-    Perpetual internal _perpetual;
+    PerpetualStorage internal _perpetual;
 
     constructor(address oracle) {
         _perpetual.oracle = oracle;

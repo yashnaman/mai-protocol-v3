@@ -67,9 +67,9 @@ describe('Settlement', () => {
         await settlement.initializeMarginAccount(user2.address, toWei("200"), toWei("0.2"), toWei("0")); // 200 + 100
         await settlement.initializeMarginAccount(user3.address, toWei("300"), toWei("0.3"), toWei("0")); // 300 + 150
 
-        await settlement.registerTrader(user1.address);
-        await settlement.registerTrader(user2.address);
-        await settlement.registerTrader(user3.address);
+        await settlement.registerActiveAccount(user1.address);
+        await settlement.registerActiveAccount(user2.address);
+        await settlement.registerActiveAccount(user3.address);
 
         await settlement.setEmergency();
 

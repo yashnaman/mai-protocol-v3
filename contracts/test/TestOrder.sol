@@ -11,52 +11,50 @@ import "../Storage.sol";
 
 contract TestOrder is Storage {
     using OrderData for Order;
-    using OrderModule for Core;
+    using OrderModule for LiquidityPoolStorage;
 
     constructor() {
-        _core.perpetuals.push();
+        _liquidityPool.perpetuals.push();
     }
 
     function orderHash(Order memory order) public pure returns (bytes32) {
         return order.orderHash();
     }
 
-    function deadline(Order memory order) public pure returns (uint64) {
-        return order.deadline();
-    }
-
-    function orderType(Order memory order) public pure returns (OrderType) {
-        return order.orderType();
-    }
-
     function isCloseOnly(Order memory order) public pure returns (bool) {
         return order.isCloseOnly();
     }
 
-    function salt(Order memory order) public pure returns (uint64) {
-        return order.salt();
+    function isMarketOrder(Order memory order) public pure returns (bool) {
+        return order.isMarketOrder();
     }
 
-    function truncateAmount(
+    function isStopLossOrder(Order memory order) public pure returns (bool) {
+        return order.isCloseOnly();
+    }
+
+
+    function isTakeProfitOrder(Order memory order) public pure returns (bool) {
+        return order.isCloseOnly();
+    }
+
+
+    function salt(Order memory order) public pure returns (uint64) {
+        return order.salt;
+    }
+
+    function truncateCloseAmount(
         address trader,
         int256 amount
     ) public view returns (int256) {
-        return _core.truncateAmount(0, trader, amount);
-    }
-
-    function cancelOrder(Order memory order) public {
-        _core.cancelOrder(order);
-    }
-
-    function fillOrder(Order memory order, int256 amount) public {
-        _core.fillOrder(order, amount);
+        return _liquidityPool.truncateCloseAmount(0, trader, amount);
     }
 
     function validateOrder(Order memory order, int256 amount) public view {
-        _core.validateOrder(order, amount);
+        _liquidityPool.validateOrder(order, amount);
     }
 
     function setPositionAmount(address trader, int256 amount) public {
-        _core.perpetuals[0].marginAccounts[trader].positionAmount = amount;
+        _liquidityPool.perpetuals[0].marginAccounts[trader].positionAmount = amount;
     }
 }

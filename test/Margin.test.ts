@@ -19,13 +19,14 @@ describe('MarginModule', () => {
 
         beforeEach(async () => {
             const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const ParameterModule = await createContract("ParameterModule");
             const CollateralModule = await createContract("CollateralModule")
             const AMMModule = await createContract("AMMModule", [], { CollateralModule });
             const FundingModule = await createContract("FundingModule", [], { AMMModule });
             testMargin = await createContract("TestMargin", [oracle.address], { ParameterModule, FundingModule });
         })
+
         const testCases = [
             {
                 name: "+initialMargin",

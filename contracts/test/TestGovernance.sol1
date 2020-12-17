@@ -11,7 +11,7 @@ contract TestGovernance is Governance {
     }
 
     function setOperator(address operator) public {
-        _core.operator = operator;
+        _liquidityPool.operator = operator;
     }
 
     function initializeParameters(
@@ -24,54 +24,54 @@ contract TestGovernance is Governance {
     }
 
     function initialMarginRate() public view returns (int256) {
-        return _core.initialMarginRate;
+        return _liquidityPool.initialMarginRate;
     }
 
     function maintenanceMarginRate() public view returns (int256) {
-        return _core.maintenanceMarginRate;
+        return _liquidityPool.maintenanceMarginRate;
     }
 
     function operatorFeeRate() public view returns (int256) {
-        return _core.operatorFeeRate;
+        return _liquidityPool.operatorFeeRate;
     }
 
     function vaultFeeRate() public view returns (int256) {
-        return _core.vaultFeeRate;
+        return _liquidityPool.vaultFeeRate;
     }
 
     function lpFeeRate() public view returns (int256) {
-        return _core.lpFeeRate;
+        return _liquidityPool.lpFeeRate;
     }
 
     function referrerRebateRate() public view returns (int256) {
-        return _core.referrerRebateRate;
+        return _liquidityPool.referrerRebateRate;
     }
 
     function liquidationPenaltyRate() public view returns (int256) {
-        return _core.liquidationPenaltyRate;
+        return _liquidityPool.liquidationPenaltyRate;
     }
 
     function keeperGasReward() public view returns (int256) {
-        return _core.keeperGasReward;
+        return _liquidityPool.keeperGasReward;
     }
 
     function halfSpreadRate() public view returns (int256) {
-        return _core.halfSpreadRate.value;
+        return _liquidityPool.halfSpreadRate.value;
     }
 
     function beta1() public view returns (int256) {
-        return _core.beta1.value;
+        return _liquidityPool.beta1.value;
     }
 
     function beta2() public view returns (int256) {
-        return _core.beta2.value;
+        return _liquidityPool.beta2.value;
     }
 
     function fundingRateLimit() public view returns (int256) {
-        return _core.fundingRateLimit.value;
+        return _liquidityPool.fundingRateLimit.value;
     }
 
     function targetLeverage() public view returns (int256) {
-        return _core.targetLeverage.value;
+        return _liquidityPool.targetLeverage.value;
     }
 }

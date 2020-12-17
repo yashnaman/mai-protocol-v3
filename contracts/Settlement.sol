@@ -21,7 +21,7 @@ import "./module/MarginModule.sol";
 import "./module/TradeModule.sol";
 import "./module/SettlementModule.sol";
 import "./module/OrderModule.sol";
-import "./module/CoreModule.sol";
+import "./module/LiquidityPoolModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Storage.sol";
@@ -38,18 +38,18 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using AddressUpgradeable for address;
 
     using OrderData for Order;
-    using OrderModule for Core;
+    using OrderModule for LiquidityPoolStorage;
 
-    using AMMModule for Core;
-    using TradeModule for Core;
-    using CoreModule for Core;
-    using MarginModule for Perpetual;
-    using CollateralModule for Core;
-    using SettlementModule for Core;
+    using AMMModule for LiquidityPoolStorage;
+    using TradeModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
+    using MarginModule for PerpetualStorage;
+    using CollateralModule for LiquidityPoolStorage;
+    using SettlementModule for LiquidityPoolStorage;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function activeAccountCount(uint256 perpetualIndex) public view returns (uint256) {
-        return _core.perpetuals[perpetualIndex].activeAccounts.length();
+        return _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
     }
 
     function listActiveAccounts(
@@ -58,7 +58,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         uint256 end
     ) public view returns (address[] memory result) {
         require(start < end, "invalid range");
-        Perpetual storage perpetual = _core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         uint256 total = perpetual.activeAccounts.length();
         if (start >= total) {
             return result;
@@ -77,7 +77,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.clear(perpetualIndex, trader);
+        _liquidityPool.clear(perpetualIndex, trader);
     }
 
     function settle(uint256 perpetualIndex, address trader)
@@ -88,7 +88,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
-        _core.settle(perpetualIndex, trader);
+        _liquidityPool.settle(perpetualIndex, trader);
     }
 
     bytes[50] private __gap;

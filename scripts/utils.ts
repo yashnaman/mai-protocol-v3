@@ -40,12 +40,12 @@ export async function createLiquidityPoolFactory() {
     const FundingModule = await createContract("FundingModule", [], { AMMModule });
     const OrderModule = await createContract("OrderModule");
     const OracleModule = await createContract("OracleModule");
-    const CoreModule = await createContract("CoreModule", [], { CollateralModule });
+    const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule });
     const ParameterModule = await createContract("ParameterModule");
     const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
-    const TradeModule = await createContract("TradeModule", [], { AMMModule, CoreModule });
-    const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, OracleModule, TradeModule });
-    const MarginModule = await createContract("MarginModule", [], { PerpetualModule, CoreModule, CollateralModule });
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule });
+    const LiquidationModule = await createContract("LiquidationModule", [], { LiquidityPoolModule, AMMModule, CollateralModule, OracleModule, TradeModule });
+    const MarginModule = await createContract("MarginModule", [], { PerpetualModule, LiquidityPoolModule, CollateralModule });
     const SettlementModule = await createContract("SettlementModule", [], { CollateralModule });
     return await createFactory("LiquidityPool", {
         AMMModule,
@@ -54,7 +54,7 @@ export async function createLiquidityPoolFactory() {
         ParameterModule,
         SettlementModule,
         TradeModule,
-        CoreModule,
+        LiquidityPoolModule,
         LiquidationModule,
         MarginModule,
         PerpetualModule,

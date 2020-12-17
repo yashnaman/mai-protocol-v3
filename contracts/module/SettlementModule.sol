@@ -10,7 +10,7 @@ import "../libraries/Constant.sol";
 import "../libraries/SafeMathExt.sol";
 
 import "./CollateralModule.sol";
-import "./CoreModule.sol";
+import "./LiquidityPoolModule.sol";
 import "./MarginModule.sol";
 import "./PerpetualModule.sol";
 import "./OracleModule.sol";
@@ -21,21 +21,21 @@ library SettlementModule {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    using MarginModule for Perpetual;
-    using PerpetualModule for Perpetual;
-    using OracleModule for Perpetual;
-    using CollateralModule for Core;
-    using CoreModule for Core;
+    using MarginModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
+    using OracleModule for PerpetualStorage;
+    using CollateralModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
 
     event Clear(uint256 perpetualIndex, address trader);
     event Settle(uint256 perpetualIndex, address trader, int256 amount);
 
     function clear(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader
     ) public {
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(perpetual.activeAccounts.contains(trader), "trader is not registered");
         require(!perpetual.clearedTraders.contains(trader), "trader is already cleared");
         int256 margin = perpetual.margin(trader, perpetual.markPrice());
@@ -59,27 +59,27 @@ library SettlementModule {
     }
 
     function settle(
-        Core storage core,
+        LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader
     ) public {
         require(trader != address(0), "trader is invalid");
-        Perpetual storage perpetual = core.perpetuals[perpetualIndex];
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 withdrawable = settledMarginAccount(perpetual, trader);
         perpetual.updateCashBalance(trader, withdrawable.neg());
-        core.transferToUser(payable(trader), withdrawable);
+        liquidityPool.transferToUser(payable(trader), withdrawable);
         emit Settle(perpetualIndex, trader, withdrawable);
     }
 
-    function registerTrader(Perpetual storage perpetual, address trader) internal {
+    function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.add(trader);
     }
 
-    function deregisterTrader(Perpetual storage perpetual, address trader) internal {
+    function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.remove(trader);
     }
 
-    function settledMarginAccount(Perpetual storage perpetual, address trader)
+    function settledMarginAccount(PerpetualStorage storage perpetual, address trader)
         public
         returns (int256 amount)
     {
@@ -97,7 +97,9 @@ library SettlementModule {
         return withdrawable;
     }
 
-    function settleWithdrawableMargin(Perpetual storage perpetual, int256 totalBalance) public {
+    function settleWithdrawableMargin(PerpetualStorage storage perpetual, int256 totalBalance)
+        public
+    {
         // 2. cover margin without position
         if (totalBalance < perpetual.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin

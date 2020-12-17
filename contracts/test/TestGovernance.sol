@@ -8,14 +8,14 @@ import "../module/PerpetualModule.sol";
 import "../Governance.sol";
 
 contract TestGovernance is Governance {
-    using PerpetualModule for Perpetual;
+    using PerpetualModule for PerpetualStorage;
 
     function setGovernor(address governor) public {
         _governor = governor;
     }
 
     function setOperator(address operator) public {
-        _core.operator = operator;
+        _liquidityPool.operator = operator;
     }
 
     function initializeParameters(
@@ -25,8 +25,8 @@ contract TestGovernance is Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) public {
-        _core.perpetuals.push();
-        _core.perpetuals[0].initialize(
+        _liquidityPool.perpetuals.push();
+        _liquidityPool.perpetuals[0].initialize(
             0,
             oracle,
             coreParams,
@@ -37,50 +37,50 @@ contract TestGovernance is Governance {
     }
 
     function initialMarginRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].initialMarginRate;
+        return _liquidityPool.perpetuals[perpetualIndex].initialMarginRate;
     }
 
     function maintenanceMarginRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].maintenanceMarginRate;
+        return _liquidityPool.perpetuals[perpetualIndex].maintenanceMarginRate;
     }
 
     function operatorFeeRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].operatorFeeRate;
+        return _liquidityPool.perpetuals[perpetualIndex].operatorFeeRate;
     }
 
     function lpFeeRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].lpFeeRate;
+        return _liquidityPool.perpetuals[perpetualIndex].lpFeeRate;
     }
 
     function referrerRebateRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].referrerRebateRate;
+        return _liquidityPool.perpetuals[perpetualIndex].referrerRebateRate;
     }
 
     function liquidationPenaltyRate(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].liquidationPenaltyRate;
+        return _liquidityPool.perpetuals[perpetualIndex].liquidationPenaltyRate;
     }
 
     function keeperGasReward(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].keeperGasReward;
+        return _liquidityPool.perpetuals[perpetualIndex].keeperGasReward;
     }
 
     function halfSpread(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].halfSpread.value;
+        return _liquidityPool.perpetuals[perpetualIndex].halfSpread.value;
     }
 
     function openSlippageFactor(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].openSlippageFactor.value;
+        return _liquidityPool.perpetuals[perpetualIndex].openSlippageFactor.value;
     }
 
     function closeSlippageFactor(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].closeSlippageFactor.value;
+        return _liquidityPool.perpetuals[perpetualIndex].closeSlippageFactor.value;
     }
 
     function fundingRateLimit(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].fundingRateLimit.value;
+        return _liquidityPool.perpetuals[perpetualIndex].fundingRateLimit.value;
     }
 
     function maxLeverage(uint256 perpetualIndex) public view returns (int256) {
-        return _core.perpetuals[perpetualIndex].maxLeverage.value;
+        return _liquidityPool.perpetuals[perpetualIndex].maxLeverage.value;
     }
 }
