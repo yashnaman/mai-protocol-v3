@@ -94,17 +94,18 @@ library SafeMathExt {
 
     function div(int256 x, int256 y, Round round) internal pure returns (int256) {
         require(y != 0, "division by zero");
-        int256 origin = x.div(y);
+        int256 divResult = x.div(y);
+        int256 mulResult = x.mul(y);
         if (round == Round.UP) {
             if (x % y == 0) {
-                return origin;
-            } else if (origin > 0) {
-                return origin.add(1);
+                return divResult;
+            } else if (mulResult > 0) {
+                return divResult.add(1);
             } else {
-                return origin.sub(1);
+                return divResult.sub(1);
             }
         } else {
-            return origin;
+            return divResult;
         }
     }
 

@@ -11,6 +11,7 @@ contract TestFunding {
     uint256 currentTime;
 
     struct Params {
+        PerpetualState state;
         int256 unitAccumulativeFunding;
         int256 openSlippageFactor;
         int256 maxLeverage;
@@ -34,7 +35,7 @@ contract TestFunding {
         Params memory params
     ) public {
         core.perpetuals[0].id = 0;
-        core.perpetuals[0].state = PerpetualState.NORMAL;
+        core.perpetuals[0].state = params.state;
         core.perpetuals[0].unitAccumulativeFunding = params.unitAccumulativeFunding;
         core.perpetuals[0].openSlippageFactor.value = params.openSlippageFactor;
         core.perpetuals[0].maxLeverage.value = params.maxLeverage;
@@ -44,7 +45,7 @@ contract TestFunding {
         core.perpetuals[0].fundingRate = params.fundingRate;
 
         core.perpetuals[1].id = 1;
-        core.perpetuals[1].state = PerpetualState.NORMAL;
+        core.perpetuals[1].state = params.state;
         core.perpetuals[1].unitAccumulativeFunding = params.unitAccumulativeFunding;
         core.perpetuals[1].openSlippageFactor.value = params.openSlippageFactor;
         core.perpetuals[1].maxLeverage.value = params.maxLeverage;

@@ -13,6 +13,20 @@ describe('LibMath', () => {
         libMath = await createContract("TestLibMath");
     });
 
+    describe('toInt256', () => {
+        it('normal', async () => {
+            expect(await libMath.toInt256('0')).to.equal('0');
+            expect(await libMath.toInt256('1')).to.equal('1');
+            // 2^255 - 1
+            expect(await libMath.toInt256('57896044618658097711785492504343953926634992332820282019728792003956564819967')).to.equal('57896044618658097711785492504343953926634992332820282019728792003956564819967');
+        });
+
+        it('fail', async () => {
+            // 2^255
+            await expect(libMath.toInt256('57896044618658097711785492504343953926634992332820282019728792003956564819968')).to.be.revertedWith('uint256 overflow');
+        });
+    });
+
     describe('mostSignificantBit', () => {
         it('normal', async () => {
             expect(await libMath.mostSignificantBit('0')).to.equal(0);

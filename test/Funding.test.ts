@@ -18,6 +18,7 @@ const toWad = (x: any) => {
 const _0 = toWad('0')
 
 const params = {
+    state: 2,
     unitAccumulativeFunding: toWad('1.9'),
     openSlippageFactor: toWad('100'),
     maxLeverage: toWad('5'),
@@ -40,7 +41,21 @@ describe('Funding', () => {
 
         const cases = [
             {
-                name: 'initial state',
+                name: 'state != NORMAL',
+                state: 1,
+                unitAccumulativeFunding: params.unitAccumulativeFunding,
+                indexPrice1: toWad('100'),
+                indexPrice2: toWad('200'),
+                fundingRate: toWad('0.002'),
+                fundingTime: '1000',
+                currentTime: '2000',
+                targetUnitAccumulativeFunding1: params.unitAccumulativeFunding,
+                targetUnitAccumulativeFunding2: params.unitAccumulativeFunding,
+                targetFundingTime: '1000'
+            },
+            {
+                name: 'init',
+                state: params.state,
                 unitAccumulativeFunding: _0,
                 indexPrice1: toWad('100'),
                 indexPrice2: toWad('200'),
@@ -53,6 +68,7 @@ describe('Funding', () => {
             },
             {
                 name: 'current time = funding time',
+                state: params.state,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWad('100'),
                 indexPrice2: toWad('200'),
@@ -65,6 +81,7 @@ describe('Funding', () => {
             },
             {
                 name: 'normal',
+                state: params.state,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWad('100'),
                 indexPrice2: toWad('200'),
@@ -80,6 +97,7 @@ describe('Funding', () => {
         cases.forEach(element => {
             it(element.name, async () => {
                 await funding.setParams({
+                    state: element.state,
                     unitAccumulativeFunding: element.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
                     maxLeverage: params.maxLeverage,
@@ -105,7 +123,17 @@ describe('Funding', () => {
 
         const successCases = [
             {
-                name: 'initial state',
+                name: 'state != NORMAL',
+                state: 1,
+                cashBalance: toWad('10100'),
+                positionAmount1: toWad('-10'),
+                positionAmount2: toWad('10'),
+                targetFundingRate1: _0,
+                targetFundingRate2: _0
+            },
+            {
+                name: 'init',
+                state: params.state,
                 cashBalance: _0,
                 positionAmount1: _0,
                 positionAmount2: _0,
@@ -114,6 +142,7 @@ describe('Funding', () => {
             },
             {
                 name: 'unsafe',
+                state: params.state,
                 cashBalance: toWad('17692'),
                 positionAmount1: toWad('-80'),
                 positionAmount2: toWad('10'),
@@ -122,6 +151,7 @@ describe('Funding', () => {
             },
             {
                 name: 'normal',
+                state: params.state,
                 cashBalance: toWad('10100'),
                 positionAmount1: toWad('-10'),
                 positionAmount2: toWad('10'),
@@ -130,6 +160,7 @@ describe('Funding', () => {
             },
             {
                 name: 'exceed limit',
+                state: params.state,
                 cashBalance: toWad('10099'),
                 positionAmount1: toWad('60'),
                 positionAmount2: toWad('-50'),
@@ -141,6 +172,7 @@ describe('Funding', () => {
         successCases.forEach(element => {
             it(element.name, async () => {
                 await funding.setParams({
+                    state: element.state,
                     unitAccumulativeFunding: params.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
                     maxLeverage: params.maxLeverage,
@@ -173,6 +205,7 @@ describe('Funding', () => {
         failCases.forEach(element => {
             it(element.name, async () => {
                 await funding.setParams({
+                    state: params.state,
                     unitAccumulativeFunding: params.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
                     maxLeverage: params.maxLeverage,
