@@ -656,6 +656,13 @@ describe('AMM', () => {
                 marginToRemove: toWad('1000')
             },
             {
+                name: 'no position, remove all',
+                amm: amm0,
+                restShare: _0, // total 100
+                shareToRemove: toWad('100'),
+                marginToRemove: toWad('10000')
+            },
+            {
                 name: 'short',
                 amm: amm1,
                 restShare: toWad('90'), // total 100
