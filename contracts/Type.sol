@@ -41,8 +41,8 @@ struct Order {
 }
 
 struct Receipt {
-    int256 tradingValue;
-    int256 tradingAmount;
+    int256 tradeValue;
+    int256 tradeAmount;
     int256 lpFee;
     int256 vaultFee;
     int256 operatorFee;
@@ -65,7 +65,7 @@ struct LiquidityPoolStorage {
     uint256 scaler;
     address collateral;
     int256 poolCashBalance;
-    int256 poolCollateral;
+    int256 poolCollateralAmount;
     // insurance fund
     int256 insuranceFund;
     int256 insuranceFundCap;
@@ -84,7 +84,7 @@ struct PerpetualStorage {
     uint256 id;
     PerpetualState state;
     address oracle;
-    int256 depositedCollateral;
+    int256 collateralAmount;
     // prices
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;

@@ -23,6 +23,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using OrderData for Order;
 
+    uint256 internal constant GWEI = 10**9;
+
     uint256 internal _chainID;
     uint256 internal _claimableFees;
     mapping(address => uint256) internal _balances;
@@ -88,7 +90,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 emit TradeFailed(orderHash, order, amount, "insufficient fee");
                 return;
             }
-            if (gasReward > order.brokerFeeLimit) {
+            if (gasReward > order.brokerFeeLimit * GWEI) {
                 emit TradeFailed(orderHash, order, amount, "fee exceeds trade gas limit");
                 return;
             }

@@ -48,7 +48,7 @@ library LiquidationModule {
         int256 maxAmount = perpetual.marginAccounts[trader].positionAmount;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
-        (receipt.tradingValue, receipt.tradingAmount) = liquidityPool.tradeWithAMM(
+        (receipt.tradeValue, receipt.tradeAmount) = liquidityPool.tradeWithAMM(
             perpetualIndex,
             maxAmount,
             false
@@ -61,9 +61,7 @@ library LiquidationModule {
         int256 penaltyToFund = updateLiquidationPenalty(
             perpetual,
             trader,
-            perpetual.markPrice().wmul(receipt.tradingAmount).wmul(
-                perpetual.liquidationPenaltyRate
-            ),
+            perpetual.markPrice().wmul(receipt.tradeAmount).wmul(perpetual.liquidationPenaltyRate),
             perpetual.keeperGasReward
         );
         liquidityPool.transferToUser(msg.sender, perpetual.keeperGasReward);
@@ -72,8 +70,8 @@ library LiquidationModule {
             perpetualIndex,
             address(this),
             trader,
-            receipt.tradingAmount,
-            receipt.tradingValue.wdiv(receipt.tradingAmount).abs()
+            receipt.tradeAmount,
+            receipt.tradeValue.wdiv(receipt.tradeAmount).abs()
         );
         // 5. emergency
         bool isInsuranceFundDrained = updateInsuranceFund(liquidityPool, perpetual, penaltyToFund);
@@ -88,33 +86,33 @@ library LiquidationModule {
         address taker,
         address maker,
         int256 amount,
-        int256 priceLimit
+        int256 limitPrice
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(!perpetual.isMaintenanceMarginSafe(maker), "trader is safe");
         Receipt memory receipt;
         // 0. price / amountyo
         int256 tradingPrice = perpetual.markPrice();
-        bool isOpeningPosition = Utils.isOpeningPosition(perpetual.positionAmount(taker), amount);
-        TradeModule.validatePrice(amount, tradingPrice, priceLimit);
-        (receipt.tradingValue, receipt.tradingAmount) = (tradingPrice.wmul(amount), amount);
+        TradeModule.validatePrice(amount, tradingPrice, limitPrice);
+        (receipt.tradeValue, receipt.tradeAmount) = (tradingPrice.wmul(amount), amount);
         // 1. execute
+        bool isOpening = Utils.isOpening(perpetual.positionAmount(taker), amount);
         TradeModule.updateTradingResult(perpetual, receipt, taker, maker);
         // 2. penalty
         int256 penaltyToFund = updateLiquidationPenalty(
             perpetual,
             maker,
-            receipt.tradingValue.wmul(perpetual.liquidationPenaltyRate),
+            receipt.tradeValue.wmul(perpetual.liquidationPenaltyRate),
             0
         );
         // 3. safe
-        if (isOpeningPosition) {
+        if (isOpening) {
             require(perpetual.isInitialMarginSafe(taker), "trader initial margin unsafe");
         } else {
             require(perpetual.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
         }
         // 4. events
-        emit Liquidate(perpetualIndex, taker, maker, receipt.tradingAmount, tradingPrice.abs());
+        emit Liquidate(perpetualIndex, taker, maker, receipt.tradeAmount, tradingPrice);
         // 5. emergency
         bool isInsuranceFundDrained = updateInsuranceFund(liquidityPool, perpetual, penaltyToFund);
         if (isInsuranceFundDrained) {

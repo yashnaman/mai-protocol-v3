@@ -13,7 +13,12 @@ contract TestSettlement is TestMargin, Settlement {
     using SettlementModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    constructor(address oracle) TestMargin(oracle) {
+    function setPoolCollateralAmount(int256 amount) public {
+        _liquidityPool.poolCollateralAmount = amount;
+    }
+
+    function setPerpetualCollateralAmount(uint256 perpetualIndex, int256 amount) public {
+        _liquidityPool.perpetuals[perpetualIndex].collateralAmount = amount;
     }
 
     function setFee(int256 fee) public {
@@ -28,12 +33,31 @@ contract TestSettlement is TestMargin, Settlement {
         _liquidityPool.perpetuals[perpetualIndex].deregisterActiveAccount(trader);
     }
 
-
     function setEmergency(uint256 perpetualIndex) public {
         _liquidityPool.perpetuals[perpetualIndex].enterEmergencyState();
     }
 
     function setClearedState(uint256 perpetualIndex) public {
         _liquidityPool.perpetuals[perpetualIndex].enterClearedState();
+    }
+
+    function totalMarginWithoutPosition(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].totalMarginWithoutPosition;
+    }
+
+    function totalMarginWithPosition(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].totalMarginWithPosition;
+    }
+
+    function redemptionRateWithoutPosition(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].redemptionRateWithoutPosition;
+    }
+
+    function redemptionRateWithPosition(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].redemptionRateWithPosition;
+    }
+
+    function withdrawableAmount(uint256 perpetualIndex, address trader) public returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].settledMarginAccount(trader);
     }
 }

@@ -30,7 +30,7 @@ library Utils {
         }
     }
 
-    function isOpeningPosition(int256 amount, int256 delta) internal pure returns (bool) {
+    function isOpening(int256 amount, int256 delta) internal pure returns (bool) {
         return Utils.hasSameSign(amount, delta) || amount.abs() < delta.abs();
     }
 

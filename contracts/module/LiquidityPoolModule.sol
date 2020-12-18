@@ -155,7 +155,7 @@ library LiquidityPoolModule {
         if (amount == 0) {
             return;
         }
-        liquidityPool.poolCollateral = liquidityPool.poolCollateral.add(amount);
-        perpetual.depositedCollateral = perpetual.depositedCollateral.sub(amount);
+        liquidityPool.poolCollateralAmount = liquidityPool.poolCollateralAmount.add(amount);
+        perpetual.collateralAmount = perpetual.collateralAmount.sub(amount);
     }
 }

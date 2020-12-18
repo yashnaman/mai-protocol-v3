@@ -46,23 +46,23 @@ library TradeModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // 0. price / amount
         Receipt memory receipt;
-        (receipt.tradingValue, receipt.tradingAmount) = liquidityPool.tradeWithAMM(
+        (receipt.tradeValue, receipt.tradeAmount) = liquidityPool.tradeWithAMM(
             perpetualIndex,
             amount.neg(),
             false
         );
-        bool isOpeningPosition = Utils.isOpeningPosition(
+        bool isOpening = Utils.isOpening(
             perpetual.positionAmount(trader),
-            receipt.tradingAmount.neg()
+            receipt.tradeAmount.neg()
         );
-        int256 tradingPrice = receipt.tradingValue.wdiv(receipt.tradingAmount);
-        validatePrice(receipt.tradingAmount.neg(), tradingPrice.abs(), priceLimit);
+        int256 tradingPrice = receipt.tradeValue.wdiv(receipt.tradeAmount).abs();
+        validatePrice(receipt.tradeAmount.neg(), tradingPrice, priceLimit);
         // 1. fee
         updateTradingFees(liquidityPool, perpetual, receipt, referrer);
         // 2. execute
         updateTradingResult(perpetual, receipt, trader, address(this));
         // 3. safe
-        if (isOpeningPosition) {
+        if (isOpening) {
             require(perpetual.isInitialMarginSafe(trader), "trader initial margin is unsafe");
         } else {
             require(perpetual.isMarginSafe(trader), "trader margin is unsafe");
@@ -71,7 +71,7 @@ library TradeModule {
         emit Trade(
             perpetualIndex,
             trader,
-            receipt.tradingAmount,
+            receipt.tradeAmount,
             tradingPrice,
             receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee)
         );
@@ -83,10 +83,10 @@ library TradeModule {
         Receipt memory receipt,
         address referrer
     ) public {
-        int256 tradingValue = receipt.tradingValue.abs();
-        receipt.vaultFee = tradingValue.wmul(liquidityPool.vaultFeeRate);
-        receipt.lpFee = tradingValue.wmul(perpetual.lpFeeRate);
-        receipt.operatorFee = tradingValue.wmul(perpetual.operatorFeeRate);
+        int256 tradeValue = receipt.tradeValue.abs();
+        receipt.vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
+        receipt.lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+        receipt.operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
         if (perpetual.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
             int256 lpFeeRebate = receipt.lpFee.wmul(perpetual.referrerRebateRate);
             int256 operatorFeeRabate = receipt.operatorFee.wmul(perpetual.referrerRebateRate);
@@ -111,9 +111,9 @@ library TradeModule {
     ) internal {
         perpetual.updateMarginAccount(
             taker,
-            receipt.tradingAmount.neg(),
+            receipt.tradeAmount.neg(),
             receipt
-                .tradingValue
+                .tradeValue
                 .neg()
                 .sub(receipt.lpFee)
                 .sub(receipt.vaultFee)
@@ -122,8 +122,8 @@ library TradeModule {
         );
         perpetual.updateMarginAccount(
             maker,
-            receipt.tradingAmount,
-            receipt.tradingValue.add(receipt.lpFee)
+            receipt.tradeAmount,
+            receipt.tradeValue.add(receipt.lpFee)
         );
     }
 

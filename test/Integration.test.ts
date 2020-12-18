@@ -200,16 +200,17 @@ describe("integration", () => {
             chainID: 31337,
             expiredAt: 2616217568,
             perpetualIndex: 0,
-            brokerFeeLimit: 20,
+            brokerFeeLimit: 1000000000,
             flags: 0x00000000,
             salt: 667,
         };
         const OrderModule = await createContract("OrderModule");
         const testOrder = await createContract("TestOrder", [], { OrderModule });
-
         const orderHash = await testOrder.orderHash(order);
         const signature = await user1.signMessage(ethers.utils.arrayify(orderHash));
-        await gs.collect("trade 5 - batchTrade", brokerUser1.batchTrade([order], [toWei("0.1")], [signature], [toWei("0.1")]));
+        await gs.collect("trade 5 - batchTrade", brokerUser1.batchTrade([order], [toWei("0.1")], [signature], [toWei("0.01")]));
+        // await gs.collect("trade 5 - batchTrade", perpUser1.brokerTrade(order, toWei("0.1"), signature));
+        print(await perpUser1.marginAccount(0, user1.address));
 
         // trade 4
         await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
@@ -220,9 +221,9 @@ describe("integration", () => {
         await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
         await gs.collect("withdraw", perpUser1.withdraw(0, user1.address, toWei("10")));
         console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
-        print(await perpUser1.marginAccount(0, user1.address));
 
-        console.log(await perpUser2.marginAccount(0, perpUser2.address));
+        var { cashBalance, positionAmount } = await perpUser2.marginAccount(0, perpUser2.address);
+        console.log(fromWei(cashBalance), fromWei(positionAmount));
 
         // remove lp
         await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))

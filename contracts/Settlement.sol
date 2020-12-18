@@ -70,14 +70,14 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         }
     }
 
-    function clear(uint256 perpetualIndex, address trader)
+    function clear(uint256 perpetualIndex)
         public
         onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
         onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
-        require(trader != address(0), "trader is invalid");
-        _liquidityPool.clear(perpetualIndex, trader);
+        address unclearedAccount = _liquidityPool.nextAccountToclear(perpetualIndex);
+        _liquidityPool.clear(perpetualIndex, unclearedAccount);
     }
 
     function settle(uint256 perpetualIndex, address trader)

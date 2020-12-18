@@ -74,13 +74,13 @@ library PerpetualModule {
 
     function increaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
-        perpetual.depositedCollateral = perpetual.depositedCollateral.add(amount);
+        perpetual.collateralAmount = perpetual.collateralAmount.add(amount);
     }
 
     function decreaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
-        perpetual.depositedCollateral = perpetual.depositedCollateral.sub(amount);
-        require(perpetual.depositedCollateral >= 0, "collateral is negative");
+        perpetual.collateralAmount = perpetual.collateralAmount.sub(amount);
+        require(perpetual.collateralAmount >= 0, "collateral is negative");
     }
 
     function enterNormalState(PerpetualStorage storage perpetual) internal {

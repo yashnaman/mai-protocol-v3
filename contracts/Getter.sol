@@ -46,7 +46,7 @@ contract Getter is Storage {
             // [3] donatedInsuranceFund,
             // [4] totalClaimableFee,
             // [5] poolCashBalance,
-            // [6] poolCollateral,
+            // [6] poolCollateralAmount,
             int256[7] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
@@ -67,7 +67,7 @@ contract Getter is Storage {
             _liquidityPool.donatedInsuranceFund,
             _liquidityPool.totalClaimableFee,
             _liquidityPool.poolCashBalance,
-            _liquidityPool.poolCollateral
+            _liquidityPool.poolCollateralAmount
         ];
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
@@ -80,7 +80,7 @@ contract Getter is Storage {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] depositedCollateral
+            // [0] collateralAmount
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -105,7 +105,7 @@ contract Getter is Storage {
         state = perpetual.state;
         oracle = perpetual.oracle;
         nums = [
-            perpetual.depositedCollateral,
+            perpetual.collateralAmount,
             perpetual.markPrice(),
             perpetual.indexPrice(),
             perpetual.unitAccumulativeFunding,

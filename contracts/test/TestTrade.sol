@@ -96,10 +96,10 @@ contract TestTrade is Storage, Getter {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 priceLimit,
+        int256 limitPrice,
         address referrer
     ) public syncState {
-        _liquidityPool.trade(perpetualIndex, trader, amount, priceLimit, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer);
     }
 
     function updateTradingFees(
@@ -124,8 +124,8 @@ contract TestTrade is Storage, Getter {
     function validatePrice(
         int256 amount,
         int256 price,
-        int256 priceLimit
+        int256 limitPrice
     ) public pure {
-        TradeModule.validatePrice(amount, price, priceLimit);
+        TradeModule.validatePrice(amount, price, limitPrice);
     }
 }

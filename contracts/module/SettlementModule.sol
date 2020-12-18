@@ -30,6 +30,16 @@ library SettlementModule {
     event Clear(uint256 perpetualIndex, address trader);
     event Settle(uint256 perpetualIndex, address trader, int256 amount);
 
+    function nextAccountToclear(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        public
+        view
+        returns (address account)
+    {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(perpetual.activeAccounts.length() > 0, "no account to clear");
+        account = perpetual.activeAccounts.at(0);
+    }
+
     function clear(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -38,9 +48,10 @@ library SettlementModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(perpetual.activeAccounts.contains(trader), "trader is not registered");
         require(!perpetual.clearedTraders.contains(trader), "trader is already cleared");
+
         int256 margin = perpetual.margin(trader, perpetual.markPrice());
         if (margin > 0) {
-            if (perpetual.marginAccounts[trader].positionAmount != 0) {
+            if (perpetual.positionAmount(trader) != 0) {
                 perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
             } else {
                 perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
@@ -53,7 +64,7 @@ library SettlementModule {
         emit Clear(perpetualIndex, trader);
 
         if (perpetual.activeAccounts.length() == 0) {
-            settleWithdrawableMargin(perpetual, 0);
+            settleWithdrawableMargin(perpetual, perpetual.collateralAmount);
             perpetual.enterClearedState();
         }
     }
@@ -92,9 +103,7 @@ library SettlementModule {
         int256 rate = positionAmount == 0
             ? perpetual.redemptionRateWithoutPosition
             : perpetual.redemptionRateWithPosition;
-        int256 withdrawable = margin.wmul(rate);
-        perpetual.updateCashBalance(trader, margin.neg());
-        return withdrawable;
+        return margin.wmul(rate);
     }
 
     function settleWithdrawableMargin(PerpetualStorage storage perpetual, int256 totalBalance)

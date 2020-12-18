@@ -21,10 +21,19 @@ describe('MarginModule', () => {
             const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const ParameterModule = await createContract("ParameterModule");
+            const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
             const CollateralModule = await createContract("CollateralModule")
             const AMMModule = await createContract("AMMModule", [], { CollateralModule });
             const FundingModule = await createContract("FundingModule", [], { AMMModule });
-            testMargin = await createContract("TestMargin", [oracle.address], { ParameterModule, FundingModule });
+            testMargin = await createContract("TestMargin", [], { ParameterModule, FundingModule, PerpetualModule });
+            await testMargin.createPerpetual(
+                oracle.address,
+                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+            )
         })
 
         const testCases = [
@@ -378,20 +387,21 @@ describe('MarginModule', () => {
 
         testCases.forEach((testCase) => {
             it(testCase["name"] || testCase.method, async () => {
-                await testMargin.updateMarkPrice(testCase.markPrice);
+                await testMargin.updateMarkPrice(0, testCase.markPrice);
                 await testMargin.initializeMarginAccount(
+                    0,
                     accounts[testCase.trader].address,
                     testCase.marginAccount.cashBalance,
                     testCase.marginAccount.positionAmount);
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.updatePerpetualParameter(toBytes32(key), testCase.parameters[key]);
+                    await testMargin.updatePerpetualParameter(0, toBytes32(key), testCase.parameters[key]);
                 }
-                await testMargin.updateUnitAccumulativeFunding(testCase.unitAccumulativeFunding);
+                await testMargin.updateUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
-                    const result = await testMargin.callStatic[testCase.method](accounts[testCase.trader].address);
+                    const result = await testMargin.callStatic[testCase.method](0, accounts[testCase.trader].address);
                     expect(result).to.equal(testCase["expect"])
                 } else {
-                    const result = await testMargin.callStatic[testCase.method](accounts[testCase.trader].address);
+                    const result = await testMargin.callStatic[testCase.method](0, accounts[testCase.trader].address);
                     expect(result).to.be.revertedWith(testCase["expectError"])
                 }
             })
@@ -404,40 +414,49 @@ describe('MarginModule', () => {
 
         before(async () => {
             const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            const oracle = await createContract("OracleWrapper", [erc20.address]);
+            const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const ParameterModule = await createContract("ParameterModule");
+            const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
             const CollateralModule = await createContract("CollateralModule")
             const AMMModule = await createContract("AMMModule", [], { CollateralModule });
             const FundingModule = await createContract("FundingModule", [], { AMMModule });
-            testMargin = await createContract("TestMargin", [oracle.address], { ParameterModule, FundingModule });
+            testMargin = await createContract("TestMargin", [], { ParameterModule, FundingModule, PerpetualModule });
+            await testMargin.createPerpetual(
+                oracle.address,
+                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+            )
         })
 
         it("updateMarginAccount", async () => {
             let trader = accounts[0].address;
-            await testMargin.updateMarkPrice(toWei("500"));
-            await testMargin.updateUnitAccumulativeFunding(toWei("100"));
-            await testMargin.initializeMarginAccount(trader, toWei("1000"), toWei("0"));
+            await testMargin.updateMarkPrice(0, toWei("500"));
+            await testMargin.updateUnitAccumulativeFunding(0, toWei("100"));
+            await testMargin.initializeMarginAccount(0, trader, toWei("1000"), toWei("0"));
 
-            await testMargin.updateMarginAccount(trader, toWei("2"), toWei("100")) // +100 + 2*100
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(trader);
+            await testMargin.updateMarginAccount(0, trader, toWei("2"), toWei("100")) // +100 + 2*100
+            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1300"));
             expect(positionAmount).to.equal(toWei("2"));
 
-            await testMargin.updateUnitAccumulativeFunding(toWei("200"));
-            await testMargin.updateMarginAccount(trader, toWei("0.5"), toWei("100")) // +100 + 0.5*200
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(trader);
+            await testMargin.updateUnitAccumulativeFunding(0, toWei("200"));
+            await testMargin.updateMarginAccount(0, trader, toWei("0.5"), toWei("100")) // +100 + 0.5*200
+            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1500"));
             expect(positionAmount).to.equal(toWei("2.5"));
 
-            await testMargin.updateUnitAccumulativeFunding(toWei("0"));
-            await testMargin.updateMarginAccount(trader, toWei("-1"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(trader);
+            await testMargin.updateUnitAccumulativeFunding(0, toWei("0"));
+            await testMargin.updateMarginAccount(0, trader, toWei("-1"), toWei("-100"))
+            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1400")); // -100 -1*0
             expect(positionAmount).to.equal(toWei("1.5"));
 
-            await testMargin.updateUnitAccumulativeFunding(toWei("-100"));
-            await testMargin.updateMarginAccount(trader, toWei("-5"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(trader);
+            await testMargin.updateUnitAccumulativeFunding(0, toWei("-100"));
+            await testMargin.updateMarginAccount(0, trader, toWei("-5"), toWei("-100"))
+            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1800")); // -100 - 5*-100
             expect(positionAmount).to.equal(toWei("-3.5"));
         })

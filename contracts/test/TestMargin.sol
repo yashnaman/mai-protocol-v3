@@ -5,88 +5,140 @@ pragma experimental ABIEncoderV2;
 import "../Storage.sol";
 import "../module/MarginModule.sol";
 import "../module/OracleModule.sol";
+import "../module/PerpetualModule.sol";
 import "../Storage.sol";
 
 contract TestMargin is Storage {
     using MarginModule for PerpetualStorage;
-    using ParameterModule for PerpetualStorage;
     using OracleModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
+    using ParameterModule for PerpetualStorage;
 
-    PerpetualStorage internal _perpetual;
-
-    constructor(address oracle) {
-        _perpetual.oracle = oracle;
-        _perpetual.state = PerpetualState.NORMAL;
+    function createPerpetual(
+        address oracle,
+        int256[8] calldata coreParams,
+        int256[5] calldata riskParams,
+        int256[5] calldata minRiskParamValues,
+        int256[5] calldata maxRiskParamValues
+    ) external {
+        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
+        perpetual.initialize(
+            perpetualIndex,
+            oracle,
+            coreParams,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
+        perpetual.state = PerpetualState.NORMAL;
     }
 
-    function updateMarkPrice(int256 price) external {
-        _perpetual.markPriceData.price = price;
+    function updateMarkPrice(uint256 perpetualIndex, int256 price) external {
+        _liquidityPool.perpetuals[perpetualIndex].markPriceData.price = price;
     }
 
     function initializeMarginAccount(
+        uint256 perpetualIndex,
         address trader,
         int256 cashBalance,
         int256 positionAmount
     ) external {
-        _perpetual.marginAccounts[trader].cashBalance = cashBalance;
-        _perpetual.marginAccounts[trader].positionAmount = positionAmount;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance = cashBalance;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
+            .positionAmount = positionAmount;
     }
 
-    function updateUnitAccumulativeFunding(int256 newUnitAccumulativeFunding) external {
-        _perpetual.unitAccumulativeFunding = newUnitAccumulativeFunding;
+    function updateUnitAccumulativeFunding(
+        uint256 perpetualIndex,
+        int256 newUnitAccumulativeFunding
+    ) external {
+        _liquidityPool.perpetuals[perpetualIndex]
+            .unitAccumulativeFunding = newUnitAccumulativeFunding;
     }
 
-    function updatePerpetualParameter(bytes32 key, int256 newValue) external {
-        _perpetual.updatePerpetualParameter(key, newValue);
+    function updatePerpetualParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) external {
+        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
     }
 
-    function marginAccount(address trader)
+    function marginAccount(uint256 perpetualIndex, address trader)
         public
         view
         returns (int256 cashBalance, int256 positionAmount)
     {
-        cashBalance = _perpetual.marginAccounts[trader].cashBalance;
-        positionAmount = _perpetual.marginAccounts[trader].positionAmount;
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        cashBalance = perpetual.marginAccounts[trader].cashBalance;
+        positionAmount = perpetual.marginAccounts[trader].positionAmount;
     }
 
-    function initialMargin(address trader) external view returns (int256) {
-        return _perpetual.initialMargin(trader, _perpetual.markPrice());
+    function initialMargin(uint256 perpetualIndex, address trader) external view returns (int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.initialMargin(trader, perpetual.markPrice());
     }
 
-    function maintenanceMargin(address trader) external view returns (int256) {
-        return _perpetual.maintenanceMargin(trader, _perpetual.markPrice());
+    function maintenanceMargin(uint256 perpetualIndex, address trader)
+        external
+        view
+        returns (int256)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.maintenanceMargin(trader, perpetual.markPrice());
     }
 
-    function availableCashBalance(address trader) external view returns (int256) {
-        return _perpetual.availableCashBalance(trader);
+    function availableCashBalance(uint256 perpetualIndex, address trader)
+        external
+        view
+        returns (int256)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.availableCashBalance(trader);
     }
 
-    function positionAmount(address trader) external view returns (int256) {
-        return _perpetual.positionAmount(trader);
+    function positionAmount(uint256 perpetualIndex, address trader) external view returns (int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.positionAmount(trader);
     }
 
-    function margin(address trader) external syncState returns (int256) {
-        return _perpetual.margin(trader, _perpetual.markPrice());
+    function margin(uint256 perpetualIndex, address trader) external syncState returns (int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.margin(trader, perpetual.markPrice());
     }
 
-    function isInitialMarginSafe(address trader) external view returns (bool) {
-        return _perpetual.isInitialMarginSafe(trader);
+    function isInitialMarginSafe(uint256 perpetualIndex, address trader)
+        external
+        view
+        returns (bool)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.isInitialMarginSafe(trader);
     }
 
-    function isMaintenanceMarginSafe(address trader) external view returns (bool) {
-        return _perpetual.isMaintenanceMarginSafe(trader);
+    function isMaintenanceMarginSafe(uint256 perpetualIndex, address trader)
+        external
+        view
+        returns (bool)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.isMaintenanceMarginSafe(trader);
     }
 
-    function isEmptyAccount(address trader) external view returns (bool) {
-        return _perpetual.isEmptyAccount(trader);
+    function isEmptyAccount(uint256 perpetualIndex, address trader) external view returns (bool) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.isEmptyAccount(trader);
     }
 
     function updateMarginAccount(
+        uint256 perpetualIndex,
         address trader,
         int256 deltaPositionAmount,
         int256 deltaMargin
-    ) external returns (int256, int256){
-        _perpetual.updateMarginAccount(trader, deltaPositionAmount, deltaMargin);
-        return marginAccount(trader);
+    ) external returns (int256, int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        perpetual.updateMarginAccount(trader, deltaPositionAmount, deltaMargin);
+        return marginAccount(perpetualIndex, trader);
     }
 }

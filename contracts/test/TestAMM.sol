@@ -76,7 +76,7 @@ contract TestAMM {
     function deltaMargin(int256 amount)
         public
         view
-        returns (int256)
+        returns (int256 deltaMargin)
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         deltaMargin = AMMModule._deltaMargin(
@@ -101,15 +101,15 @@ contract TestAMM {
             );
     }
 
-    function tradeWithAMM(int256 tradingAmount, bool partialFill)
+    function tradeWithAMM(int256 tradeAmount, bool partialFill)
         public
         view
-        returns (int256, int256)
+        returns (int256 deltaMargin, int256 deltaPosition)
     {
         (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
             liquidityPool,
             0,
-            tradingAmount,
+            tradeAmount,
             partialFill
         );
     }

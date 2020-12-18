@@ -65,8 +65,8 @@ describe('TradeModule1', () => {
             await testTrade.setVault(user4.address, toWei("0.0002"))
 
             const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("0"),
+                tradeValue: toWei("10000"),
+                tradeAmount: toWei("0"),
                 lpFee: toWei("0"),
                 vaultFee: toWei("0"),
                 operatorFee: toWei("0"),
@@ -111,8 +111,8 @@ describe('TradeModule1', () => {
             await testTrade.setOperator(user3.address);
             await testTrade.setVault(user4.address, toWei("0.0002"))
             const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("-5"),
+                tradeValue: toWei("10000"),
+                tradeAmount: toWei("-5"),
                 lpFee: toWei("1"),
                 vaultFee: toWei("2"),
                 operatorFee: toWei("3"),
@@ -141,8 +141,8 @@ describe('TradeModule1', () => {
             await testTrade.setOperator(user3.address);
             await testTrade.setVault(user4.address, toWei("0.0002"))
             const receipt = {
-                tradingValue: toWei("-10000"),
-                tradingAmount: toWei("5"),
+                tradeValue: toWei("-10000"),
+                tradeAmount: toWei("5"),
                 lpFee: toWei("1"),
                 vaultFee: toWei("2"),
                 operatorFee: toWei("3"),
@@ -171,8 +171,8 @@ describe('TradeModule1', () => {
             await testTrade.setOperator(user3.address);
             await testTrade.setVault(user4.address, toWei("0.0002"))
             const receipt = {
-                tradingValue: toWei("10000"),
-                tradingAmount: toWei("-5"),
+                tradeValue: toWei("10000"),
+                tradeAmount: toWei("-5"),
                 lpFee: toWei("1"),
                 vaultFee: toWei("2"),
                 operatorFee: toWei("3"),
@@ -234,7 +234,7 @@ describe('TradeModule1', () => {
                 },
                 input: {
                     amount: toWei("-0.5"),
-                    priceLimit: toWei("0"),
+                    limitPrice: toWei("0"),
                 },
                 expectOutput: {
                     cashBalance: toWei("11178.003372325"),
@@ -251,7 +251,7 @@ describe('TradeModule1', () => {
             //     },
             //     input: {
             //         amount: toWei("-0.5"),
-            //         priceLimit: toWei("0"),
+            //         limitPrice: toWei("0"),
             //     },
             //     expectOutput: {
             //         cashBalance: toWei("-12200.751349815645198533"),
@@ -267,7 +267,7 @@ describe('TradeModule1', () => {
             //     },
             //     input: {
             //         amount: toWei("-0.5"),
-            //         priceLimit: toWei("0"),
+            //         limitPrice: toWei("0"),
             //     },
             //     expectError: "trader margin is unsafe"
             // },
@@ -280,7 +280,7 @@ describe('TradeModule1', () => {
                 },
                 input: {
                     amount: toWei("0.5"),
-                    priceLimit: toWei("99999999999999"),
+                    limitPrice: toWei("99999999999999"),
                 },
                 expectOutput: {
                     cashBalance: toWei("4203.279770389899701152"),
@@ -297,7 +297,7 @@ describe('TradeModule1', () => {
             //     },
             //     input: {
             //         amount: toWei("0.5"),
-            //         priceLimit: toWei("99999999999999"),
+            //         limitPrice: toWei("99999999999999"),
             //     },
             //     expectError: "trader initial margin is unsafe",
             // },
@@ -310,7 +310,7 @@ describe('TradeModule1', () => {
                 },
                 input: {
                     amount: toWei("3.3"),
-                    priceLimit: toWei("99999999999999"),
+                    limitPrice: toWei("99999999999999"),
                 },
                 expectOutput: {
                     cashBalance: toWei("-15401.483910332567601064"),
@@ -342,13 +342,13 @@ describe('TradeModule1', () => {
                 await testTrade.initializeMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
                 await testTrade.initializeMarginAccount(0, user1.address, testCase.marginAccount.cashBalance, testCase.marginAccount.positionAmount);
                 if (typeof testCase.expectOutput != "undefined") {
-                    await testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address);
+                    await testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address);
                     var { cashBalance } = await testTrade.marginAccount(0, user1.address);
                     expect(cashBalance).approximateBigNumber(testCase.expectOutput.cashBalance);
                     expect(await testTrade.claimableFee(user4.address)).approximateBigNumber(testCase.expectOutput.vaultFee);
                     expect(await testTrade.claimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
                 } else {
-                    await expect(testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.priceLimit, user5.address))
+                    await expect(testTrade.trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address))
                         .to.be.revertedWith(testCase["expectError"])
                 }
             })

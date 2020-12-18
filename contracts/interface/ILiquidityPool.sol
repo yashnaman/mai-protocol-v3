@@ -22,7 +22,7 @@ interface ILiquidityPool {
             // [3] donatedInsuranceFund,
             // [4] totalClaimableFee,
             // [5] poolCashBalance,
-            // [6] poolCollateral,
+            // [6] poolCollateralAmount,
             int256[7] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
@@ -33,7 +33,7 @@ interface ILiquidityPool {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] depositedCollateral
+            // [0] collateralAmount
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -64,7 +64,7 @@ interface ILiquidityPool {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 priceLimit,
+        int256 limitPrice,
         uint256 deadline,
         address referrer,
         bool isCloseOnly

@@ -91,7 +91,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 priceLimit,
+        int256 limitPrice,
         uint256 deadline,
         address referrer,
         bool isCloseOnly
@@ -103,12 +103,12 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
-        require(priceLimit >= 0, "price limit is invalid");
+        require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
         if (isCloseOnly) {
             amount = _liquidityPool.truncateCloseAmount(perpetualIndex, trader, amount);
         }
-        _liquidityPool.trade(perpetualIndex, trader, amount, priceLimit, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer);
     }
 
     function brokerTrade(
@@ -116,7 +116,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         int256 amount,
         bytes memory signature
     ) external syncState onlyWhen(order.perpetualIndex, PerpetualState.NORMAL) {
-        address signer = order.signer(signature, true);
+        address signer = order.signer(signature, false);
         require(
             signer == order.trader ||
                 IAccessController(_liquidityPool.accessController).isGranted(
@@ -153,14 +153,14 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 priceLimit,
+        int256 limitPrice,
         uint256 deadline
     ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
-        require(priceLimit >= 0, "price limit is invalid");
+        require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _liquidityPool.liquidateByTrader(perpetualIndex, msg.sender, trader, amount, priceLimit);
+        _liquidityPool.liquidateByTrader(perpetualIndex, msg.sender, trader, amount, limitPrice);
     }
 
     bytes[50] private __gap;

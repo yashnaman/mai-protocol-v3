@@ -46,15 +46,15 @@ library AMMModule {
     function tradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        int256 tradingAmount,
+        int256 tradeAmount,
         bool partialFill
     ) public view returns (int256 deltaMargin, int256 deltaPosition) {
-        require(tradingAmount != 0, "trade amount is zero");
+        require(tradeAmount != 0, "trade amount is zero");
         Context memory context = prepareContext(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         (int256 closingAmount, int256 openingAmount) = Utils.splitAmount(
             context.positionAmount,
-            tradingAmount
+            tradeAmount
         );
         deltaMargin = closePosition(perpetual, context, closingAmount);
         context.availableCashBalance = context.availableCashBalance.add(deltaMargin);
@@ -84,7 +84,9 @@ library AMMModule {
         int256 shareAmount = calculateShareToMint(liquidityPool, shareTotalSupply, totalCashAmount);
         require(shareAmount > 0, "received share must be positive");
         liquidityPool.poolCashBalance = liquidityPool.poolCashBalance.add(totalCashAmount);
-        liquidityPool.poolCollateral = liquidityPool.poolCollateral.add(totalCashAmount);
+        liquidityPool.poolCollateralAmount = liquidityPool.poolCollateralAmount.add(
+            totalCashAmount
+        );
         IShareToken(liquidityPool.shareToken).mint(msg.sender, shareAmount.toUint256());
         emit AddLiquidity(msg.sender, totalCashAmount, shareAmount);
     }
@@ -131,7 +133,7 @@ library AMMModule {
         int256 cashToReturn = calculateCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
         IShareToken(liquidityPool.shareToken).burn(msg.sender, shareToRemove.toUint256());
         liquidityPool.poolCashBalance = liquidityPool.poolCashBalance.sub(cashToReturn);
-        liquidityPool.poolCollateral = liquidityPool.poolCollateral.sub(cashToReturn);
+        liquidityPool.poolCollateralAmount = liquidityPool.poolCollateralAmount.sub(cashToReturn);
         liquidityPool.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
@@ -212,9 +214,9 @@ library AMMModule {
     function closePosition(
         PerpetualStorage storage perpetual,
         Context memory context,
-        int256 tradingAmount
+        int256 tradeAmount
     ) public view returns (int256 deltaMargin) {
-        if (tradingAmount == 0) {
+        if (tradeAmount == 0) {
             return 0;
         }
         require(context.positionAmount != 0, "position is zero when close");
@@ -222,7 +224,7 @@ library AMMModule {
         if (isAMMMarginSafe(context, beta)) {
             int256 poolMargin = regress(context, beta);
             require(poolMargin > 0, "pool margin must be positive");
-            int256 newPositionAmount = context.positionAmount.add(tradingAmount);
+            int256 newPositionAmount = context.positionAmount.add(tradeAmount);
             deltaMargin = _deltaMargin(
                 poolMargin,
                 context.positionAmount,
@@ -231,17 +233,17 @@ library AMMModule {
                 beta
             );
         } else {
-            deltaMargin = context.indexPrice.wmul(tradingAmount).neg();
+            deltaMargin = context.indexPrice.wmul(tradeAmount).neg();
         }
     }
 
     function openPosition(
         PerpetualStorage storage perpetual,
         Context memory context,
-        int256 tradingAmount,
+        int256 tradeAmount,
         bool partialFill
     ) private view returns (int256 deltaMargin, int256 deltaPosition) {
-        if (tradingAmount == 0) {
+        if (tradeAmount == 0) {
             return (0, 0);
         }
         int256 beta = perpetual.openSlippageFactor.value;
@@ -249,7 +251,7 @@ library AMMModule {
             require(partialFill, "amm is unsafe when open");
             return (0, 0);
         }
-        int256 newPosition = context.positionAmount.add(tradingAmount);
+        int256 newPosition = context.positionAmount.add(tradeAmount);
         require(newPosition != 0, "new position is zero when open");
         int256 poolMargin = regress(context, beta);
         require(poolMargin > 0, "pool margin must be positive");
@@ -266,7 +268,7 @@ library AMMModule {
                 deltaPosition = maxLongPosition.sub(context.positionAmount);
                 newPosition = maxLongPosition;
             } else {
-                deltaPosition = tradingAmount;
+                deltaPosition = tradeAmount;
             }
         } else {
             int256 minShortPosition = _maxPosition(
@@ -281,7 +283,7 @@ library AMMModule {
                 deltaPosition = minShortPosition.sub(context.positionAmount);
                 newPosition = minShortPosition;
             } else {
-                deltaPosition = tradingAmount;
+                deltaPosition = tradeAmount;
             }
         }
         deltaMargin = _deltaMargin(
