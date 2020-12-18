@@ -48,26 +48,35 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SettlementModule for LiquidityPoolStorage;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function activeAccountCount(uint256 perpetualIndex) public view returns (uint256) {
-        return _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
-    }
+    // function activeAccountCount(uint256 perpetualIndex) public view returns (uint256) {
+    //     return _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
+    // }
 
-    function listActiveAccounts(
-        uint256 perpetualIndex,
-        uint256 start,
-        uint256 end
-    ) public view returns (address[] memory result) {
-        require(start < end, "invalid range");
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        uint256 total = perpetual.activeAccounts.length();
-        if (start >= total) {
-            return result;
-        }
-        end = end.min(total);
-        result = new address[](end.sub(start));
-        for (uint256 i = start; i < end; i++) {
-            result[i.sub(start)] = perpetual.activeAccounts.at(i);
-        }
+    // function listActiveAccounts(
+    //     uint256 perpetualIndex,
+    //     uint256 start,
+    //     uint256 end
+    // ) public view returns (address[] memory result) {
+    //     require(start < end, "invalid range");
+    //     PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+    //     uint256 total = perpetual.activeAccounts.length();
+    //     if (start >= total) {
+    //         return result;
+    //     }
+    //     end = end.min(total);
+    //     result = new address[](end.sub(start));
+    //     for (uint256 i = start; i < end; i++) {
+    //         result[i.sub(start)] = perpetual.activeAccounts.at(i);
+    //     }
+    // }
+
+    function clearProgress(uint256 perpetualIndex)
+        public
+        view
+        returns (uint256 left, uint256 total)
+    {
+        left = _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
+        total = _liquidityPool.perpetuals[perpetualIndex].clearedTraders.length().add(left);
     }
 
     function settleableMargin(uint256 perpetualIndex, address trader)
