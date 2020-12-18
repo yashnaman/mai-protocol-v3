@@ -6,10 +6,10 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IFactory.sol";
 
+import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
 
-import "./AMM.sol";
 import "./Events.sol";
 import "./Getter.sol";
 import "./Governance.sol";
@@ -19,10 +19,11 @@ import "./Settlement.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-contract LiquidityPool is Storage, Perpetual, AMM, Settlement, Getter, Governance {
+contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
+    using AMMModule for LiquidityPoolStorage;
 
     event Finalize();
     event CreatePerpetual(
@@ -87,6 +88,29 @@ contract LiquidityPool is Storage, Perpetual, AMM, Settlement, Getter, Governanc
         }
         _liquidityPool.isFinalized = true;
         emit Finalize();
+    }
+
+    function claimableFee(address claimer) public view returns (int256) {
+        return _liquidityPool.claimableFees[claimer];
+    }
+
+    function claimFee(int256 amount) external nonReentrant {
+        _liquidityPool.claimFee(msg.sender, amount);
+    }
+
+    function donateInsuranceFund(int256 amount) external payable nonReentrant {
+        require(amount > 0, "amount is 0");
+        _liquidityPool.donateInsuranceFund(amount);
+    }
+
+    function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
+        require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
+        _liquidityPool.addLiquidity(cashToAdd);
+    }
+
+    function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
+        require(shareToRemove > 0, "amount is invalid");
+        _liquidityPool.removeLiquidity(shareToRemove);
     }
 
     bytes[50] private __gap;

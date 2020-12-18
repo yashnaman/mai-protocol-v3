@@ -56,8 +56,4 @@ contract TestSettlement is TestMargin, Settlement {
     function redemptionRateWithPosition(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].redemptionRateWithPosition;
     }
-
-    function withdrawableAmount(uint256 perpetualIndex, address trader) public returns (int256) {
-        return _liquidityPool.perpetuals[perpetualIndex].settledMarginAccount(trader);
-    }
 }

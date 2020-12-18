@@ -125,20 +125,5 @@ contract Getter is Storage {
         ];
     }
 
-    function marginAccount(uint256 perpetualIndex, address trader)
-        public
-        view
-        onlyExistedPerpetual(perpetualIndex)
-        returns (int256 cashBalance, int256 positionAmount)
-    {
-        cashBalance = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
-        positionAmount = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
-            .positionAmount;
-    }
-
-    function claimableFee(address claimer) public view returns (int256) {
-        return _liquidityPool.claimableFees[claimer];
-    }
-
     bytes[50] private __gap;
 }

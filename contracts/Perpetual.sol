@@ -53,6 +53,17 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using SettlementModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
 
+    function marginAccount(uint256 perpetualIndex, address trader)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (int256 cashBalance, int256 positionAmount)
+    {
+        cashBalance = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
+        positionAmount = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
+            .positionAmount;
+    }
+
     function deposit(
         uint256 perpetualIndex,
         address trader,

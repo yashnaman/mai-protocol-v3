@@ -18,6 +18,8 @@ import "./SettlementModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
@@ -141,10 +143,13 @@ library LiquidityPoolModule {
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual
     ) public {
-        int256 rebalancingAmount = perpetual.margin(address(this), perpetual.markPrice()).sub(
+        int256 rebalanceAmount = perpetual.margin(address(this), perpetual.markPrice()).sub(
             perpetual.initialMargin(address(this), perpetual.markPrice())
         );
-        transferCollateralToPool(liquidityPool, perpetual, rebalancingAmount);
+        console.log("{a}", uint256(perpetual.margin(address(this), perpetual.markPrice())));
+        console.log("{b}", uint256(perpetual.initialMargin(address(this), perpetual.markPrice())));
+        // TODO: if rebalanceAmount exceeds max collateral amount
+        transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
     }
 
     function transferCollateralToPool(

@@ -17,8 +17,8 @@ contract Events {
     event AdjustPerpetualRiskSetting(uint256 perpetualIndex, bytes32 key, int256 value);
 
     // settle
-    event Clear(uint256 perpetualIndex, address trader);
-    event Settle(uint256 perpetualIndex, address trader, int256 amount);
+    event ClearAccount(uint256 perpetualIndex, address trader);
+    event SettleAccount(uint256 perpetualIndex, address trader, int256 amount);
     // trade
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);

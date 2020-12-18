@@ -45,8 +45,7 @@ library MarginModule {
                 .positionAmount
                 .wmul(indexPrice)
                 .wmul(perpetual.initialMarginRate)
-                .abs()
-                .max(perpetual.keeperGasReward);
+                .abs();
     }
 
     function maintenanceMargin(
@@ -100,9 +99,10 @@ library MarginModule {
         view
         returns (bool)
     {
-        return
-            margin(perpetual, trader, perpetual.markPrice()) >=
-            initialMargin(perpetual, trader, perpetual.markPrice());
+        int256 threshold = initialMargin(perpetual, trader, perpetual.markPrice()).max(
+            perpetual.keeperGasReward
+        );
+        return margin(perpetual, trader, perpetual.markPrice()) >= threshold;
     }
 
     function isMaintenanceMarginSafe(PerpetualStorage storage perpetual, address trader)
@@ -110,9 +110,10 @@ library MarginModule {
         view
         returns (bool)
     {
-        return
-            margin(perpetual, trader, perpetual.markPrice()) >=
-            maintenanceMargin(perpetual, trader, perpetual.markPrice());
+        int256 threshold = maintenanceMargin(perpetual, trader, perpetual.markPrice()).max(
+            perpetual.keeperGasReward
+        );
+        return margin(perpetual, trader, perpetual.markPrice()) >= threshold;
     }
 
     function isMarginSafe(PerpetualStorage storage perpetual, address trader)
@@ -180,6 +181,11 @@ library MarginModule {
         perpetual.marginAccounts[trader].cashBalance = perpetual.marginAccounts[trader]
             .cashBalance
             .add(deltaCashBalance);
+    }
+
+    function reset(PerpetualStorage storage perpetual, address trader) internal {
+        perpetual.marginAccounts[trader].cashBalance = 0;
+        perpetual.marginAccounts[trader].positionAmount = 0;
     }
 
     function updateMarginAccount(
