@@ -77,7 +77,7 @@ library SettlementModule {
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader
-    ) public returns (int256 margin) {
+    ) public view returns (int256 margin) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         margin = perpetual.margin(trader, perpetual.markPrice());
         if (margin > 0) {

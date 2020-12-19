@@ -86,7 +86,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         margin = _liquidityPool.settleableMargin(perpetualIndex, trader);
     }
 
-    function clearAccount(uint256 perpetualIndex)
+    function clear(uint256 perpetualIndex)
         public
         onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
         onlyExistedPerpetual(perpetualIndex)
@@ -96,7 +96,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.clearAccount(perpetualIndex, unclearedAccount);
     }
 
-    function settleAccount(uint256 perpetualIndex, address trader)
+    function settle(uint256 perpetualIndex, address trader)
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         onlyWhen(perpetualIndex, PerpetualState.CLEARED)

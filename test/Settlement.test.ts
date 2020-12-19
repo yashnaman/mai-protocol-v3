@@ -17,6 +17,7 @@ describe('Settlement', () => {
     let user2;
     let user3;
     let oracle;
+    let ctk;
     let settlement;
     let TestSettlement;
 
@@ -27,7 +28,7 @@ describe('Settlement', () => {
         user2 = accounts[2];
         user3 = accounts[3];
 
-        const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         oracle = await createContract("OracleWrapper", ["CTK", "UDA"]);
         const CollateralModule = await createContract("CollateralModule")
         const OracleModule = await createContract("OracleModule")
@@ -47,21 +48,17 @@ describe('Settlement', () => {
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
+        await settlement.setCollateral(ctk.address);
     })
 
     async function printSettleState(perpIndex) {
-        const numDirtyAccounts = await settlement.activeAccountCount(perpIndex);
-        var dirtyAccounts = []
-        if (numDirtyAccounts > 0) {
-            dirtyAccounts = await settlement.listActiveAccounts(perpIndex, 0, numDirtyAccounts);
-        }
+        const { left, total } = await settlement.clearProgress(perpIndex);
         const a = await settlement.totalMarginWithoutPosition(0);
         const b = await settlement.totalMarginWithPosition(0);
         const c = await settlement.redemptionRateWithoutPosition(0);
         const d = await settlement.redemptionRateWithPosition(0);
         console.table([
-            ["num dirty accounts", numDirtyAccounts],
-            ["dirty accounts", dirtyAccounts],
+            ["progress", `${left} / ${total}`],
             ["total margin (no pos)", fromWei(a)],
             ["total margin (with pos)", fromWei(b)],
             ["redemption rate (no pos)", fromWei(c)],
@@ -92,7 +89,7 @@ describe('Settlement', () => {
         expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("600"));
     })
 
-    it("clearAccount account", async () => {
+    it("clear account", async () => {
         var now = Math.floor(Date.now() / 1000);
         await oracle.setIndexPrice(toWei("500"), now);
         await oracle.setMarkPrice(toWei("500"), now);
@@ -107,19 +104,27 @@ describe('Settlement', () => {
 
         await settlement.setEmergency(0);
 
-        expect(await settlement.activeAccountCount(0)).to.equal(3);
-        const traders = await settlement.listActiveAccounts(0, 0, 3);
-        expect(traders[0]).to.equal(user1.address);
-        expect(traders[1]).to.equal(user2.address);
-        expect(traders[2]).to.equal(user3.address);
+        var { left, total } = await settlement.clearProgress(0);
+        expect(left).to.equal(3);
+        expect(total).to.equal(3);
 
-        // await expect(settlement.clearAccount(0)).to.be.revertedWith("trader is invalid");
-        await settlement.clearAccount(0);
-        expect(await settlement.activeAccountCount(0)).to.equal(2);
-        await settlement.clearAccount(0);
-        await settlement.clearAccount(0);
+        // await expect(settlement.clear(0)).to.be.revertedWith("trader is invalid");
+        await settlement.clear(0);
+        var { left, total } = await settlement.clearProgress(0);
+        expect(left).to.equal(2);
+        expect(total).to.equal(3);
 
-        await expect(settlement.clearAccount(0)).to.be.revertedWith("operation is disallowed now");
+        await settlement.clear(0);
+        var { left, total } = await settlement.clearProgress(0);
+        expect(left).to.equal(1);
+        expect(total).to.equal(3);
+
+        await settlement.clear(0);
+        var { left, total } = await settlement.clearProgress(0);
+        expect(left).to.equal(0);
+        expect(total).to.equal(3);
+
+        await expect(settlement.clear(0)).to.be.revertedWith("operation is disallowed now");
     })
 
     it("settle and withdraw", async () => {
@@ -137,9 +142,9 @@ describe('Settlement', () => {
         await settlement.registerActiveAccount(0, user3.address);
 
         await settlement.setEmergency(0);
-        await settlement.clearAccount(0);
-        await settlement.clearAccount(0);
-        await settlement.clearAccount(0);
+        await settlement.clear(0);
+        await settlement.clear(0);
+        await settlement.clear(0);
 
         await printSettleState(0);
 
@@ -156,6 +161,7 @@ describe('Settlement', () => {
         await oracle.setIndexPrice(toWei("500"), now);
         await oracle.setMarkPrice(toWei("500"), now);
 
+        await ctk.mint(settlement.address, toWei("175"))
         await settlement.setPoolCollateralAmount(toWei("50"));
         await settlement.setPerpetualCollateralAmount(0, toWei("125"));
 
@@ -168,9 +174,9 @@ describe('Settlement', () => {
         await settlement.registerActiveAccount(0, user3.address);
 
         await settlement.setEmergency(0);
-        await settlement.clearAccount(0);
-        await settlement.clearAccount(0);
-        await settlement.clearAccount(0);
+        await settlement.clear(0);
+        await settlement.clear(0);
+        await settlement.clear(0);
 
         await printSettleState(0);
 
@@ -180,5 +186,9 @@ describe('Settlement', () => {
         console.log(fromWei(await settlement.callStatic.settleableMargin(0, user1.address)));
         console.log(fromWei(await settlement.callStatic.settleableMargin(0, user2.address)));
         console.log(fromWei(await settlement.callStatic.settleableMargin(0, user3.address)));
+
+        console.log(fromWei(await ctk.balanceOf(user1.address)));
+        await settlement.connect(user1).settle(0, user1.address);
+        console.log(fromWei(await ctk.balanceOf(user1.address)));
     })
 });

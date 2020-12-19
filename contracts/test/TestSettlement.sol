@@ -13,6 +13,11 @@ contract TestSettlement is TestMargin, Settlement {
     using SettlementModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
+    function setCollateral(address collateral) public {
+        _liquidityPool.collateral = collateral;
+        _liquidityPool.scaler = 1;
+    }
+
     function setPoolCollateralAmount(int256 amount) public {
         _liquidityPool.poolCollateralAmount = amount;
     }
