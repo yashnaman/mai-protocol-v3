@@ -65,9 +65,7 @@ library SettlementModule {
         emit ClearAccount(perpetualIndex, trader);
 
         if (perpetual.activeAccounts.length() == 0) {
-            console.log("{1}", uint256(perpetual.collateralAmount));
             liquidityPool.rebalance(perpetual);
-            console.log("{2}", uint256(perpetual.collateralAmount));
             settleCollateral(perpetual);
             perpetual.enterClearedState();
         }
@@ -121,7 +119,6 @@ library SettlementModule {
             );
             // margin with positions will get nothing
             perpetual.redemptionRateWithPosition = 0;
-            return;
         } else {
             // 3. covere margin with position
             perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;

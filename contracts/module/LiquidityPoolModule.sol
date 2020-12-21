@@ -146,8 +146,8 @@ library LiquidityPoolModule {
         int256 rebalanceAmount = perpetual.margin(address(this), perpetual.markPrice()).sub(
             perpetual.initialMargin(address(this), perpetual.markPrice())
         );
-        console.log("{a}", uint256(perpetual.margin(address(this), perpetual.markPrice())));
-        console.log("{b}", uint256(perpetual.initialMargin(address(this), perpetual.markPrice())));
+        // console.log("{a}", uint256(perpetual.margin(address(this), perpetual.markPrice())));
+        // console.log("{b}", uint256(perpetual.initialMargin(address(this), perpetual.markPrice())));
         // TODO: if rebalanceAmount exceeds max collateral amount
         transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
     }

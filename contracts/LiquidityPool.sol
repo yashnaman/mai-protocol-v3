@@ -94,12 +94,12 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         return _liquidityPool.claimableFees[claimer];
     }
 
-    function claimFee(int256 amount) external nonReentrant {
-        _liquidityPool.claimFee(msg.sender, amount);
+    function claimFee(address claimer, int256 amount) external nonReentrant {
+        _liquidityPool.claimFee(claimer, amount);
     }
 
     function donateInsuranceFund(int256 amount) external payable nonReentrant {
-        require(amount > 0, "amount is 0");
+        require(amount > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.donateInsuranceFund(amount);
     }
 

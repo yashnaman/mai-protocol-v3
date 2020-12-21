@@ -32,13 +32,13 @@ library ParameterModule {
     ) public {
         if (key == "initialMarginRate") {
             require(
-                perpetual.initialMarginRate == 0 || newValue < perpetual.initialMarginRate,
+                newValue < perpetual.initialMarginRate,
                 "increasing initial margin rate is not allowed"
             );
             perpetual.initialMarginRate = newValue;
         } else if (key == "maintenanceMarginRate") {
             require(
-                perpetual.maintenanceMarginRate == 0 || newValue < perpetual.maintenanceMarginRate,
+                newValue < perpetual.maintenanceMarginRate,
                 "increasing maintenance margin rate is not allowed"
             );
             perpetual.maintenanceMarginRate = newValue;
@@ -154,10 +154,6 @@ library ParameterModule {
             "beta2 should be within (0, b1)"
         );
         require(perpetual.fundingRateLimit.value >= 0, "frc should be greater than 0");
-        require(
-            perpetual.maxLeverage.value > Constant.SIGNED_ONE &&
-                perpetual.maxLeverage.value < Constant.SIGNED_ONE * 10,
-            "tl should be within (1, 10)"
-        );
+        require(perpetual.maxLeverage.value > 0, "tl should be greater than 0");
     }
 }

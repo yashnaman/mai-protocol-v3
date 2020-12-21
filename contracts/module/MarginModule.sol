@@ -183,11 +183,6 @@ library MarginModule {
             .add(deltaCashBalance);
     }
 
-    function reset(PerpetualStorage storage perpetual, address trader) internal {
-        perpetual.marginAccounts[trader].cashBalance = 0;
-        perpetual.marginAccounts[trader].positionAmount = 0;
-    }
-
     function updateMarginAccount(
         PerpetualStorage storage perpetual,
         address trader,
@@ -199,5 +194,10 @@ library MarginModule {
         account.cashBalance = account.cashBalance.add(deltaCashBalance).add(
             perpetual.unitAccumulativeFunding.wmul(deltaPositionAmount)
         );
+    }
+
+    function reset(PerpetualStorage storage perpetual, address trader) internal {
+        perpetual.marginAccounts[trader].cashBalance = 0;
+        perpetual.marginAccounts[trader].positionAmount = 0;
     }
 }
