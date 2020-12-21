@@ -101,13 +101,13 @@ contract SymbolService is Ownable {
         return _whitelistedFactories.contains(factory);
     }
     
-    function addFactory(address factory) public onlyOwner {
+    function addWhitelistedFactory(address factory) public onlyOwner {
         require(! isWhitelistedFactory(factory), "factory already exists");
         _whitelistedFactories.add(factory);
         emit AddFactory(factory);
     }
     
-    function removeFactory(address factory) public onlyOwner {
+    function removeWhitelistedFactory(address factory) public onlyOwner {
         require(isWhitelistedFactory(factory), "factory not found");
         _whitelistedFactories.remove(factory);
         emit RemoveFactory(factory);
