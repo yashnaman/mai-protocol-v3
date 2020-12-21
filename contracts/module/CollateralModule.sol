@@ -56,7 +56,13 @@ library CollateralModule {
         require(msg.value == 0 || liquidityPool.isWrapped, "native collateral is not acceptable");
         if (liquidityPool.isWrapped && msg.value > 0) {
             int256 internalAmount = _toInternalAmount(liquidityPool, msg.value).toInt256();
-            IWETH(IFactory(liquidityPool.factory).weth()){ value: msg.value }.deposit();
+            IWETH weth = IWETH(IFactory(liquidityPool.factory).weth());
+            uint256 currentBalance = weth.balanceOf(address(this));
+            weth.deposit{ value: msg.value }();
+            require(
+                weth.balanceOf(address(this)).sub(currentBalance) == msg.value,
+                "fail to deposit weth"
+            );
             totalAmount = totalAmount.add(internalAmount);
         }
         if (amount > 0) {

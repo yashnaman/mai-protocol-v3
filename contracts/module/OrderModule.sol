@@ -91,12 +91,6 @@ library OrderModule {
         }
     }
 
-    function validateStopLossOrder(LiquidityPoolStorage storage liquidityPool, Order memory order)
-        internal
-    {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[order.perpetualIndex];
-    }
-
     function truncateCloseAmount(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,

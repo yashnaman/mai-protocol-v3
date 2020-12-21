@@ -32,18 +32,22 @@ async function main(accounts: any[]) {
     var vault = accounts[0];
     var vaultFeeRate = toWei("0.0003");
 
+    var symbol = await createContract("SymbolService", [10000]);
+
     var weth = await createContract("WETH9");
     var shareTokenTmpl = await createContract("ShareToken");
     var governorTmpl = await createContract("Governor");
     var poolCreator = await createContract(
         "PoolCreator",
-        [governorTmpl.address, shareTokenTmpl.address, weth.address, vault.address, vaultFeeRate]
+        [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
     );
     const addresses = [
         ["poolCreator", poolCreator.address],
+        ["symbol", symbol.address]
     ]
     console.table(addresses)
 
+    await symbol.addWhitelistedFactory(poolCreator.address);
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
     await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version");

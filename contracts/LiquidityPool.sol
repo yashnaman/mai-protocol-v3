@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IFactory.sol";
+import "./interface/ISymbolService.sol";
 
 import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
@@ -68,6 +69,8 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
             minRiskParamValues,
             maxRiskParamValues
         );
+        ISymbolService service = ISymbolService(IFactory(_liquidityPool.factory).symbolService());
+        service.requestSymbol(address(this), perpetualIndex);
         emit CreatePerpetual(
             perpetualIndex,
             _liquidityPool.governor,

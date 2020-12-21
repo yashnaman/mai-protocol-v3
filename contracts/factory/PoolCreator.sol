@@ -26,9 +26,10 @@ contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessContro
         address governorTemplate,
         address shareTokenTemplate,
         address wethToken,
+        address symbolService,
         address globalVault,
         int256 globalVaultFeeRate
-    ) Variables(wethToken, globalVault, globalVaultFeeRate) Implementation() {
+    ) Variables(wethToken, symbolService, globalVault, globalVaultFeeRate) Implementation() {
         require(governorTemplate.isContract(), "governor template must be contract");
         require(shareTokenTemplate.isContract(), "share token template must be contract");
         _governorTemplate = governorTemplate;

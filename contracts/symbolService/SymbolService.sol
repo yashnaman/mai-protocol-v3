@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: None
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
@@ -20,11 +20,12 @@ interface ILiquidityPool {
         );
 }
 
+import "hardhat/console.sol";
+
 contract SymbolService is Ownable {
-    
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
-    
+
     struct PerpetualUID {
         address liquidityPool;
         uint256 perpetualIndex;
@@ -35,7 +36,7 @@ contract SymbolService is Ownable {
     uint256 internal _nextSymbol;
     uint256 internal _reservedSymbolCount;
     EnumerableSet.AddressSet internal _whitelistedFactories;
-    
+
     event AssignSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol);
     event AddWhitelistedFactory(address factory);
     event RemoveWhitelistedFactory(address factory);
@@ -45,72 +46,103 @@ contract SymbolService is Ownable {
         _reservedSymbolCount = reservedSymbolCount;
     }
 
-    function getPerpetualUID(uint256 symbol) public view returns (PerpetualUID memory perpetualUID) {
-        perpetualUID = _perpetualUIDs[symbol];
-        require(perpetualUID.liquidityPool != address(0), "symbol not found");
-    }
-
-    function getSymbols(PerpetualUID memory perpetualUID) public view returns (uint256[] memory symbols) {
-        bytes32 key = _poolPerpetualKey(perpetualUID);
-        uint256 len = _perpetualSymbols[key].length();
-        if (len == 0) {
-            return symbols;
-        }
-        symbols = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
-            symbols[i] = _perpetualSymbols[key].at(i);
-        }
-    }
-    
-    function assignNormalSymbol(PerpetualUID memory perpetualUID) public returns (uint256 symbol) {
-        require(Address.isContract(msg.sender), "must called by contract");
-        (address[6] memory addresses, , ,) = ILiquidityPool(msg.sender).liquidityPoolInfo();
-        require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
-        require(_nextSymbol <= type(uint256).max, "not enough symbol");
-        
-        bytes32 key = _poolPerpetualKey(perpetualUID);
-        require(_perpetualSymbols[key].length() == 0, "perpetual already exists");
-        addPerpetualUID(perpetualUID, _nextSymbol, key);
-        symbol = _nextSymbol;
-        _nextSymbol = _nextSymbol + 1;
-    }
-
-    function assignReservedSymbol(PerpetualUID memory perpetualUID, uint256 symbol) public onlyOwner {
-        require(symbol < _reservedSymbolCount, "symbol exceeds reserved symbol count");
-        require(_perpetualUIDs[symbol].liquidityPool == address(0), "symbol already exists"); 
-        bytes32 key = _poolPerpetualKey(perpetualUID);
-        require(_perpetualSymbols[key].length() == 1 && _perpetualSymbols[key].at(0) >= _reservedSymbolCount, "perpetual must have normal symbol and mustn't have reversed symbol");
-        addPerpetualUID(perpetualUID, symbol, key);
-    }
-    
-    function addPerpetualUID(PerpetualUID memory perpetualUID, uint256 symbol, bytes32 key) internal {
-        _perpetualUIDs[symbol] = perpetualUID;
-        _perpetualSymbols[key].add(symbol);
-        emit AssignSymbol(perpetualUID.liquidityPool, perpetualUID.perpetualIndex, symbol);
-    }
-    
-    function _poolPerpetualKey(PerpetualUID memory perpetualUID)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(perpetualUID.liquidityPool, perpetualUID.perpetualIndex));
-    }
-
     function isWhitelistedFactory(address factory) public view returns (bool) {
         return _whitelistedFactories.contains(factory);
     }
-    
+
     function addWhitelistedFactory(address factory) public onlyOwner {
-        require(! isWhitelistedFactory(factory), "factory already exists");
+        require(!isWhitelistedFactory(factory), "factory already exists");
         _whitelistedFactories.add(factory);
         emit AddWhitelistedFactory(factory);
     }
-    
+
     function removeWhitelistedFactory(address factory) public onlyOwner {
         require(isWhitelistedFactory(factory), "factory not found");
         _whitelistedFactories.remove(factory);
         emit RemoveWhitelistedFactory(factory);
     }
 
+    modifier onlyWhitelisted(address liquidityPool) {
+        require(Address.isContract(liquidityPool), "must called by contract");
+        (address[6] memory addresses, , , ) = ILiquidityPool(liquidityPool).liquidityPoolInfo();
+        require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
+        _;
+    }
+
+    function getPerpetualUID(uint256 symbol)
+        public
+        view
+        returns (address liquidityPool, uint256 perpetualIndex)
+    {
+        PerpetualUID storage perpetualUID = _perpetualUIDs[symbol];
+        require(perpetualUID.liquidityPool != address(0), "symbol not found");
+        liquidityPool = perpetualUID.liquidityPool;
+        perpetualIndex = perpetualUID.perpetualIndex;
+    }
+
+    function getSymbols(address liquidityPool, uint256 perpetualIndex)
+        public
+        view
+        returns (uint256[] memory symbols)
+    {
+        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        uint256 length = _perpetualSymbols[key].length();
+        if (length == 0) {
+            return symbols;
+        }
+        symbols = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            symbols[i] = _perpetualSymbols[key].at(i);
+        }
+    }
+
+    function requestSymbol(address liquidityPool, uint256 perpetualIndex)
+        public
+        onlyWhitelisted(msg.sender)
+        returns (uint256 symbol)
+    {
+        console.log("[DEBUG]", liquidityPool, perpetualIndex);
+        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        require(_perpetualSymbols[key].length() == 0, "perpetual already exists");
+
+        symbol = _nextSymbol;
+        require(symbol <= type(uint256).max, "not enough symbol");
+        _perpetualUIDs[symbol] = PerpetualUID({
+            liquidityPool: liquidityPool,
+            perpetualIndex: perpetualIndex
+        });
+        _perpetualSymbols[key].add(symbol);
+        _nextSymbol = _nextSymbol + 1;
+        emit AssignSymbol(liquidityPool, perpetualIndex, symbol);
+    }
+
+    function assignReservedSymbol(
+        address liquidityPool,
+        uint256 perpetualIndex,
+        uint256 symbol
+    ) public onlyOwner onlyWhitelisted(liquidityPool) {
+        require(symbol < _reservedSymbolCount, "symbol exceeds reserved symbol count");
+        require(_perpetualUIDs[symbol].liquidityPool == address(0), "symbol already exists");
+
+        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        require(
+            _perpetualSymbols[key].length() == 1 &&
+                _perpetualSymbols[key].at(0) >= _reservedSymbolCount,
+            "perpetual must have normal symbol and mustn't have reversed symbol"
+        );
+        _perpetualUIDs[symbol] = PerpetualUID({
+            liquidityPool: liquidityPool,
+            perpetualIndex: perpetualIndex
+        });
+        _perpetualSymbols[key].add(symbol);
+        emit AssignSymbol(liquidityPool, perpetualIndex, symbol);
+    }
+
+    function _poolPerpetualKey(address liquidityPool, uint256 perpetualIndex)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(liquidityPool, perpetualIndex));
+    }
 }

@@ -13,4 +13,6 @@ interface IFactory {
     function weth() external view returns (address);
 
     function accessController() external view returns (address);
+
+    function symbolService() external view returns (address);
 }
