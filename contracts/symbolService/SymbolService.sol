@@ -37,8 +37,8 @@ contract SymbolService is Ownable {
     EnumerableSet.AddressSet internal _whitelistedFactories;
     
     event AssignSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol);
-    event AddFactory(address factory);
-    event RemoveFactory(address factory);
+    event AddWhitelistedFactory(address factory);
+    event RemoveWhitelistedFactory(address factory);
 
     constructor(uint256 reservedSymbolCount) Ownable() {
         _nextSymbol = reservedSymbolCount;
@@ -104,13 +104,13 @@ contract SymbolService is Ownable {
     function addWhitelistedFactory(address factory) public onlyOwner {
         require(! isWhitelistedFactory(factory), "factory already exists");
         _whitelistedFactories.add(factory);
-        emit AddFactory(factory);
+        emit AddWhitelistedFactory(factory);
     }
     
     function removeWhitelistedFactory(address factory) public onlyOwner {
         require(isWhitelistedFactory(factory), "factory not found");
         _whitelistedFactories.remove(factory);
-        emit RemoveFactory(factory);
+        emit RemoveWhitelistedFactory(factory);
     }
 
 }
