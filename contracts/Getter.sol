@@ -96,7 +96,7 @@ contract Getter is Storage {
             // [13] openSlippageFactor,
             // [14] closeSlippageFactor,
             // [15] fundingRateLimit,
-            // [16] maxLeverage
+            // [16] ammMaxLeverage
             int256[17] memory nums
         )
     {

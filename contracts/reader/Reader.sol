@@ -42,7 +42,8 @@ contract Reader {
         int256 openSlippageFactor;
         int256 closeSlippageFactor;
         int256 fundingRateLimit;
-        int256 maxLeverage;
+        int256 ammMaxLeverage;
+        int256 ammCashBalance;
         int256 ammPositionAmount;
     }
 
@@ -102,12 +103,14 @@ contract Reader {
                 pool.perpetualStorages[i].openSlippageFactor = nums[13];
                 pool.perpetualStorages[i].closeSlippageFactor = nums[14];
                 pool.perpetualStorages[i].fundingRateLimit = nums[15];
-                pool.perpetualStorages[i].maxLeverage = nums[16];
+                pool.perpetualStorages[i].ammMaxLeverage = nums[16];
             }
             pool.perpetualStorages[i].underlyingAsset = IOracle(pool.perpetualStorages[i].oracle)
                 .underlyingAsset();
-            (, pool.perpetualStorages[i].ammPositionAmount) = ILiquidityPool(liquidityPool)
-                .marginAccount(i, liquidityPool);
+            (
+                pool.perpetualStorages[i].ammCashBalance,
+                pool.perpetualStorages[i].ammPositionAmount
+            ) = ILiquidityPool(liquidityPool).marginAccount(i, liquidityPool);
         }
     }
 }
