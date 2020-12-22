@@ -102,8 +102,7 @@ async function set2(accounts: any[], poolCreator, weth) {
     // │    3    │  'USD / BTC'  │ '0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4' │
     // │    4    │  'USD / DPI'  │ '0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA' │
     // │    5    │  'USD / SP500' │ '0x37398F5C3D11c11386294Dd3e7464717a10Ffb15' │
-    var weth = await createContract("WETH9");
-    var usd = await createContract("CustomERC20", ["USDC", "USDC", 18]);
+    var usd = await createContract("CustomERC20", ["USDC", "USDC", 6]);
     const tx = await poolCreator.createLiquidityPool(usd.address, 998);
 
     const n = await poolCreator.liquidityPoolCount();
