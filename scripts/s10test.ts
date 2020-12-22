@@ -16,12 +16,12 @@ async function deployOracle(accounts: any[]) {
     const oracle6 = await createContract("OracleWrapper", ["USD", "SP500"]);
 
     console.table([
-        ["ETH / USD", oracle1.address],
-        ["ETH / BTC", oracle2.address],
-        ["USD / ETH", oracle3.address],
-        ["USD / BTC", oracle4.address],
-        ["USD / DPI", oracle5.address],
-        ["USD / SP500", oracle6.address],
+        ["USD - ETH", oracle1.address],
+        ["BTC - ETH", oracle2.address],
+        ["ETH - USD", oracle3.address],
+        ["BTC - USD", oracle4.address],
+        ["DPI - USD", oracle5.address],
+        ["SP500 - USD", oracle6.address],
     ])
 }
 
@@ -59,8 +59,8 @@ async function main(accounts: any[]) {
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
-    // │    0    │  'ETH / USD'  │ '0xF34BA0c3c81C88867195143B4368f1cA36AD2571' │
-    // │    1    │  'ETH / BTC'  │ '0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82' │
+    // │    0    │  'USD - ETH'  │ '0xF34BA0c3c81C88867195143B4368f1cA36AD2571' │
+    // │    1    │  'BTC - ETH'  │ '0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82' │
     const tx = await poolCreator.createLiquidityPool(weth.address, 998);
 
     const n = await poolCreator.liquidityPoolCount();
@@ -87,8 +87,8 @@ async function set1(accounts: any[], poolCreator, weth) {
 
     const addresses = [
         ["WETH9", weth.address],
-        ["Oracle  'ETH / USD'  ", "0xF34BA0c3c81C88867195143B4368f1cA36AD2571"],
-        ["Oracle  'ETH / BTC'  ", "0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82"],
+        ["Oracle  'USD - ETH'  ", "0xF34BA0c3c81C88867195143B4368f1cA36AD2571"],
+        ["Oracle  'BTC - ETH'  ", "0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82"],
         ["LiquidityPool", `${liquidityPool.address} @ ${tx.blockNumber}`],
         ["  PerpetualStorage 0", `@ ${mtx1.blockNumber}`],
         ["  PerpetualStorage 1", `@ ${mtx2.blockNumber}`],
@@ -98,10 +98,10 @@ async function set1(accounts: any[], poolCreator, weth) {
 }
 
 async function set2(accounts: any[], poolCreator, weth) {
-    // │    2    │  'USD / ETH'  │ '0x2dccA2b995651158Fe129Ddd23D658410CEa8254' │
-    // │    3    │  'USD / BTC'  │ '0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4' │
-    // │    4    │  'USD / DPI'  │ '0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA' │
-    // │    5    │  'USD / SP500' │ '0x37398F5C3D11c11386294Dd3e7464717a10Ffb15' │
+    // │    2    │  'ETH - USD'   │ '0x2dccA2b995651158Fe129Ddd23D658410CEa8254' │
+    // │    3    │  'BTC - USD'   │ '0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4' │
+    // │    4    │  'DPI - USD'   │ '0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA' │
+    // │    5    │  'SP500 - USD' │ '0x37398F5C3D11c11386294Dd3e7464717a10Ffb15' │
     var usd = await createContract("CustomERC20", ["USDC", "USDC", 6]);
     const tx = await poolCreator.createLiquidityPool(usd.address, 998);
 
@@ -142,10 +142,10 @@ async function set2(accounts: any[], poolCreator, weth) {
 
     const addresses = [
         ["Collateral (USD)", usd.address],
-        ["Oracle  'USD / ETH'  ", "0x2dccA2b995651158Fe129Ddd23D658410CEa8254"],
-        ["Oracle  'USD / BTC'  ", "0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4"],
-        ["Oracle  'USD / DPI'  ", "0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA"],
-        ["Oracle  'USD / SP500'", "0x37398F5C3D11c11386294Dd3e7464717a10Ffb15"],
+        ["Oracle  'ETH - USD'  ", "0x2dccA2b995651158Fe129Ddd23D658410CEa8254"],
+        ["Oracle  'BTC - USD'  ", "0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4"],
+        ["Oracle  'DPI - USD'  ", "0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA"],
+        ["Oracle  'SP500 - USD'", "0x37398F5C3D11c11386294Dd3e7464717a10Ffb15"],
         ["LiquidityPool", `${liquidityPool.address} @ ${tx.blockNumber}`],
         ["  PerpetualStorage 0", `@ ${mtx1.blockNumber}`],
         ["  PerpetualStorage 1", `@ ${mtx2.blockNumber}`],
