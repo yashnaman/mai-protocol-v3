@@ -29,46 +29,46 @@ contract Governance is Storage, Events {
         _;
     }
 
-    function updateLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
-        _liquidityPool.updateLiquidityPoolParameter(key, newValue);
-        emit UpdateLiquidityPoolParameter(key, newValue);
+    function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
+        _liquidityPool.setLiquidityPoolParameter(key, newValue);
+        emit SetLiquidityPoolParameter(key, newValue);
     }
 
-    function updatePerpetualParameter(
+    function setPerpetualParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
-        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
+        _liquidityPool.perpetuals[perpetualIndex].setPerpetualParameter(key, newValue);
         _liquidityPool.perpetuals[perpetualIndex].validateCoreParameters();
-        emit UpdatePerpetualParameter(perpetualIndex, key, newValue);
+        emit SetPerpetualParameter(perpetualIndex, key, newValue);
     }
 
-    function updatePerpetualRiskParameter(
+    function setPerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue,
         int256 minValue,
         int256 maxValue
     ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
-        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
+        _liquidityPool.perpetuals[perpetualIndex].setPerpetualRiskParameter(
             key,
             newValue,
             minValue,
             maxValue
         );
         _liquidityPool.perpetuals[perpetualIndex].validateRiskParameters();
-        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
+        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
-    function adjustPerpetualRiskParameter(
+    function updatePerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external onlyOperator onlyExistedPerpetual(perpetualIndex) {
-        _liquidityPool.perpetuals[perpetualIndex].adjustPerpetualRiskParameter(key, newValue);
+        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualRiskParameter(key, newValue);
         _liquidityPool.perpetuals[perpetualIndex].validateRiskParameters();
-        emit AdjustPerpetualRiskSetting(perpetualIndex, key, newValue);
+        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
     bytes[50] private __gap;

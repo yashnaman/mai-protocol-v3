@@ -13,7 +13,7 @@ library ParameterModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function updateLiquidityPoolParameter(
+    function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
         bytes32 key,
         int256 newValue
@@ -25,7 +25,7 @@ library ParameterModule {
         }
     }
 
-    function updatePerpetualParameter(
+    function setPerpetualParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue
@@ -59,7 +59,7 @@ library ParameterModule {
         }
     }
 
-    function adjustPerpetualRiskParameter(
+    function updatePerpetualRiskParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue
@@ -72,14 +72,14 @@ library ParameterModule {
             adjustOption(perpetual.closeSlippageFactor, newValue);
         } else if (key == "fundingRateLimit") {
             adjustOption(perpetual.fundingRateLimit, newValue);
-        } else if (key == "maxLeverage") {
-            adjustOption(perpetual.maxLeverage, newValue);
+        } else if (key == "ammMaxLeverage") {
+            adjustOption(perpetual.ammMaxLeverage, newValue);
         } else {
             revert("key not found");
         }
     }
 
-    function updatePerpetualRiskParameter(
+    function setPerpetualRiskParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
         int256 newValue,
@@ -87,15 +87,15 @@ library ParameterModule {
         int256 newMaxValue
     ) public {
         if (key == "halfSpread") {
-            updateOption(perpetual.halfSpread, newValue, newMinValue, newMaxValue);
+            setOption(perpetual.halfSpread, newValue, newMinValue, newMaxValue);
         } else if (key == "openSlippageFactor") {
-            updateOption(perpetual.openSlippageFactor, newValue, newMinValue, newMaxValue);
+            setOption(perpetual.openSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "closeSlippageFactor") {
-            updateOption(perpetual.closeSlippageFactor, newValue, newMinValue, newMaxValue);
+            setOption(perpetual.closeSlippageFactor, newValue, newMinValue, newMaxValue);
         } else if (key == "fundingRateLimit") {
-            updateOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
-        } else if (key == "maxLeverage") {
-            updateOption(perpetual.maxLeverage, newValue, newMinValue, newMaxValue);
+            setOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
+        } else if (key == "ammMaxLeverage") {
+            setOption(perpetual.ammMaxLeverage, newValue, newMinValue, newMaxValue);
         } else {
             revert("key not found");
         }
@@ -109,7 +109,7 @@ library ParameterModule {
         option.value = newValue;
     }
 
-    function updateOption(
+    function setOption(
         Option storage option,
         int256 newValue,
         int256 newMinValue,
@@ -150,10 +150,10 @@ library ParameterModule {
         require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(
             perpetual.closeSlippageFactor.value > 0 &&
-                perpetual.closeSlippageFactor.value < perpetual.openSlippageFactor.value,
-            "beta2 should be within (0, b1)"
+                perpetual.closeSlippageFactor.value <= perpetual.openSlippageFactor.value,
+            "beta2 should be within (0, b1]"
         );
-        require(perpetual.fundingRateLimit.value >= 0, "frc should be greater than 0");
-        require(perpetual.maxLeverage.value > 0, "tl should be greater than 0");
+        require(perpetual.fundingRateLimit.value >= 0, "frl should be greater than 0");
+        require(perpetual.ammMaxLeverage.value > 0, "aml should be greater than 0");
     }
 }

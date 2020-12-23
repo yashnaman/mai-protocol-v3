@@ -17,9 +17,13 @@ library PerpetualModule {
     using ParameterModule for Option;
     using OracleModule for PerpetualStorage;
 
-    event EnterNormalState();
-    event EnterEmergencyState(int256 settlementPrice, uint256 settlementTime);
-    event EnterClearedState();
+    event EnterNormalState(uint256 perpetualIndex);
+    event EnterEmergencyState(
+        uint256 perpetualIndex,
+        int256 settlementPrice,
+        uint256 settlementTime
+    );
+    event EnterClearedState(uint256 perpetualIndex);
 
     function initialize(
         PerpetualStorage storage perpetual,
@@ -43,27 +47,23 @@ library PerpetualModule {
         perpetual.insuranceFundRate = coreParams[7];
         perpetual.validateCoreParameters();
 
-        perpetual.halfSpread.updateOption(
-            riskParams[0],
-            minRiskParamValues[0],
-            maxRiskParamValues[0]
-        );
-        perpetual.openSlippageFactor.updateOption(
+        perpetual.halfSpread.setOption(riskParams[0], minRiskParamValues[0], maxRiskParamValues[0]);
+        perpetual.openSlippageFactor.setOption(
             riskParams[1],
             minRiskParamValues[1],
             maxRiskParamValues[1]
         );
-        perpetual.closeSlippageFactor.updateOption(
+        perpetual.closeSlippageFactor.setOption(
             riskParams[2],
             minRiskParamValues[2],
             maxRiskParamValues[2]
         );
-        perpetual.fundingRateLimit.updateOption(
+        perpetual.fundingRateLimit.setOption(
             riskParams[3],
             minRiskParamValues[3],
             maxRiskParamValues[3]
         );
-        perpetual.maxLeverage.updateOption(
+        perpetual.ammMaxLeverage.setOption(
             riskParams[4],
             minRiskParamValues[4],
             maxRiskParamValues[4]
@@ -72,12 +72,12 @@ library PerpetualModule {
         perpetual.state = PerpetualState.INITIALIZING;
     }
 
-    function increaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
+    function increaseCollateralAmount(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
         perpetual.collateralAmount = perpetual.collateralAmount.add(amount);
     }
 
-    function decreaseDepositedCollateral(PerpetualStorage storage perpetual, int256 amount) public {
+    function decreaseCollateralAmount(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount >= 0, "amount is negative");
         perpetual.collateralAmount = perpetual.collateralAmount.sub(amount);
         require(perpetual.collateralAmount >= 0, "collateral is negative");
@@ -89,15 +89,16 @@ library PerpetualModule {
             "perpetual should be in initializing state"
         );
         perpetual.state = PerpetualState.NORMAL;
-        emit EnterNormalState();
+        emit EnterNormalState(perpetual.id);
     }
 
     function enterEmergencyState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
         perpetual.updatePrice();
-        perpetual.freezeOraclePrice();
+        perpetual.freezePrice();
         perpetual.state = PerpetualState.EMERGENCY;
         emit EnterEmergencyState(
+            perpetual.id,
             perpetual.settlementPriceData.price,
             perpetual.settlementPriceData.time
         );
@@ -106,6 +107,6 @@ library PerpetualModule {
     function enterClearedState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
         perpetual.state = PerpetualState.CLEARED;
-        emit EnterClearedState();
+        emit EnterClearedState(perpetual.id);
     }
 }

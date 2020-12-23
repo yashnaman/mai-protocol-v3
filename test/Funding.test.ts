@@ -16,13 +16,13 @@ const params = {
     state: 2,
     unitAccumulativeFunding: toWad('1.9'),
     openSlippageFactor: toWad('100'),
-    maxLeverage: toWad('5'),
+    ammMaxLeverage: toWad('5'),
     indexPrice: toWad('100'),
     fundingRateLimit: toWad('0.005'),
     negFundingRateLimit: toWad('-0.005')
 }
 
-describe('Funding', () => {
+getDescription('Funding', () => {
     let funding;
 
     beforeEach(async () => {
@@ -32,7 +32,7 @@ describe('Funding', () => {
         funding = await createContract("TestFunding", [], { "FundingModule": fundingModule });
     });
 
-    describe('updateFundingState', function () {
+    getDescription('updateFundingState', function () {
 
         const cases = [
             {
@@ -95,7 +95,7 @@ describe('Funding', () => {
                     state: element.state,
                     unitAccumulativeFunding: element.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
-                    maxLeverage: params.maxLeverage,
+                    ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
                     cashBalance: _0,
                     positionAmount1: _0,
@@ -114,7 +114,7 @@ describe('Funding', () => {
         })
     })
 
-    describe('updateFundingRate', function () {
+    getDescription('updateFundingRate', function () {
 
         const successCases = [
             {
@@ -170,7 +170,7 @@ describe('Funding', () => {
                     state: element.state,
                     unitAccumulativeFunding: params.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
-                    maxLeverage: params.maxLeverage,
+                    ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
                     cashBalance: element.cashBalance,
                     positionAmount1: element.positionAmount1,
@@ -203,7 +203,7 @@ describe('Funding', () => {
                     state: params.state,
                     unitAccumulativeFunding: params.unitAccumulativeFunding,
                     openSlippageFactor: params.openSlippageFactor,
-                    maxLeverage: params.maxLeverage,
+                    ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
                     cashBalance: element.cashBalance,
                     positionAmount1: element.positionAmount1,

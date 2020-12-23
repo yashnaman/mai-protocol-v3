@@ -8,7 +8,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 interface ILiquidityPool {
-    function liquidityPoolInfo()
+    function getLiquidityPoolInfo()
         external
         view
         returns (
@@ -37,7 +37,7 @@ contract SymbolService is Ownable {
     uint256 internal _reservedSymbolCount;
     EnumerableSet.AddressSet internal _whitelistedFactories;
 
-    event AssignSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol);
+    event AllocateSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol);
     event AddWhitelistedFactory(address factory);
     event RemoveWhitelistedFactory(address factory);
 
@@ -64,7 +64,7 @@ contract SymbolService is Ownable {
 
     modifier onlyWhitelisted(address liquidityPool) {
         require(Address.isContract(liquidityPool), "must called by contract");
-        (address[6] memory addresses, , , ) = ILiquidityPool(liquidityPool).liquidityPoolInfo();
+        (address[6] memory addresses, , , ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
         require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
         _;
     }
@@ -85,7 +85,7 @@ contract SymbolService is Ownable {
         view
         returns (uint256[] memory symbols)
     {
-        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        bytes32 key = _getPerpetualKey(liquidityPool, perpetualIndex);
         uint256 length = _perpetualSymbols[key].length();
         if (length == 0) {
             return symbols;
@@ -96,13 +96,12 @@ contract SymbolService is Ownable {
         }
     }
 
-    function requestSymbol(address liquidityPool, uint256 perpetualIndex)
+    function allocateSymbol(address liquidityPool, uint256 perpetualIndex)
         public
         onlyWhitelisted(msg.sender)
         returns (uint256 symbol)
     {
-        console.log("[DEBUG]", liquidityPool, perpetualIndex);
-        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        bytes32 key = _getPerpetualKey(liquidityPool, perpetualIndex);
         require(_perpetualSymbols[key].length() == 0, "perpetual already exists");
 
         symbol = _nextSymbol;
@@ -113,7 +112,7 @@ contract SymbolService is Ownable {
         });
         _perpetualSymbols[key].add(symbol);
         _nextSymbol = _nextSymbol + 1;
-        emit AssignSymbol(liquidityPool, perpetualIndex, symbol);
+        emit AllocateSymbol(liquidityPool, perpetualIndex, symbol);
     }
 
     function assignReservedSymbol(
@@ -124,7 +123,7 @@ contract SymbolService is Ownable {
         require(symbol < _reservedSymbolCount, "symbol exceeds reserved symbol count");
         require(_perpetualUIDs[symbol].liquidityPool == address(0), "symbol already exists");
 
-        bytes32 key = _poolPerpetualKey(liquidityPool, perpetualIndex);
+        bytes32 key = _getPerpetualKey(liquidityPool, perpetualIndex);
         require(
             _perpetualSymbols[key].length() == 1 &&
                 _perpetualSymbols[key].at(0) >= _reservedSymbolCount,
@@ -135,10 +134,10 @@ contract SymbolService is Ownable {
             perpetualIndex: perpetualIndex
         });
         _perpetualSymbols[key].add(symbol);
-        emit AssignSymbol(liquidityPool, perpetualIndex, symbol);
+        emit AllocateSymbol(liquidityPool, perpetualIndex, symbol);
     }
 
-    function _poolPerpetualKey(address liquidityPool, uint256 perpetualIndex)
+    function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal
         pure
         returns (bytes32)

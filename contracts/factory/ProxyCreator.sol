@@ -7,7 +7,7 @@ import "../thirdparty/cloneFactory/CloneFactory.sol";
 import "hardhat/console.sol";
 
 /// @title Create a upgradeable proxy as storage of new liquidityPool.
-contract Creator is CloneFactory {
+contract ProxyCreator is CloneFactory {
     function _createClone(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
         return createClone(implementation);
@@ -16,7 +16,7 @@ contract Creator is CloneFactory {
     function _createUpgradeableProxy(
         address implementation,
         address admin,
-        uint256 nonce
+        int256 nonce
     ) internal returns (address instance) {
         require(implementation != address(0), "invalid implementation");
         require(Address.isContract(implementation), "implementation must be contract");

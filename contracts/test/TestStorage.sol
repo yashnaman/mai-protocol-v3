@@ -16,9 +16,10 @@ contract TestStorage is Storage, Getter {
         address collateral,
         address operator,
         address governor,
-        address shareToken
+        address shareToken,
+        int256 insuranceFundCap
     ) external {
-        _liquidityPool.initialize(collateral, operator, governor, shareToken);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken, insuranceFundCap);
     }
 
     function initializePerpetual(

@@ -11,7 +11,7 @@ import {
 
 import { LiquidityPoolFactory } from "../typechain/LiquidityPoolFactory"
 
-describe("integration", () => {
+getDescription("integration", () => {
 
     function toString(n) {
         if (n instanceof BN) {
@@ -51,7 +51,7 @@ describe("integration", () => {
         await creator.addVersion(perpTemplate.address, 0, "initial version");
         await creator.createLiquidityPool(ctk.address, 998);
 
-        const n = await creator.liquidityPoolCount();
+        const n = await creator.getLiquidityPoolCount();
         const allLiquidityPools = await creator.listLiquidityPools(0, n.toString());
         const perp = await LiquidityPoolFactory.connect(allLiquidityPools[allLiquidityPools.length - 1], user0);
     })

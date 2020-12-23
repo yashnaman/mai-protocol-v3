@@ -43,7 +43,7 @@ library FundingModule {
         if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
-        int256 deltaUnitLoss = perpetual.indexPrice().wfrac(
+        int256 deltaUnitLoss = perpetual.getIndexPrice().wfrac(
             perpetual.fundingRate.wmul(timeElapsed),
             FUNDING_INTERVAL
         );
@@ -66,14 +66,14 @@ library FundingModule {
             return;
         }
         int256 newFundingRate;
-        int256 positionAmount = perpetual.positionAmount(address(this));
+        int256 positionAmount = perpetual.getPositionAmount(address(this));
         if (positionAmount == 0) {
             newFundingRate = 0;
         } else {
             int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
                 newFundingRate = perpetual
-                    .indexPrice()
+                    .getIndexPrice()
                     .wfrac(positionAmount, poolMargin)
                     .neg()
                     .wmul(perpetual.fundingRateLimit.value);

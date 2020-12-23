@@ -43,13 +43,6 @@ contract TestOrder is Storage {
         return order.salt;
     }
 
-    function truncateCloseAmount(
-        address trader,
-        int256 amount
-    ) public view returns (int256) {
-        return _liquidityPool.truncateCloseAmount(0, trader, amount);
-    }
-
     function validateOrder(Order memory order, int256 amount) public view {
         _liquidityPool.validateOrder(order, amount);
     }

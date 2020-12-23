@@ -63,7 +63,7 @@ async function set1(accounts: any[], poolCreator, weth) {
     // │    1    │  'BTC - ETH'  │ '0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82' │
     const tx = await poolCreator.createLiquidityPool(weth.address, 998);
 
-    const n = await poolCreator.liquidityPoolCount();
+    const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
     const LiquidityPool = await createLiquidityPoolFactory();
     const liquidityPool = await LiquidityPool.attach(allLiquidityPools[allLiquidityPools.length - 1]);
@@ -105,7 +105,7 @@ async function set2(accounts: any[], poolCreator, weth) {
     var usd = await createContract("CustomERC20", ["USDC", "USDC", 6]);
     const tx = await poolCreator.createLiquidityPool(usd.address, 998);
 
-    const n = await poolCreator.liquidityPoolCount();
+    const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
     const LiquidityPool = await createLiquidityPoolFactory();
     const liquidityPool = await LiquidityPool.attach(allLiquidityPools[allLiquidityPools.length - 1]);

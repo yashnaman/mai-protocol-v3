@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../interface/IFactory.sol";
+import "../interface/IPoolCreator.sol";
 import "../interface/IWETH.sol";
 
 import "../Type.sol";
@@ -35,7 +35,7 @@ library CollateralModule {
      * @param   account     Address of account.
      * @return  Raw repesentation of collateral balance.
      */
-    function collateralBalance(LiquidityPoolStorage storage liquidityPool, address account)
+    function getCollateralBalance(LiquidityPoolStorage storage liquidityPool, address account)
         internal
         view
         returns (int256)
@@ -56,7 +56,7 @@ library CollateralModule {
         require(msg.value == 0 || liquidityPool.isWrapped, "native collateral is not acceptable");
         if (liquidityPool.isWrapped && msg.value > 0) {
             int256 internalAmount = _toInternalAmount(liquidityPool, msg.value).toInt256();
-            IWETH weth = IWETH(IFactory(liquidityPool.factory).weth());
+            IWETH weth = IWETH(IPoolCreator(liquidityPool.factory).weth());
             uint256 currentBalance = weth.balanceOf(address(this));
             weth.deposit{ value: msg.value }();
             require(
@@ -88,7 +88,7 @@ library CollateralModule {
     ) public {
         uint256 rawAmount = _toRawAmount(liquidityPool, amount.toUint256());
         if (liquidityPool.isWrapped) {
-            IWETH(IFactory(liquidityPool.factory).weth()).withdraw(rawAmount);
+            IWETH(IPoolCreator(liquidityPool.factory).weth()).withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);
         } else {
             IERC20Upgradeable(liquidityPool.collateral).safeTransfer(account, rawAmount);

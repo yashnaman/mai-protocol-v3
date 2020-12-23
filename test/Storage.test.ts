@@ -9,7 +9,7 @@ import {
     createFactory,
 } from '../scripts/utils';
 
-describe('Storage', () => {
+getDescription('Storage', () => {
     let accounts;
     let user0;
     let user1;
@@ -74,7 +74,7 @@ describe('Storage', () => {
         await oracle.setMarkPrice(500, now);
         await oracle.setIndexPrice(500, now);
 
-        const result = await storage.callStatic.perpetualInfo(0);
+        const result = await storage.callStatic.getPerpetualInfo(0);
 
         expect(result.oracle).to.equal(oracle.address);
         expect(result.markPrice).to.equal(500);

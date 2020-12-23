@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "../interface/IFactory.sol";
+import "../interface/IPoolCreator.sol";
 
 import "./OracleModule.sol";
 import "./CollateralModule.sol";
@@ -34,48 +34,44 @@ library MarginModule {
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
 
-    // atribute
-    function initialMargin(
+    function getInitialMargin(
         PerpetualStorage storage perpetual,
         address trader,
-        int256 indexPrice
+        int256 price
     ) internal view returns (int256) {
         return
             perpetual.marginAccounts[trader]
                 .positionAmount
-                .wmul(indexPrice)
+                .wmul(price)
                 .wmul(perpetual.initialMarginRate)
                 .abs();
     }
 
-    function maintenanceMargin(
+    function getMaintenanceMargin(
         PerpetualStorage storage perpetual,
         address trader,
-        int256 indexPrice
+        int256 price
     ) internal view returns (int256) {
         return
             perpetual.marginAccounts[trader]
                 .positionAmount
-                .wmul(indexPrice)
+                .wmul(price)
                 .wmul(perpetual.maintenanceMarginRate)
                 .abs()
                 .max(perpetual.keeperGasReward);
     }
 
-    function availableCashBalance(PerpetualStorage storage perpetual, address trader)
+    function getAvailableCashBalance(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
     {
+        MarginAccount storage account = perpetual.marginAccounts[trader];
         return
-            perpetual.marginAccounts[trader].cashBalance.sub(
-                perpetual.marginAccounts[trader].positionAmount.wmul(
-                    perpetual.unitAccumulativeFunding
-                )
-            );
+            account.cashBalance.sub(account.positionAmount.wmul(perpetual.unitAccumulativeFunding));
     }
 
-    function positionAmount(PerpetualStorage storage perpetual, address trader)
+    function getPositionAmount(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
@@ -83,14 +79,14 @@ library MarginModule {
         return perpetual.marginAccounts[trader].positionAmount;
     }
 
-    function margin(
+    function getMargin(
         PerpetualStorage storage perpetual,
         address trader,
-        int256 indexPrice
+        int256 price
     ) internal view returns (int256) {
         return
-            perpetual.marginAccounts[trader].positionAmount.wmul(indexPrice).add(
-                availableCashBalance(perpetual, trader)
+            perpetual.marginAccounts[trader].positionAmount.wmul(price).add(
+                getAvailableCashBalance(perpetual, trader)
             );
     }
 
@@ -99,10 +95,11 @@ library MarginModule {
         view
         returns (bool)
     {
-        int256 threshold = initialMargin(perpetual, trader, perpetual.markPrice()).max(
+        int256 price = perpetual.getMarkPrice();
+        int256 threshold = getInitialMargin(perpetual, trader, price).max(
             perpetual.keeperGasReward
         );
-        return margin(perpetual, trader, perpetual.markPrice()) >= threshold;
+        return getMargin(perpetual, trader, price) >= threshold;
     }
 
     function isMaintenanceMarginSafe(PerpetualStorage storage perpetual, address trader)
@@ -110,10 +107,11 @@ library MarginModule {
         view
         returns (bool)
     {
-        int256 threshold = maintenanceMargin(perpetual, trader, perpetual.markPrice()).max(
+        int256 price = perpetual.getMarkPrice();
+        int256 threshold = getMaintenanceMargin(perpetual, trader, price).max(
             perpetual.keeperGasReward
         );
-        return margin(perpetual, trader, perpetual.markPrice()) >= threshold;
+        return getMargin(perpetual, trader, price) >= threshold;
     }
 
     function isMarginSafe(PerpetualStorage storage perpetual, address trader)
@@ -121,7 +119,7 @@ library MarginModule {
         view
         returns (bool)
     {
-        return margin(perpetual, trader, perpetual.markPrice()) >= 0;
+        return getMargin(perpetual, trader, perpetual.getMarkPrice()) >= 0;
     }
 
     function isEmptyAccount(PerpetualStorage storage perpetual, address trader)
@@ -129,9 +127,8 @@ library MarginModule {
         view
         returns (bool)
     {
-        return
-            perpetual.marginAccounts[trader].cashBalance == 0 &&
-            perpetual.marginAccounts[trader].positionAmount == 0;
+        MarginAccount storage account = perpetual.marginAccounts[trader];
+        return account.cashBalance == 0 && account.positionAmount == 0;
     }
 
     function deposit(
@@ -144,11 +141,11 @@ library MarginModule {
         bool isInitial = isEmptyAccount(perpetual, trader);
         int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
         require(totalAmount > 0, "total amount is 0");
-        perpetual.increaseDepositedCollateral(totalAmount);
+        perpetual.increaseCollateralAmount(totalAmount);
         updateCashBalance(perpetual, trader, totalAmount);
         if (isInitial) {
             perpetual.registerActiveAccount(trader);
-            IFactory(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
         }
         emit Deposit(perpetualIndex, trader, totalAmount);
     }
@@ -162,12 +159,11 @@ library MarginModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         liquidityPool.rebalance(perpetual);
         updateCashBalance(perpetual, trader, amount.neg());
-        perpetual.decreaseDepositedCollateral(amount);
+        perpetual.decreaseCollateralAmount(amount);
         require(isInitialMarginSafe(perpetual, trader), "margin is unsafe after withdrawal");
-        bool isDrained = isEmptyAccount(perpetual, trader);
-        if (isDrained) {
+        if (isEmptyAccount(perpetual, trader)) {
             perpetual.deregisterActiveAccount(trader);
-            IFactory(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
         }
         liquidityPool.transferToUser(payable(trader), amount);
         emit Withdraw(perpetualIndex, trader, amount);
@@ -196,8 +192,9 @@ library MarginModule {
         );
     }
 
-    function reset(PerpetualStorage storage perpetual, address trader) internal {
-        perpetual.marginAccounts[trader].cashBalance = 0;
-        perpetual.marginAccounts[trader].positionAmount = 0;
+    function resetMarginAccount(PerpetualStorage storage perpetual, address trader) internal {
+        MarginAccount storage account = perpetual.marginAccounts[trader];
+        account.cashBalance = 0;
+        account.positionAmount = 0;
     }
 }

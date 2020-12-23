@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "../interface/IFactory.sol";
+import "../interface/IPoolCreator.sol";
 import "../interface/IDecimals.sol";
 
 import "./OracleModule.sol";
@@ -42,6 +42,7 @@ library LiquidityPoolModule {
         int256 totalAmount = liquidityPool.transferFromUser(msg.sender, amount);
         require(totalAmount > 0, "total amount is 0");
         liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(totalAmount);
+        liquidityPool.poolCollateralAmount = liquidityPool.poolCollateralAmount.add(totalAmount);
         emit DonateInsuranceFund(msg.sender, totalAmount);
     }
 
@@ -50,7 +51,8 @@ library LiquidityPoolModule {
         address collateral,
         address operator,
         address governor,
-        address shareToken
+        address shareToken,
+        int256 insuranceFundCap
     ) internal {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
@@ -62,7 +64,7 @@ library LiquidityPoolModule {
         liquidityPool.scaler = uint256(10**(MAX_COLLATERAL_DECIMALS.sub(uint256(decimals))));
 
         liquidityPool.factory = msg.sender;
-        IFactory factory = IFactory(liquidityPool.factory);
+        IPoolCreator factory = IPoolCreator(liquidityPool.factory);
         liquidityPool.isWrapped = (collateral == factory.weth());
         liquidityPool.vault = factory.vault();
         liquidityPool.vaultFeeRate = factory.vaultFeeRate();
@@ -70,6 +72,7 @@ library LiquidityPoolModule {
 
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
+        liquidityPool.insuranceFundCap = insuranceFundCap;
     }
 
     function collectFee(
@@ -80,6 +83,9 @@ library LiquidityPoolModule {
         int256 operatorFee,
         int256 referrerFee
     ) public {
+        require(vaultFee >= 0, "negative vault fee");
+        require(operatorFee >= 0, "negative operator fee");
+        require(referrerFee >= 0, "negative referrer fee");
         liquidityPool.claimableFees[liquidityPool.vault] = liquidityPool.claimableFees[liquidityPool
             .vault]
             .add(vaultFee);
@@ -99,6 +105,7 @@ library LiquidityPoolModule {
         address claimer,
         int256 amount
     ) public {
+        require(amount > 0, "invalid amount");
         require(amount <= liquidityPool.claimableFees[claimer], "insufficient fee");
         liquidityPool.claimableFees[claimer] = liquidityPool.claimableFees[claimer].sub(amount);
         liquidityPool.totalClaimableFee = liquidityPool.totalClaimableFee.sub(amount);
@@ -109,18 +116,19 @@ library LiquidityPoolModule {
     function updateInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
-        int256 amount
+        int256 penaltyToFund,
+        int256 penaltyToLP
     ) public returns (bool isInsuranceFundDrained) {
-        if (amount == 0) {
-            return false;
-        } else if (amount > 0) {
+        if (penaltyToFund == 0) {
+            isInsuranceFundDrained = false;
+        } else if (penaltyToFund > 0) {
             // earning
-            liquidityPool.insuranceFund = liquidityPool.insuranceFund.add(amount);
-            transferCollateralToPool(liquidityPool, perpetual, amount);
-            return false;
+            liquidityPool.insuranceFund = liquidityPool.insuranceFund.add(penaltyToFund);
+
+            isInsuranceFundDrained = false;
         } else {
-            int256 transferAmount = amount;
-            int256 newInsuranceFund = liquidityPool.insuranceFund.add(amount);
+            int256 transferAmount = penaltyToFund;
+            int256 newInsuranceFund = liquidityPool.insuranceFund.add(penaltyToFund);
             if (newInsuranceFund < 0) {
                 // then donatedInsuranceFund will cover such loss
                 int256 newDonatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
@@ -128,7 +136,7 @@ library LiquidityPoolModule {
                 );
                 liquidityPool.insuranceFund = 0;
                 if (newDonatedInsuranceFund < 0) {
-                    transferAmount = amount.sub(newDonatedInsuranceFund);
+                    transferAmount = penaltyToFund.sub(newDonatedInsuranceFund);
                     isInsuranceFundDrained = true;
                     newDonatedInsuranceFund = 0;
                 }
@@ -137,19 +145,29 @@ library LiquidityPoolModule {
             liquidityPool.insuranceFund = newInsuranceFund;
             transferCollateralToPool(liquidityPool, perpetual, transferAmount);
         }
+        liquidityPool.poolCashBalance = liquidityPool.poolCashBalance.add(penaltyToLP);
+        transferCollateralToPool(liquidityPool, perpetual, penaltyToFund.add(penaltyToLP));
     }
 
     function rebalance(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual
     ) public {
-        int256 rebalanceAmount = perpetual.margin(address(this), perpetual.markPrice()).sub(
-            perpetual.initialMargin(address(this), perpetual.markPrice())
+        int256 rebalanceAmount = perpetual.getMargin(address(this), perpetual.getMarkPrice()).sub(
+            perpetual.getInitialMargin(address(this), perpetual.getMarkPrice())
         );
-        // console.log("{a}", uint256(perpetual.margin(address(this), perpetual.markPrice())));
-        // console.log("{b}", uint256(perpetual.initialMargin(address(this), perpetual.markPrice())));
         // TODO: if rebalanceAmount exceeds max collateral amount
+        //
         transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
+    }
+
+    function rebalanceAll(LiquidityPoolStorage storage liquidityPool) public {
+        // int256 rebalanceAmount = perpetual.getMargin(address(this), perpetual.getMarkPrice()).sub(
+        //     perpetual.getInitialMargin(address(this), perpetual.getMarkPrice())
+        // );
+        // // TODO: if rebalanceAmount exceeds max collateral amount
+        // liquidityPool.poolCashBalance +
+        //     transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
     }
 
     function transferCollateralToPool(
@@ -162,5 +180,13 @@ library LiquidityPoolModule {
         }
         liquidityPool.poolCollateralAmount = liquidityPool.poolCollateralAmount.add(amount);
         perpetual.collateralAmount = perpetual.collateralAmount.sub(amount);
+    }
+
+    function getRebalanceAmount(PerpetualStorage storage perpetual) public view returns (int256) {
+        int256 markPrice = perpetual.getMarkPrice();
+        return
+            perpetual.getMargin(address(this), markPrice).sub(
+                perpetual.getInitialMargin(address(this), markPrice)
+            );
     }
 }

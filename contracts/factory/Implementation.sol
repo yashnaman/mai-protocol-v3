@@ -6,15 +6,12 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
-import "../libraries/SafeCastExt.sol";
 import "../libraries/SafeMathExt.sol";
 
 contract Implementation is Ownable {
     using Address for address;
     using SafeMath for uint256;
     using SafeMathExt for uint256;
-    using SafeCastExt for address;
-    using SafeCastExt for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct VersionDescription {
@@ -50,12 +47,12 @@ contract Implementation is Ownable {
         emit AddVersion(implementation);
     }
 
-    function latestVersion() public view returns (address) {
+    function getLatestVersion() public view returns (address) {
         require(_versions.length() > 0, "no version");
         return _versions.at(_versions.length() - 1);
     }
 
-    function describe(address implementation)
+    function getDescription(address implementation)
         public
         view
         returns (

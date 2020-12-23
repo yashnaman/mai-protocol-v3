@@ -9,7 +9,7 @@ library Utils {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function hasSameSign(int256 x, int256 y) internal pure returns (bool) {
+    function hasTheSameSign(int256 x, int256 y) internal pure returns (bool) {
         if (x == 0 || y == 0) {
             return true;
         }
@@ -21,7 +21,7 @@ library Utils {
     }
 
     function splitAmount(int256 amount, int256 delta) internal pure returns (int256, int256) {
-        if (Utils.hasSameSign(amount, delta)) {
+        if (Utils.hasTheSameSign(amount, delta)) {
             return (0, delta);
         } else if (amount.abs() >= delta.abs()) {
             return (delta, 0);
@@ -31,7 +31,7 @@ library Utils {
     }
 
     function isOpening(int256 amount, int256 delta) internal pure returns (bool) {
-        return Utils.hasSameSign(amount, delta) || amount.abs() < delta.abs();
+        return Utils.hasTheSameSign(amount, delta) || amount.abs() < delta.abs();
     }
 
     function chainID() internal pure returns (uint256 id) {

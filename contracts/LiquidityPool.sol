@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
-import "./interface/IFactory.sol";
+import "./interface/IPoolCreator.sol";
 import "./interface/ISymbolService.sol";
 
 import "./module/AMMModule.sol";
@@ -42,9 +42,10 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         address operator,
         address collateral,
         address governor,
-        address shareToken
+        address shareToken,
+        int256 insuranceFundCap
     ) external initializer {
-        _liquidityPool.initialize(collateral, operator, governor, shareToken);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken, insuranceFundCap);
     }
 
     function createPerpetual(
@@ -69,7 +70,9 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
             minRiskParamValues,
             maxRiskParamValues
         );
-        ISymbolService service = ISymbolService(IFactory(_liquidityPool.factory).symbolService());
+        ISymbolService service = ISymbolService(
+            IPoolCreator(_liquidityPool.factory).symbolService()
+        );
         service.requestSymbol(address(this), perpetualIndex);
         emit CreatePerpetual(
             perpetualIndex,
@@ -93,7 +96,7 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         emit Finalize();
     }
 
-    function claimableFee(address claimer) public view returns (int256) {
+    function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];
     }
 

@@ -15,7 +15,7 @@ import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
 import "./interface/IAccessController.sol";
-import "./interface/IFactory.sol";
+import "./interface/IPoolCreator.sol";
 import "./interface/IShareToken.sol";
 
 import "./module/AMMModule.sol";
@@ -53,15 +53,16 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using SettlementModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
 
-    function marginAccount(uint256 perpetualIndex, address trader)
+    function getMarginAccount(uint256 perpetualIndex, address trader)
         public
         view
         onlyExistedPerpetual(perpetualIndex)
         returns (int256 cashBalance, int256 positionAmount)
     {
-        cashBalance = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance;
-        positionAmount = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
-            .positionAmount;
+        MarginAccount storage account = _liquidityPool.perpetuals[perpetualIndex]
+            .marginAccounts[trader];
+        cashBalance = account.cashBalance;
+        positionAmount = account.positionAmount;
     }
 
     function deposit(
@@ -116,10 +117,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        if (isCloseOnly) {
-            amount = _liquidityPool.truncateCloseAmount(perpetualIndex, trader, amount);
-        }
-        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
     }
 
     function brokerTrade(
@@ -138,15 +136,14 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
             "signer is unauthorized"
         );
         _liquidityPool.validateOrder(order, amount);
-        if (order.isCloseOnly()) {
-            amount = _liquidityPool.truncateCloseAmount(order.perpetualIndex, order.trader, amount);
-        }
+        _liquidityPool.validateTriggerPrice(order);
         _liquidityPool.trade(
             order.perpetualIndex,
             order.trader,
             amount,
             order.limitPrice,
-            order.referrer
+            order.referrer,
+            order.isCloseOnly()
         );
     }
 

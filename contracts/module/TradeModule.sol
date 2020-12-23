@@ -41,9 +41,19 @@ library TradeModule {
         address trader,
         int256 amount,
         int256 priceLimit,
-        address referrer
+        address referrer,
+        bool isCloseOnly
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        if (isCloseOnly) {
+            int256 positionAmount = perpetual.getPositionAmount(trader);
+            require(positionAmount != 0, "trader has no position to close");
+            require(
+                !Utils.hasTheSameSign(positionAmount, amount),
+                "trader is not closing position"
+            );
+            amount = amount.abs() > positionAmount.abs() ? positionAmount : amount;
+        }
         // 0. price / amount
         Receipt memory receipt;
         (receipt.tradeValue, receipt.tradeAmount) = liquidityPool.tradeWithAMM(
@@ -52,11 +62,11 @@ library TradeModule {
             false
         );
         bool isOpening = Utils.isOpening(
-            perpetual.positionAmount(trader),
+            perpetual.getPositionAmount(trader),
             receipt.tradeAmount.neg()
         );
-        int256 tradingPrice = receipt.tradeValue.wdiv(receipt.tradeAmount).abs();
-        validatePrice(receipt.tradeAmount.neg(), tradingPrice, priceLimit);
+        int256 tradePrice = receipt.tradeValue.wdiv(receipt.tradeAmount).abs();
+        validatePrice(receipt.tradeAmount.neg(), tradePrice, priceLimit);
         // 1. fee
         updateTradingFees(liquidityPool, perpetual, receipt, referrer);
         // 2. execute
@@ -72,7 +82,7 @@ library TradeModule {
             perpetualIndex,
             trader,
             receipt.tradeAmount,
-            tradingPrice,
+            tradePrice,
             receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee)
         );
     }
@@ -132,7 +142,7 @@ library TradeModule {
         int256 price,
         int256 priceLimit
     ) internal pure {
-        require(price > 0, "price is 0");
+        require(price >= 0, "price is 0");
         if (amount > 0) {
             require(price <= priceLimit, "price is too high");
         } else if (amount < 0) {

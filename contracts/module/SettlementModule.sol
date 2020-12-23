@@ -32,7 +32,7 @@ library SettlementModule {
     event ClearAccount(uint256 perpetualIndex, address trader);
     event SettleAccount(uint256 perpetualIndex, address trader, int256 amount);
 
-    function nextAccountToclear(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+    function getAccountToClear(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
         view
         returns (address account)
@@ -50,9 +50,9 @@ library SettlementModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(perpetual.activeAccounts.contains(trader), "trader is not registered");
         require(!perpetual.clearedTraders.contains(trader), "trader is already cleared");
-        int256 margin = perpetual.margin(trader, perpetual.markPrice());
+        int256 margin = perpetual.getMargin(trader, perpetual.getMarkPrice());
         if (margin > 0) {
-            if (perpetual.positionAmount(trader) != 0) {
+            if (perpetual.getPositionAmount(trader) != 0) {
                 perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
             } else {
                 perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
@@ -71,15 +71,15 @@ library SettlementModule {
         }
     }
 
-    function settleableMargin(
+    function getSettleableMargin(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader
     ) public view returns (int256 margin) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        margin = perpetual.margin(trader, perpetual.markPrice());
+        margin = perpetual.getMargin(trader, perpetual.getMarkPrice());
         if (margin > 0) {
-            int256 rate = (perpetual.positionAmount(trader) == 0)
+            int256 rate = (perpetual.getPositionAmount(trader) == 0)
                 ? perpetual.redemptionRateWithoutPosition
                 : perpetual.redemptionRateWithPosition;
             margin = margin.wmul(rate);
@@ -93,11 +93,11 @@ library SettlementModule {
         uint256 perpetualIndex,
         address trader
     ) public {
-        int256 withdrawable = settleableMargin(liquidityPool, perpetualIndex, trader);
+        int256 withdrawable = getSettleableMargin(liquidityPool, perpetualIndex, trader);
         require(withdrawable > 0, "no margin to settle");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         liquidityPool.transferToUser(payable(trader), withdrawable);
-        perpetual.reset(trader);
+        perpetual.resetMarginAccount(trader);
         emit SettleAccount(perpetualIndex, trader, withdrawable);
     }
 

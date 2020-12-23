@@ -42,7 +42,7 @@ library OrderModule {
             "perpetual index out of range"
         );
         // amount
-        require(amount != 0 && Utils.hasSameSign(amount, order.amount), "invalid amount");
+        require(amount != 0 && Utils.hasTheSameSign(amount, order.amount), "invalid amount");
         require(order.amount != 0, "order amount is 0");
         require(amount.abs() >= order.minTradeAmount, "amount is less than min trade amount");
         require(amount.abs() <= order.amount.abs(), "amount exceeds order amount");
@@ -55,27 +55,15 @@ library OrderModule {
             !(order.isStopLossOrder() && order.isTakeProfitOrder()),
             "stop-loss order cannot be take-profit"
         );
+    }
+
+    function validateTriggerPrice(LiquidityPoolStorage storage liquidityPool, Order memory order)
+        public
+        view
+    {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[order.perpetualIndex];
-        int256 positionAmount = perpetual.positionAmount(order.trader);
-        if (order.isCloseOnly()) {
-            ensureCloseOnly(positionAmount, amount);
-        }
-        if (order.isStopLossOrder() || order.isTakeProfitOrder()) {
-            ensureTriggerPrice(perpetual, order, positionAmount);
-        }
-    }
-
-    function ensureCloseOnly(int256 positionAmount, int256 amount) internal pure {
-        require(positionAmount != 0, "trader has no position to close");
-        require(!Utils.hasSameSign(positionAmount, amount), "trader is not closing position");
-    }
-
-    function ensureTriggerPrice(
-        PerpetualStorage storage perpetual,
-        Order memory order,
-        int256 positionAmount
-    ) public view {
-        int256 indexPrice = perpetual.indexPrice();
+        int256 positionAmount = perpetual.getPositionAmount(order.trader);
+        int256 indexPrice = perpetual.getIndexPrice();
         if (
             (order.isStopLossOrder() && positionAmount > 0) ||
             (order.isTakeProfitOrder() && positionAmount < 0)
@@ -89,16 +77,5 @@ library OrderModule {
             // stop-loss + long / take-profit + short
             require(indexPrice >= order.triggerPrice, "trigger price is not reached");
         }
-    }
-
-    function truncateCloseAmount(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount
-    ) internal view returns (int256 truncatedAmount) {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 positionAmount = perpetual.positionAmount(trader);
-        truncatedAmount = amount.abs() > positionAmount.abs() ? positionAmount : amount;
     }
 }

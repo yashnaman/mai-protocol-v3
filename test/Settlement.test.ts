@@ -10,7 +10,7 @@ import {
     createFactory,
 } from '../scripts/utils';
 
-describe('Settlement', () => {
+getDescription('Settlement', () => {
     let accounts;
     let user0;
     let user1;
@@ -52,7 +52,7 @@ describe('Settlement', () => {
     })
 
     async function printSettleState(perpIndex) {
-        const { left, total } = await settlement.clearProgress(perpIndex);
+        const { left, total } = await settlement.getClearProgress(perpIndex);
         const a = await settlement.totalMarginWithoutPosition(0);
         const b = await settlement.totalMarginWithPosition(0);
         const c = await settlement.redemptionRateWithoutPosition(0);
@@ -72,21 +72,21 @@ describe('Settlement', () => {
         await settlement.initializeMarginAccount(0, user1.address, toWei("0"), toWei("1"));
         await oracle.setIndexPrice(toWei("500"), now);
         await oracle.setMarkPrice(toWei("500"), now);
-        expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("500"));
+        expect(await settlement.callStatic.getMargin(0, user1.address)).to.equal(toWei("500"));
 
         await oracle.setIndexPrice(toWei("400"), now);
         await oracle.setMarkPrice(toWei("400"), now);
-        expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("400"));
+        expect(await settlement.callStatic.getMargin(0, user1.address)).to.equal(toWei("400"));
 
         await oracle.setIndexPrice(toWei("600"), now);
         await oracle.setMarkPrice(toWei("600"), now);
-        expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("600"));
+        expect(await settlement.callStatic.getMargin(0, user1.address)).to.equal(toWei("600"));
 
         await settlement.setEmergency(0);
-        expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("600"));
+        expect(await settlement.callStatic.getMargin(0, user1.address)).to.equal(toWei("600"));
         await oracle.setIndexPrice(toWei("500"), now);
         await oracle.setMarkPrice(toWei("500"), now);
-        expect(await settlement.callStatic.margin(0, user1.address)).to.equal(toWei("600"));
+        expect(await settlement.callStatic.getMargin(0, user1.address)).to.equal(toWei("600"));
     })
 
     it("clear account", async () => {
@@ -104,23 +104,23 @@ describe('Settlement', () => {
 
         await settlement.setEmergency(0);
 
-        var { left, total } = await settlement.clearProgress(0);
+        var { left, total } = await settlement.getClearProgress(0);
         expect(left).to.equal(3);
         expect(total).to.equal(3);
 
         // await expect(settlement.clear(0)).to.be.revertedWith("trader is invalid");
         await settlement.clear(0);
-        var { left, total } = await settlement.clearProgress(0);
+        var { left, total } = await settlement.getClearProgress(0);
         expect(left).to.equal(2);
         expect(total).to.equal(3);
 
         await settlement.clear(0);
-        var { left, total } = await settlement.clearProgress(0);
+        var { left, total } = await settlement.getClearProgress(0);
         expect(left).to.equal(1);
         expect(total).to.equal(3);
 
         await settlement.clear(0);
-        var { left, total } = await settlement.clearProgress(0);
+        var { left, total } = await settlement.getClearProgress(0);
         expect(left).to.equal(0);
         expect(total).to.equal(3);
 
@@ -151,9 +151,9 @@ describe('Settlement', () => {
         expect(await settlement.redemptionRateWithoutPosition(0)).to.equal(toWei("1"));
         expect(await settlement.redemptionRateWithPosition(0)).to.equal(toWei("0.3"));
 
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user1.address)));
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user2.address)));
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user3.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user1.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user2.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user3.address)));
     })
 
     it("settle and withdraw - rebalance", async () => {
@@ -183,9 +183,9 @@ describe('Settlement', () => {
         expect(await settlement.redemptionRateWithoutPosition(0)).to.equal(toWei("1"));
         expect(await settlement.redemptionRateWithPosition(0)).to.equal(toWei("0.3"));
 
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user1.address)));
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user2.address)));
-        console.log(fromWei(await settlement.callStatic.settleableMargin(0, user3.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user1.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user2.address)));
+        console.log(fromWei(await settlement.callStatic.getSettleableMargin(0, user3.address)));
 
         console.log(fromWei(await ctk.balanceOf(user1.address)));
         await settlement.connect(user1).settle(0, user1.address);

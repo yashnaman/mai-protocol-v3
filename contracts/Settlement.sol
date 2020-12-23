@@ -13,7 +13,7 @@ import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
-import "./interface/IFactory.sol";
+import "./interface/IPoolCreator.sol";
 import "./interface/IShareToken.sol";
 
 import "./module/AMMModule.sol";
@@ -48,29 +48,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
     using SettlementModule for LiquidityPoolStorage;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    // function activeAccountCount(uint256 perpetualIndex) public view returns (uint256) {
-    //     return _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
-    // }
-
-    // function listActiveAccounts(
-    //     uint256 perpetualIndex,
-    //     uint256 start,
-    //     uint256 end
-    // ) public view returns (address[] memory result) {
-    //     require(start < end, "invalid range");
-    //     PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-    //     uint256 total = perpetual.activeAccounts.length();
-    //     if (start >= total) {
-    //         return result;
-    //     }
-    //     end = end.min(total);
-    //     result = new address[](end.sub(start));
-    //     for (uint256 i = start; i < end; i++) {
-    //         result[i.sub(start)] = perpetual.activeAccounts.at(i);
-    //     }
-    // }
-
-    function clearProgress(uint256 perpetualIndex)
+    function getClearProgress(uint256 perpetualIndex)
         public
         view
         returns (uint256 left, uint256 total)
@@ -79,11 +57,11 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         total = _liquidityPool.perpetuals[perpetualIndex].clearedTraders.length().add(left);
     }
 
-    function settleableMargin(uint256 perpetualIndex, address trader)
+    function getSettleableMargin(uint256 perpetualIndex, address trader)
         public
         returns (int256 margin)
     {
-        margin = _liquidityPool.settleableMargin(perpetualIndex, trader);
+        margin = _liquidityPool.getSettleableMargin(perpetualIndex, trader);
     }
 
     function clear(uint256 perpetualIndex)
@@ -92,7 +70,7 @@ contract Settlement is Storage, ReentrancyGuardUpgradeable {
         onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
-        address unclearedAccount = _liquidityPool.nextAccountToclear(perpetualIndex);
+        address unclearedAccount = _liquidityPool.getAccountToClear(perpetualIndex);
         _liquidityPool.clearAccount(perpetualIndex, unclearedAccount);
     }
 

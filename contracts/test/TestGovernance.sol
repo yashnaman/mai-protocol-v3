@@ -80,7 +80,7 @@ contract TestGovernance is Governance {
         return _liquidityPool.perpetuals[perpetualIndex].fundingRateLimit.value;
     }
 
-    function maxLeverage(uint256 perpetualIndex) public view returns (int256) {
-        return _liquidityPool.perpetuals[perpetualIndex].maxLeverage.value;
+    function ammMaxLeverage(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].ammMaxLeverage.value;
     }
 }

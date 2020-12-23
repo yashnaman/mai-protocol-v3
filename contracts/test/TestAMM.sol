@@ -25,7 +25,7 @@ contract TestAMM {
         int256 halfSpread,
         int256 openSlippageFactor,
         int256 closeSlippageFactor,
-        int256 maxLeverage,
+        int256 ammMaxLeverage,
         int256 cashBalance,
         int256 positionAmount1,
         int256 positionAmount2,
@@ -38,7 +38,7 @@ contract TestAMM {
         liquidityPool.perpetuals[0].halfSpread.value = halfSpread;
         liquidityPool.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
-        liquidityPool.perpetuals[0].maxLeverage.value = maxLeverage;
+        liquidityPool.perpetuals[0].ammMaxLeverage.value = ammMaxLeverage;
         liquidityPool.poolCashBalance = cashBalance;
         liquidityPool.perpetuals[0].marginAccounts[address(this)].positionAmount = positionAmount1;
         liquidityPool.perpetuals[0].indexPriceData.price = indexPrice1;
@@ -49,7 +49,7 @@ contract TestAMM {
         liquidityPool.perpetuals[1].halfSpread.value = halfSpread;
         liquidityPool.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
-        liquidityPool.perpetuals[1].maxLeverage.value = maxLeverage;
+        liquidityPool.perpetuals[1].ammMaxLeverage.value = ammMaxLeverage;
         liquidityPool.perpetuals[1].marginAccounts[address(this)].positionAmount = positionAmount2;
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
@@ -83,7 +83,7 @@ contract TestAMM {
             regress(),
             perpetual.marginAccounts[address(this)].positionAmount,
             perpetual.marginAccounts[address(this)].positionAmount.add(amount),
-            perpetual.indexPrice(),
+            perpetual.getIndexPrice(),
             perpetual.openSlippageFactor.value
         );
     }
@@ -95,7 +95,7 @@ contract TestAMM {
             AMMModule._maxPosition(
                 context,
                 regress(),
-                perpetual.maxLeverage.value,
+                perpetual.ammMaxLeverage.value,
                 perpetual.openSlippageFactor.value,
                 isLongSide
             );

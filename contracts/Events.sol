@@ -4,17 +4,16 @@ pragma experimental ABIEncoderV2;
 
 contract Events {
     // governance
-    event UpdateLiquidityPoolParameter(bytes32 key, int256 value);
-    event UpdatePerpetualParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event UpdatePerpetualRiskParameter(
+    event SetLiquidityPoolParameter(bytes32 key, int256 value);
+    event SetPerpetualParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 value,
         int256 minValue,
         int256 maxValue
     );
-
-    event AdjustPerpetualRiskSetting(uint256 perpetualIndex, bytes32 key, int256 value);
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
     // settle
     event ClearAccount(uint256 perpetualIndex, address trader);
@@ -42,4 +41,12 @@ contract Events {
     event DonateInsuranceFund(address trader, int256 amount);
     // fee
     event ClaimFee(address claimer, int256 amount);
+    // state
+    event EnterNormalState(uint256 perpetualIndex);
+    event EnterEmergencyState(
+        uint256 perpetualIndex,
+        int256 settlementPrice,
+        uint256 settlementTime
+    );
+    event EnterClearedState(uint256 perpetualIndex);
 }

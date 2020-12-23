@@ -8,15 +8,15 @@ import "../interface/IGovernor.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IShareToken.sol";
 
-import "./Proxy.sol";
 import "./Tracer.sol";
 import "./Implementation.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
+import "./ProxyCreator.sol";
 
 import "hardhat/console.sol";
 
-contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessControl {
+contract PoolCreator is ProxyCreator, Tracer, Implementation, Variables, AccessControl {
     using Address for address;
 
     address internal _governorTemplate;
@@ -41,25 +41,32 @@ contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessContro
         address governor,
         address shareToken,
         address operator,
-        address collateral
+        address collateral,
+        int256 insuranceFundCap
     );
 
-    function createLiquidityPool(address collateral, uint256 nonce) external returns (address) {
-        return _createLiquidityPoolWith(latestVersion(), collateral, nonce);
+    function createLiquidityPool(
+        address collateral,
+        int256 insuranceFundCap,
+        int256 nonce
+    ) external returns (address) {
+        return _createLiquidityPoolWith(getLatestVersion(), collateral, insuranceFundCap, nonce);
     }
 
     function createLiquidityPoolWith(
         address implementation,
         address collateral,
-        uint256 nonce
+        int256 insuranceFundCap,
+        int256 nonce
     ) external returns (address) {
-        return _createLiquidityPoolWith(implementation, collateral, nonce);
+        return _createLiquidityPoolWith(implementation, collateral, insuranceFundCap, nonce);
     }
 
     function _createLiquidityPoolWith(
         address implementation,
         address collateral,
-        uint256 nonce
+        int256 insuranceFundCap,
+        int256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
         address governor = _createClone(_governorTemplate);
@@ -69,10 +76,23 @@ contract PoolCreator is Creator, Tracer, Implementation, Variables, AccessContro
         address operator = msg.sender;
         IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
         IGovernor(governor).initialize(shareToken, liquidityPool);
-        ILiquidityPool(liquidityPool).initialize(operator, collateral, governor, shareToken);
+        ILiquidityPool(liquidityPool).initialize(
+            operator,
+            collateral,
+            governor,
+            shareToken,
+            insuranceFundCap
+        );
         // register
         _registerLiquidityPool(liquidityPool, operator);
-        emit CreateLiquidityPool(liquidityPool, governor, shareToken, operator, collateral);
+        emit CreateLiquidityPool(
+            liquidityPool,
+            governor,
+            shareToken,
+            operator,
+            collateral,
+            insuranceFundCap
+        );
         return liquidityPool;
     }
 }

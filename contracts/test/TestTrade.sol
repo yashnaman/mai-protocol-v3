@@ -56,24 +56,24 @@ contract TestTrade is Storage, Getter {
         _liquidityPool.vaultFeeRate = vaultFeeRate;
     }
 
-    function updateLiquidityPoolParameter(bytes32 key, int256 newValue) external {
-        _liquidityPool.updateLiquidityPoolParameter(key, newValue);
+    function setLiquidityPoolParameter(bytes32 key, int256 newValue) external {
+        _liquidityPool.setLiquidityPoolParameter(key, newValue);
     }
 
-    function updatePerpetualParameter(
+    function setPerpetualParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external {
-        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualParameter(key, newValue);
+        _liquidityPool.perpetuals[perpetualIndex].setPerpetualParameter(key, newValue);
     }
 
-    function updatePerpetualRiskParameter(
+    function setPerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
     ) external {
-        _liquidityPool.perpetuals[perpetualIndex].updatePerpetualRiskParameter(
+        _liquidityPool.perpetuals[perpetualIndex].setPerpetualRiskParameter(
             key,
             newValue,
             newValue,
@@ -97,9 +97,10 @@ contract TestTrade is Storage, Getter {
         address trader,
         int256 amount,
         int256 limitPrice,
-        address referrer
+        address referrer,
+        bool isCloseOnly
     ) public syncState {
-        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer);
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
     }
 
     function updateTradingFees(

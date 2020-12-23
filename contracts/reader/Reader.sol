@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "../Type.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IOracle.sol";
-import "../interface/IFactory.sol";
+import "../interface/IPoolCreator.sol";
 import "../interface/ISymbolService.sol";
 import "../interface/ISymbolService.sol";
 import "../libraries/SafeMathExt.sol";
@@ -58,9 +58,11 @@ contract Reader {
         address liquidityPool,
         uint256 perpetualIndex,
         address account
-    ) public view returns (MarginAccount memory marginAccount) {
-        (marginAccount.cashBalance, marginAccount.positionAmount) = ILiquidityPool(liquidityPool)
-            .marginAccount(perpetualIndex, account);
+    ) public view returns (MarginAccount memory getMarginAccount) {
+        (getMarginAccount.cashBalance, getMarginAccount.positionAmount) = ILiquidityPool(
+            liquidityPool
+        )
+            .getMarginAccount(perpetualIndex, account);
     }
 
     function getLiquidityPoolStorage(address liquidityPool)
@@ -73,7 +75,7 @@ contract Reader {
             address[6] memory addresses;
             int256[7] memory nums;
             (addresses, nums, perpetualCount, pool.fundingTime) = ILiquidityPool(liquidityPool)
-                .liquidityPoolInfo();
+                .getLiquidityPoolInfo();
             creator = addresses[0];
             pool.operator = addresses[1];
             pool.collateral = addresses[2];
@@ -87,7 +89,7 @@ contract Reader {
             pool.totalClaimableFee = nums[4];
             pool.poolCashBalance = nums[5];
         }
-        address symbolService = IFactory(creator).symbolService();
+        address symbolService = IPoolCreator(creator).symbolService();
 
         pool.perpetualStorages = new PerpetualStorage[](perpetualCount);
         for (uint256 i = 0; i < perpetualCount; i++) {
@@ -104,11 +106,9 @@ contract Reader {
         // perpetual
         {
             int256[17] memory nums;
-            (
-                perp.state,
-                perp.oracle,
-                nums
-            ) = ILiquidityPool(liquidityPool).perpetualInfo(perpetualIndex);
+            (perp.state, perp.oracle, nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
+                perpetualIndex
+            );
             perp.markPrice = nums[1];
             perp.indexPrice = nums[2];
             perp.unitAccumulativeFunding = nums[3];
@@ -127,13 +127,10 @@ contract Reader {
             perp.ammMaxLeverage = nums[16];
         }
         // underlying
-        perp.underlyingAsset = IOracle(perp.oracle)
-            .underlyingAsset();
+        perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         // amm
-        (
-            perp.ammCashBalance,
-            perp.ammPositionAmount
-        ) = ILiquidityPool(liquidityPool).marginAccount(perpetualIndex, liquidityPool);
+        (perp.ammCashBalance, perp.ammPositionAmount) = ILiquidityPool(liquidityPool)
+            .getMarginAccount(perpetualIndex, liquidityPool);
         // symbol
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
     }
@@ -142,12 +139,11 @@ contract Reader {
         address symbolService,
         address liquidityPool,
         uint256 perpetualIndex
-    ) private returns (uint256)
-    {
+    ) private returns (uint256) {
         uint256[] memory symbols;
         symbols = ISymbolService(symbolService).getSymbols(liquidityPool, perpetualIndex);
         uint256 symbolLength = symbols.length;
-        require(symbolLength>= 1, "symbol not found");
+        require(symbolLength >= 1, "symbol not found");
         uint256 minSymbol = type(uint256).max;
         for (uint256 i = 0; i < symbolLength; i++) {
             minSymbol = minSymbol.min(symbols[i]);

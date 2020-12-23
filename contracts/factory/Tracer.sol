@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
-import "../libraries/SafeCastExt.sol";
 import "../libraries/SafeMathExt.sol";
 
 import "hardhat/console.sol";
@@ -13,8 +12,6 @@ import "hardhat/console.sol";
 contract Tracer {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
-    using SafeCastExt for address;
-    using SafeCastExt for bytes32;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -39,7 +36,7 @@ contract Tracer {
     }
 
     // =========================== Liquidity Pool ===========================
-    function liquidityPoolCount() public view returns (uint256) {
+    function getLiquidityPoolCount() public view returns (uint256) {
         return _liquidityPoolSet.length();
     }
 
@@ -67,7 +64,7 @@ contract Tracer {
         return _addressSetToList(_operatorOwnedLiquidityPools[operator], begin, end);
     }
 
-    function updateLiquidityPoolOwnership(address liquidityPool, address operator)
+    function setLiquidityPoolOwnership(address liquidityPool, address operator)
         public
         onlyLiquidityPool
     {
@@ -90,7 +87,7 @@ contract Tracer {
     }
 
     // =========================== Active Liquidity Pool of Trader ===========================
-    function activeLiquidityPoolCountOf(address trader) public view returns (uint256) {
+    function getActiveLiquidityPoolCountOf(address trader) public view returns (uint256) {
         return _traderActiveLiquidityPools[trader].length();
     }
 
@@ -101,7 +98,7 @@ contract Tracer {
     ) public view returns (bool) {
         return
             _traderActiveLiquidityPools[trader].contains(
-                _poolPerpetualKey(liquidityPool, perpetualIndex)
+                _getPerpetualKey(liquidityPool, perpetualIndex)
             );
     }
 
@@ -128,7 +125,7 @@ contract Tracer {
         onlyLiquidityPool
         returns (bool)
     {
-        bytes32 key = _poolPerpetualKey(msg.sender, perpetualIndex);
+        bytes32 key = _getPerpetualKey(msg.sender, perpetualIndex);
         if (_perpetualUIDs[key].liquidityPool == address(0)) {
             _perpetualUIDs[key] = PerpetualUID({
                 liquidityPool: msg.sender,
@@ -145,7 +142,7 @@ contract Tracer {
     {
         return
             _traderActiveLiquidityPools[trader].remove(
-                _poolPerpetualKey(msg.sender, perpetualIndex)
+                _getPerpetualKey(msg.sender, perpetualIndex)
             );
     }
 
@@ -169,7 +166,7 @@ contract Tracer {
         return result;
     }
 
-    function _poolPerpetualKey(address liquidityPool, uint256 perpetualIndex)
+    function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal
         pure
         returns (bytes32)

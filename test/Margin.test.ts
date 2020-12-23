@@ -7,14 +7,14 @@ import {
     createContract,
 } from '../scripts/utils';
 
-describe('MarginModule', () => {
+getDescription('MarginModule', () => {
     let accounts;
 
     before(async () => {
         accounts = await getAccounts();
     })
 
-    describe('Getters', async () => {
+    getDescription('Getters', async () => {
         let testMargin;
 
         beforeEach(async () => {
@@ -38,10 +38,10 @@ describe('MarginModule', () => {
 
         const testCases = [
             {
-                name: "+initialMargin",
-                method: "initialMargin",
+                name: "+getInitialMargin",
+                method: "getInitialMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -53,10 +53,10 @@ describe('MarginModule', () => {
                 expect: toWei("50")
             },
             {
-                name: "-initialMargin",
-                method: "initialMargin",
+                name: "-getInitialMargin",
+                method: "getInitialMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("-1"),
                 },
@@ -68,10 +68,10 @@ describe('MarginModule', () => {
                 expect: toWei("50")
             },
             {
-                name: "+initialMargin - non-zero keeperGasReward",
-                method: "initialMargin",
+                name: "+getInitialMargin - non-zero keeperGasReward",
+                method: "getInitialMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("0.1"),
                 },
@@ -84,10 +84,10 @@ describe('MarginModule', () => {
                 expect: toWei("6")
             },
             {
-                name: "-initialMargin - non-zero keeperGasReward",
-                method: "initialMargin",
+                name: "-getInitialMargin - non-zero keeperGasReward",
+                method: "getInitialMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("-0.1"),
                 },
@@ -100,10 +100,10 @@ describe('MarginModule', () => {
                 expect: toWei("6")
             },
             {
-                name: "+maintenanceMargin",
-                method: "maintenanceMargin",
+                name: "+getMaintenanceMargin",
+                method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -115,10 +115,10 @@ describe('MarginModule', () => {
                 expect: toWei("25")
             },
             {
-                name: "-maintenanceMargin",
-                method: "maintenanceMargin",
+                name: "-getMaintenanceMargin",
+                method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("-1"),
                 },
@@ -133,7 +133,7 @@ describe('MarginModule', () => {
                 name: "+margin",
                 method: "margin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -148,7 +148,7 @@ describe('MarginModule', () => {
                 name: "-margin",
                 method: "margin",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("-1"),
                 },
@@ -163,7 +163,7 @@ describe('MarginModule', () => {
                 name: "+positionAmount",
                 method: "positionAmount",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -175,7 +175,7 @@ describe('MarginModule', () => {
                 name: "-positionAmount",
                 method: "positionAmount",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -184,10 +184,10 @@ describe('MarginModule', () => {
                 expect: toWei("1")
             },
             {
-                name: "availableCashBalance + funding",
-                method: "availableCashBalance",
+                name: "getAvailableCashBalance + funding",
+                method: "getAvailableCashBalance",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -196,10 +196,10 @@ describe('MarginModule', () => {
                 expect: toWei("90") // 100 - (1*10 - 0)
             },
             {
-                name: "availableCashBalance - funding 1",
-                method: "availableCashBalance",
+                name: "getAvailableCashBalance - funding 1",
+                method: "getAvailableCashBalance",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -208,10 +208,10 @@ describe('MarginModule', () => {
                 expect: toWei("90") // 100 + (1*10 - 20)
             },
             {
-                name: "availableCashBalance - funding 2",
-                method: "availableCashBalance",
+                name: "getAvailableCashBalance - funding 2",
+                method: "getAvailableCashBalance",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("100"),
                     positionAmount: toWei("1"),
                 },
@@ -223,7 +223,7 @@ describe('MarginModule', () => {
                 name: "+isInitialMarginSafe yes",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("-450"),
                     positionAmount: toWei("1"),
                 },
@@ -238,7 +238,7 @@ describe('MarginModule', () => {
                 name: "-isInitialMarginSafe yes",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("550"),
                     positionAmount: toWei("-1"),
                 },
@@ -253,7 +253,7 @@ describe('MarginModule', () => {
                 name: "+isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("-450.1"),
                     positionAmount: toWei("1"),
                 },
@@ -268,7 +268,7 @@ describe('MarginModule', () => {
                 name: "-isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("549.9"),
                     positionAmount: toWei("-1"),
                 },
@@ -283,7 +283,7 @@ describe('MarginModule', () => {
                 name: "+isMaintenanceMarginSafe yes",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("-450"),
                     positionAmount: toWei("1"),
                 },
@@ -298,7 +298,7 @@ describe('MarginModule', () => {
                 name: "-isMaintenanceMarginSafe yes",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("550"),
                     positionAmount: toWei("-1"),
                 },
@@ -313,7 +313,7 @@ describe('MarginModule', () => {
                 name: "+isMaintenanceMarginSafe no",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("-450.1"),
                     positionAmount: toWei("1"),
                 },
@@ -328,7 +328,7 @@ describe('MarginModule', () => {
                 name: "-isMaintenanceMarginSafe no",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("549.9"),
                     positionAmount: toWei("-1"),
                 },
@@ -342,7 +342,7 @@ describe('MarginModule', () => {
             {
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("0"),
                     positionAmount: toWei("0"),
                 },
@@ -357,7 +357,7 @@ describe('MarginModule', () => {
                 name: "isEmptyAccount - 1",
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("1"),
                     positionAmount: toWei("0"),
                 },
@@ -372,7 +372,7 @@ describe('MarginModule', () => {
                 name: "isEmptyAccount - 2",
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                marginAccount: {
+                getMarginAccount: {
                     cashBalance: toWei("0"),
                     positionAmount: toWei("1"),
                 },
@@ -391,10 +391,10 @@ describe('MarginModule', () => {
                 await testMargin.initializeMarginAccount(
                     0,
                     accounts[testCase.trader].address,
-                    testCase.marginAccount.cashBalance,
-                    testCase.marginAccount.positionAmount);
+                    testCase.getMarginAccount.cashBalance,
+                    testCase.getMarginAccount.positionAmount);
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.updatePerpetualParameter(0, toBytes32(key), testCase.parameters[key]);
+                    await testMargin.setPerpetualParameter(0, toBytes32(key), testCase.parameters[key]);
                 }
                 await testMargin.updateUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
@@ -409,7 +409,7 @@ describe('MarginModule', () => {
     })
 
 
-    describe('Setters', async () => {
+    getDescription('Setters', async () => {
         let testMargin;
 
         before(async () => {
@@ -438,25 +438,25 @@ describe('MarginModule', () => {
             await testMargin.initializeMarginAccount(0, trader, toWei("1000"), toWei("0"));
 
             await testMargin.updateMarginAccount(0, trader, toWei("2"), toWei("100")) // +100 + 2*100
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
+            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1300"));
             expect(positionAmount).to.equal(toWei("2"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("200"));
             await testMargin.updateMarginAccount(0, trader, toWei("0.5"), toWei("100")) // +100 + 0.5*200
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
+            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1500"));
             expect(positionAmount).to.equal(toWei("2.5"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("0"));
             await testMargin.updateMarginAccount(0, trader, toWei("-1"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
+            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1400")); // -100 -1*0
             expect(positionAmount).to.equal(toWei("1.5"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("-100"));
             await testMargin.updateMarginAccount(0, trader, toWei("-5"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.marginAccount(0, trader);
+            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
             expect(cashBalance).to.equal(toWei("1800")); // -100 - 5*-100
             expect(positionAmount).to.equal(toWei("-3.5"));
         })

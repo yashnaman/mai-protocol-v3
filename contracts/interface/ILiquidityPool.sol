@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "../Type.sol";
 
 interface ILiquidityPool {
-    function liquidityPoolInfo()
+    function getLiquidityPoolInfo()
         external
         view
         returns (
@@ -28,7 +28,7 @@ interface ILiquidityPool {
             uint256 fundingTime
         );
 
-    function perpetualInfo(uint256 perpetualIndex)
+    function getPerpetualInfo(uint256 perpetualIndex)
         external
         returns (
             PerpetualState state,
@@ -57,7 +57,8 @@ interface ILiquidityPool {
         address operator,
         address collateral,
         address governor,
-        address shareToken
+        address shareToken,
+        int256 insuranceFundCap
     ) external;
 
     function trade(
@@ -84,7 +85,7 @@ interface ILiquidityPool {
         uint256 count
     ) external view returns (address[] memory result);
 
-    function marginAccount(uint256 perpetualIndex, address trader)
+    function getMarginAccount(uint256 perpetualIndex, address trader)
         external
         view
         returns (int256 cashBalance, int256 positionAmount);

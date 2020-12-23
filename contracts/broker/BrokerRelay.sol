@@ -28,8 +28,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     uint256 internal _chainID;
     uint256 internal _claimableFees;
     mapping(address => uint256) internal _balances;
-    mapping(bytes32 => int256) _orderFilled;
-    mapping(bytes32 => bool) _orderCanceled;
+    mapping(bytes32 => int256) internal _orderFilled;
+    mapping(bytes32 => bool) internal _orderCanceled;
 
     event Deposit(address trader, uint256 amount);
     event Withdraw(address trader, uint256 amount);

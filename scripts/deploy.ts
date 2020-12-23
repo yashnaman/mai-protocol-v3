@@ -28,7 +28,7 @@ async function main(accounts: any[]) {
     await poolCreator.addVersion(perpTemplate.address, 0, "initial version");
     const tx = await poolCreator.createLiquidityPool(ctk.address, 998);
 
-    const n = await poolCreator.liquidityPoolCount();
+    const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
     const liquidityPool = await LiquidityPool.attach(allLiquidityPools[allLiquidityPools.length - 1]);
 

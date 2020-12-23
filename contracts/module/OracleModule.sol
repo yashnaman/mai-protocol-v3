@@ -26,14 +26,14 @@ library OracleModule {
         updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
     }
 
-    function markPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
+    function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
                 ? perpetual.markPriceData.price
                 : perpetual.settlementPriceData.price;
     }
 
-    function indexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
+    function getIndexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
                 ? perpetual.indexPriceData.price
@@ -52,7 +52,7 @@ library OracleModule {
         }
     }
 
-    function freezeOraclePrice(PerpetualStorage storage perpetual) public {
+    function freezePrice(PerpetualStorage storage perpetual) public {
         perpetual.settlementPriceData = perpetual.indexPriceData;
     }
 }

@@ -7,7 +7,7 @@ import {
     getAccounts,
 } from "../scripts/utils";
 
-describe("Order", () => {
+getDescription("Order", () => {
     var testBitwise;
     let accounts;
 

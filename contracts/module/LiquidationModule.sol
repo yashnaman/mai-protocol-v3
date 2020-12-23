@@ -42,6 +42,7 @@ library LiquidationModule {
         uint256 perpetualIndex,
         address trader
     ) public {
+        address liquidator = msg.sender;
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(!perpetual.isMaintenanceMarginSafe(trader), "trader is safe");
         Receipt memory receipt;
@@ -61,10 +62,14 @@ library LiquidationModule {
         int256 penaltyToFund = updateLiquidationPenalty(
             perpetual,
             trader,
-            perpetual.markPrice().wmul(receipt.tradeAmount).wmul(perpetual.liquidationPenaltyRate),
+            perpetual
+                .getMarkPrice()
+                .wmul(receipt.tradeAmount)
+                .wmul(perpetual.liquidationPenaltyRate)
+                .abs(),
             perpetual.keeperGasReward
         );
-        liquidityPool.transferToUser(msg.sender, perpetual.keeperGasReward);
+        liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
         // 4. events
         emit Liquidate(
             perpetualIndex,
@@ -74,7 +79,7 @@ library LiquidationModule {
             receipt.tradeValue.wdiv(receipt.tradeAmount).abs()
         );
         // 5. emergency
-        bool isInsuranceFundDrained = updateInsuranceFund(liquidityPool, perpetual, penaltyToFund);
+        bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
         if (isInsuranceFundDrained) {
             perpetual.enterEmergencyState();
         }
@@ -83,38 +88,41 @@ library LiquidationModule {
     function liquidateByTrader(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        address taker,
-        address maker,
+        address liquidator,
+        address trader,
         int256 amount,
         int256 limitPrice
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        require(!perpetual.isMaintenanceMarginSafe(maker), "trader is safe");
+        require(!perpetual.isMaintenanceMarginSafe(trader), "trader is safe");
         Receipt memory receipt;
         // 0. price / amountyo
-        int256 tradingPrice = perpetual.markPrice();
+        int256 tradingPrice = perpetual.getMarkPrice();
         TradeModule.validatePrice(amount, tradingPrice, limitPrice);
-        (receipt.tradeValue, receipt.tradeAmount) = (tradingPrice.wmul(amount), amount);
+        (receipt.tradeValue, receipt.tradeAmount) = (tradingPrice.wmul(amount), amount.neg());
         // 1. execute
-        bool isOpening = Utils.isOpening(perpetual.positionAmount(taker), amount);
-        TradeModule.updateTradingResult(perpetual, receipt, taker, maker);
+        bool isOpening = Utils.isOpening(perpetual.getPositionAmount(liquidator), amount);
+        TradeModule.updateTradingResult(perpetual, receipt, liquidator, trader);
         // 2. penalty
         int256 penaltyToFund = updateLiquidationPenalty(
             perpetual,
-            maker,
-            receipt.tradeValue.wmul(perpetual.liquidationPenaltyRate),
+            trader,
+            receipt.tradeValue.wmul(perpetual.liquidationPenaltyRate).abs(),
             0
         );
         // 3. safe
         if (isOpening) {
-            require(perpetual.isInitialMarginSafe(taker), "trader initial margin unsafe");
+            require(perpetual.isInitialMarginSafe(liquidator), "trader initial margin unsafe");
         } else {
-            require(perpetual.isMaintenanceMarginSafe(taker), "trader maintenance margin unsafe");
+            require(
+                perpetual.isMaintenanceMarginSafe(liquidator),
+                "trader maintenance margin unsafe"
+            );
         }
         // 4. events
-        emit Liquidate(perpetualIndex, taker, maker, receipt.tradeAmount, tradingPrice);
+        emit Liquidate(perpetualIndex, liquidator, trader, receipt.tradeAmount, tradingPrice);
         // 5. emergency
-        bool isInsuranceFundDrained = updateInsuranceFund(liquidityPool, perpetual, penaltyToFund);
+        bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
         if (isInsuranceFundDrained) {
             perpetual.enterEmergencyState();
         }
@@ -126,10 +134,13 @@ library LiquidationModule {
         int256 softPenalty,
         int256 hardPenalty
     ) internal returns (int256 penaltyToFund) {
+        require(softPenalty >= 0, "");
+        require(hardPenalty >= 0, "");
+
         int256 penaltyFromTrader;
         int256 penaltyToTaker;
         int256 fullPenalty = hardPenalty.add(softPenalty);
-        int256 traderMargin = perpetual.margin(trader, perpetual.markPrice());
+        int256 traderMargin = perpetual.getMargin(trader, perpetual.getMarkPrice());
         penaltyFromTrader = fullPenalty.min(traderMargin);
         int256 effectivePenalty = penaltyFromTrader.sub(hardPenalty);
         if (effectivePenalty > 0) {
@@ -144,7 +155,7 @@ library LiquidationModule {
         return penaltyToFund;
     }
 
-    function updateInsuranceFund(
+    function handleInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
         int256 penalty
@@ -158,12 +169,13 @@ library LiquidationModule {
             penaltyToFund = penalty;
             penaltyToLP = 0;
         } else if (liquidityPool.insuranceFund > liquidityPool.insuranceFundCap) {
+            penaltyToFund = 0;
             penaltyToLP = penalty;
         } else {
             int256 fundToFill = liquidityPool.insuranceFundCap.sub(liquidityPool.insuranceFund);
             penaltyToFund = fundToFill;
             penaltyToLP = penalty.sub(fundToFill);
         }
-        return liquidityPool.updateInsuranceFund(perpetual, penaltyToFund);
+        return liquidityPool.updateInsuranceFund(perpetual, penaltyToFund, penaltyToLP);
     }
 }

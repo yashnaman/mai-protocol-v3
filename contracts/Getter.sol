@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "./interface/IFactory.sol";
+import "./interface/IPoolCreator.sol";
 
 import "./module/FundingModule.sol";
 import "./module/OracleModule.sol";
@@ -29,7 +29,7 @@ contract Getter is Storage {
     using SettlementModule for LiquidityPoolStorage;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
-    function liquidityPoolInfo()
+    function getLiquidityPoolInfo()
         public
         view
         returns (
@@ -73,7 +73,7 @@ contract Getter is Storage {
         fundingTime = _liquidityPool.fundingTime;
     }
 
-    function perpetualInfo(uint256 perpetualIndex)
+    function getPerpetualInfo(uint256 perpetualIndex)
         public
         syncState
         onlyExistedPerpetual(perpetualIndex)
@@ -106,8 +106,8 @@ contract Getter is Storage {
         oracle = perpetual.oracle;
         nums = [
             perpetual.collateralAmount,
-            perpetual.markPrice(),
-            perpetual.indexPrice(),
+            perpetual.getMarkPrice(),
+            perpetual.getIndexPrice(),
             perpetual.unitAccumulativeFunding,
             perpetual.initialMarginRate,
             perpetual.maintenanceMarginRate,
@@ -121,7 +121,7 @@ contract Getter is Storage {
             perpetual.openSlippageFactor.value,
             perpetual.closeSlippageFactor.value,
             perpetual.fundingRateLimit.value,
-            perpetual.maxLeverage.value
+            perpetual.ammMaxLeverage.value
         ];
     }
 
