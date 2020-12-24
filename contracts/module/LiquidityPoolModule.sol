@@ -36,29 +36,17 @@ library LiquidityPoolModule {
 
     uint256 internal constant MAX_COLLATERAL_DECIMALS = 18;
 
-    event DonateInsuranceFund(address trader, int256 amount);
     event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
     event IncreaseFee(address recipient, int256 amount);
     event ClaimFee(address claimer, int256 amount);
-
-    function donateInsuranceFund(LiquidityPoolStorage storage liquidityPool, int256 amount)
-        external
-    {
-        int256 totalAmount = liquidityPool.transferFromUser(msg.sender, amount);
-        require(totalAmount > 0, "total amount is 0");
-        liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(totalAmount);
-        liquidityPool.poolCash = liquidityPool.poolCash.add(totalAmount);
-        emit DonateInsuranceFund(msg.sender, totalAmount);
-    }
 
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
         address operator,
         address governor,
-        address shareToken,
-        int256 insuranceFundCap
+        address shareToken
     ) internal {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
@@ -78,7 +66,6 @@ library LiquidityPoolModule {
 
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
-        liquidityPool.insuranceFundCap = insuranceFundCap;
     }
 
     function addLiquidity(LiquidityPoolStorage storage liquidityPool, int256 cashAmount) public {

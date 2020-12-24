@@ -21,7 +21,7 @@ contract TestTrade is Storage, Getter {
 
     function createPerpetual(
         address oracle,
-        int256[8] calldata coreParams,
+        int256[9] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
@@ -52,18 +52,6 @@ contract TestTrade is Storage, Getter {
     function setVault(address vault, int256 vaultFeeRate) public {
         _liquidityPool.vault = vault;
         _liquidityPool.vaultFeeRate = vaultFeeRate;
-    }
-
-    function setLiquidityPoolParameter(bytes32 key, int256 newValue) external {
-        _liquidityPool.setLiquidityPoolParameter(key, newValue);
-    }
-
-    function setPerpetualParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external {
-        _liquidityPool.perpetuals[perpetualIndex].setPerpetualParameter(key, newValue);
     }
 
     function setPerpetualRiskParameter(

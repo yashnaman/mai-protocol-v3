@@ -29,11 +29,6 @@ contract Governance is Storage, Events {
         _;
     }
 
-    function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
-        _liquidityPool.setLiquidityPoolParameter(key, newValue);
-        emit SetLiquidityPoolParameter(key, newValue);
-    }
-
     function setPerpetualParameter(
         uint256 perpetualIndex,
         bytes32 key,

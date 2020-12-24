@@ -16,15 +16,14 @@ contract TestStorage is Storage, Getter {
         address collateral,
         address operator,
         address governor,
-        address shareToken,
-        int256 insuranceFundCap
+        address shareToken
     ) external {
-        _liquidityPool.initialize(collateral, operator, governor, shareToken, insuranceFundCap);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken);
     }
 
     function initializePerpetual(
         address oracle,
-        int256[8] calldata coreParams,
+        int256[9] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues

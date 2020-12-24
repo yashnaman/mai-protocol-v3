@@ -13,18 +13,6 @@ library ParameterModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
 
-    function setLiquidityPoolParameter(
-        LiquidityPoolStorage storage liquidityPool,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        if (key == "insuranceFundCap") {
-            liquidityPool.insuranceFundCap = newValue;
-        } else {
-            revert("key not found");
-        }
-    }
-
     function setPerpetualParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
@@ -54,6 +42,8 @@ library ParameterModule {
             perpetual.referrerRebateRate = newValue;
         } else if (key == "insuranceFundRate") {
             perpetual.insuranceFundRate = newValue;
+        } else if (key == "insuranceFundCap") {
+            perpetual.insuranceFundCap = newValue;
         } else {
             revert("key not found");
         }

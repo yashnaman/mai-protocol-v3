@@ -34,7 +34,7 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         address operator,
         address oracle,
         address collateral,
-        int256[8] coreParams,
+        int256[9] coreParams,
         int256[5] riskParams
     );
 
@@ -42,15 +42,14 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         address operator,
         address collateral,
         address governor,
-        address shareToken,
-        int256 insuranceFundCap
+        address shareToken
     ) external initializer {
-        _liquidityPool.initialize(collateral, operator, governor, shareToken, insuranceFundCap);
+        _liquidityPool.initialize(collateral, operator, governor, shareToken);
     }
 
     function createPerpetual(
         address oracle,
-        int256[8] calldata coreParams,
+        int256[9] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
@@ -105,11 +104,6 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
 
     function claimFee(address claimer, int256 amount) external nonReentrant {
         _liquidityPool.claimFee(claimer, amount);
-    }
-
-    function donateInsuranceFund(int256 amount) external payable nonReentrant {
-        require(amount > 0 || msg.value > 0, "amount is invalid");
-        _liquidityPool.donateInsuranceFund(amount);
     }
 
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {

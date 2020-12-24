@@ -41,11 +41,8 @@ contract Getter is Storage {
             // [5] shareToken,
             address[6] memory addresses,
             // [0] vaultFeeRate,
-            // [1] insuranceFundCap,
-            // [2] insuranceFund,
-            // [3] donatedInsuranceFund,
-            // [4] poolCash,
-            int256[5] memory nums,
+            // [3] poolCash,
+            int256[2] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
         )
@@ -58,13 +55,7 @@ contract Getter is Storage {
             _liquidityPool.governor,
             _liquidityPool.shareToken
         ];
-        nums = [
-            _liquidityPool.vaultFeeRate,
-            _liquidityPool.insuranceFundCap,
-            _liquidityPool.insuranceFund,
-            _liquidityPool.donatedInsuranceFund,
-            _liquidityPool.poolCash
-        ];
+        nums = [_liquidityPool.vaultFeeRate, _liquidityPool.poolCash];
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
     }
@@ -88,12 +79,15 @@ contract Getter is Storage {
             // [9] liquidationPenaltyRate,
             // [10] keeperGasReward,
             // [11] insuranceFundRate,
-            // [12] halfSpread,
-            // [13] openSlippageFactor,
-            // [14] closeSlippageFactor,
-            // [15] fundingRateLimit,
-            // [16] ammMaxLeverage
-            int256[17] memory nums
+            // [12] insuranceFund,
+            // [13] donatedInsuranceFund,
+            // [14] insuranceFundCap,
+            // [15] halfSpread,
+            // [16] openSlippageFactor,
+            // [17] closeSlippageFactor,
+            // [18] fundingRateLimit,
+            // [19] ammMaxLeverage
+            int256[20] memory nums
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -112,6 +106,9 @@ contract Getter is Storage {
             perpetual.liquidationPenaltyRate,
             perpetual.keeperGasReward,
             perpetual.insuranceFundRate,
+            perpetual.insuranceFund,
+            perpetual.donatedInsuranceFund,
+            perpetual.insuranceFundCap,
             perpetual.halfSpread.value,
             perpetual.openSlippageFactor.value,
             perpetual.closeSlippageFactor.value,

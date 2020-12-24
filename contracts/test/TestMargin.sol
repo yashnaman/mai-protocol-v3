@@ -16,7 +16,7 @@ contract TestMargin is Storage {
 
     function createPerpetual(
         address oracle,
-        int256[8] calldata coreParams,
+        int256[9] calldata coreParams,
         int256[5] calldata riskParams,
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues

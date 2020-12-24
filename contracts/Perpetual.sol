@@ -20,6 +20,7 @@ import "./module/LiquidationModule.sol";
 import "./module/SettlementModule.sol";
 import "./module/OrderModule.sol";
 import "./module/LiquidityPoolModule.sol";
+import "./module/PerpetualModule.sol";
 import "./module/CollateralModule.sol";
 
 import "./Events.sol";
@@ -43,6 +44,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using LiquidationModule for LiquidityPoolStorage;
+    using PerpetualModule for LiquidityPoolStorage;
     using MarginModule for LiquidityPoolStorage;
     using OrderModule for LiquidityPoolStorage;
     using SettlementModule for LiquidityPoolStorage;

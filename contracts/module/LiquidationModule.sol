@@ -72,13 +72,13 @@ library LiquidationModule {
             );
             require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
             perpetual.updateCash(address(this), penaltyToTaker);
+            perpetual.updateInsuranceFund(penaltyToFund);
             liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
         }
         // 4. events
         emit Liquidate(perpetualIndex, address(this), trader, deltaPosition, liquidatePrice);
         // 5. emergency
-        bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
-        if (isInsuranceFundDrained) {
+        if (perpetual.donatedInsuranceFund < 0) {
             perpetual.enterEmergencyState();
         }
     }
@@ -112,6 +112,7 @@ library LiquidationModule {
             );
             require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
             perpetual.updateCash(liquidator, penaltyToTaker);
+            perpetual.updateInsuranceFund(penaltyToFund);
         }
         // 3. safe
         if (isOpen) {
@@ -125,8 +126,7 @@ library LiquidationModule {
         // 4. events
         emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition, liquidatePrice);
         // 5. emergency
-        bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
-        if (isInsuranceFundDrained) {
+        if (perpetual.donatedInsuranceFund < 0) {
             perpetual.enterEmergencyState();
         }
     }

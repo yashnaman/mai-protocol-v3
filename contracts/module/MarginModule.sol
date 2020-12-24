@@ -10,29 +10,21 @@ import "../libraries/Utils.sol";
 import "../interface/IPoolCreator.sol";
 
 import "./OracleModule.sol";
-import "./CollateralModule.sol";
+
 import "./LiquidityPoolModule.sol";
 import "./PerpetualModule.sol";
-import "./SettlementModule.sol";
 
 import "../Type.sol";
 
 import "hardhat/console.sol";
 
 library MarginModule {
-    using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
+    using SafeCastUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
 
     using PerpetualModule for PerpetualStorage;
     using OracleModule for PerpetualStorage;
-    using CollateralModule for PerpetualStorage;
-    using SettlementModule for PerpetualStorage;
-    using CollateralModule for LiquidityPoolStorage;
-    using LiquidityPoolModule for LiquidityPoolStorage;
-
-    event Deposit(uint256 perpetualIndex, address trader, int256 amount);
-    event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
 
     function getInitialMargin(
         PerpetualStorage storage perpetual,
@@ -128,44 +120,6 @@ library MarginModule {
     {
         MarginAccount storage account = perpetual.marginAccounts[trader];
         return account.cash == 0 && account.position == 0;
-    }
-
-    function deposit(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount
-    ) public {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        bool isInitial = isEmptyAccount(perpetual, trader);
-        int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
-        require(totalAmount > 0, "total amount is 0");
-        perpetual.increaseCollateralAmount(totalAmount);
-        updateCash(perpetual, trader, totalAmount);
-        if (isInitial) {
-            perpetual.registerActiveAccount(trader);
-            IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
-        }
-        emit Deposit(perpetualIndex, trader, totalAmount);
-    }
-
-    function withdraw(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount
-    ) public {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        liquidityPool.rebalance(perpetual);
-        updateCash(perpetual, trader, amount.neg());
-        perpetual.decreaseCollateralAmount(amount);
-        require(isInitialMarginSafe(perpetual, trader), "margin is unsafe after withdrawal");
-        if (isEmptyAccount(perpetual, trader)) {
-            perpetual.deregisterActiveAccount(trader);
-            IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
-        }
-        liquidityPool.transferToUser(payable(trader), amount);
-        emit Withdraw(perpetualIndex, trader, amount);
     }
 
     function updateCash(
