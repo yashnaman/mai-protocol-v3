@@ -101,12 +101,12 @@ contract TestAMM {
             );
     }
 
-    function tradeWithAMM(int256 tradeAmount, bool partialFill)
+    function queryTradeWithAMM(int256 tradeAmount, bool partialFill)
         public
         view
         returns (int256 deltaCash, int256 deltaPosition)
     {
-        (deltaCash, deltaPosition) = AMMModule.tradeWithAMM(
+        (deltaCash, deltaPosition) = AMMModule.queryTradeWithAMM(
             liquidityPool,
             0,
             tradeAmount,

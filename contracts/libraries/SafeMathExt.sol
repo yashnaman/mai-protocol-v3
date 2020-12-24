@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "./Constant.sol";
+import "./Utils.sol";
 
 enum Round { UP, DOWN }
 
@@ -12,14 +13,17 @@ library SafeMathExt {
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
 
+    // uint256 always half up
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
     }
 
+    // uint256 always half up
     function wdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(Constant.UNSIGNED_ONE).add(y / 2).div(y);
     }
 
+    // uint256 always half up
     function wfrac(
         uint256 x,
         uint256 y,
@@ -28,10 +32,12 @@ library SafeMathExt {
         r = x.mul(y).add(z / 2).div(z);
     }
 
+    // no round parameter always half up
     function wmul(int256 x, int256 y) internal pure returns (int256 z) {
         z = roundHalfUp(x.mul(y), Constant.SIGNED_ONE) / Constant.SIGNED_ONE;
     }
 
+    // no round parameter always half up
     function wdiv(int256 x, int256 y) internal pure returns (int256 z) {
         if (y < 0) {
             y = neg(y);
@@ -40,6 +46,7 @@ library SafeMathExt {
         z = roundHalfUp(x.mul(Constant.SIGNED_ONE), y).div(y);
     }
 
+    // no round parameter always half up
     function wfrac(
         int256 x,
         int256 y,
@@ -105,11 +112,10 @@ library SafeMathExt {
     ) internal pure returns (int256) {
         require(y != 0, "division by zero");
         int256 divResult = x.div(y);
-        int256 mulResult = x.mul(y);
         if (round == Round.UP) {
             if (x % y == 0) {
                 return divResult;
-            } else if (mulResult > 0) {
+            } else if (Utils.hasTheSameSign(x, y)) {
                 return divResult.add(1);
             } else {
                 return divResult.sub(1);

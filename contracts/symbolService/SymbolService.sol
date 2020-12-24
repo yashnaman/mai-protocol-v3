@@ -20,8 +20,6 @@ interface ILiquidityPool {
         );
 }
 
-import "hardhat/console.sol";
-
 contract SymbolService is Ownable {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -105,7 +103,7 @@ contract SymbolService is Ownable {
         require(_perpetualSymbols[key].length() == 0, "perpetual already exists");
 
         symbol = _nextSymbol;
-        require(symbol <= type(uint256).max, "not enough symbol");
+        require(symbol < type(uint256).max, "not enough symbol");
         _perpetualUIDs[symbol] = PerpetualUID({
             liquidityPool: liquidityPool,
             perpetualIndex: perpetualIndex

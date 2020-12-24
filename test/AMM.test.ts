@@ -442,7 +442,7 @@ describe('AMM', () => {
         successCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                const context = await amm.tradeWithAMM(element.amount, element.partialFill)
+                const context = await amm.queryTradeWithAMM(element.amount, element.partialFill)
                 expect(context[0]).approximateBigNumber(element.deltaCash)
                 expect(context[1]).approximateBigNumber(element.deltaPosition)
             })
@@ -520,7 +520,7 @@ describe('AMM', () => {
         failCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-                await expect(amm.tradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
+                await expect(amm.queryTradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
             })
         })
     })

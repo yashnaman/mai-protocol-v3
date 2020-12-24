@@ -35,7 +35,7 @@ contract TestFunding {
         Params memory params
     ) public {
         liquidityPool.perpetuals[0].id = 0;
-        liquidityPool.perpetuals[0].state = PerpetualState.NORMAL;
+        liquidityPool.perpetuals[0].state = params.state;
         liquidityPool.perpetuals[0].unitAccumulativeFunding = params.unitAccumulativeFunding;
         liquidityPool.perpetuals[0].openSlippageFactor.value = params.openSlippageFactor;
         liquidityPool.perpetuals[0].ammMaxLeverage.value = params.ammMaxLeverage;
@@ -45,7 +45,7 @@ contract TestFunding {
         liquidityPool.perpetuals[0].fundingRate = params.fundingRate;
 
         liquidityPool.perpetuals[1].id = 1;
-        liquidityPool.perpetuals[1].state = PerpetualState.NORMAL;
+        liquidityPool.perpetuals[1].state = params.state;
         liquidityPool.perpetuals[1].unitAccumulativeFunding = params.unitAccumulativeFunding;
         liquidityPool.perpetuals[1].openSlippageFactor.value = params.openSlippageFactor;
         liquidityPool.perpetuals[1].ammMaxLeverage.value = params.ammMaxLeverage;

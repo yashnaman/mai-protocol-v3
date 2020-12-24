@@ -32,13 +32,13 @@ library AMMModule {
     struct Context {
         int256 indexPrice;
         int256 positionValue;
-        int256 squareValue;
+        int256 squareValue; // 10^36
         int256 positionMargin;
         int256 availableCash;
         int256 position;
     }
 
-    function tradeWithAMM(
+    function queryTradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         int256 tradeAmount,
@@ -51,12 +51,8 @@ library AMMModule {
         deltaCash = closePosition(perpetual, context, closeAmount);
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closeAmount);
-        (int256 openDeltaMargin, int256 openDeltaPositionAmount) = openPosition(
-            perpetual,
-            context,
-            openAmount,
-            partialFill
-        );
+        (int256 openDeltaMargin, int256 openDeltaPositionAmount) =
+            openPosition(perpetual, context, openAmount, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
         deltaPosition = closeAmount.add(openDeltaPositionAmount);
         if (deltaPosition < 0 && deltaCash < 0) {
@@ -105,14 +101,13 @@ library AMMModule {
         if (poolMargin == 0) {
             return 0;
         }
+        poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
         {
-            poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
             require(poolMargin >= minPoolMargin, "amm is unsafe after removing liquidity");
         }
         cashToReturn = getMarginToRemove(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
-        int256 newMarginBalance = _getPoolMargin(liquidityPool).sub(cashToReturn);
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
@@ -123,7 +118,7 @@ library AMMModule {
             );
         }
         require(
-            newMarginBalance >= context.positionMargin,
+            _getPoolMargin(liquidityPool).sub(cashToReturn) >= context.positionMargin,
             "amm exceeds max leverage after removing liquidity"
         );
     }
@@ -139,11 +134,8 @@ library AMMModule {
 
     function isAMMMarginSafe(Context memory context, int256 beta) public pure returns (bool) {
         int256 value = context.indexPrice.wmul(context.position).add(context.positionValue);
-        int256 minAvailableCash = context
-            .indexPrice
-            .wmul(context.position)
-            .wmul(context.position)
-            .mul(beta);
+        int256 minAvailableCash =
+            context.indexPrice.wmul(context.position).wmul(context.position).mul(beta);
         minAvailableCash = minAvailableCash.add(context.squareValue).mul(2).sqrt().sub(value);
         return context.availableCash >= minAvailableCash;
     }
@@ -206,13 +198,8 @@ library AMMModule {
         int256 poolMargin = regress(context, beta);
         require(poolMargin > 0, "pool margin must be positive");
         if (newPosition > 0) {
-            int256 maxLongPosition = _getMaxPosition(
-                context,
-                poolMargin,
-                perpetual.ammMaxLeverage.value,
-                beta,
-                true
-            );
+            int256 maxLongPosition =
+                _getMaxPosition(context, poolMargin, perpetual.ammMaxLeverage.value, beta, true);
             if (newPosition > maxLongPosition) {
                 require(partialFill, "trade amount exceeds max amount");
                 deltaPosition = maxLongPosition.sub(context.position);
@@ -221,13 +208,8 @@ library AMMModule {
                 deltaPosition = tradeAmount;
             }
         } else {
-            int256 minShortPosition = _getMaxPosition(
-                context,
-                poolMargin,
-                perpetual.ammMaxLeverage.value,
-                beta,
-                false
-            );
+            int256 minShortPosition =
+                _getMaxPosition(context, poolMargin, perpetual.ammMaxLeverage.value, beta, false);
             if (newPosition < minShortPosition) {
                 require(partialFill, "trade amount exceeds max amount");
                 deltaPosition = minShortPosition.sub(context.position);
@@ -253,6 +235,9 @@ library AMMModule {
         return prepareContext(liquidityPool, liquidityPool.perpetuals.length);
     }
 
+    /**
+     * @param perpetualIndex. Set this value to perpetuals.length to skip distinguishing the current market from other markets.
+     */
     function prepareContext(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         internal
         view
@@ -314,8 +299,8 @@ library AMMModule {
         int256 indexPrice,
         int256 beta
     ) internal pure returns (int256 deltaCash) {
-        deltaCash = positionAmount2.add(positionAmount1).div(2).wfrac(beta, poolMargin).neg();
-        deltaCash = deltaCash.add(Constant.SIGNED_ONE).wmul(indexPrice).wmul(
+        deltaCash = positionAmount2.add(positionAmount1).div(2).wfrac(beta, poolMargin);
+        deltaCash = Constant.SIGNED_ONE.sub(deltaCash).wmul(indexPrice).wmul(
             positionAmount1.sub(positionAmount2)
         );
     }
@@ -328,12 +313,13 @@ library AMMModule {
         bool isLongSide
     ) internal pure returns (int256 maxPosition) {
         require(context.indexPrice > 0, "index price must be positive");
-        int256 beforeSqrt = poolMargin
-            .mul(poolMargin)
-            .mul(2)
-            .sub(context.squareValue)
-            .wdiv(context.indexPrice)
-            .wdiv(beta);
+        int256 beforeSqrt =
+            poolMargin
+                .mul(poolMargin)
+                .mul(2)
+                .sub(context.squareValue)
+                .wdiv(context.indexPrice)
+                .wdiv(beta);
         if (beforeSqrt <= 0) {
             return 0;
         }
@@ -342,18 +328,21 @@ library AMMModule {
         beforeSqrt = poolMargin.sub(context.positionMargin).add(
             context.squareValue.div(poolMargin).div(2)
         );
-        beforeSqrt = beforeSqrt.wmul(ammMaxLeverage).wmul(ammMaxLeverage).wmul(beta);
-        beforeSqrt = poolMargin.sub(beforeSqrt.mul(2).wdiv(context.indexPrice));
+        beforeSqrt = beforeSqrt.wmul(ammMaxLeverage).wmul(ammMaxLeverage).wfrac(
+            beta,
+            context.indexPrice
+        );
+        beforeSqrt = poolMargin.sub(beforeSqrt.mul(2));
         if (beforeSqrt < 0) {
             maxPosition2 = type(int256).max;
         } else {
             maxPosition2 = beforeSqrt.mul(poolMargin).sqrt();
             maxPosition2 = poolMargin.sub(maxPosition2).wdiv(ammMaxLeverage).wdiv(beta);
         }
-        maxPosition = maxPosition1 > maxPosition2 ? maxPosition2 : maxPosition1;
+        maxPosition = maxPosition1.min(maxPosition2);
         if (isLongSide) {
             int256 maxPosition3 = poolMargin.wdiv(beta);
-            maxPosition = maxPosition > maxPosition3 ? maxPosition3 : maxPosition;
+            maxPosition = maxPosition.min(maxPosition3);
         } else {
             maxPosition = maxPosition.neg();
         }

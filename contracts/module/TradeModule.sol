@@ -15,8 +15,6 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -54,7 +52,7 @@ library TradeModule {
             amount = amount.abs() > position.abs() ? position : amount;
         }
         // 0. price / amount
-        (int256 deltaCash, int256 deltaPosition) = liquidityPool.tradeWithAMM(
+        (int256 deltaCash, int256 deltaPosition) = liquidityPool.queryTradeWithAMM(
             perpetualIndex,
             amount.neg(),
             false

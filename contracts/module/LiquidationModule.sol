@@ -48,7 +48,7 @@ library LiquidationModule {
         int256 maxAmount = perpetual.marginAccounts[trader].position;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
-        (int256 deltaCash, int256 deltaPosition) = liquidityPool.tradeWithAMM(
+        (int256 deltaCash, int256 deltaPosition) = liquidityPool.queryTradeWithAMM(
             perpetualIndex,
             maxAmount,
             false
