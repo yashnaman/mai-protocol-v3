@@ -12,11 +12,6 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "./libraries/Constant.sol";
 import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
-import "./libraries/Utils.sol";
-
-import "./interface/IAccessController.sol";
-import "./interface/IPoolCreator.sol";
-import "./interface/IShareToken.sol";
 
 import "./module/AMMModule.sol";
 import "./module/MarginModule.sol";
@@ -123,18 +118,10 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     function brokerTrade(
         Order memory order,
         int256 amount,
-        bytes memory signature
+        bytes memory signature,
+        uint8 signType
     ) external syncState onlyWhen(order.perpetualIndex, PerpetualState.NORMAL) {
-        address signer = order.signer(signature, false);
-        require(
-            signer == order.trader ||
-                IAccessController(_liquidityPool.accessController).isGranted(
-                    order.trader,
-                    signer,
-                    Constant.PRIVILEGE_TRADE
-                ),
-            "signer is unauthorized"
-        );
+        _liquidityPool.validateSignature(order, signature, signType);
         _liquidityPool.validateOrder(order, amount);
         _liquidityPool.validateTriggerPrice(order);
         _liquidityPool.trade(

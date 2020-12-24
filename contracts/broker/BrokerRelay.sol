@@ -22,6 +22,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     using SignedSafeMathUpgradeable for int256;
     using SafeCastUpgradeable for int256;
     using OrderData for Order;
+    using OrderData for bytes;
 
     uint256 internal constant GWEI = 10**9;
 
@@ -39,9 +40,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     event CancelOrder(bytes32 orderHash);
     event FillOrder(bytes32 orderHash, int256 fillAmount);
 
-    constructor() {
-        _chainID = Utils.chainID();
-    }
+    // constructor() {
+    //     _chainID = Utils.chainID();
+    // }
 
     receive() external payable {
         deposit();
@@ -70,17 +71,18 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     function batchTrade(
-        Order[] calldata orders,
+        bytes[] calldata compressedOrders,
         int256[] calldata amounts,
-        bytes[] calldata signatures,
         uint256[] calldata gasRewards
     ) external {
-        uint256 orderCount = orders.length;
+        uint256 orderCount = compressedOrders.length;
         for (uint256 i = 0; i < orderCount; i++) {
-            Order memory order = orders[i];
+            (Order memory order, bytes memory signature, uint8 signType) = compressedOrders[i]
+                .decompress();
             int256 amount = amounts[i];
             uint256 gasReward = gasRewards[i];
             bytes32 orderHash = order.orderHash();
+            require(order.chainID == _chainID, "chain id mismatch");
             require(!_orderCanceled[orderHash], "order is canceled");
             require(
                 _orderFilled[orderHash].add(amount).abs() <= order.amount.abs(),
@@ -98,7 +100,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 emit TradeFailed(orderHash, order, amount, "amount is less than min trade amount");
                 return;
             }
-            try ILiquidityPool(order.liquidityPool).brokerTrade(order, amount, signatures[i])  {
+            try
+                ILiquidityPool(order.liquidityPool).brokerTrade(order, amount, signature, signType)
+             {
                 _fillOrder(orderHash, amount);
                 _transfer(order.trader, order.broker, gasReward);
                 emit TradeSuccess(orderHash, order, amount, gasReward);

@@ -24,6 +24,9 @@ library OrderData {
         )
     );
 
+    uint8 internal constant SIGN_TYPE_ETH = 0x0;
+    uint8 internal constant SIGN_TYPE_EIP712 = 0x0;
+
     uint32 internal constant MASK_CLOSE_ONLY = 0x80000000;
     uint32 internal constant MASK_MARKET_ORDER = 0x40000000;
     uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
@@ -45,20 +48,72 @@ library OrderData {
         return (order.flags & MASK_TAKE_PROFIT_ORDER) > 0;
     }
 
+    function signer(
+        Order memory order,
+        bytes memory signature,
+        uint8 signType
+    ) internal pure returns (address signerAddress) {
+        bytes32 hash = orderHash(order);
+        if (signType == SIGN_TYPE_ETH) {
+            hash = ECDSAUpgradeable.toEthSignedMessageHash(hash);
+        } else if (signType != SIGN_TYPE_EIP712) {
+            revert("unsupported sign type");
+        }
+        return ECDSAUpgradeable.recover(hash, signature);
+    }
+
     function orderHash(Order memory order) internal pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result));
     }
 
-    function signer(
-        Order memory order,
-        bytes memory signature,
-        bool isEIP712
-    ) internal pure returns (address signerAddress) {
-        bytes32 hash = orderHash(order);
-        if (!isEIP712) {
-            hash = ECDSAUpgradeable.toEthSignedMessageHash(hash);
+    function decompress(bytes memory data)
+        internal
+        pure
+        returns (
+            Order memory order,
+            bytes memory signature,
+            uint8 signType
+        )
+    {
+        bytes32 tmp;
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            // trader
+            mstore(add(order, 0), mload(add(data, 20)))
+            // broker
+            mstore(add(order, 32), mload(add(data, 40)))
+            // relayer
+            mstore(add(order, 64), mload(add(data, 60)))
+            // referrer
+            mstore(add(order, 96), mload(add(data, 80)))
+            // liquidityPool
+            mstore(add(order, 128), mload(add(data, 100)))
+            // minTradeAmount
+            mstore(add(order, 160), mload(add(data, 132)))
+            // amount
+            mstore(add(order, 192), mload(add(data, 164)))
+            // limitPrice
+            mstore(add(order, 224), mload(add(data, 196)))
+            // triggerPrice
+            mstore(add(order, 256), mload(add(data, 228)))
+            // chainID
+            mstore(add(order, 288), mload(add(data, 260)))
+            // expiredAt + perpetualIndex + brokerFeeLimit + flags + salt + v + signType
+            tmp := mload(add(data, 292))
+            r := mload(add(data, 324))
+            s := mload(add(data, 356))
         }
-        return ECDSAUpgradeable.recover(hash, signature);
+        order.expiredAt = uint64(bytes8(tmp));
+        order.perpetualIndex = uint32(bytes4(tmp << 64));
+        order.brokerFeeLimit = uint32(bytes4(tmp << 96));
+        order.flags = uint32(bytes4(tmp << 128));
+        order.salt = uint32(bytes4(tmp << 160));
+        v = uint8(bytes1(tmp << 192));
+        signature = abi.encode(r, s, v);
+        // 0 == personalSign, 1 == EIP712
+        signType = uint8(bytes1(tmp << 200));
     }
 }

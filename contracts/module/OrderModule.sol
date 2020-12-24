@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
+import "../interface/IAccessController.sol";
+
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
@@ -22,10 +24,22 @@ library OrderModule {
     using MarginModule for PerpetualStorage;
     using OracleModule for PerpetualStorage;
 
-    uint32 internal constant SUPPORTED_ORDER_VERSION = 3;
-
-    event FillOrder(Order order, bytes32 orderHash, int256 filledAmount, int256 totalAmount);
-    event CancelOrder(Order order, bytes32 orderHash);
+    function validateSignature(
+        LiquidityPoolStorage storage liquidityPool,
+        Order memory order,
+        bytes memory signature,
+        uint8 signType
+    ) public {
+        address signer = order.signer(signature, signType);
+        if (signer != order.trader) {
+            bool isAuthorized = IAccessController(liquidityPool.accessController).isGranted(
+                order.trader,
+                signer,
+                Constant.PRIVILEGE_TRADE
+            );
+            require(isAuthorized, "signer is unauthorized");
+        }
+    }
 
     function validateOrder(
         LiquidityPoolStorage storage liquidityPool,
