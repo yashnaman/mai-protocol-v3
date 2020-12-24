@@ -148,7 +148,7 @@ library AMMModule {
         return context.availableCash >= minAvailableCash;
     }
 
-    function poolAvailableCash(LiquidityPoolStorage storage liquidityPool)
+    function getPoolAvailableCash(LiquidityPoolStorage storage liquidityPool)
         internal
         view
         returns (int256 cash)
@@ -283,7 +283,7 @@ library AMMModule {
                 );
             }
         }
-        context.availableCash = poolAvailableCash(liquidityPool);
+        context.availableCash = getPoolAvailableCash(liquidityPool);
         require(
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
