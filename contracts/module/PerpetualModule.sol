@@ -109,4 +109,29 @@ library PerpetualModule {
         perpetual.state = PerpetualState.CLEARED;
         emit EnterClearedState(perpetual.id);
     }
+
+    function updateInsuranceFund(PerpetualStorage storage perpetual, int256 penaltyToFund)
+        public
+        returns (int256 penaltyToLP)
+    {
+        int256 newInsuranceFund = perpetual.insuranceFund;
+        if (penaltyToFund == 0) {
+            penaltyToLP = 0
+        } else if (perpetual.insuranceFund >= perpetual.insuranceFundCap) {
+            penaltyToLP = penaltyToFund;
+        } else if (penaltyToFund > 0) {
+            newInsuranceFund = newInsuranceFund.add(penaltyToFund);
+            if (newInsuranceFund > perpetual.insuranceFundCap) {
+                newInsuranceFund = perpetual.insuranceFundCap;
+                penaltyToLP = perpetual.insuranceFundCap.sub(newInsuranceFund);
+            }
+        } else {
+            newInsuranceFund = newInsuranceFund.add(penaltyToFund);
+            if (newInsuranceFund < 0) {
+                perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(newInsuranceFund);
+                newInsuranceFund = 0;
+            }
+        }
+        perpetual.insuranceFund = newInsuranceFund;
+    }
 }

@@ -134,42 +134,6 @@ library LiquidityPoolModule {
         emit ClaimFee(claimer, amount);
     }
 
-    function updateInsuranceFund(
-        LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual,
-        int256 penaltyToFund,
-        int256 penaltyToLP
-    ) public returns (bool isInsuranceFundDrained) {
-        if (penaltyToFund == 0) {
-            isInsuranceFundDrained = false;
-        } else if (penaltyToFund > 0) {
-            // earning
-            liquidityPool.insuranceFund = liquidityPool.insuranceFund.add(penaltyToFund);
-
-            isInsuranceFundDrained = false;
-        } else {
-            int256 transferAmount = penaltyToFund;
-            int256 newInsuranceFund = liquidityPool.insuranceFund.add(penaltyToFund);
-            if (newInsuranceFund < 0) {
-                // then donatedInsuranceFund will cover such loss
-                int256 newDonatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
-                    newInsuranceFund
-                );
-                liquidityPool.insuranceFund = 0;
-                if (newDonatedInsuranceFund < 0) {
-                    transferAmount = penaltyToFund.sub(newDonatedInsuranceFund);
-                    isInsuranceFundDrained = true;
-                    newDonatedInsuranceFund = 0;
-                }
-                liquidityPool.donatedInsuranceFund = newDonatedInsuranceFund;
-            }
-            liquidityPool.insuranceFund = newInsuranceFund;
-            transferCollateralToPool(liquidityPool, perpetual, transferAmount);
-        }
-        liquidityPool.poolCash = liquidityPool.poolCash.add(penaltyToLP);
-        transferCollateralToPool(liquidityPool, perpetual, penaltyToFund.add(penaltyToLP));
-    }
-
     function rebalance(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual

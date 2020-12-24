@@ -55,18 +55,13 @@ struct LiquidityPoolStorage {
     bool isWrapped;
     uint256 scaler;
     address collateral;
+    // pool attributes
     int256 poolCash;
-    // insurance fund
-    int256 insuranceFund;
-    int256 insuranceFundCap;
-    int256 donatedInsuranceFund;
-    // fee
+    uint256 fundingTime;
+    uint256 priceUpdateTime;
     mapping(address => int256) claimableFees;
     // perpetuals
     PerpetualStorage[] perpetuals;
-    // funding
-    uint256 fundingTime;
-    uint256 priceUpdateTime;
 }
 
 struct PerpetualStorage {
@@ -103,6 +98,10 @@ struct PerpetualStorage {
     int256 redemptionRateWithPosition;
     EnumerableSetUpgradeable.AddressSet activeAccounts;
     EnumerableSetUpgradeable.AddressSet clearedTraders;
+    // insurance fund
+    int256 insuranceFund;
+    int256 insuranceFundCap;
+    int256 donatedInsuranceFund;
     // accounts
     mapping(address => MarginAccount) marginAccounts;
 }

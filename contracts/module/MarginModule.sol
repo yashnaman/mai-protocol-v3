@@ -141,7 +141,7 @@ library MarginModule {
         int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
         require(totalAmount > 0, "total amount is 0");
         perpetual.increaseCollateralAmount(totalAmount);
-        updateCashBalance(perpetual, trader, totalAmount);
+        updateCash(perpetual, trader, totalAmount);
         if (isInitial) {
             perpetual.registerActiveAccount(trader);
             IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
@@ -157,7 +157,7 @@ library MarginModule {
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         liquidityPool.rebalance(perpetual);
-        updateCashBalance(perpetual, trader, amount.neg());
+        updateCash(perpetual, trader, amount.neg());
         perpetual.decreaseCollateralAmount(amount);
         require(isInitialMarginSafe(perpetual, trader), "margin is unsafe after withdrawal");
         if (isEmptyAccount(perpetual, trader)) {
@@ -168,7 +168,7 @@ library MarginModule {
         emit Withdraw(perpetualIndex, trader, amount);
     }
 
-    function updateCashBalance(
+    function updateCash(
         PerpetualStorage storage perpetual,
         address trader,
         int256 deltaCashBalance

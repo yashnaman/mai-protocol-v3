@@ -58,18 +58,22 @@ library LiquidationModule {
         perpetual.updateMarginAccount(address(this), deltaPosition, deltaCash);
         perpetual.updateMarginAccount(trader, deltaPosition.neg(), deltaCash.neg());
         // 3. penalty
-        int256 liquidatePenalty = perpetual
-            .getMarkPrice()
-            .wmul(deltaPosition)
-            .wmul(perpetual.liquidationPenaltyRate)
-            .abs();
-        int256 penaltyToFund = updateLiquidationPenalty(
-            perpetual,
-            trader,
-            liquidatePenalty,
-            perpetual.keeperGasReward
-        );
-        liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+        {
+            int256 liquidatePenalty = perpetual
+                .getMarkPrice()
+                .wmul(deltaPosition)
+                .wmul(perpetual.liquidationPenaltyRate)
+                .abs();
+            (int256 penaltyToTaker, int256 penaltyToFund) = getLiquidationPenalty(
+                perpetual,
+                trader,
+                liquidatePenalty,
+                perpetual.keeperGasReward
+            );
+            require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
+            perpetual.updateCash(address(this), penaltyToTaker);
+            liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+        }
         // 4. events
         emit Liquidate(perpetualIndex, address(this), trader, deltaPosition, liquidatePrice);
         // 5. emergency
@@ -98,8 +102,17 @@ library LiquidationModule {
         perpetual.updateMarginAccount(trader, deltaPosition, deltaCash);
         perpetual.updateMarginAccount(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty
-        int256 liquidatePenalty = deltaCash.wmul(perpetual.liquidationPenaltyRate).abs();
-        int256 penaltyToFund = updateLiquidationPenalty(perpetual, trader, liquidatePenalty, 0);
+        {
+            int256 liquidatePenalty = deltaCash.wmul(perpetual.liquidationPenaltyRate).abs();
+            (int256 penaltyToTaker, int256 penaltyToFund) = getLiquidationPenalty(
+                perpetual,
+                trader,
+                liquidatePenalty,
+                0
+            );
+            require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
+            perpetual.updateCash(liquidator, penaltyToTaker);
+        }
         // 3. safe
         if (isOpen) {
             require(perpetual.isInitialMarginSafe(liquidator), "trader initial margin unsafe");
@@ -118,54 +131,47 @@ library LiquidationModule {
         }
     }
 
-    function updateLiquidationPenalty(
+    function getLiquidationPenalty(
         PerpetualStorage storage perpetual,
         address trader,
         int256 softPenalty,
         int256 hardPenalty
-    ) internal returns (int256 penaltyToFund) {
-        require(softPenalty >= 0, "");
-        require(hardPenalty >= 0, "");
-
-        int256 penaltyFromTrader;
-        int256 penaltyToTaker;
+    ) internal returns (int256 penaltyToTaker, int256 penaltyToFund) {
+        require(softPenalty >= 0, "soft penalty is negative");
+        require(hardPenalty >= 0, "hard penalty is negative");
         int256 fullPenalty = hardPenalty.add(softPenalty);
         int256 traderMargin = perpetual.getMargin(trader, perpetual.getMarkPrice());
-        penaltyFromTrader = fullPenalty.min(traderMargin);
-        int256 effectivePenalty = penaltyFromTrader.sub(hardPenalty);
-        if (effectivePenalty > 0) {
-            penaltyToFund = effectivePenalty.wmul(perpetual.insuranceFundRate);
-            penaltyToTaker = effectivePenalty.sub(penaltyToFund);
+        int256 traderMarginLeft = fullPenalty.min(traderMargin).sub(hardPenalty);
+        if (traderMarginLeft > 0) {
+            penaltyToFund = traderMarginLeft.wmul(perpetual.insuranceFundRate); // + insuranceFund
+            penaltyToTaker = traderMarginLeft.sub(penaltyToFund); // + taker
         } else {
-            penaltyToFund = effectivePenalty;
-            penaltyToTaker = 0;
+            penaltyToFund = traderMarginLeft; // - insuranceFund
+            penaltyToTaker = 0; // no
         }
-        perpetual.updateCashBalance(address(this), penaltyToTaker);
-        perpetual.updateCashBalance(trader, penaltyFromTrader.neg());
-        return penaltyToFund;
     }
 
-    function handleInsuranceFund(
-        LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual,
-        int256 penalty
-    ) internal returns (bool isInsuranceFundDrained) {
-        int256 penaltyToFund;
-        int256 penaltyToLP;
-        if (
-            penalty < 0 ||
-            liquidityPool.insuranceFund.add(penalty) <= liquidityPool.insuranceFundCap
-        ) {
-            penaltyToFund = penalty;
-            penaltyToLP = 0;
-        } else if (liquidityPool.insuranceFund > liquidityPool.insuranceFundCap) {
-            penaltyToFund = 0;
-            penaltyToLP = penalty;
-        } else {
-            int256 fundToFill = liquidityPool.insuranceFundCap.sub(liquidityPool.insuranceFund);
-            penaltyToFund = fundToFill;
-            penaltyToLP = penalty.sub(fundToFill);
-        }
-        return liquidityPool.updateInsuranceFund(perpetual, penaltyToFund, penaltyToLP);
-    }
+    // function handleInsuranceFund(
+    //     LiquidityPoolStorage storage liquidityPool,
+    //     PerpetualStorage storage perpetual,
+    //     int256 penalty
+    // ) internal returns (bool isInsuranceFundDrained) {
+    //     int256 penaltyToFund;
+    //     int256 penaltyToLP;
+    //     if (
+    //         penalty < 0 ||
+    //         liquidityPool.insuranceFund.add(penalty) <= liquidityPool.insuranceFundCap
+    //     ) {
+    //         penaltyToFund = penalty;
+    //         penaltyToLP = 0;
+    //     } else if (liquidityPool.insuranceFund > liquidityPool.insuranceFundCap) {
+    //         penaltyToFund = 0;
+    //         penaltyToLP = penalty;
+    //     } else {
+    //         int256 fundToFill = liquidityPool.insuranceFundCap.sub(liquidityPool.insuranceFund);
+    //         penaltyToFund = fundToFill;
+    //         penaltyToLP = penalty.sub(fundToFill);
+    //     }
+    //     return liquidityPool.updateInsuranceFund(perpetual, penaltyToFund, penaltyToLP);
+    // }
 }
