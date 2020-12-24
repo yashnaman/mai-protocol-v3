@@ -26,9 +26,7 @@ describe('Funding', () => {
     let funding;
 
     beforeEach(async () => {
-        const collateralModule = await createContract("CollateralModule")
-        const ammModule = await createContract("AMMModule", [], { "CollateralModule": collateralModule })
-        const fundingModule = await createContract("FundingModule", [], { "AMMModule": ammModule });
+        const fundingModule = await createContract("FundingModule");
         funding = await createContract("TestFunding", [], { "FundingModule": fundingModule });
     });
 

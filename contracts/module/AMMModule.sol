@@ -12,7 +12,6 @@ import "../libraries/Math.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "../module/CollateralModule.sol";
 import "../module/MarginModule.sol";
 import "../module/OracleModule.sol";
 
@@ -27,7 +26,6 @@ library AMMModule {
     using SafeMathUpgradeable for uint256;
     using OracleModule for PerpetualStorage;
     using MarginModule for PerpetualStorage;
-    using CollateralModule for LiquidityPoolStorage;
 
     struct Context {
         int256 indexPrice;
@@ -69,19 +67,9 @@ library AMMModule {
         int256 cashToAdd
     ) internal view returns (int256 shareToMint) {
         Context memory context = prepareContext(liquidityPool);
-        int256 poolMargin;
-        int256 newPoolMargin;
-        if (isAMMMarginSafe(context, 0)) {
-            poolMargin = regress(context, 0);
-        } else {
-            poolMargin = _getPoolMargin(liquidityPool).div(2);
-        }
+        (int256 poolMargin, ) = getPoolMargin(context);
         context.availableCash = context.availableCash.add(cashToAdd);
-        if (isAMMMarginSafe(context, 0)) {
-            newPoolMargin = regress(context, 0);
-        } else {
-            newPoolMargin = _getPoolMargin(liquidityPool).add(cashToAdd).div(2);
-        }
+        (int256 newPoolMargin, ) = getPoolMargin(context);
         if (poolMargin == 0) {
             require(shareTotalSupply == 0, "share has no value");
             shareToMint = newPoolMargin;
@@ -111,6 +99,9 @@ library AMMModule {
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
             require(
                 perpetual.getPosition(address(this)) <=
                     poolMargin.wdiv(perpetual.openSlippageFactor.value),
@@ -118,7 +109,8 @@ library AMMModule {
             );
         }
         require(
-            _getPoolMargin(liquidityPool).sub(cashToReturn) >= context.positionMargin,
+            context.availableCash.add(context.positionValue).sub(cashToReturn) >=
+                context.positionMargin,
             "amm exceeds max leverage after removing liquidity"
         );
     }
@@ -138,19 +130,6 @@ library AMMModule {
             context.indexPrice.wmul(context.position).wmul(context.position).mul(beta);
         minAvailableCash = minAvailableCash.add(context.squareValue).mul(2).sqrt().sub(value);
         return context.availableCash >= minAvailableCash;
-    }
-
-    function getPoolAvailableCash(LiquidityPoolStorage storage liquidityPool)
-        internal
-        view
-        returns (int256 cash)
-    {
-        uint256 length = liquidityPool.perpetuals.length;
-        for (uint256 i = 0; i < length; i++) {
-            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
-            cash = cash.add(perpetual.getAvailableCash(address(this)));
-        }
-        cash = cash.add(liquidityPool.poolCash);
     }
 
     function closePosition(
@@ -251,6 +230,9 @@ library AMMModule {
             }
             int256 position = perpetual.getPosition(address(this));
             int256 indexPrice = perpetual.getIndexPrice();
+            context.availableCash = context.availableCash.add(
+                perpetual.getAvailableCash(address(this))
+            );
             if (i == perpetualIndex) {
                 context.indexPrice = indexPrice;
                 context.position = position;
@@ -268,7 +250,7 @@ library AMMModule {
                 );
             }
         }
-        context.availableCash = getPoolAvailableCash(liquidityPool);
+        context.availableCash = context.availableCash.add(liquidityPool.poolCash);
         require(
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
@@ -348,21 +330,11 @@ library AMMModule {
         }
     }
 
-    function _getPoolMargin(LiquidityPoolStorage storage liquidityPool)
-        private
-        view
-        returns (int256 marginBalance)
-    {
-        uint256 length = liquidityPool.perpetuals.length;
-        for (uint256 i = 0; i < length; i++) {
-            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
-            if (perpetual.state != PerpetualState.NORMAL) {
-                continue;
-            }
-            marginBalance = marginBalance.add(
-                perpetual.getMargin(address(this), perpetual.getIndexPrice())
-            );
+    function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
+        if (isAMMMarginSafe(context, 0)) {
+            return (regress(context, 0), true);
+        } else {
+            return (context.availableCash.add(context.positionValue).div(2), false);
         }
-        marginBalance = marginBalance.add(liquidityPool.poolCash);
     }
 }

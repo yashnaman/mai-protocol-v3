@@ -46,24 +46,26 @@ library FundingModule {
         if (perpetual.state != PerpetualState.NORMAL) {
             return;
         }
-        int256 deltaUnitLoss = perpetual.getIndexPrice().wfrac(
-            perpetual.fundingRate.wmul(timeElapsed),
-            FUNDING_INTERVAL
-        );
+        int256 deltaUnitLoss =
+            perpetual.getIndexPrice().wfrac(
+                perpetual.fundingRate.wmul(timeElapsed),
+                FUNDING_INTERVAL
+            );
         perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
         emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
     }
 
     function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
         AMMModule.Context memory context = liquidityPool.prepareContext();
-        int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
-            ? AMMModule.regress(context, 0)
-            : 0;
+        (int256 poolMargin, bool isAMMSafe) = AMMModule.getPoolMargin(context);
+        emit UpdatePoolMargin(poolMargin);
+        if (!isAMMSafe) {
+            poolMargin = 0;
+        }
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
             updateFundingRate(liquidityPool.perpetuals[i], poolMargin);
         }
-        emit UpdatePoolMargin(poolMargin);
     }
 
     function updateFundingRate(PerpetualStorage storage perpetual, int256 poolMargin) public {
@@ -80,12 +82,7 @@ library FundingModule {
                 newFundingRate = perpetual.getIndexPrice().wfrac(position, poolMargin).neg().wmul(
                     perpetual.fundingRateLimit.value
                 );
-                newFundingRate = newFundingRate > fundingRateLimit
-                    ? fundingRateLimit
-                    : newFundingRate;
-                newFundingRate = newFundingRate < fundingRateLimit.neg()
-                    ? fundingRateLimit.neg()
-                    : newFundingRate;
+                newFundingRate = newFundingRate.min(fundingRateLimit).max(fundingRateLimit.neg());
             } else if (position > 0) {
                 newFundingRate = fundingRateLimit.neg();
             } else {

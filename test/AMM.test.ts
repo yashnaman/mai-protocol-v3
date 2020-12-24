@@ -118,8 +118,7 @@ describe('AMM', () => {
     let amm;
 
     beforeEach(async () => {
-        const collateralModule = await createContract("CollateralModule")
-        const ammModule = await createContract("AMMModule", [], { "CollateralModule": collateralModule })
+        const ammModule = await createContract("AMMModule")
         amm = await createContract("TestAMM", [], { "AMMModule": ammModule });
     });
 
