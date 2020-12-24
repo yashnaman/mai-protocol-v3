@@ -162,7 +162,7 @@ getDescription('Settlement', () => {
         await oracle.setMarkPrice(toWei("500"), now);
 
         await ctk.mint(settlement.address, toWei("175"))
-        await settlement.setPoolCollateralAmount(toWei("50"));
+        await settlement.setPoolCash(toWei("50"));
         await settlement.setPerpetualCollateralAmount(0, toWei("125"));
 
         await settlement.initializeMarginAccount(0, settlement.address, toWei("-500"), toWei("1"));   // pool im = 500 * 1 * 0.1 = 50. send 50 => pool

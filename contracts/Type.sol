@@ -15,8 +15,8 @@ struct OraclePriceData {
 }
 
 struct MarginAccount {
-    int256 cashBalance;
-    int256 positionAmount;
+    int256 cash;
+    int256 position;
 }
 
 enum PerpetualState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
@@ -40,15 +40,6 @@ struct Order {
     uint32 salt;
 }
 
-struct Receipt {
-    int256 tradeValue;
-    int256 tradeAmount;
-    int256 lpFee;
-    int256 vaultFee;
-    int256 operatorFee;
-    int256 referrerFee;
-}
-
 struct LiquidityPoolStorage {
     bool isFinalized;
     // addresses
@@ -64,14 +55,12 @@ struct LiquidityPoolStorage {
     bool isWrapped;
     uint256 scaler;
     address collateral;
-    int256 poolCashBalance;
-    int256 poolCollateralAmount;
+    int256 poolCash;
     // insurance fund
     int256 insuranceFund;
     int256 insuranceFundCap;
     int256 donatedInsuranceFund;
     // fee
-    int256 totalClaimableFee;
     mapping(address => int256) claimableFees;
     // perpetuals
     PerpetualStorage[] perpetuals;
@@ -84,7 +73,7 @@ struct PerpetualStorage {
     uint256 id;
     PerpetualState state;
     address oracle;
-    int256 collateralAmount;
+    int256 collateralBalance;
     // prices
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;

@@ -26,7 +26,7 @@ contract TestAMM {
         int256 openSlippageFactor,
         int256 closeSlippageFactor,
         int256 ammMaxLeverage,
-        int256 cashBalance,
+        int256 cash,
         int256 positionAmount1,
         int256 positionAmount2,
         int256 indexPrice1,
@@ -39,8 +39,8 @@ contract TestAMM {
         liquidityPool.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
         liquidityPool.perpetuals[0].ammMaxLeverage.value = ammMaxLeverage;
-        liquidityPool.poolCashBalance = cashBalance;
-        liquidityPool.perpetuals[0].marginAccounts[address(this)].positionAmount = positionAmount1;
+        liquidityPool.poolCash = cash;
+        liquidityPool.perpetuals[0].marginAccounts[address(this)].position = positionAmount1;
         liquidityPool.perpetuals[0].indexPriceData.price = indexPrice1;
 
         liquidityPool.perpetuals[1].id = 1;
@@ -50,7 +50,7 @@ contract TestAMM {
         liquidityPool.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
         liquidityPool.perpetuals[1].ammMaxLeverage.value = ammMaxLeverage;
-        liquidityPool.perpetuals[1].marginAccounts[address(this)].positionAmount = positionAmount2;
+        liquidityPool.perpetuals[1].marginAccounts[address(this)].position = positionAmount2;
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
@@ -73,16 +73,16 @@ contract TestAMM {
     }
 
 
-    function deltaMargin(int256 amount)
+    function deltaCash(int256 amount)
         public
         view
-        returns (int256 deltaMargin)
+        returns (int256 deltaCash)
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
-        deltaMargin = AMMModule._deltaMargin(
+        deltaCash = AMMModule._getDeltaMargin(
             regress(),
-            perpetual.marginAccounts[address(this)].positionAmount,
-            perpetual.marginAccounts[address(this)].positionAmount.add(amount),
+            perpetual.marginAccounts[address(this)].position,
+            perpetual.marginAccounts[address(this)].position.add(amount),
             perpetual.getIndexPrice(),
             perpetual.openSlippageFactor.value
         );
@@ -92,7 +92,7 @@ contract TestAMM {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
         return
-            AMMModule._maxPosition(
+            AMMModule._getMaxPosition(
                 context,
                 regress(),
                 perpetual.ammMaxLeverage.value,
@@ -104,9 +104,9 @@ contract TestAMM {
     function tradeWithAMM(int256 tradeAmount, bool partialFill)
         public
         view
-        returns (int256 deltaMargin, int256 deltaPosition)
+        returns (int256 deltaCash, int256 deltaPosition)
     {
-        (deltaMargin, deltaPosition) = AMMModule.tradeWithAMM(
+        (deltaCash, deltaPosition) = AMMModule.tradeWithAMM(
             liquidityPool,
             0,
             tradeAmount,
@@ -114,15 +114,15 @@ contract TestAMM {
         );
     }
 
-    function addLiquidity(int256 marginToAdd)
-        public
-    {
-        AMMModule.addLiquidity(liquidityPool, marginToAdd);
-    }
+    // function addLiquidity(int256 marginToAdd)
+    //     public
+    // {
+    //     AMMModule.addLiquidity(liquidityPool, marginToAdd);
+    // }
 
-    function removeLiquidity(int256 shareToRemove)
-        public
-    {
-        AMMModule.removeLiquidity(liquidityPool, shareToRemove);
-    }
+    // function removeLiquidity(int256 shareToRemove)
+    //     public
+    // {
+    //     AMMModule.removeLiquidity(liquidityPool, shareToRemove);
+    // }
 }

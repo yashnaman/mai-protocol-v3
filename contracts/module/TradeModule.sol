@@ -11,6 +11,7 @@ import "./AMMModule.sol";
 import "./LiquidityPoolModule.sol";
 import "./MarginModule.sol";
 import "./OracleModule.sol";
+import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
@@ -23,6 +24,7 @@ library TradeModule {
     using LiquidityPoolModule for LiquidityPoolStorage;
     using MarginModule for PerpetualStorage;
     using OracleModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
     using MarginModule for MarginAccount;
 
     address internal constant INVALID_ADDRESS = address(0);
@@ -30,7 +32,7 @@ library TradeModule {
     event Trade(
         uint256 perpetualIndex,
         address indexed trader,
-        int256 positionAmount,
+        int256 position,
         int256 price,
         int256 fee
     );
@@ -45,108 +47,73 @@ library TradeModule {
         bool isCloseOnly
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 position = perpetual.getPosition(trader);
         if (isCloseOnly) {
-            int256 positionAmount = perpetual.getPositionAmount(trader);
-            require(positionAmount != 0, "trader has no position to close");
-            require(
-                !Utils.hasTheSameSign(positionAmount, amount),
-                "trader is not closing position"
-            );
-            amount = amount.abs() > positionAmount.abs() ? positionAmount : amount;
+            require(position != 0, "trader has no position to close");
+            require(!Utils.hasTheSameSign(position, amount), "trader must be close only");
+            amount = amount.abs() > position.abs() ? position : amount;
         }
         // 0. price / amount
-        Receipt memory receipt;
-        (receipt.tradeValue, receipt.tradeAmount) = liquidityPool.tradeWithAMM(
+        (int256 deltaCash, int256 deltaPosition) = liquidityPool.tradeWithAMM(
             perpetualIndex,
             amount.neg(),
             false
         );
-        bool isOpening = Utils.isOpening(
-            perpetual.getPositionAmount(trader),
-            receipt.tradeAmount.neg()
-        );
-        int256 tradePrice = receipt.tradeValue.wdiv(receipt.tradeAmount).abs();
-        validatePrice(receipt.tradeAmount.neg(), tradePrice, priceLimit);
+        int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
+        validatePrice(deltaPosition >= 0, tradePrice, priceLimit);
         // 1. fee
-        updateTradingFees(liquidityPool, perpetual, receipt, referrer);
+        (int256 lpFee, int256 totalFee) = updateFees(
+            liquidityPool,
+            perpetual,
+            deltaCash.abs(),
+            referrer
+        );
         // 2. execute
-        updateTradingResult(perpetual, receipt, trader, address(this));
+        bool isOpen = Utils.isOpen(position, deltaPosition.neg());
+        perpetual.updateMarginAccount(address(this), deltaPosition, deltaCash.add(lpFee));
+        perpetual.updateMarginAccount(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
         // 3. safe
-        if (isOpening) {
+        if (isOpen) {
             require(perpetual.isInitialMarginSafe(trader), "trader initial margin is unsafe");
         } else {
             require(perpetual.isMarginSafe(trader), "trader margin is unsafe");
         }
         // 4. event
-        emit Trade(
-            perpetualIndex,
-            trader,
-            receipt.tradeAmount,
-            tradePrice,
-            receipt.lpFee.add(receipt.vaultFee).add(receipt.operatorFee).add(receipt.referrerFee)
-        );
+        emit Trade(perpetualIndex, trader, deltaPosition, tradePrice, totalFee);
     }
 
-    function updateTradingFees(
+    function updateFees(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
-        Receipt memory receipt,
+        int256 tradeValue,
         address referrer
-    ) public {
-        int256 tradeValue = receipt.tradeValue.abs();
-        receipt.vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
-        receipt.lpFee = tradeValue.wmul(perpetual.lpFeeRate);
-        receipt.operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
-        if (perpetual.referrerRebateRate > 0 && referrer != INVALID_ADDRESS) {
-            int256 lpFeeRebate = receipt.lpFee.wmul(perpetual.referrerRebateRate);
-            int256 operatorFeeRabate = receipt.operatorFee.wmul(perpetual.referrerRebateRate);
-            receipt.lpFee = receipt.lpFee.sub(lpFeeRebate);
-            receipt.operatorFee = receipt.operatorFee.sub(operatorFeeRabate);
-            receipt.referrerFee = lpFeeRebate.add(operatorFeeRabate);
+    ) public returns (int256 lpFee, int256 totalFee) {
+        require(tradeValue >= 0, "negative trade value");
+        int256 vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
+        int256 operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
+        lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+        totalFee = vaultFee.add(operatorFee).add(lpFee);
+        if (referrer != INVALID_ADDRESS && perpetual.referrerRebateRate > 0) {
+            int256 lpFeeRebate = lpFee.wmul(perpetual.referrerRebateRate);
+            int256 operatorFeeRabate = operatorFee.wmul(perpetual.referrerRebateRate);
+            int256 referrerFee = lpFeeRebate.add(operatorFeeRabate);
+            lpFee = lpFee.sub(lpFeeRebate);
+            operatorFee = operatorFee.sub(operatorFeeRabate);
+            liquidityPool.increaseFee(referrer, referrerFee);
         }
-        liquidityPool.collectFee(
-            perpetual,
-            referrer,
-            receipt.vaultFee,
-            receipt.operatorFee,
-            receipt.referrerFee
-        );
-    }
-
-    function updateTradingResult(
-        PerpetualStorage storage perpetual,
-        Receipt memory receipt,
-        address taker,
-        address maker
-    ) internal {
-        perpetual.updateMarginAccount(
-            taker,
-            receipt.tradeAmount.neg(),
-            receipt
-                .tradeValue
-                .neg()
-                .sub(receipt.lpFee)
-                .sub(receipt.vaultFee)
-                .sub(receipt.operatorFee)
-                .sub(receipt.referrerFee)
-        );
-        perpetual.updateMarginAccount(
-            maker,
-            receipt.tradeAmount,
-            receipt.tradeValue.add(receipt.lpFee)
-        );
+        liquidityPool.increaseFee(liquidityPool.vault, vaultFee);
+        liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
+        // [perpetual fee] => [pool claimable]
+        perpetual.decreaseCollateralAmount(totalFee);
     }
 
     function validatePrice(
-        int256 amount,
+        bool isLong,
         int256 price,
         int256 priceLimit
     ) internal pure {
-        require(price >= 0, "price is 0");
-        if (amount > 0) {
-            require(price <= priceLimit, "price is too high");
-        } else if (amount < 0) {
-            require(price >= priceLimit, "price is too low");
-        }
+        require(price >= 0, "negative price");
+        bool isPriceOK = isLong ? price <= priceLimit : price >= priceLimit;
+        require(isPriceOK, "price exceeds limit");
     }
 }

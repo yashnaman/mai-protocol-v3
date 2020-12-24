@@ -19,8 +19,6 @@ contract TestTrade is Storage, Getter {
     using ParameterModule for LiquidityPoolStorage;
     using ParameterModule for PerpetualStorage;
 
-    Receipt public tempReceipt;
-
     function createPerpetual(
         address oracle,
         int256[8] calldata coreParams,
@@ -84,12 +82,11 @@ contract TestTrade is Storage, Getter {
     function initializeMarginAccount(
         uint256 perpetualIndex,
         address trader,
-        int256 cashBalance,
-        int256 positionAmount
+        int256 cash,
+        int256 position
     ) external {
-        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cashBalance = cashBalance;
-        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader]
-            .positionAmount = positionAmount;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].cash = cash;
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader].position = position;
     }
 
     function trade(
@@ -103,30 +100,20 @@ contract TestTrade is Storage, Getter {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
     }
 
-    function updateTradingFees(
+    function updateFees(
         uint256 perpetualIndex,
-        Receipt memory receipt,
+        int256 value,
         address referrer
     ) public {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.updateTradingFees(perpetual, receipt, referrer);
-    }
-
-    function updateTradingResult(
-        uint256 perpetualIndex,
-        Receipt memory receipt,
-        address taker,
-        address maker
-    ) public {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.updateTradingResult(receipt, taker, maker);
+        _liquidityPool.updateFees(perpetual, value, referrer);
     }
 
     function validatePrice(
-        int256 amount,
+        bool isLong,
         int256 price,
         int256 limitPrice
     ) public pure {
-        TradeModule.validatePrice(amount, price, limitPrice);
+        TradeModule.validatePrice(isLong, price, limitPrice);
     }
 }

@@ -45,39 +45,33 @@ library LiquidationModule {
         address liquidator = msg.sender;
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(!perpetual.isMaintenanceMarginSafe(trader), "trader is safe");
-        Receipt memory receipt;
-        int256 maxAmount = perpetual.marginAccounts[trader].positionAmount;
+        int256 maxAmount = perpetual.marginAccounts[trader].position;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
-        (receipt.tradeValue, receipt.tradeAmount) = liquidityPool.tradeWithAMM(
+        (int256 deltaCash, int256 deltaPosition) = liquidityPool.tradeWithAMM(
             perpetualIndex,
             maxAmount,
             false
         );
-        // 1. fee
-        TradeModule.updateTradingFees(liquidityPool, perpetual, receipt, INVALID_ADDRESS);
-        // 2. execute
-        TradeModule.updateTradingResult(perpetual, receipt, trader, address(this));
+        int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
+        // 1. execute
+        perpetual.updateMarginAccount(address(this), deltaPosition, deltaCash);
+        perpetual.updateMarginAccount(trader, deltaPosition.neg(), deltaCash.neg());
         // 3. penalty
+        int256 liquidatePenalty = perpetual
+            .getMarkPrice()
+            .wmul(deltaPosition)
+            .wmul(perpetual.liquidationPenaltyRate)
+            .abs();
         int256 penaltyToFund = updateLiquidationPenalty(
             perpetual,
             trader,
-            perpetual
-                .getMarkPrice()
-                .wmul(receipt.tradeAmount)
-                .wmul(perpetual.liquidationPenaltyRate)
-                .abs(),
+            liquidatePenalty,
             perpetual.keeperGasReward
         );
         liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
         // 4. events
-        emit Liquidate(
-            perpetualIndex,
-            address(this),
-            trader,
-            receipt.tradeAmount,
-            receipt.tradeValue.wdiv(receipt.tradeAmount).abs()
-        );
+        emit Liquidate(perpetualIndex, address(this), trader, deltaPosition, liquidatePrice);
         // 5. emergency
         bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
         if (isInsuranceFundDrained) {
@@ -95,23 +89,19 @@ library LiquidationModule {
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(!perpetual.isMaintenanceMarginSafe(trader), "trader is safe");
-        Receipt memory receipt;
         // 0. price / amountyo
-        int256 tradingPrice = perpetual.getMarkPrice();
-        TradeModule.validatePrice(amount, tradingPrice, limitPrice);
-        (receipt.tradeValue, receipt.tradeAmount) = (tradingPrice.wmul(amount), amount.neg());
+        int256 liquidatePrice = perpetual.getMarkPrice();
+        TradeModule.validatePrice(amount > 0, liquidatePrice, limitPrice);
+        (int256 deltaCash, int256 deltaPosition) = (liquidatePrice.wmul(amount), amount.neg());
         // 1. execute
-        bool isOpening = Utils.isOpening(perpetual.getPositionAmount(liquidator), amount);
-        TradeModule.updateTradingResult(perpetual, receipt, liquidator, trader);
+        bool isOpen = Utils.isOpen(perpetual.getPosition(liquidator), amount);
+        perpetual.updateMarginAccount(trader, deltaPosition, deltaCash);
+        perpetual.updateMarginAccount(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty
-        int256 penaltyToFund = updateLiquidationPenalty(
-            perpetual,
-            trader,
-            receipt.tradeValue.wmul(perpetual.liquidationPenaltyRate).abs(),
-            0
-        );
+        int256 liquidatePenalty = deltaCash.wmul(perpetual.liquidationPenaltyRate).abs();
+        int256 penaltyToFund = updateLiquidationPenalty(perpetual, trader, liquidatePenalty, 0);
         // 3. safe
-        if (isOpening) {
+        if (isOpen) {
             require(perpetual.isInitialMarginSafe(liquidator), "trader initial margin unsafe");
         } else {
             require(
@@ -120,7 +110,7 @@ library LiquidationModule {
             );
         }
         // 4. events
-        emit Liquidate(perpetualIndex, liquidator, trader, receipt.tradeAmount, tradingPrice);
+        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition, liquidatePrice);
         // 5. emergency
         bool isInsuranceFundDrained = handleInsuranceFund(liquidityPool, perpetual, penaltyToFund);
         if (isInsuranceFundDrained) {

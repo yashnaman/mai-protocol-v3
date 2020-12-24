@@ -41,7 +41,7 @@ library MarginModule {
     ) internal view returns (int256) {
         return
             perpetual.marginAccounts[trader]
-                .positionAmount
+                .position
                 .wmul(price)
                 .wmul(perpetual.initialMarginRate)
                 .abs();
@@ -54,29 +54,28 @@ library MarginModule {
     ) internal view returns (int256) {
         return
             perpetual.marginAccounts[trader]
-                .positionAmount
+                .position
                 .wmul(price)
                 .wmul(perpetual.maintenanceMarginRate)
                 .abs()
                 .max(perpetual.keeperGasReward);
     }
 
-    function getAvailableCashBalance(PerpetualStorage storage perpetual, address trader)
+    function getAvailableCash(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
     {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        return
-            account.cashBalance.sub(account.positionAmount.wmul(perpetual.unitAccumulativeFunding));
+        return account.cash.sub(account.position.wmul(perpetual.unitAccumulativeFunding));
     }
 
-    function getPositionAmount(PerpetualStorage storage perpetual, address trader)
+    function getPosition(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
     {
-        return perpetual.marginAccounts[trader].positionAmount;
+        return perpetual.marginAccounts[trader].position;
     }
 
     function getMargin(
@@ -85,8 +84,8 @@ library MarginModule {
         int256 price
     ) internal view returns (int256) {
         return
-            perpetual.marginAccounts[trader].positionAmount.wmul(price).add(
-                getAvailableCashBalance(perpetual, trader)
+            perpetual.marginAccounts[trader].position.wmul(price).add(
+                getAvailableCash(perpetual, trader)
             );
     }
 
@@ -128,7 +127,7 @@ library MarginModule {
         returns (bool)
     {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        return account.cashBalance == 0 && account.positionAmount == 0;
+        return account.cash == 0 && account.position == 0;
     }
 
     function deposit(
@@ -174,27 +173,27 @@ library MarginModule {
         address trader,
         int256 deltaCashBalance
     ) internal {
-        perpetual.marginAccounts[trader].cashBalance = perpetual.marginAccounts[trader]
-            .cashBalance
-            .add(deltaCashBalance);
+        perpetual.marginAccounts[trader].cash = perpetual.marginAccounts[trader].cash.add(
+            deltaCashBalance
+        );
     }
 
     function updateMarginAccount(
         PerpetualStorage storage perpetual,
         address trader,
-        int256 deltaPositionAmount,
+        int256 deltaPosition,
         int256 deltaCashBalance
     ) internal {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        account.positionAmount = account.positionAmount.add(deltaPositionAmount);
-        account.cashBalance = account.cashBalance.add(deltaCashBalance).add(
-            perpetual.unitAccumulativeFunding.wmul(deltaPositionAmount)
+        account.position = account.position.add(deltaPosition);
+        account.cash = account.cash.add(deltaCashBalance).add(
+            perpetual.unitAccumulativeFunding.wmul(deltaPosition)
         );
     }
 
     function resetMarginAccount(PerpetualStorage storage perpetual, address trader) internal {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        account.cashBalance = 0;
-        account.positionAmount = 0;
+        account.cash = 0;
+        account.position = 0;
     }
 }

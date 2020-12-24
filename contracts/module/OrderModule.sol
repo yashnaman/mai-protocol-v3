@@ -62,17 +62,15 @@ library OrderModule {
         view
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[order.perpetualIndex];
-        int256 positionAmount = perpetual.getPositionAmount(order.trader);
+        int256 position = perpetual.getPosition(order.trader);
         int256 indexPrice = perpetual.getIndexPrice();
         if (
-            (order.isStopLossOrder() && positionAmount > 0) ||
-            (order.isTakeProfitOrder() && positionAmount < 0)
+            (order.isStopLossOrder() && position > 0) || (order.isTakeProfitOrder() && position < 0)
         ) {
             // stop-loss + long / take-profit + short
             require(indexPrice <= order.triggerPrice, "trigger price is not reached");
         } else if (
-            (order.isStopLossOrder() && positionAmount < 0) ||
-            (order.isTakeProfitOrder() && positionAmount > 0)
+            (order.isStopLossOrder() && position < 0) || (order.isTakeProfitOrder() && position > 0)
         ) {
             // stop-loss + long / take-profit + short
             require(indexPrice >= order.triggerPrice, "trigger price is not reached");

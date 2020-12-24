@@ -48,6 +48,6 @@ contract TestOrder is Storage {
     }
 
     function setPositionAmount(address trader, int256 amount) public {
-        _liquidityPool.perpetuals[0].marginAccounts[trader].positionAmount = amount;
+        _liquidityPool.perpetuals[0].marginAccounts[trader].position = amount;
     }
 }

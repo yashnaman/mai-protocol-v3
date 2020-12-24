@@ -52,7 +52,7 @@ library SettlementModule {
         require(!perpetual.clearedTraders.contains(trader), "trader is already cleared");
         int256 margin = perpetual.getMargin(trader, perpetual.getMarkPrice());
         if (margin > 0) {
-            if (perpetual.getPositionAmount(trader) != 0) {
+            if (perpetual.getPosition(trader) != 0) {
                 perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
             } else {
                 perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
@@ -79,7 +79,7 @@ library SettlementModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         margin = perpetual.getMargin(trader, perpetual.getMarkPrice());
         if (margin > 0) {
-            int256 rate = (perpetual.getPositionAmount(trader) == 0)
+            int256 rate = (perpetual.getPosition(trader) == 0)
                 ? perpetual.redemptionRateWithoutPosition
                 : perpetual.redemptionRateWithPosition;
             margin = margin.wmul(rate);
@@ -110,7 +110,7 @@ library SettlementModule {
     }
 
     function settleCollateral(PerpetualStorage storage perpetual) public {
-        int256 totalCollateral = perpetual.collateralAmount;
+        int256 totalCollateral = perpetual.collateralBalance;
         // 2. cover margin without position
         if (totalCollateral < perpetual.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin

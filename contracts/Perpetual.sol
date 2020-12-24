@@ -57,12 +57,12 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         public
         view
         onlyExistedPerpetual(perpetualIndex)
-        returns (int256 cashBalance, int256 positionAmount)
+        returns (int256 cash, int256 position)
     {
         MarginAccount storage account = _liquidityPool.perpetuals[perpetualIndex]
             .marginAccounts[trader];
-        cashBalance = account.cashBalance;
-        positionAmount = account.positionAmount;
+        cash = account.cash;
+        position = account.position;
     }
 
     function deposit(

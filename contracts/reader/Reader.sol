@@ -23,8 +23,7 @@ contract Reader {
         int256 insuranceFundCap;
         int256 insuranceFund;
         int256 donatedInsuranceFund;
-        int256 totalClaimableFee;
-        int256 poolCashBalance;
+        int256 poolCash;
         uint256 fundingTime;
         PerpetualStorage[] perpetualStorages;
     }
@@ -59,9 +58,7 @@ contract Reader {
         uint256 perpetualIndex,
         address account
     ) public view returns (MarginAccount memory getMarginAccount) {
-        (getMarginAccount.cashBalance, getMarginAccount.positionAmount) = ILiquidityPool(
-            liquidityPool
-        )
+        (getMarginAccount.cash, getMarginAccount.position) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, account);
     }
 
@@ -86,8 +83,7 @@ contract Reader {
             pool.insuranceFundCap = nums[1];
             pool.insuranceFund = nums[2];
             pool.donatedInsuranceFund = nums[3];
-            pool.totalClaimableFee = nums[4];
-            pool.poolCashBalance = nums[5];
+            pool.poolCash = nums[4];
         }
         address symbolService = IPoolCreator(creator).symbolService();
 

@@ -225,8 +225,8 @@ getDescription("integration", () => {
         await gs.collect("withdraw", perpUser1.withdraw(0, user1.address, toWei("10")));
         console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
 
-        var { cashBalance, positionAmount } = await perpUser2.getMarginAccount(0, perpUser2.address);
-        console.log(fromWei(cashBalance), fromWei(positionAmount));
+        var { cash, position } = await perpUser2.getMarginAccount(0, perpUser2.address);
+        console.log(fromWei(cash), fromWei(position));
 
         // remove lp
         await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))

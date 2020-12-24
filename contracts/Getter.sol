@@ -33,21 +33,19 @@ contract Getter is Storage {
         public
         view
         returns (
-            // [0] factory
-            // [1] operator
-            // [2] collateral
-            // [3] vault
-            // [4] governor
-            // [5] shareToken
+            // [0] factory,
+            // [1] operator,
+            // [2] collateral,
+            // [3] vault,
+            // [4] governor,
+            // [5] shareToken,
             address[6] memory addresses,
             // [0] vaultFeeRate,
             // [1] insuranceFundCap,
             // [2] insuranceFund,
             // [3] donatedInsuranceFund,
-            // [4] totalClaimableFee,
-            // [5] poolCashBalance,
-            // [6] poolCollateralAmount,
-            int256[7] memory nums,
+            // [4] poolCash,
+            int256[5] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
         )
@@ -65,9 +63,7 @@ contract Getter is Storage {
             _liquidityPool.insuranceFundCap,
             _liquidityPool.insuranceFund,
             _liquidityPool.donatedInsuranceFund,
-            _liquidityPool.totalClaimableFee,
-            _liquidityPool.poolCashBalance,
-            _liquidityPool.poolCollateralAmount
+            _liquidityPool.poolCash
         ];
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
@@ -80,7 +76,7 @@ contract Getter is Storage {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] collateralAmount
+            // [0] collateralBalance
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -101,11 +97,10 @@ contract Getter is Storage {
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-
         state = perpetual.state;
         oracle = perpetual.oracle;
         nums = [
-            perpetual.collateralAmount,
+            perpetual.collateralBalance,
             perpetual.getMarkPrice(),
             perpetual.getIndexPrice(),
             perpetual.unitAccumulativeFunding,

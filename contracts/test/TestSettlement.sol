@@ -18,16 +18,12 @@ contract TestSettlement is TestMargin, Settlement {
         _liquidityPool.scaler = 1;
     }
 
-    function setPoolCollateralAmount(int256 amount) public {
-        _liquidityPool.poolCollateralAmount = amount;
+    function setPoolCash(int256 amount) public {
+        _liquidityPool.poolCash = amount;
     }
 
     function setPerpetualCollateralAmount(uint256 perpetualIndex, int256 amount) public {
-        _liquidityPool.perpetuals[perpetualIndex].collateralAmount = amount;
-    }
-
-    function setFee(int256 fee) public {
-        _liquidityPool.totalClaimableFee = fee;
+        _liquidityPool.perpetuals[perpetualIndex].collateralBalance = amount;
     }
 
     function registerActiveAccount(uint256 perpetualIndex, address trader) public {

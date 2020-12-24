@@ -20,9 +20,8 @@ interface ILiquidityPool {
             // [1] insuranceFundCap,
             // [2] insuranceFund,
             // [3] donatedInsuranceFund,
-            // [4] totalClaimableFee,
-            // [5] poolCashBalance,
-            // [6] poolCollateralAmount,
+            // [4] poolCash,
+            // [5] poolCollateralAmount,
             int256[7] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
@@ -33,7 +32,7 @@ interface ILiquidityPool {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] collateralAmount
+            // [0] collateralBalance
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -88,5 +87,5 @@ interface ILiquidityPool {
     function getMarginAccount(uint256 perpetualIndex, address trader)
         external
         view
-        returns (int256 cashBalance, int256 positionAmount);
+        returns (int256 cash, int256 position);
 }

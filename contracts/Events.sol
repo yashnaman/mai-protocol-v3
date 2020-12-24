@@ -24,7 +24,7 @@ contract Events {
     event Trade(
         uint256 perpetualIndex,
         address indexed trader,
-        int256 positionAmount,
+        int256 position,
         int256 price,
         int256 fee
     );

@@ -42,8 +42,8 @@ getDescription('MarginModule', () => {
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -57,8 +57,8 @@ getDescription('MarginModule', () => {
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("100"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -72,8 +72,8 @@ getDescription('MarginModule', () => {
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("0.1"),
+                    cash: toWei("100"),
+                    position: toWei("0.1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -88,8 +88,8 @@ getDescription('MarginModule', () => {
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("-0.1"),
+                    cash: toWei("100"),
+                    position: toWei("-0.1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -104,8 +104,8 @@ getDescription('MarginModule', () => {
                 method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.05"),
@@ -119,8 +119,8 @@ getDescription('MarginModule', () => {
                 method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("100"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.05"),
@@ -134,8 +134,8 @@ getDescription('MarginModule', () => {
                 method: "margin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1")
@@ -149,8 +149,8 @@ getDescription('MarginModule', () => {
                 method: "margin",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("100"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1")
@@ -160,60 +160,60 @@ getDescription('MarginModule', () => {
                 expect: toWei("-400")
             },
             {
-                name: "+positionAmount",
-                method: "positionAmount",
+                name: "+position",
+                method: "position",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
                 expect: toWei("1")
             },
             {
-                name: "-positionAmount",
-                method: "positionAmount",
+                name: "-position",
+                method: "position",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
                 expect: toWei("1")
             },
             {
-                name: "getAvailableCashBalance + funding",
-                method: "getAvailableCashBalance",
+                name: "getAvailableCash + funding",
+                method: "getAvailableCash",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 unitAccumulativeFunding: toWei("10"),
                 trader: 0,
                 expect: toWei("90") // 100 - (1*10 - 0)
             },
             {
-                name: "getAvailableCashBalance - funding 1",
-                method: "getAvailableCashBalance",
+                name: "getAvailableCash - funding 1",
+                method: "getAvailableCash",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 unitAccumulativeFunding: toWei("10"),
                 trader: 0,
                 expect: toWei("90") // 100 + (1*10 - 20)
             },
             {
-                name: "getAvailableCashBalance - funding 2",
-                method: "getAvailableCashBalance",
+                name: "getAvailableCash - funding 2",
+                method: "getAvailableCash",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("100"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("100"),
+                    position: toWei("1"),
                 },
                 unitAccumulativeFunding: toWei("-10"),
                 trader: 0,
@@ -224,8 +224,8 @@ getDescription('MarginModule', () => {
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("-450"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("-450"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -239,8 +239,8 @@ getDescription('MarginModule', () => {
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("550"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("550"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -254,8 +254,8 @@ getDescription('MarginModule', () => {
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("-450.1"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("-450.1"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -269,8 +269,8 @@ getDescription('MarginModule', () => {
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("549.9"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("549.9"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -284,8 +284,8 @@ getDescription('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("-450"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("-450"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.1"),
@@ -299,8 +299,8 @@ getDescription('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("550"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("550"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.1"),
@@ -314,8 +314,8 @@ getDescription('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("-450.1"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("-450.1"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.1"),
@@ -329,8 +329,8 @@ getDescription('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("549.9"),
-                    positionAmount: toWei("-1"),
+                    cash: toWei("549.9"),
+                    position: toWei("-1"),
                 },
                 parameters: {
                     maintenanceMarginRate: toWei("0.1"),
@@ -343,8 +343,8 @@ getDescription('MarginModule', () => {
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("0"),
-                    positionAmount: toWei("0"),
+                    cash: toWei("0"),
+                    position: toWei("0"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -358,8 +358,8 @@ getDescription('MarginModule', () => {
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("1"),
-                    positionAmount: toWei("0"),
+                    cash: toWei("1"),
+                    position: toWei("0"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -373,8 +373,8 @@ getDescription('MarginModule', () => {
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
                 getMarginAccount: {
-                    cashBalance: toWei("0"),
-                    positionAmount: toWei("1"),
+                    cash: toWei("0"),
+                    position: toWei("1"),
                 },
                 parameters: {
                     initialMarginRate: toWei("0.1"),
@@ -391,8 +391,8 @@ getDescription('MarginModule', () => {
                 await testMargin.initializeMarginAccount(
                     0,
                     accounts[testCase.trader].address,
-                    testCase.getMarginAccount.cashBalance,
-                    testCase.getMarginAccount.positionAmount);
+                    testCase.getMarginAccount.cash,
+                    testCase.getMarginAccount.position);
                 for (var key in testCase.parameters || {}) {
                     await testMargin.setPerpetualParameter(0, toBytes32(key), testCase.parameters[key]);
                 }
@@ -438,27 +438,27 @@ getDescription('MarginModule', () => {
             await testMargin.initializeMarginAccount(0, trader, toWei("1000"), toWei("0"));
 
             await testMargin.updateMarginAccount(0, trader, toWei("2"), toWei("100")) // +100 + 2*100
-            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
-            expect(cashBalance).to.equal(toWei("1300"));
-            expect(positionAmount).to.equal(toWei("2"));
+            var { cash, position } = await testMargin.getMarginAccount(0, trader);
+            expect(cash).to.equal(toWei("1300"));
+            expect(position).to.equal(toWei("2"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("200"));
             await testMargin.updateMarginAccount(0, trader, toWei("0.5"), toWei("100")) // +100 + 0.5*200
-            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
-            expect(cashBalance).to.equal(toWei("1500"));
-            expect(positionAmount).to.equal(toWei("2.5"));
+            var { cash, position } = await testMargin.getMarginAccount(0, trader);
+            expect(cash).to.equal(toWei("1500"));
+            expect(position).to.equal(toWei("2.5"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("0"));
             await testMargin.updateMarginAccount(0, trader, toWei("-1"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
-            expect(cashBalance).to.equal(toWei("1400")); // -100 -1*0
-            expect(positionAmount).to.equal(toWei("1.5"));
+            var { cash, position } = await testMargin.getMarginAccount(0, trader);
+            expect(cash).to.equal(toWei("1400")); // -100 -1*0
+            expect(position).to.equal(toWei("1.5"));
 
             await testMargin.updateUnitAccumulativeFunding(0, toWei("-100"));
             await testMargin.updateMarginAccount(0, trader, toWei("-5"), toWei("-100"))
-            var { cashBalance, positionAmount } = await testMargin.getMarginAccount(0, trader);
-            expect(cashBalance).to.equal(toWei("1800")); // -100 - 5*-100
-            expect(positionAmount).to.equal(toWei("-3.5"));
+            var { cash, position } = await testMargin.getMarginAccount(0, trader);
+            expect(cash).to.equal(toWei("1800")); // -100 - 5*-100
+            expect(position).to.equal(toWei("-3.5"));
         })
     })
 })

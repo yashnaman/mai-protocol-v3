@@ -97,7 +97,7 @@ getDescription('Funding', () => {
                     openSlippageFactor: params.openSlippageFactor,
                     ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
-                    cashBalance: _0,
+                    cash: _0,
                     positionAmount1: _0,
                     positionAmount2: _0,
                     indexPrice1: element.indexPrice1,
@@ -120,7 +120,7 @@ getDescription('Funding', () => {
             {
                 name: 'state != NORMAL',
                 state: 1,
-                cashBalance: toWad('10100'),
+                cash: toWad('10100'),
                 positionAmount1: toWad('-10'),
                 positionAmount2: toWad('10'),
                 targetFundingRate1: _0,
@@ -129,7 +129,7 @@ getDescription('Funding', () => {
             {
                 name: 'init',
                 state: params.state,
-                cashBalance: _0,
+                cash: _0,
                 positionAmount1: _0,
                 positionAmount2: _0,
                 targetFundingRate1: _0,
@@ -138,7 +138,7 @@ getDescription('Funding', () => {
             {
                 name: 'unsafe',
                 state: params.state,
-                cashBalance: toWad('17692'),
+                cash: toWad('17692'),
                 positionAmount1: toWad('-80'),
                 positionAmount2: toWad('10'),
                 targetFundingRate1: params.fundingRateLimit,
@@ -147,7 +147,7 @@ getDescription('Funding', () => {
             {
                 name: 'normal',
                 state: params.state,
-                cashBalance: toWad('10100'),
+                cash: toWad('10100'),
                 positionAmount1: toWad('-10'),
                 positionAmount2: toWad('10'),
                 targetFundingRate1: toWad('0.0005'),
@@ -156,7 +156,7 @@ getDescription('Funding', () => {
             {
                 name: 'exceed limit',
                 state: params.state,
-                cashBalance: toWad('10099'),
+                cash: toWad('10099'),
                 positionAmount1: toWad('60'),
                 positionAmount2: toWad('-50'),
                 targetFundingRate1: toWad('-0.005'),
@@ -172,7 +172,7 @@ getDescription('Funding', () => {
                     openSlippageFactor: params.openSlippageFactor,
                     ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
-                    cashBalance: element.cashBalance,
+                    cash: element.cash,
                     positionAmount1: element.positionAmount1,
                     positionAmount2: element.positionAmount2,
                     indexPrice1: params.indexPrice,
@@ -190,7 +190,7 @@ getDescription('Funding', () => {
         const failCases = [
             {
                 name: 'margin balance < 0',
-                cashBalance: toWad('10000'),
+                cash: toWad('10000'),
                 positionAmount1: toWad('-50'),
                 positionAmount2: toWad('-52'),
                 errorMsg: 'amm is emergency'
@@ -205,7 +205,7 @@ getDescription('Funding', () => {
                     openSlippageFactor: params.openSlippageFactor,
                     ammMaxLeverage: params.ammMaxLeverage,
                     fundingRateLimit: params.fundingRateLimit,
-                    cashBalance: element.cashBalance,
+                    cash: element.cash,
                     positionAmount1: element.positionAmount1,
                     positionAmount2: element.positionAmount2,
                     indexPrice1: params.indexPrice,

@@ -16,7 +16,7 @@ contract TestFunding {
         int256 openSlippageFactor;
         int256 ammMaxLeverage;
         int256 fundingRateLimit;
-        int256 cashBalance;
+        int256 cash;
         int256 positionAmount1;
         int256 positionAmount2;
         int256 indexPrice1;
@@ -40,7 +40,7 @@ contract TestFunding {
         liquidityPool.perpetuals[0].openSlippageFactor.value = params.openSlippageFactor;
         liquidityPool.perpetuals[0].ammMaxLeverage.value = params.ammMaxLeverage;
         liquidityPool.perpetuals[0].fundingRateLimit.value = params.fundingRateLimit;
-        liquidityPool.perpetuals[0].marginAccounts[address(this)].positionAmount = params.positionAmount1;
+        liquidityPool.perpetuals[0].marginAccounts[address(this)].position = params.positionAmount1;
         liquidityPool.perpetuals[0].indexPriceData.price = params.indexPrice1;
         liquidityPool.perpetuals[0].fundingRate = params.fundingRate;
 
@@ -50,11 +50,11 @@ contract TestFunding {
         liquidityPool.perpetuals[1].openSlippageFactor.value = params.openSlippageFactor;
         liquidityPool.perpetuals[1].ammMaxLeverage.value = params.ammMaxLeverage;
         liquidityPool.perpetuals[1].fundingRateLimit.value = params.fundingRateLimit;
-        liquidityPool.perpetuals[1].marginAccounts[address(this)].positionAmount = params.positionAmount2;
+        liquidityPool.perpetuals[1].marginAccounts[address(this)].position = params.positionAmount2;
         liquidityPool.perpetuals[1].indexPriceData.price = params.indexPrice2;
         liquidityPool.perpetuals[1].fundingRate = params.fundingRate;
 
-        liquidityPool.poolCashBalance = params.cashBalance;
+        liquidityPool.poolCash = params.cash;
         liquidityPool.fundingTime = params.fundingTime;
         currentTime = params.time;
     }
