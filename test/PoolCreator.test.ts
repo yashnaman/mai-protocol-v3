@@ -11,7 +11,7 @@ import {
 
 import { LiquidityPoolFactory } from "../typechain/LiquidityPoolFactory"
 
-getDescription("integration", () => {
+describe("integration", () => {
 
     function toString(n) {
         if (n instanceof BN) {

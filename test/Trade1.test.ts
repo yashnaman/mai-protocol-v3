@@ -11,14 +11,14 @@ import {
 
 import "./helper";
 
-getDescription('TradeModule1', () => {
+describe('TradeModule1', () => {
     let accounts;
 
     before(async () => {
         accounts = await getAccounts();
     })
 
-    getDescription('basic', async () => {
+    describe('basic', async () => {
         let user0;
         let user1;
         let user2;
@@ -195,7 +195,7 @@ getDescription('TradeModule1', () => {
         })
     })
 
-    getDescription("trade", async () => {
+    describe("trade", async () => {
         let user0;
         let user1;
         let user2;

@@ -7,14 +7,14 @@ import {
     createContract,
 } from '../scripts/utils';
 
-getDescription('MarginModule', () => {
+describe('MarginModule', () => {
     let accounts;
 
     before(async () => {
         accounts = await getAccounts();
     })
 
-    getDescription('Getters', async () => {
+    describe('Getters', async () => {
         let testMargin;
 
         beforeEach(async () => {
@@ -409,7 +409,7 @@ getDescription('MarginModule', () => {
     })
 
 
-    getDescription('Setters', async () => {
+    describe('Setters', async () => {
         let testMargin;
 
         before(async () => {

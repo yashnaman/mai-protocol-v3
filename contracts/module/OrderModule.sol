@@ -29,7 +29,7 @@ library OrderModule {
         Order memory order,
         bytes memory signature,
         uint8 signType
-    ) public {
+    ) public view {
         address signer = order.signer(signature, signType);
         if (signer != order.trader) {
             bool isAuthorized = IAccessController(liquidityPool.accessController).isGranted(

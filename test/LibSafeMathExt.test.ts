@@ -9,14 +9,14 @@ const toWad = (x: any) => {
     return new BigNumber(x).times(weis).toFixed(0);
 }
 
-getDescription('LibSafeMathExt', () => {
+describe('LibSafeMathExt', () => {
     let libSafeMathExt;
 
     beforeEach(async () => {
         libSafeMathExt = await createContract("TestLibSafeMathExt");
     });
 
-    getDescription('mul', () => {
+    describe('mul', () => {
         it('uint256 half up', async () => {
             expect(await libSafeMathExt.uwmul(toWad('0.000000000000000044'), toWad('0.1'))).to.equal(toWad('0.000000000000000004'));
             expect(await libSafeMathExt.uwmul(toWad('0.000000000000000045'), toWad('0.1'))).to.equal(toWad('0.000000000000000005'));
@@ -59,7 +59,7 @@ getDescription('LibSafeMathExt', () => {
 
     });
 
-    getDescription('div', () => {
+    describe('div', () => {
         it('uint256 half up', async () => {
             expect(await libSafeMathExt.uwdiv(toWad('0.000000000000000004'), toWad('10'))).to.equal(toWad('0'));
             expect(await libSafeMathExt.uwdiv(toWad('0.000000000000000005'), toWad('10'))).to.equal(toWad('0.000000000000000001'));
@@ -106,7 +106,7 @@ getDescription('LibSafeMathExt', () => {
 
     });
 
-    getDescription('frac', () => {
+    describe('frac', () => {
         it('uint256 half up', async () => {
             expect(await libSafeMathExt.uwfrac(toWad('0.000000000000000002'), toWad('2'), toWad('10'))).to.equal(toWad('0'));
             expect(await libSafeMathExt.uwfrac(toWad('0.000000000000000001'), toWad('5'), toWad('10'))).to.equal(toWad('0.000000000000000001'));
@@ -153,7 +153,7 @@ getDescription('LibSafeMathExt', () => {
 
     });
 
-    getDescription('others', () => {
+    describe('others', () => {
         it('uint256 max', async () => {
             expect(await libSafeMathExt.umax(toWad('0.1'), toWad('0.2'))).to.equal(toWad('0.2'));
             expect(await libSafeMathExt.umax(toWad('0.1'), toWad('0.1'))).to.equal(toWad('0.1'));

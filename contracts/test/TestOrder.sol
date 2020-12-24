@@ -11,10 +11,23 @@ import "../Storage.sol";
 
 contract TestOrder is Storage {
     using OrderData for Order;
+    using OrderData for bytes;
     using OrderModule for LiquidityPoolStorage;
 
     constructor() {
         _liquidityPool.perpetuals.push();
+    }
+
+    function decompress(bytes memory data)
+        public
+        pure
+        returns (
+            Order memory order,
+            bytes memory signature,
+            uint8 signType
+        )
+    {
+        (order, signature, signType) = data.decompress();
     }
 
     function orderHash(Order memory order) public pure returns (bytes32) {
@@ -33,18 +46,36 @@ contract TestOrder is Storage {
         return order.isCloseOnly();
     }
 
-
     function isTakeProfitOrder(Order memory order) public pure returns (bool) {
         return order.isCloseOnly();
     }
-
 
     function salt(Order memory order) public pure returns (uint64) {
         return order.salt;
     }
 
+    function getSigner(
+        Order memory order,
+        bytes memory signature,
+        uint8 signType
+    ) public pure returns (address) {
+        return order.signer(signature, signType);
+    }
+
+    function validateSignature(
+        Order memory order,
+        bytes memory signature,
+        uint8 signType
+    ) public view {
+        _liquidityPool.validateSignature(order, signature, signType);
+    }
+
     function validateOrder(Order memory order, int256 amount) public view {
         _liquidityPool.validateOrder(order, amount);
+    }
+
+    function validateTriggerPrice(Order memory order) public view {
+        _liquidityPool.validateTriggerPrice(order);
     }
 
     function setPositionAmount(address trader, int256 amount) public {

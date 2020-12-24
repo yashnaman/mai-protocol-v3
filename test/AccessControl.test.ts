@@ -9,7 +9,7 @@ import {
     createFactory,
 } from '../scripts/utils';
 
-getDescription('AccessControl', () => {
+describe('AccessControl', () => {
     let accounts;
     let user0;
     let user1;

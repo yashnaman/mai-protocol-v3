@@ -81,30 +81,32 @@ library OrderData {
         bytes32 s;
         uint8 v;
         assembly {
-            // trader
+            // trader / 20
             mstore(add(order, 0), mload(add(data, 20)))
-            // broker
+            // broker / 20
             mstore(add(order, 32), mload(add(data, 40)))
-            // relayer
+            // relayer / 20
             mstore(add(order, 64), mload(add(data, 60)))
-            // referrer
+            // referrer / 20
             mstore(add(order, 96), mload(add(data, 80)))
-            // liquidityPool
+            // liquidityPool / 20
             mstore(add(order, 128), mload(add(data, 100)))
-            // minTradeAmount
+            // minTradeAmount / 20
             mstore(add(order, 160), mload(add(data, 132)))
-            // amount
+            // amount / 32
             mstore(add(order, 192), mload(add(data, 164)))
-            // limitPrice
+            // limitPrice / 32
             mstore(add(order, 224), mload(add(data, 196)))
-            // triggerPrice
+            // triggerPrice / 32
             mstore(add(order, 256), mload(add(data, 228)))
-            // chainID
+            // chainID / 32
             mstore(add(order, 288), mload(add(data, 260)))
-            // expiredAt + perpetualIndex + brokerFeeLimit + flags + salt + v + signType
+            // expiredAt + perpetualIndex + brokerFeeLimit + flags + salt + v + signType / 26
             tmp := mload(add(data, 292))
-            r := mload(add(data, 324))
-            s := mload(add(data, 356))
+            // r / 32
+            r := mload(add(data, 318))
+            // s / 32
+            s := mload(add(data, 350))
         }
         order.expiredAt = uint64(bytes8(tmp));
         order.perpetualIndex = uint32(bytes4(tmp << 64));

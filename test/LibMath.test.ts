@@ -3,14 +3,14 @@ import { expect } from "chai";
 import './helper';
 import { createContract } from '../scripts/utils';
 
-getDescription('LibMath', () => {
+describe('LibMath', () => {
     let libMath;
 
     beforeEach(async () => {
         libMath = await createContract("TestLibMath");
     });
 
-    getDescription('toInt256', () => {
+    describe('toInt256', () => {
         it('normal', async () => {
             expect(await libMath.toInt256('0')).to.equal('0');
             expect(await libMath.toInt256('1')).to.equal('1');
@@ -24,7 +24,7 @@ getDescription('LibMath', () => {
         });
     });
 
-    getDescription('mostSignificantBit', () => {
+    describe('mostSignificantBit', () => {
         it('normal', async () => {
             expect(await libMath.mostSignificantBit('0')).to.equal(0);
             expect(await libMath.mostSignificantBit('1')).to.equal(0);
@@ -36,7 +36,7 @@ getDescription('LibMath', () => {
         });
     });
 
-    getDescription('sqrt', () => {
+    describe('sqrt', () => {
         it('small', async () => {
             expect(await libMath.sqrt('0')).to.equal('0');
             expect(await libMath.sqrt('1')).to.equal('1');

@@ -22,7 +22,7 @@ const params = {
     negFundingRateLimit: toWad('-0.005')
 }
 
-getDescription('Funding', () => {
+describe('Funding', () => {
     let funding;
 
     beforeEach(async () => {
@@ -32,7 +32,7 @@ getDescription('Funding', () => {
         funding = await createContract("TestFunding", [], { "FundingModule": fundingModule });
     });
 
-    getDescription('updateFundingState', function () {
+    describe('updateFundingState', function () {
 
         const cases = [
             {
@@ -114,7 +114,7 @@ getDescription('Funding', () => {
         })
     })
 
-    getDescription('updateFundingRate', function () {
+    describe('updateFundingRate', function () {
 
         const successCases = [
             {

@@ -55,11 +55,11 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        require(
-            (!_liquidityPool.isFinalized && msg.sender == _liquidityPool.operator) ||
-                msg.sender == _liquidityPool.governor,
-            "operation is forbidden after finalized"
-        );
+        if (!_liquidityPool.isFinalized) {
+            require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");
+        } else {
+            require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
+        }
         uint256 perpetualIndex = _liquidityPool.perpetuals.length;
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
         perpetual.initialize(
@@ -74,6 +74,9 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
             IPoolCreator(_liquidityPool.factory).symbolService()
         );
         service.requestSymbol(address(this), perpetualIndex);
+        if (_liquidityPool.isFinalized) {
+            perpetual.enterNormalState();
+        }
         emit CreatePerpetual(
             perpetualIndex,
             _liquidityPool.governor,

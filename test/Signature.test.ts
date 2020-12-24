@@ -7,7 +7,7 @@ import {
     getAccounts,
 } from "../scripts/utils";
 
-getDescription("Order", () => {
+describe("Order", () => {
     let accounts;
     var signature;
 

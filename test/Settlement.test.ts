@@ -10,7 +10,7 @@ import {
     createFactory,
 } from '../scripts/utils';
 
-getDescription('Settlement', () => {
+describe('Settlement', () => {
     let accounts;
     let user0;
     let user1;

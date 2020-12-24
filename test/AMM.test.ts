@@ -114,7 +114,7 @@ const amm7 = {
     // pool margin = open unsafe, close 5368.54
 }
 
-getDescription('AMM', () => {
+describe('AMM', () => {
     let amm;
 
     beforeEach(async () => {
@@ -123,7 +123,7 @@ getDescription('AMM', () => {
         amm = await createContract("TestAMM", [], { "AMMModule": ammModule });
     });
 
-    getDescription('isAMMSafe', function () {
+    describe('isAMMSafe', function () {
 
         const cases = [
             {
@@ -170,7 +170,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('regress', function () {
+    describe('regress', function () {
 
         const successCases = [
             {
@@ -225,7 +225,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('deltaCash', function () {
+    describe('deltaCash', function () {
 
         const cases = [
             {
@@ -250,7 +250,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('safePosition', function () {
+    describe('safePosition', function () {
         const cases = [
             {
                 name: 'init',
@@ -307,7 +307,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('trade - success', function () {
+    describe('trade - success', function () {
 
         const successCases = [
             {
@@ -449,7 +449,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('trade - fail', function () {
+    describe('trade - fail', function () {
 
         const failCases = [
             {
@@ -525,7 +525,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('add liquidity', function () {
+    describe('add liquidity', function () {
 
         const successCases = [
             {
@@ -632,7 +632,7 @@ getDescription('AMM', () => {
         })
     })
 
-    getDescription('remove liquidity', function () {
+    describe('remove liquidity', function () {
 
         const successCases = [
             {

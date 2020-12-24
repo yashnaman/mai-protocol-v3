@@ -33,7 +33,7 @@ class GasStat {
     }
 }
 
-getDescription("integration", () => {
+describe("integration", () => {
 
     function toString(n) {
         if (n instanceof BN) {
