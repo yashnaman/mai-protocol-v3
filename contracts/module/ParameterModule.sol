@@ -136,7 +136,7 @@ library ParameterModule {
     }
 
     function validateRiskParameters(PerpetualStorage storage perpetual) public view {
-        require(perpetual.halfSpread.value >= 0, "hsr shoud be greater than 0");
+        require(perpetual.halfSpread.value >= 0 && perpetual.halfSpread.value < 1, "hsr shoud be greater than 0 and less than 1");
         require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(
             perpetual.closeSlippageFactor.value > 0 &&
