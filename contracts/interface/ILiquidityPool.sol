@@ -22,7 +22,7 @@ interface ILiquidityPool {
             // [3] donatedInsuranceFund,
             // [4] poolCash,
             // [5] poolCollateralAmount,
-            int256[7] memory nums,
+            int256[2] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
         );
@@ -32,7 +32,7 @@ interface ILiquidityPool {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] collateralBalance
+            // [0] totalCollateral
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -49,7 +49,7 @@ interface ILiquidityPool {
             // [14] closeSlippageFactor,
             // [15] fundingRateLimit,
             // [16] ammMaxLeverage
-            int256[17] memory nums
+            int256[20] memory nums
         );
 
     function initialize(
@@ -57,7 +57,7 @@ interface ILiquidityPool {
         address collateral,
         address governor,
         address shareToken,
-        int256 insuranceFundCap
+        bool isFastCreationEnabled
     ) external;
 
     function trade(

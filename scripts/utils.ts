@@ -35,28 +35,21 @@ export async function createContract(path, args = [], libraries = {}) {
 }
 
 export async function createLiquidityPoolFactory() {
+    const AMMModule = await createContract("AMMModule");
     const CollateralModule = await createContract("CollateralModule")
-    const AMMModule = await createContract("AMMModule", [], { CollateralModule });
-    const FundingModule = await createContract("FundingModule", [], { AMMModule });
     const OrderModule = await createContract("OrderModule");
-    const OracleModule = await createContract("OracleModule");
-    const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule });
-    const ParameterModule = await createContract("ParameterModule");
-    const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
+    const PerpetualModule = await createContract("PerpetualModule");
+
+    const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
     const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule });
-    const LiquidationModule = await createContract("LiquidationModule", [], { LiquidityPoolModule, AMMModule, CollateralModule, OracleModule, TradeModule });
-    const MarginModule = await createContract("MarginModule", [], { PerpetualModule, LiquidityPoolModule, CollateralModule });
-    const SettlementModule = await createContract("SettlementModule", [], { LiquidityPoolModule, CollateralModule });
+    const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, PerpetualModule });
+
     return await createFactory("LiquidityPool", {
-        AMMModule,
-        FundingModule,
-        OrderModule,
-        ParameterModule,
-        SettlementModule,
-        TradeModule,
-        LiquidityPoolModule,
+        CollateralModule,
         LiquidationModule,
-        MarginModule,
+        LiquidityPoolModule,
+        OrderModule,
         PerpetualModule,
+        TradeModule,
     });
 }

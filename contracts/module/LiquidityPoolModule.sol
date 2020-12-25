@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
@@ -12,11 +13,9 @@ import "../interface/IDecimals.sol";
 import "../interface/IShareToken.sol";
 
 import "./AMMModule.sol";
-import "./OracleModule.sol";
 import "./CollateralModule.sol";
-import "./MarginModule.sol";
+import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
-import "./SettlementModule.sol";
 
 import "../Type.sol";
 
@@ -28,11 +27,13 @@ library LiquidityPoolModule {
     using SafeMathExt for int256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
+
+    using AMMModule for LiquidityPoolStorage;
+    using MarginAccountModule for PerpetualStorage;
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
-    using OracleModule for LiquidityPoolStorage;
-    using MarginModule for PerpetualStorage;
-    using OracleModule for PerpetualStorage;
+    using MarginAccountModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
 
     uint256 internal constant MAX_COLLATERAL_DECIMALS = 18;
 
@@ -40,21 +41,63 @@ library LiquidityPoolModule {
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
     event IncreaseFee(address recipient, int256 amount);
     event ClaimFee(address claimer, int256 amount);
+    event UpdatePoolMargin(int256 poolMargin);
+
+    function getAvailablePoolCash(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (int256 availablePoolCash)
+    {
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            int256 markPrice = perpetual.getMarkPrice();
+            availablePoolCash = availablePoolCash.add(
+                perpetual.getMargin(address(this), markPrice).sub(
+                    perpetual.getInitialMargin(address(this), markPrice)
+                )
+            );
+        }
+        return availablePoolCash.add(liquidityPool.poolCash);
+    }
+
+    function getRebalanceAmount(PerpetualStorage storage perpetual)
+        public
+        view
+        returns (int256 marginToRebalance)
+    {
+        int256 markPrice = perpetual.getMarkPrice();
+        marginToRebalance = perpetual.getMargin(address(this), markPrice).sub(
+            perpetual.getInitialMargin(address(this), markPrice)
+        );
+    }
+
+    function isMarginSafe(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (bool isSafe)
+    {
+        isSafe = (getAvailablePoolCash(liquidityPool) >= 0);
+    }
 
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
         address operator,
         address governor,
-        address shareToken
-    ) internal {
+        address shareToken,
+        bool isFastCreationEnabled
+    ) public {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
         require(shareToken != address(0), "shareToken is invalid");
 
         uint8 decimals = IDecimals(collateral).decimals();
         require(decimals <= MAX_COLLATERAL_DECIMALS, "collateral decimals is out of range");
-        liquidityPool.collateral = collateral;
+        liquidityPool.collateralToken = collateral;
         liquidityPool.scaler = uint256(10**(MAX_COLLATERAL_DECIMALS.sub(uint256(decimals))));
 
         liquidityPool.factory = msg.sender;
@@ -66,36 +109,89 @@ library LiquidityPoolModule {
 
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
+        liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
     }
 
-    function addLiquidity(LiquidityPoolStorage storage liquidityPool, int256 cashAmount) public {
-        int256 totalCashAmount = liquidityPool.transferFromUser(msg.sender, cashAmount);
-        require(totalCashAmount > 0, "total cashAmount must be positive");
-        int256 shareTotalSupply = IERC20Upgradeable(liquidityPool.shareToken)
-            .totalSupply()
-            .toInt256();
-        int256 shareAmount = liquidityPool.getShareToMint(shareTotalSupply, totalCashAmount);
-        require(shareAmount > 0, "received share must be positive");
-        liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashAmount);
-        IShareToken(liquidityPool.shareToken).mint(msg.sender, shareAmount.toUint256());
-        emit AddLiquidity(msg.sender, totalCashAmount, shareAmount);
+    function setParameter(
+        LiquidityPoolStorage storage liquidityPool,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        if (key == "allow") {
+            liquidityPool.isFastCreationEnabled = (newValue != 0);
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function updateFundingState(LiquidityPoolStorage storage liquidityPool, uint256 currentTime)
+        public
+    {
+        if (liquidityPool.fundingTime >= currentTime) {
+            return;
+        }
+        int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            liquidityPool.perpetuals[i].updateFundingState(timeElapsed);
+        }
+        liquidityPool.fundingTime = currentTime;
+    }
+
+    function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
+        AMMModule.Context memory context = liquidityPool.prepareContext();
+        int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
+            ? AMMModule.regress(context, 0)
+            : 0;
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            liquidityPool.perpetuals[i].updateFundingRate(poolMargin);
+        }
+        emit UpdatePoolMargin(poolMargin);
+    }
+
+    function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) internal {
+        if (liquidityPool.priceUpdateTime >= currentTime) {
+            return;
+        }
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            liquidityPool.perpetuals[i].updatePrice();
+        }
+        liquidityPool.priceUpdateTime = currentTime;
+    }
+
+    function addLiquidity(LiquidityPoolStorage storage liquidityPool, int256 cashToAdd) public {
+        int256 totalCashToAdd = liquidityPool.transferFromUser(msg.sender, cashToAdd);
+        require(totalCashToAdd > 0, "total cash to add must be positive");
+
+        IShareToken shareToken = IShareToken(liquidityPool.shareToken);
+        int256 shareTotalSupply = shareToken.totalSupply().toInt256();
+        int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
+        require(shareToMint > 0, "received share must be positive");
+
+        liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashToAdd);
+        shareToken.mint(msg.sender, shareToMint.toUint256());
+        emit AddLiquidity(msg.sender, totalCashToAdd, shareToMint);
     }
 
     function removeLiquidity(LiquidityPoolStorage storage liquidityPool, int256 shareToRemove)
         public
     {
         require(shareToRemove > 0, "share to remove must be positive");
+        IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         require(
-            shareToRemove <=
-                IERC20Upgradeable(liquidityPool.shareToken).balanceOf(msg.sender).toInt256(),
+            shareToRemove.toUint256() <= shareToken.balanceOf(msg.sender),
             "insufficient share balance"
         );
-        int256 shareTotalSupply = IERC20Upgradeable(liquidityPool.shareToken)
-            .totalSupply()
-            .toInt256();
+
+        int256 shareTotalSupply = shareToken.totalSupply().toInt256();
         int256 cashToReturn = liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
-        IShareToken(liquidityPool.shareToken).burn(msg.sender, shareToRemove.toUint256());
-        liquidityPool.poolCash = liquidityPool.poolCash.sub(cashToReturn);
+        require(cashToReturn >= 0, "cash to return is negative");
+        require(cashToReturn <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
+
+        shareToken.burn(msg.sender, shareToRemove.toUint256());
+        decreasePoolCash(liquidityPool, cashToReturn);
         liquidityPool.transferToUser(payable(msg.sender), cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
@@ -121,44 +217,35 @@ library LiquidityPoolModule {
         emit ClaimFee(claimer, amount);
     }
 
-    function rebalance(
+    function rebalanceFrom(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual
     ) public {
-        int256 rebalanceAmount = perpetual.getMargin(address(this), perpetual.getMarkPrice()).sub(
-            perpetual.getInitialMargin(address(this), perpetual.getMarkPrice())
-        );
-        // TODO: if rebalanceAmount exceeds max collateral amount
-        //
-        transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
-    }
-
-    function rebalanceAll(LiquidityPoolStorage storage liquidityPool) public {
-        // int256 rebalanceAmount = perpetual.getMargin(address(this), perpetual.getMarkPrice()).sub(
-        //     perpetual.getInitialMargin(address(this), perpetual.getMarkPrice())
-        // );
-        // // TODO: if rebalanceAmount exceeds max collateral amount
-        // liquidityPool.poolCash +
-        //     transferCollateralToPool(liquidityPool, perpetual, rebalanceAmount);
-    }
-
-    function transferCollateralToPool(
-        LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual,
-        int256 amount
-    ) public {
-        if (amount == 0) {
+        int256 marginToRebalance = getRebalanceAmount(perpetual);
+        if (marginToRebalance == 0) {
+            // nothing to rebalance
             return;
+        } else if (marginToRebalance > 0) {
+            // from perp to pool
+            perpetual.decreaseTotalCollateral(marginToRebalance);
+            increasePoolCash(liquidityPool, marginToRebalance);
+        } else {
+            // from pool to perp
+            int256 availablePoolCash = getAvailablePoolCash(liquidityPool);
+            if (availablePoolCash < 0) {
+                return;
+            }
+            marginToRebalance = marginToRebalance.abs().min(availablePoolCash);
+            perpetual.increaseTotalCollateral(marginToRebalance);
+            decreasePoolCash(liquidityPool, marginToRebalance);
         }
-        liquidityPool.poolCash = liquidityPool.poolCash.add(amount);
-        perpetual.collateralBalance = perpetual.collateralBalance.sub(amount);
     }
 
-    function getRebalanceAmount(PerpetualStorage storage perpetual) public view returns (int256) {
-        int256 markPrice = perpetual.getMarkPrice();
-        return
-            perpetual.getMargin(address(this), markPrice).sub(
-                perpetual.getInitialMargin(address(this), markPrice)
-            );
+    function increasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
+        liquidityPool.poolCash = liquidityPool.poolCash.add(amount);
+    }
+
+    function decreasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
+        liquidityPool.poolCash = liquidityPool.poolCash.sub(amount);
     }
 }

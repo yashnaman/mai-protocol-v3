@@ -9,8 +9,7 @@ import "../libraries/Utils.sol";
 
 import "./AMMModule.sol";
 import "./LiquidityPoolModule.sol";
-import "./MarginModule.sol";
-import "./OracleModule.sol";
+import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
 
 import "../Type.sol";
@@ -20,10 +19,9 @@ library TradeModule {
     using SignedSafeMathUpgradeable for int256;
     using AMMModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
-    using MarginModule for PerpetualStorage;
-    using OracleModule for PerpetualStorage;
+    using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
-    using MarginModule for MarginAccount;
+    using MarginAccountModule for MarginAccount;
 
     address internal constant INVALID_ADDRESS = address(0);
 
@@ -58,25 +56,29 @@ library TradeModule {
             false
         );
         int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
-        validatePrice(deltaPosition >= 0, tradePrice, priceLimit);
-        // 1. fee
+        validatePrice(amount >= 0, tradePrice, priceLimit);
+        // 2. trade
         (int256 lpFee, int256 totalFee) = updateFees(
             liquidityPool,
             perpetual,
             deltaCash.abs(),
             referrer
         );
-        // 2. execute
         bool isOpen = Utils.isOpen(position, deltaPosition.neg());
-        perpetual.updateMarginAccount(address(this), deltaPosition, deltaCash.add(lpFee));
-        perpetual.updateMarginAccount(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
-        // 3. safe
+        perpetual.updateMargin(address(this), deltaPosition, deltaCash.add(lpFee));
+        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
+        // 4. safe
         if (isOpen) {
-            require(perpetual.isInitialMarginSafe(trader), "trader initial margin is unsafe");
+            require(
+                perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
+                "trader initial margin is unsafe"
+            );
         } else {
-            require(perpetual.isMarginSafe(trader), "trader margin is unsafe");
+            require(
+                perpetual.isMarginSafe(trader, perpetual.getMarkPrice()),
+                "trader margin is unsafe"
+            );
         }
-        // 4. event
         emit Trade(perpetualIndex, trader, deltaPosition, tradePrice, totalFee);
     }
 
@@ -87,10 +89,12 @@ library TradeModule {
         address referrer
     ) public returns (int256 lpFee, int256 totalFee) {
         require(tradeValue >= 0, "negative trade value");
+
         int256 vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
         int256 operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
         lpFee = tradeValue.wmul(perpetual.lpFeeRate);
         totalFee = vaultFee.add(operatorFee).add(lpFee);
+
         if (referrer != INVALID_ADDRESS && perpetual.referrerRebateRate > 0) {
             int256 lpFeeRebate = lpFee.wmul(perpetual.referrerRebateRate);
             int256 operatorFeeRabate = operatorFee.wmul(perpetual.referrerRebateRate);
@@ -99,19 +103,22 @@ library TradeModule {
             operatorFee = operatorFee.sub(operatorFeeRabate);
             liquidityPool.increaseFee(referrer, referrerFee);
         }
+
         liquidityPool.increaseFee(liquidityPool.vault, vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
         // [perpetual fee] => [pool claimable]
-        perpetual.decreaseCollateralAmount(totalFee);
+        perpetual.decreaseTotalCollateral(totalFee);
     }
 
     function validatePrice(
         bool isLong,
         int256 price,
         int256 priceLimit
-    ) internal pure {
+    ) internal view {
+        console.log("[DEBUG]", isLong, uint256(price), uint256(priceLimit));
+
         require(price >= 0, "negative price");
-        bool isPriceOK = isLong ? price <= priceLimit : price >= priceLimit;
-        require(isPriceOK, "price exceeds limit");
+        bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
+        require(isPriceSatisfied, "price exceeds limit");
     }
 }

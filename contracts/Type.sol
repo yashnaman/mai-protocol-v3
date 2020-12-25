@@ -42,6 +42,7 @@ struct Order {
 
 struct LiquidityPoolStorage {
     bool isFinalized;
+    bool isFastCreationEnabled;
     // addresses
     address factory;
     address operator;
@@ -54,7 +55,7 @@ struct LiquidityPoolStorage {
     // collateral
     bool isWrapped;
     uint256 scaler;
-    address collateral;
+    address collateralToken;
     // pool attributes
     int256 poolCash;
     uint256 fundingTime;
@@ -68,7 +69,7 @@ struct PerpetualStorage {
     uint256 id;
     PerpetualState state;
     address oracle;
-    int256 collateralBalance;
+    int256 totalCollateral;
     // prices
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;

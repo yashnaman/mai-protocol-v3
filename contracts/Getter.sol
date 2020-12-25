@@ -5,14 +5,8 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "./interface/IPoolCreator.sol";
-
-import "./module/FundingModule.sol";
-import "./module/OracleModule.sol";
-import "./module/MarginModule.sol";
-import "./module/CollateralModule.sol";
-import "./module/ParameterModule.sol";
-import "./module/SettlementModule.sol";
+import "./module/MarginAccountModule.sol";
+import "./module/PerpetualModule.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
@@ -21,13 +15,8 @@ contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
     using CollateralModule for address;
-    using FundingModule for LiquidityPoolStorage;
-    using MarginModule for LiquidityPoolStorage;
-    using OracleModule for PerpetualStorage;
-    using OracleModule for LiquidityPoolStorage;
-    using ParameterModule for LiquidityPoolStorage;
-    using SettlementModule for LiquidityPoolStorage;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
+    using MarginAccountModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
 
     function getLiquidityPoolInfo()
         public
@@ -50,7 +39,7 @@ contract Getter is Storage {
         addresses = [
             _liquidityPool.factory,
             _liquidityPool.operator,
-            _liquidityPool.collateral,
+            _liquidityPool.collateralToken,
             _liquidityPool.vault,
             _liquidityPool.governor,
             _liquidityPool.shareToken
@@ -67,7 +56,7 @@ contract Getter is Storage {
         returns (
             PerpetualState state,
             address oracle,
-            // [0] collateralBalance
+            // [0] totalCollateral
             // [1] markPrice,
             // [2] indexPrice,
             // [3] unitAccumulativeFunding,
@@ -94,7 +83,7 @@ contract Getter is Storage {
         state = perpetual.state;
         oracle = perpetual.oracle;
         nums = [
-            perpetual.collateralBalance,
+            perpetual.totalCollateral,
             perpetual.getMarkPrice(),
             perpetual.getIndexPrice(),
             perpetual.unitAccumulativeFunding,

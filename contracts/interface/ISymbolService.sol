@@ -18,7 +18,7 @@ interface ISymbolService {
         view
         returns (uint256[] memory symbols);
 
-    function requestSymbol(address liquidityPool, uint256 perpetualIndex) external;
+    function allocateSymbol(address liquidityPool, uint256 perpetualIndex) external;
 
     function assignReservedSymbol(
         address liquidityPool,

@@ -6,20 +6,13 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./interface/IAccessController.sol";
 
-import "./module/FundingModule.sol";
-import "./module/OracleModule.sol";
-import "./module/ParameterModule.sol";
-import "./module/SettlementModule.sol";
+import "./module/LiquidityPoolModule.sol";
 
 import "./Type.sol";
 
 contract Storage {
     using SafeMathUpgradeable for uint256;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    using FundingModule for LiquidityPoolStorage;
-    using OracleModule for LiquidityPoolStorage;
-    using OracleModule for PerpetualStorage;
-    using SettlementModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
 
     LiquidityPoolStorage internal _liquidityPool;
     address internal _governor;

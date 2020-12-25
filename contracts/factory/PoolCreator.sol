@@ -42,30 +42,30 @@ contract PoolCreator is ProxyCreator, Tracer, Implementation, Variables, AccessC
         address shareToken,
         address operator,
         address collateral,
-        int256 insuranceFundCap
+        bool isFastCreationEnabled
     );
 
     function createLiquidityPool(
         address collateral,
-        int256 insuranceFundCap,
+        bool isFastCreationEnabled,
         int256 nonce
     ) external returns (address) {
-        return _createLiquidityPoolWith(getLatestVersion(), collateral, insuranceFundCap, nonce);
+        return _createLiquidityPoolWith(getLatestVersion(), collateral, isFastCreationEnabled, nonce);
     }
 
     function createLiquidityPoolWith(
         address implementation,
         address collateral,
-        int256 insuranceFundCap,
+        bool isFastCreationEnabled,
         int256 nonce
     ) external returns (address) {
-        return _createLiquidityPoolWith(implementation, collateral, insuranceFundCap, nonce);
+        return _createLiquidityPoolWith(implementation, collateral, isFastCreationEnabled, nonce);
     }
 
     function _createLiquidityPoolWith(
         address implementation,
         address collateral,
-        int256 insuranceFundCap,
+        bool isFastCreationEnabled,
         int256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
@@ -81,7 +81,7 @@ contract PoolCreator is ProxyCreator, Tracer, Implementation, Variables, AccessC
             collateral,
             governor,
             shareToken,
-            insuranceFundCap
+            isFastCreationEnabled
         );
         // register
         _registerLiquidityPool(liquidityPool, operator);
@@ -91,7 +91,7 @@ contract PoolCreator is ProxyCreator, Tracer, Implementation, Variables, AccessC
             shareToken,
             operator,
             collateral,
-            insuranceFundCap
+            isFastCreationEnabled
         );
         return liquidityPool;
     }

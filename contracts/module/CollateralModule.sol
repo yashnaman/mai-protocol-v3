@@ -31,19 +31,6 @@ library CollateralModule {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     /**
-     * @dev     Get collateral balance in account.
-     * @param   account     Address of account.
-     * @return  Raw repesentation of collateral balance.
-     */
-    function getCollateralBalance(LiquidityPoolStorage storage liquidityPool, address account)
-        internal
-        view
-        returns (int256)
-    {
-        return IERC20Upgradeable(liquidityPool.collateral).balanceOf(account).toInt256();
-    }
-
-    /**
      * @dev     Transfer token from user if token is erc20 token.
      * @param   account     Address of account owner.
      * @param   amount   Amount of token to be transferred into contract.
@@ -67,7 +54,7 @@ library CollateralModule {
         }
         if (amount > 0) {
             uint256 rawAmount = _toRawAmount(liquidityPool, amount.toUint256());
-            IERC20Upgradeable(liquidityPool.collateral).safeTransferFrom(
+            IERC20Upgradeable(liquidityPool.collateralToken).safeTransferFrom(
                 account,
                 address(this),
                 rawAmount
@@ -91,7 +78,7 @@ library CollateralModule {
             IWETH(IPoolCreator(liquidityPool.factory).weth()).withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);
         } else {
-            IERC20Upgradeable(liquidityPool.collateral).safeTransfer(account, rawAmount);
+            IERC20Upgradeable(liquidityPool.collateralToken).safeTransfer(account, rawAmount);
         }
     }
 

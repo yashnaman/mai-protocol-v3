@@ -3,29 +3,27 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+
+import "../interface/IOracle.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "./ParameterModule.sol";
-import "./OracleModule.sol";
-import "./MarginModule.sol";
+import "./MarginAccountModule.sol";
 import "./CollateralModule.sol";
-import "./SettlementModule.sol";
 
 import "../Type.sol";
 
 library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     using CollateralModule for LiquidityPoolStorage;
-    using ParameterModule for PerpetualStorage;
-    using ParameterModule for Option;
-    using MarginModule for PerpetualStorage;
-    using OracleModule for PerpetualStorage;
-    using SettlementModule for PerpetualStorage;
-    using LiquidityPoolModule for LiquidityPoolStorage;
+    using MarginAccountModule for PerpetualStorage;
+
+    int256 constant FUNDING_INTERVAL = 3600 * 8;
 
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
@@ -37,6 +35,24 @@ library PerpetualModule {
         uint256 settlementTime
     );
     event EnterClearedState(uint256 perpetualIndex);
+    event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
+    event UpdatePoolMargin(int256 poolMargin);
+    event ClearAccount(uint256 perpetualIndex, address trader);
+    event SettleAccount(uint256 perpetualIndex, address trader, int256 amount);
+
+    function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
+        return
+            perpetual.state == PerpetualState.NORMAL
+                ? perpetual.markPriceData.price
+                : perpetual.settlementPriceData.price;
+    }
+
+    function getIndexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
+        return
+            perpetual.state == PerpetualState.NORMAL
+                ? perpetual.indexPriceData.price
+                : perpetual.settlementPriceData.price;
+    }
 
     function initialize(
         PerpetualStorage storage perpetual,
@@ -49,7 +65,6 @@ library PerpetualModule {
     ) public {
         perpetual.id = id;
         perpetual.oracle = oracle;
-
         perpetual.initialMarginRate = coreParams[0];
         perpetual.maintenanceMarginRate = coreParams[1];
         perpetual.operatorFeeRate = coreParams[2];
@@ -59,93 +74,162 @@ library PerpetualModule {
         perpetual.keeperGasReward = coreParams[6];
         perpetual.insuranceFundRate = coreParams[7];
         perpetual.insuranceFundCap = coreParams[8];
-        perpetual.validateCoreParameters();
+        validateBaseParameters(perpetual);
 
-        perpetual.halfSpread.setOption(riskParams[0], minRiskParamValues[0], maxRiskParamValues[0]);
-        perpetual.openSlippageFactor.setOption(
+        setOption(
+            perpetual.halfSpread,
+            riskParams[0],
+            minRiskParamValues[0],
+            maxRiskParamValues[0]
+        );
+        setOption(
+            perpetual.openSlippageFactor,
             riskParams[1],
             minRiskParamValues[1],
             maxRiskParamValues[1]
         );
-        perpetual.closeSlippageFactor.setOption(
+        setOption(
+            perpetual.closeSlippageFactor,
             riskParams[2],
             minRiskParamValues[2],
             maxRiskParamValues[2]
         );
-        perpetual.fundingRateLimit.setOption(
+        setOption(
+            perpetual.fundingRateLimit,
             riskParams[3],
             minRiskParamValues[3],
             maxRiskParamValues[3]
         );
-        perpetual.ammMaxLeverage.setOption(
+        setOption(
+            perpetual.ammMaxLeverage,
             riskParams[4],
             minRiskParamValues[4],
             maxRiskParamValues[4]
         );
-        perpetual.validateRiskParameters();
+        validateRiskParameters(perpetual);
         perpetual.state = PerpetualState.INITIALIZING;
     }
 
-    function donateInsuranceFund(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        int256 amount
-    ) external {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 totalAmount = liquidityPool.transferFromUser(msg.sender, amount);
-        require(totalAmount > 0, "total amount is 0");
-        perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(totalAmount);
-        increaseCollateralAmount(perpetual, totalAmount);
-        emit DonateInsuranceFund(perpetualIndex, totalAmount);
-    }
-
-    function deposit(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount
+    function setBaseParameter(
+        PerpetualStorage storage perpetual,
+        bytes32 key,
+        int256 newValue
     ) public {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        bool isInitial = perpetual.isEmptyAccount(trader);
-        int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
-        require(totalAmount > 0, "total amount is 0");
-        perpetual.updateCash(trader, totalAmount);
-        increaseCollateralAmount(perpetual, totalAmount);
-        if (isInitial) {
-            perpetual.registerActiveAccount(trader);
-            IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+        if (key == "initialMarginRate") {
+            require(
+                newValue < perpetual.initialMarginRate,
+                "increasing initial margin rate is not allowed"
+            );
+            perpetual.initialMarginRate = newValue;
+        } else if (key == "maintenanceMarginRate") {
+            require(
+                newValue < perpetual.maintenanceMarginRate,
+                "increasing maintenance margin rate is not allowed"
+            );
+            perpetual.maintenanceMarginRate = newValue;
+        } else if (key == "operatorFeeRate") {
+            perpetual.operatorFeeRate = newValue;
+        } else if (key == "lpFeeRate") {
+            perpetual.lpFeeRate = newValue;
+        } else if (key == "liquidationPenaltyRate") {
+            perpetual.liquidationPenaltyRate = newValue;
+        } else if (key == "keeperGasReward") {
+            perpetual.keeperGasReward = newValue;
+        } else if (key == "referrerRebateRate") {
+            perpetual.referrerRebateRate = newValue;
+        } else if (key == "insuranceFundRate") {
+            perpetual.insuranceFundRate = newValue;
+        } else if (key == "insuranceFundCap") {
+            perpetual.insuranceFundCap = newValue;
+        } else {
+            revert("key not found");
         }
-        emit Deposit(perpetualIndex, trader, totalAmount);
     }
 
-    function withdraw(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount
+    function setRiskParameter(
+        PerpetualStorage storage perpetual,
+        bytes32 key,
+        int256 newValue,
+        int256 newMinValue,
+        int256 newMaxValue
     ) public {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        liquidityPool.rebalance(perpetual);
-        perpetual.updateCash(trader, amount.neg());
-        decreaseCollateralAmount(perpetual, amount);
-        require(perpetual.isInitialMarginSafe(trader), "margin is unsafe after withdrawal");
-        if (perpetual.isEmptyAccount(trader)) {
-            perpetual.deregisterActiveAccount(trader);
-            IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+        if (key == "halfSpread") {
+            setOption(perpetual.halfSpread, newValue, newMinValue, newMaxValue);
+        } else if (key == "openSlippageFactor") {
+            setOption(perpetual.openSlippageFactor, newValue, newMinValue, newMaxValue);
+        } else if (key == "closeSlippageFactor") {
+            setOption(perpetual.closeSlippageFactor, newValue, newMinValue, newMaxValue);
+        } else if (key == "fundingRateLimit") {
+            setOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
+        } else if (key == "ammMaxLeverage") {
+            setOption(perpetual.ammMaxLeverage, newValue, newMinValue, newMaxValue);
+        } else {
+            revert("key not found");
         }
-        liquidityPool.transferToUser(payable(trader), amount);
-        emit Withdraw(perpetualIndex, trader, amount);
     }
 
-    function increaseCollateralAmount(PerpetualStorage storage perpetual, int256 amount) public {
-        require(amount >= 0, "amount is negative");
-        perpetual.collateralBalance = perpetual.collateralBalance.add(amount);
+    function updateRiskParameter(
+        PerpetualStorage storage perpetual,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        if (key == "halfSpread") {
+            updateOption(perpetual.halfSpread, newValue);
+        } else if (key == "openSlippageFactor") {
+            updateOption(perpetual.openSlippageFactor, newValue);
+        } else if (key == "closeSlippageFactor") {
+            updateOption(perpetual.closeSlippageFactor, newValue);
+        } else if (key == "fundingRateLimit") {
+            updateOption(perpetual.fundingRateLimit, newValue);
+        } else if (key == "ammMaxLeverage") {
+            updateOption(perpetual.ammMaxLeverage, newValue);
+        } else {
+            revert("key not found");
+        }
     }
 
-    function decreaseCollateralAmount(PerpetualStorage storage perpetual, int256 amount) public {
-        require(amount >= 0, "amount is negative");
-        perpetual.collateralBalance = perpetual.collateralBalance.sub(amount);
-        require(perpetual.collateralBalance >= 0, "collateral is negative");
+    function updatePrice(PerpetualStorage storage perpetual) internal {
+        updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
+        updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
+    }
+
+    function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
+        int256 deltaUnitLoss = getIndexPrice(perpetual).wfrac(
+            perpetual.fundingRate.wmul(timeElapsed),
+            FUNDING_INTERVAL
+        );
+        perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
+        emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
+    }
+
+    function updateFundingRate(PerpetualStorage storage perpetual, int256 poolMargin) public {
+        int256 newFundingRate;
+        int256 position = perpetual.getPosition(address(this));
+        if (position == 0) {
+            newFundingRate = 0;
+        } else {
+            int256 fundingRateLimit = perpetual.fundingRateLimit.value;
+            if (poolMargin != 0) {
+                newFundingRate = getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
+                    perpetual.fundingRateLimit.value
+                );
+                newFundingRate = newFundingRate > fundingRateLimit
+                    ? fundingRateLimit
+                    : newFundingRate;
+                newFundingRate = newFundingRate < fundingRateLimit.neg()
+                    ? fundingRateLimit.neg()
+                    : newFundingRate;
+            } else if (position > 0) {
+                newFundingRate = fundingRateLimit.neg();
+            } else {
+                newFundingRate = fundingRateLimit;
+            }
+        }
+        perpetual.fundingRate = newFundingRate;
+    }
+
+    function freezePrice(PerpetualStorage storage perpetual) internal {
+        perpetual.settlementPriceData = perpetual.indexPriceData;
     }
 
     function enterNormalState(PerpetualStorage storage perpetual) internal {
@@ -159,8 +243,8 @@ library PerpetualModule {
 
     function enterEmergencyState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-        perpetual.updatePrice();
-        perpetual.freezePrice();
+        updatePrice(perpetual);
+        freezePrice(perpetual);
         perpetual.state = PerpetualState.EMERGENCY;
         emit EnterEmergencyState(
             perpetual.id,
@@ -173,6 +257,67 @@ library PerpetualModule {
         require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
         perpetual.state = PerpetualState.CLEARED;
         emit EnterClearedState(perpetual.id);
+    }
+
+    function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {
+        require(amount > 0, "amount should greater than 0");
+        perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(amount);
+        increaseTotalCollateral(perpetual, amount);
+        emit DonateInsuranceFund(perpetual.id, amount);
+    }
+
+    function deposit(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 amount
+    ) public {
+        require(amount > 0, "total amount is 0");
+        perpetual.updateCash(trader, amount);
+        increaseTotalCollateral(perpetual, amount);
+        emit Deposit(perpetual.id, trader, amount);
+    }
+
+    function withdraw(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 amount
+    ) public {
+        perpetual.updateCash(trader, amount.neg());
+        decreaseTotalCollateral(perpetual, amount);
+        int256 markPrice = getMarkPrice(perpetual);
+        require(
+            perpetual.isInitialMarginSafe(trader, markPrice),
+            "margin is unsafe after withdrawal"
+        );
+        emit Withdraw(perpetual.id, trader, amount);
+    }
+
+    function clear(PerpetualStorage storage perpetual, address trader) public {
+        require(perpetual.activeAccounts.contains(trader), "trader cannot be cleared");
+        int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
+        if (margin > 0) {
+            if (perpetual.getPosition(trader) != 0) {
+                perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
+            } else {
+                perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
+                    margin
+                );
+            }
+        }
+        perpetual.activeAccounts.remove(trader);
+        perpetual.clearedTraders.add(trader);
+        emit ClearAccount(perpetual.id, trader);
+    }
+
+    function settle(PerpetualStorage storage perpetual, address trader)
+        public
+        returns (int256 marginToReturn)
+    {
+        int256 price = getMarkPrice(perpetual);
+        marginToReturn = perpetual.getSettleableMargin(trader, price);
+        require(marginToReturn > 0, "no margin to settle");
+        perpetual.resetAccount(trader);
+        emit SettleAccount(perpetual.id, trader, marginToReturn);
     }
 
     function updateInsuranceFund(PerpetualStorage storage perpetual, int256 penaltyToFund)
@@ -200,5 +345,120 @@ library PerpetualModule {
             }
         }
         perpetual.insuranceFund = newInsuranceFund;
+    }
+
+    function getNextDirtyAccount(PerpetualStorage storage perpetual)
+        public
+        view
+        returns (address account)
+    {
+        require(perpetual.activeAccounts.length() > 0, "no account to clear");
+        account = perpetual.activeAccounts.at(0);
+    }
+
+    function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
+        perpetual.activeAccounts.add(trader);
+    }
+
+    function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
+        perpetual.activeAccounts.remove(trader);
+    }
+
+    function settleCollateral(PerpetualStorage storage perpetual) public {
+        int256 totalCollateral = perpetual.totalCollateral;
+        // 2. cover margin without position
+        if (totalCollateral < perpetual.totalMarginWithoutPosition) {
+            // margin without positions get balance / total margin
+            perpetual.redemptionRateWithoutPosition = totalCollateral.wdiv(
+                perpetual.totalMarginWithoutPosition
+            );
+            // margin with positions will get nothing
+            perpetual.redemptionRateWithPosition = 0;
+        } else {
+            // 3. covere margin with position
+            perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
+            perpetual.redemptionRateWithPosition = totalCollateral
+                .sub(perpetual.totalMarginWithoutPosition)
+                .wdiv(perpetual.totalMarginWithPosition);
+        }
+    }
+
+    // prettier-ignore
+    function updatePriceData(
+        OraclePriceData storage priceData,
+        function() external returns (int256, uint256) priceGetter
+    ) internal {
+        (int256 price, uint256 time) = priceGetter();
+        if (time != priceData.time) {
+            priceData.price = price;
+            priceData.time = time;
+        }
+    }
+
+    function increaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
+        require(amount >= 0, "amount is negative");
+        perpetual.totalCollateral = perpetual.totalCollateral.add(amount);
+    }
+
+    function decreaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
+        require(amount >= 0, "amount is negative");
+        perpetual.totalCollateral = perpetual.totalCollateral.sub(amount);
+        require(perpetual.totalCollateral >= 0, "collateral is negative");
+    }
+
+    function updateOption(Option storage option, int256 newValue) internal {
+        require(
+            newValue >= option.minValue && newValue <= option.maxValue,
+            "value is out of range"
+        );
+        option.value = newValue;
+    }
+
+    function setOption(
+        Option storage option,
+        int256 newValue,
+        int256 newMinValue,
+        int256 newMaxValue
+    ) internal {
+        require(newValue >= newMinValue && newValue <= newMaxValue, "value is out of range");
+        option.value = newValue;
+        option.minValue = newMinValue;
+        option.maxValue = newMaxValue;
+    }
+
+    function validateBaseParameters(PerpetualStorage storage perpetual) public view {
+        require(perpetual.initialMarginRate > 0, "imr should be greater than 0");
+        require(perpetual.maintenanceMarginRate > 0, "mmr should be greater than 0");
+        require(
+            perpetual.maintenanceMarginRate <= perpetual.initialMarginRate,
+            "mmr should be lower than imr"
+        );
+        require(
+            perpetual.operatorFeeRate >= 0 &&
+                perpetual.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
+            "ofr should be within [0, 0.01]"
+        );
+        require(
+            perpetual.lpFeeRate >= 0 && perpetual.lpFeeRate <= (Constant.SIGNED_ONE / 100),
+            "lp should be within [0, 0.01]"
+        );
+        require(
+            perpetual.liquidationPenaltyRate >= 0 &&
+                perpetual.liquidationPenaltyRate < perpetual.maintenanceMarginRate,
+            "lpr should be non-negative and lower than mmr"
+        );
+        require(perpetual.keeperGasReward >= 0, "kgr should be non-negative");
+    }
+
+    function validateRiskParameters(PerpetualStorage storage perpetual) public view {
+        require(perpetual.halfSpread.value >= 0, "hsr shoud be greater than 0");
+        require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
+        require(
+            perpetual.closeSlippageFactor.value > 0 &&
+                perpetual.closeSlippageFactor.value <= perpetual.openSlippageFactor.value,
+            "beta2 should be within (0, b1]"
+        );
+        require(perpetual.fundingRateLimit.value >= 0, "frl should be greater than 0");
+        require(perpetual.ammMaxLeverage.value > 0, "aml should be greater than 0");
     }
 }

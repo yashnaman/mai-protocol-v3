@@ -1,24 +1,12 @@
 // SPDX-License-Identifier: None
+pragma solidity 0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-pragma solidity 0.7.4;
-pragma experimental ABIEncoderV2;
-
-interface ILiquidityPool {
-    function getLiquidityPoolInfo()
-        external
-        view
-        returns (
-            // [0] factory
-            address[6] memory addresses,
-            int256[7] memory nums,
-            uint256 perpetualCount,
-            uint256 fundingTime
-        );
-}
+import "../interface/ILiquidityPool.sol";
 
 contract SymbolService is Ownable {
     using EnumerableSet for EnumerableSet.UintSet;

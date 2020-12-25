@@ -84,11 +84,11 @@ describe("integration", () => {
         await symbol.addWhitelistedFactory(maker.address);
         var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
-        await maker.createLiquidityPool(ctk.address, 998);
 
-        const n = await maker.getLiquidityPoolCount();
-        const allLiquidityPools = await maker.listLiquidityPools(0, n.toString());
-        const perp = await LiquidityPoolFactory.connect(allLiquidityPools[allLiquidityPools.length - 1], user0);
+        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, false, 998);
+        await maker.createLiquidityPool(ctk.address, false, 998);
+
+        const perp = await LiquidityPoolFactory.connect(perpAddr, user0);
 
         // oracle
         let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
@@ -109,25 +109,25 @@ describe("integration", () => {
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
         await perp.createPerpetual(oracle1.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle2.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle3.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle4.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
@@ -190,35 +190,35 @@ describe("integration", () => {
         await brokerUser1.deposit({ value: toWei("0.2") });
         console.log((await brokerUser1.balanceOf(user1.address)).toString());
 
-        const order = {
-            trader: user1.address, // trader
-            broker: broker.address, // broker
-            relayer: user1.address, // relayer
-            liquidityPool: perpUser1.address, // liquidityPool
-            minTradeAmount: 0,
-            referrer: "0x0000000000000000000000000000000000000000", // referrer
-            amount: toWei("0.1"),
-            limitPrice: toWei("1000"),
-            triggerPrice: 0,
-            chainID: 31337,
-            expiredAt: 2616217568,
-            perpetualIndex: 0,
-            brokerFeeLimit: 1000000000,
-            flags: 0x00000000,
-            salt: 667,
-        };
-        const OrderModule = await createContract("OrderModule");
-        const testOrder = await createContract("TestOrder", [], { OrderModule });
-        const orderHash = await testOrder.orderHash(order);
-        const signature = await user1.signMessage(ethers.utils.arrayify(orderHash));
-        await gs.collect("trade 5 - batchTrade", brokerUser1.batchTrade([order], [toWei("0.1")], [signature], [toWei("0.01")]));
+        // const order = {
+        //     trader: user1.address, // trader
+        //     broker: broker.address, // broker
+        //     relayer: user1.address, // relayer
+        //     liquidityPool: perpUser1.address, // liquidityPool
+        //     minTradeAmount: 0,
+        //     referrer: "0x0000000000000000000000000000000000000000", // referrer
+        //     amount: toWei("0.1"),
+        //     limitPrice: toWei("1000"),
+        //     triggerPrice: 0,
+        //     chainID: 31337,
+        //     expiredAt: 2616217568,
+        //     perpetualIndex: 0,
+        //     brokerFeeLimit: 1000000000,
+        //     flags: 0x00000000,
+        //     salt: 667,
+        // };
+        // const OrderModule = await createContract("OrderModule");
+        // const testOrder = await createContract("TestOrder", [], { OrderModule });
+        // const orderHash = await testOrder.orderHash(order);
+        // const signature = await user1.signMessage(ethers.utils.arrayify(orderHash));
+        // await gs.collect("trade 5 - batchTrade", brokerUser1.batchTrade([order], [toWei("0.1")], [signature], [toWei("0.01")]));
         // await gs.collect("trade 5 - batchTrade", perpUser1.brokerTrade(order, toWei("0.1"), signature));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.getMarginAccount(0, user1.address));
 
-        // trade 4
-        await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
-        await gs.collect("trade 6 - close all", perpUser1.trade(0, user1.address, toWei("-0.1"), toWei("0"), now + 999999, none, false));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        // // trade 4
+        // await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
+        // await gs.collect("trade 6 - close all", perpUser1.trade(0, user1.address, toWei("-0.1"), toWei("0"), now + 999999, none, false));
+        // print(await perpUser1.getMarginAccount(0, user1.address));
 
         // withdraw
         await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
@@ -293,25 +293,25 @@ describe("integration", () => {
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
         await perp.createPerpetual(oracle1.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle2.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle3.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
         await perp.createPerpetual(oracle4.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],

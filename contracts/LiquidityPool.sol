@@ -16,11 +16,9 @@ import "./Getter.sol";
 import "./Governance.sol";
 import "./Perpetual.sol";
 import "./Storage.sol";
-import "./Settlement.sol";
-import "./Storage.sol";
 import "./Type.sol";
 
-contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
+contract LiquidityPool is Storage, Perpetual, Getter, Governance {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
@@ -42,9 +40,16 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         address operator,
         address collateral,
         address governor,
-        address shareToken
+        address shareToken,
+        bool isFastCreationEnabled
     ) external initializer {
-        _liquidityPool.initialize(collateral, operator, governor, shareToken);
+        _liquidityPool.initialize(
+            collateral,
+            operator,
+            governor,
+            shareToken,
+            isFastCreationEnabled
+        );
     }
 
     function createPerpetual(
@@ -54,7 +59,7 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        if (!_liquidityPool.isFinalized) {
+        if (!_liquidityPool.isFinalized || _liquidityPool.isFastCreationEnabled) {
             require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");
         } else {
             require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
@@ -72,7 +77,7 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
         ISymbolService service = ISymbolService(
             IPoolCreator(_liquidityPool.factory).symbolService()
         );
-        service.requestSymbol(address(this), perpetualIndex);
+        service.allocateSymbol(address(this), perpetualIndex);
         if (_liquidityPool.isFinalized) {
             perpetual.enterNormalState();
         }
@@ -82,7 +87,7 @@ contract LiquidityPool is Storage, Perpetual, Settlement, Getter, Governance {
             _liquidityPool.shareToken,
             _liquidityPool.operator,
             oracle,
-            _liquidityPool.collateral,
+            _liquidityPool.collateralToken,
             coreParams,
             riskParams
         );

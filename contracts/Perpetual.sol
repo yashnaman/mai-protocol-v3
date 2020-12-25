@@ -14,10 +14,9 @@ import "./libraries/OrderData.sol";
 import "./libraries/SafeMathExt.sol";
 
 import "./module/AMMModule.sol";
-import "./module/MarginModule.sol";
+import "./module/MarginAccountModule.sol";
 import "./module/TradeModule.sol";
 import "./module/LiquidationModule.sol";
-import "./module/SettlementModule.sol";
 import "./module/OrderModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
@@ -40,14 +39,14 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using OrderData for Order;
 
+    using PerpetualModule for PerpetualStorage;
+    using MarginAccountModule for PerpetualStorage;
+
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using LiquidationModule for LiquidityPoolStorage;
-    using PerpetualModule for LiquidityPoolStorage;
-    using MarginModule for LiquidityPoolStorage;
     using OrderModule for LiquidityPoolStorage;
-    using SettlementModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
 
     function getMarginAccount(uint256 perpetualIndex, address trader)
@@ -60,6 +59,37 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
             .marginAccounts[trader];
         cash = account.cash;
         position = account.position;
+    }
+
+    function getClearProgress(uint256 perpetualIndex)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (uint256 left, uint256 total)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        left = perpetual.activeAccounts.length();
+        total = perpetual.clearedTraders.length().add(left);
+    }
+
+    function getSettleableMargin(uint256 perpetualIndex, address trader)
+        public
+        onlyExistedPerpetual(perpetualIndex)
+        returns (int256 settleableMargin)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        int256 markPrice = perpetual.getMarkPrice();
+        settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
+    }
+
+    function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
+        external
+        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        onlyExistedPerpetual(perpetualIndex)
+    {
+        require(amount > 0, "amount is negative");
+        int256 totalAmount = _liquidityPool.transferFromUser(msg.sender, amount);
+        _liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
     }
 
     function deposit(
@@ -76,7 +106,15 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0 || msg.value > 0, "amount is invalid");
-        _liquidityPool.deposit(perpetualIndex, trader, amount);
+
+        int256 totalAmount = _liquidityPool.transferFromUser(trader, amount);
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        bool isJoining = perpetual.isEmptyAccount(trader);
+        perpetual.deposit(trader, totalAmount);
+        if (isJoining) {
+            perpetual.registerActiveAccount(trader);
+            IPoolCreator(_liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+        }
     }
 
     function withdraw(
@@ -93,7 +131,46 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
-        _liquidityPool.withdraw(perpetualIndex, trader, amount);
+
+        _liquidityPool.transferToUser(payable(trader), amount);
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        _liquidityPool.rebalanceFrom(perpetual);
+        perpetual.withdraw(trader, amount);
+        if (perpetual.isEmptyAccount(trader)) {
+            perpetual.deregisterActiveAccount(trader);
+            IPoolCreator(_liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+        }
+    }
+
+    function clear(uint256 perpetualIndex)
+        public
+        onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
+        onlyExistedPerpetual(perpetualIndex)
+        nonReentrant
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        address dirtyAccount = perpetual.getNextDirtyAccount();
+        perpetual.clear(dirtyAccount);
+
+        if (perpetual.activeAccounts.length() == 0) {
+            _liquidityPool.rebalanceFrom(perpetual);
+            perpetual.settleCollateral();
+            int256 marginToReturn = perpetual.settle(address(this));
+            _liquidityPool.increasePoolCash(marginToReturn);
+            perpetual.enterClearedState();
+        }
+    }
+
+    function settle(uint256 perpetualIndex, address trader)
+        public
+        onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
+        onlyWhen(perpetualIndex, PerpetualState.CLEARED)
+        onlyExistedPerpetual(perpetualIndex)
+        nonReentrant
+    {
+        require(trader != address(0), "trader is invalid");
+        int256 marginToReturn = _liquidityPool.perpetuals[perpetualIndex].settle(trader);
+        _liquidityPool.transferToUser(payable(trader), marginToReturn);
     }
 
     function trade(

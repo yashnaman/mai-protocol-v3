@@ -11,8 +11,8 @@ import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
 
-import "../module/MarginModule.sol";
-import "../module/OracleModule.sol";
+import "./MarginAccountModule.sol";
+import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
@@ -21,8 +21,8 @@ library OrderModule {
     using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
     using OrderData for Order;
-    using MarginModule for PerpetualStorage;
-    using OracleModule for PerpetualStorage;
+    using MarginAccountModule for PerpetualStorage;
+    using PerpetualModule for PerpetualStorage;
 
     function validateSignature(
         LiquidityPoolStorage storage liquidityPool,
