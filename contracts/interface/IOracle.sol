@@ -2,6 +2,8 @@
 pragma solidity 0.7.4;
 
 interface IOracle {
+    function isPaused() external returns (bool);
+
     function collateral() external view returns (string memory);
 
     function underlyingAsset() external view returns (string memory);

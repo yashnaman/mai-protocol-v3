@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 
 contract OracleWrapper {
+    bool internal _isPaused;
     string internal _collateral;
     string internal _underlyingAsset;
     int256 internal _indexPrice;
@@ -24,6 +25,10 @@ contract OracleWrapper {
         _markPriceTimestamp = timestamp;
     }
 
+    function setPaused(bool isPaused) external {
+        _isPaused = isPaused;
+    }
+
     function collateral() external view returns (string memory) {
         return _collateral;
     }
@@ -38,5 +43,9 @@ contract OracleWrapper {
 
     function priceTWAPShort() external returns (int256 newPrice, uint256 newTimestamp) {
         return (_indexPrice, _indexPriceTimestamp);
+    }
+
+    function isPaused() external returns (bool) {
+        return _isPaused;
     }
 }

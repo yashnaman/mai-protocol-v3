@@ -267,11 +267,11 @@ describe("integration", () => {
         await symbol.addWhitelistedFactory(maker.address);
         var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
-        await maker.createLiquidityPool(weth.address, 998);
 
-        const n = await maker.getLiquidityPoolCount();
-        const allLiquidityPools = await maker.listLiquidityPools(0, n.toString());
-        const perp = await LiquidityPoolFactory.connect(allLiquidityPools[allLiquidityPools.length - 1], user0);
+        const perpAddr = await maker.callStatic.createLiquidityPool(weth.address, false, 998);
+        await maker.createLiquidityPool(weth.address, false, 998);
+
+        const perp = await LiquidityPoolFactory.connect(perpAddr, user0);
 
         // oracle
         let oracle1 = await createContract("OracleWrapper", ["ETH", "USD"]);

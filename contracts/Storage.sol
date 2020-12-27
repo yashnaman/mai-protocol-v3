@@ -18,6 +18,14 @@ contract Storage {
     address internal _governor;
     address internal _shareToken;
 
+    modifier onlyNotPaused(uint256 perpetualIndex) {
+        require(
+            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isPaused(),
+            "oracle is paused"
+        );
+        _;
+    }
+
     modifier onlyExistedPerpetual(uint256 perpetualIndex) {
         require(perpetualIndex < _liquidityPool.perpetuals.length, "perpetual not exist");
         _;

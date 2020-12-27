@@ -15,6 +15,9 @@ contract Governance is Storage {
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
+    address internal _unconfirmedOperator;
+    uint256 internal _transferExpiration;
+
     event SetLiquidityPoolParameter(bytes32 key, int256 value);
     event SetPerpetualParameter(uint256 perpetualIndex, bytes32 key, int256 value);
     event SetPerpetualRiskParameter(
@@ -34,6 +37,24 @@ contract Governance is Storage {
     modifier onlyOperator() {
         require(msg.sender == _liquidityPool.operator, "only operator is allowed");
         _;
+    }
+
+    function transferOperatingship(address newOperator, uint256 expiration) external onlyOperator {
+        require(newOperator != address(0), "new operator is invalid");
+        _unconfirmedOperator = newOperator;
+        _transferExpiration = expiration;
+    }
+
+    function claimOperatingship() external {
+        require(msg.sender == _unconfirmedOperator, "claimer must be specified by operator");
+        require(block.timestamp <= _transferExpiration, "transfer is expired");
+        _liquidityPool.operator = _unconfirmedOperator;
+        _unconfirmedOperator = address(0);
+        _transferExpiration = 0;
+    }
+
+    function revokeOperatingship() external onlyOperator {
+        _liquidityPool.operator = address(0);
     }
 
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-library Bitwise {
+library BitwiseMath {
     function test(uint256 value, uint256 bit) internal pure returns (bool) {
         return value & bit > 0;
     }

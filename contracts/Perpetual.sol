@@ -16,7 +16,6 @@ import "./libraries/SafeMathExt.sol";
 import "./module/AMMModule.sol";
 import "./module/MarginAccountModule.sol";
 import "./module/TradeModule.sol";
-import "./module/LiquidationModule.sol";
 import "./module/OrderModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
@@ -45,7 +44,6 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
-    using LiquidationModule for LiquidityPoolStorage;
     using OrderModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
 
@@ -74,6 +72,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
 
     function getSettleableMargin(uint256 perpetualIndex, address trader)
         public
+        view
         onlyExistedPerpetual(perpetualIndex)
         returns (int256 settleableMargin)
     {
@@ -126,6 +125,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        onlyNotPaused(perpetualIndex)
         onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
@@ -185,6 +185,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
+        onlyNotPaused(perpetualIndex)
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
     {
         require(trader != address(0), "trader is invalid");

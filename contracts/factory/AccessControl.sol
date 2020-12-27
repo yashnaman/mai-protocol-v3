@@ -2,11 +2,11 @@
 pragma solidity 0.7.4;
 
 import "../libraries/EnumerableMapExt.sol";
-import "../libraries/Bitwise.sol";
+import "../libraries/BitwiseMath.sol";
 import "../libraries/Constant.sol";
 
 contract AccessControl {
-    using Bitwise for uint256;
+    using BitwiseMath for uint256;
     using EnumerableMapExt for EnumerableMapExt.AddressToUintMap;
 
     mapping(address => EnumerableMapExt.AddressToUintMap) internal _accessControls;

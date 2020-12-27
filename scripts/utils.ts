@@ -19,7 +19,6 @@ export async function getAccounts(): Promise<any[]> {
     return accounts;
 }
 
-
 export async function createFactory(path, libraries = {}) {
     const parsed = {}
     for (var name in libraries) {
@@ -41,12 +40,10 @@ export async function createLiquidityPoolFactory() {
     const PerpetualModule = await createContract("PerpetualModule");
 
     const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule });
-    const LiquidationModule = await createContract("LiquidationModule", [], { AMMModule, CollateralModule, PerpetualModule });
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule });
 
     return await createFactory("LiquidityPool", {
         CollateralModule,
-        LiquidationModule,
         LiquidityPoolModule,
         OrderModule,
         PerpetualModule,

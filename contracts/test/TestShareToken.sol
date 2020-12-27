@@ -7,4 +7,8 @@ contract TestShareToken is ShareToken {
     function setAdmin(address admin) public {
         _setupRole(ADMIN_ROLE, admin);
     }
+
+    function setTotalSupply(address owner, uint256 amount) public {
+        _mint(owner, amount);
+    }
 }

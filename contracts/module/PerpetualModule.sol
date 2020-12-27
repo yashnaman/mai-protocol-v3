@@ -203,11 +203,9 @@ library PerpetualModule {
     }
 
     function updateFundingRate(PerpetualStorage storage perpetual, int256 poolMargin) public {
-        int256 newFundingRate;
+        int256 newFundingRate = 0;
         int256 position = perpetual.getPosition(address(this));
-        if (position == 0) {
-            newFundingRate = 0;
-        } else {
+        if (position != 0) {
             int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
                 newFundingRate = getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
@@ -315,7 +313,6 @@ library PerpetualModule {
     {
         int256 price = getMarkPrice(perpetual);
         marginToReturn = perpetual.getSettleableMargin(trader, price);
-        require(marginToReturn > 0, "no margin to settle");
         perpetual.resetAccount(trader);
         emit SettleAccount(perpetual.id, trader, marginToReturn);
     }
@@ -451,7 +448,10 @@ library PerpetualModule {
     }
 
     function validateRiskParameters(PerpetualStorage storage perpetual) public view {
-        require(perpetual.halfSpread.value >= 0, "hsr shoud be greater than 0");
+        require(
+            perpetual.halfSpread.value >= 0 && perpetual.halfSpread.value < Constant.SIGNED_ONE,
+            "hsr shoud be greater than 0 and less than 1"
+        );
         require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
         require(
             perpetual.closeSlippageFactor.value > 0 &&

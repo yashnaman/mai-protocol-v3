@@ -6,12 +6,14 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../module/AMMModule.sol";
+import "../module/MarginAccountModule.sol";
+import "../module/PerpetualModule.sol";
 
 contract TestAMM {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
-    // using MarginModule for LiquidityPoolStorage;
-    using OracleModule for PerpetualStorage;
+    using MarginAccountModule for LiquidityPoolStorage;
+    using PerpetualModule for PerpetualStorage;
 
     LiquidityPoolStorage liquidityPool;
 
@@ -54,8 +56,8 @@ contract TestAMM {
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
-    function setConfig(address collateral, address shareToken, uint256 scaler) public {
-        liquidityPool.collateral = collateral;
+    function setConfig(address collateralToken, address shareToken, uint256 scaler) public {
+        liquidityPool.collateralToken = collateralToken;
         liquidityPool.shareToken = shareToken;
         liquidityPool.scaler = scaler;
     }

@@ -117,7 +117,7 @@ library LiquidityPoolModule {
         bytes32 key,
         int256 newValue
     ) public {
-        if (key == "allow") {
+        if (key == "isFastCreationEnabled") {
             liquidityPool.isFastCreationEnabled = (newValue != 0);
         } else {
             revert("key not found");

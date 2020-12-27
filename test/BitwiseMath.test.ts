@@ -13,7 +13,7 @@ describe("Order", () => {
 
     before(async () => {
         accounts = await getAccounts();
-        testBitwise = await createContract("TestBitwise");
+        testBitwise = await createContract("TestBitwiseMath");
     })
 
     it("normal", async () => {

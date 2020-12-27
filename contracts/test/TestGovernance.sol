@@ -36,6 +36,20 @@ contract TestGovernance is Governance {
         );
     }
 
+    function settlementPrice(uint256 perpetualIndex) public view returns (int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.settlementPriceData.price;
+    }
+
+    function setOracle(uint256 perpetualIndex, address oracle) public {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        perpetual.oracle = oracle;
+    }
+
+    function isFastCreationEnabled() public view returns (bool) {
+        return _liquidityPool.isFastCreationEnabled;
+    }
+
     function initialMarginRate(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].initialMarginRate;
     }
@@ -82,5 +96,13 @@ contract TestGovernance is Governance {
 
     function ammMaxLeverage(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].ammMaxLeverage.value;
+    }
+
+    function state(uint256 perpetualIndex) public view returns (PerpetualState) {
+        return _liquidityPool.perpetuals[perpetualIndex].state;
+    }
+
+    function setState(uint256 perpetualIndex, PerpetualState state) public {
+        _liquidityPool.perpetuals[perpetualIndex].state = state;
     }
 }

@@ -18,21 +18,27 @@ describe('MarginModule', () => {
         let testMargin;
 
         beforeEach(async () => {
-            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            const ParameterModule = await createContract("ParameterModule");
-            const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
+            const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
-            const AMMModule = await createContract("AMMModule", [], { CollateralModule });
-            const FundingModule = await createContract("FundingModule", [], { AMMModule });
-            testMargin = await createContract("TestMargin", [], { ParameterModule, FundingModule, PerpetualModule });
+            const OrderModule = await createContract("OrderModule");
+            const PerpetualModule = await createContract("PerpetualModule");
+            const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+            testMargin = await createContract("TestMarginAccount", [], {
+                AMMModule,
+                CollateralModule,
+                OrderModule,
+                PerpetualModule,
+                LiquidityPoolModule,
+                TradeModule,
+            });
+
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
-                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
             )
         })
 
@@ -41,7 +47,7 @@ describe('MarginModule', () => {
                 name: "+getInitialMargin",
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -56,7 +62,7 @@ describe('MarginModule', () => {
                 name: "-getInitialMargin",
                 method: "getInitialMargin",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("-1"),
                 },
@@ -68,42 +74,10 @@ describe('MarginModule', () => {
                 expect: toWei("50")
             },
             {
-                name: "+getInitialMargin - non-zero keeperGasReward",
-                method: "getInitialMargin",
-                markPrice: toWei("500"),
-                getMarginAccount: {
-                    cash: toWei("100"),
-                    position: toWei("0.1"),
-                },
-                parameters: {
-                    initialMarginRate: toWei("0.1"),
-                    keeperGasReward: toWei("6"),
-                },
-                unitAccumulativeFunding: toWei("0"),
-                trader: 0,
-                expect: toWei("6")
-            },
-            {
-                name: "-getInitialMargin - non-zero keeperGasReward",
-                method: "getInitialMargin",
-                markPrice: toWei("500"),
-                getMarginAccount: {
-                    cash: toWei("100"),
-                    position: toWei("-0.1"),
-                },
-                parameters: {
-                    initialMarginRate: toWei("0.1"),
-                    keeperGasReward: toWei("6"),
-                },
-                unitAccumulativeFunding: toWei("0"),
-                trader: 0,
-                expect: toWei("6")
-            },
-            {
                 name: "+getMaintenanceMargin",
                 method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -118,7 +92,7 @@ describe('MarginModule', () => {
                 name: "-getMaintenanceMargin",
                 method: "getMaintenanceMargin",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("-1"),
                 },
@@ -131,9 +105,9 @@ describe('MarginModule', () => {
             },
             {
                 name: "+margin",
-                method: "margin",
+                method: "getMargin2",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -146,9 +120,9 @@ describe('MarginModule', () => {
             },
             {
                 name: "-margin",
-                method: "margin",
+                method: "getMargin2",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("-1"),
                 },
@@ -161,9 +135,9 @@ describe('MarginModule', () => {
             },
             {
                 name: "+position",
-                method: "position",
+                method: "getPosition",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -173,9 +147,9 @@ describe('MarginModule', () => {
             },
             {
                 name: "-position",
-                method: "position",
+                method: "getPosition",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -187,7 +161,7 @@ describe('MarginModule', () => {
                 name: "getAvailableCash + funding",
                 method: "getAvailableCash",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -199,7 +173,7 @@ describe('MarginModule', () => {
                 name: "getAvailableCash - funding 1",
                 method: "getAvailableCash",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -211,7 +185,7 @@ describe('MarginModule', () => {
                 name: "getAvailableCash - funding 2",
                 method: "getAvailableCash",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("100"),
                     position: toWei("1"),
                 },
@@ -223,7 +197,7 @@ describe('MarginModule', () => {
                 name: "+isInitialMarginSafe yes",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("-450"),
                     position: toWei("1"),
                 },
@@ -238,7 +212,7 @@ describe('MarginModule', () => {
                 name: "-isInitialMarginSafe yes",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("550"),
                     position: toWei("-1"),
                 },
@@ -253,7 +227,7 @@ describe('MarginModule', () => {
                 name: "+isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("-450.1"),
                     position: toWei("1"),
                 },
@@ -268,7 +242,7 @@ describe('MarginModule', () => {
                 name: "-isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("549.9"),
                     position: toWei("-1"),
                 },
@@ -283,7 +257,7 @@ describe('MarginModule', () => {
                 name: "+isMaintenanceMarginSafe yes",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("-450"),
                     position: toWei("1"),
                 },
@@ -298,7 +272,7 @@ describe('MarginModule', () => {
                 name: "-isMaintenanceMarginSafe yes",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("550"),
                     position: toWei("-1"),
                 },
@@ -313,7 +287,7 @@ describe('MarginModule', () => {
                 name: "+isMaintenanceMarginSafe no",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("-450.1"),
                     position: toWei("1"),
                 },
@@ -328,7 +302,7 @@ describe('MarginModule', () => {
                 name: "-isMaintenanceMarginSafe no",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("549.9"),
                     position: toWei("-1"),
                 },
@@ -342,7 +316,7 @@ describe('MarginModule', () => {
             {
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("0"),
                     position: toWei("0"),
                 },
@@ -357,7 +331,7 @@ describe('MarginModule', () => {
                 name: "isEmptyAccount - 1",
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("1"),
                     position: toWei("0"),
                 },
@@ -372,7 +346,7 @@ describe('MarginModule', () => {
                 name: "isEmptyAccount - 2",
                 method: "isEmptyAccount",
                 markPrice: toWei("500"),
-                getMarginAccount: {
+                marginAccount: {
                     cash: toWei("0"),
                     position: toWei("1"),
                 },
@@ -387,16 +361,17 @@ describe('MarginModule', () => {
 
         testCases.forEach((testCase) => {
             it(testCase["name"] || testCase.method, async () => {
-                await testMargin.updateMarkPrice(0, testCase.markPrice);
-                await testMargin.initializeMarginAccount(
+                await testMargin.setState(0, 2);
+                await testMargin.setMarkPrice(0, testCase.markPrice);
+                await testMargin.setMarginAccount(
                     0,
                     accounts[testCase.trader].address,
-                    testCase.getMarginAccount.cash,
-                    testCase.getMarginAccount.position);
+                    testCase.marginAccount.cash,
+                    testCase.marginAccount.position);
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.setPerpetualParameter(0, toBytes32(key), testCase.parameters[key]);
+                    await testMargin.setPerpetualBaseParameter(0, toBytes32(key), testCase.parameters[key]);
                 }
-                await testMargin.updateUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
+                await testMargin.setUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
                     const result = await testMargin.callStatic[testCase.method](0, accounts[testCase.trader].address);
                     expect(result).to.equal(testCase["expect"])
@@ -413,52 +388,53 @@ describe('MarginModule', () => {
         let testMargin;
 
         before(async () => {
-            const erc20 = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            const ParameterModule = await createContract("ParameterModule");
-            const PerpetualModule = await createContract("PerpetualModule", [], { ParameterModule });
+            const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
-            const AMMModule = await createContract("AMMModule", [], { CollateralModule });
-            const FundingModule = await createContract("FundingModule", [], { AMMModule });
-            testMargin = await createContract("TestMargin", [], { ParameterModule, FundingModule, PerpetualModule });
+            const OrderModule = await createContract("OrderModule");
+            const PerpetualModule = await createContract("PerpetualModule");
+            const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+            testMargin = await createContract("TestMarginAccount", [], {
+                AMMModule,
+                CollateralModule,
+                OrderModule,
+                PerpetualModule,
+                LiquidityPoolModule,
+                TradeModule,
+            });
+
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0")],
+                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
-                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
             )
         })
 
-        it("updateMarginAccount", async () => {
+        it("setMarginAccount", async () => {
             let trader = accounts[0].address;
-            await testMargin.updateMarkPrice(0, toWei("500"));
-            await testMargin.updateUnitAccumulativeFunding(0, toWei("100"));
-            await testMargin.initializeMarginAccount(0, trader, toWei("1000"), toWei("0"));
+            await testMargin.setMarkPrice(0, toWei("500"));
+            await testMargin.setUnitAccumulativeFunding(0, toWei("-100"));
 
-            await testMargin.updateMarginAccount(0, trader, toWei("2"), toWei("100")) // +100 + 2*100
-            var { cash, position } = await testMargin.getMarginAccount(0, trader);
-            expect(cash).to.equal(toWei("1300"));
-            expect(position).to.equal(toWei("2"));
+            await testMargin.setMarginAccount(0, trader, toWei("100"), toWei("2")) // +100 + 2*100
+            expect(await testMargin.getAvailableCash(0, trader)).to.equal(toWei("300"));
+            expect(await testMargin.getPosition(0, trader)).to.equal(toWei("2"));
 
-            await testMargin.updateUnitAccumulativeFunding(0, toWei("200"));
-            await testMargin.updateMarginAccount(0, trader, toWei("0.5"), toWei("100")) // +100 + 0.5*200
-            var { cash, position } = await testMargin.getMarginAccount(0, trader);
-            expect(cash).to.equal(toWei("1500"));
-            expect(position).to.equal(toWei("2.5"));
+            await testMargin.setUnitAccumulativeFunding(0, toWei("-200"));
+            await testMargin.setMarginAccount(0, trader, toWei("100"), toWei("0.5")) // +100 + 0.5*200
+            expect(await testMargin.getAvailableCash(0, trader)).to.equal(toWei("200"));
+            expect(await testMargin.getPosition(0, trader)).to.equal(toWei("0.5"));
 
-            await testMargin.updateUnitAccumulativeFunding(0, toWei("0"));
-            await testMargin.updateMarginAccount(0, trader, toWei("-1"), toWei("-100"))
-            var { cash, position } = await testMargin.getMarginAccount(0, trader);
-            expect(cash).to.equal(toWei("1400")); // -100 -1*0
-            expect(position).to.equal(toWei("1.5"));
+            await testMargin.setUnitAccumulativeFunding(0, toWei("0"));
+            await testMargin.setMarginAccount(0, trader, toWei("-100"), toWei("-1"))
+            expect(await testMargin.getAvailableCash(0, trader)).to.equal(toWei("-100"));
+            expect(await testMargin.getPosition(0, trader)).to.equal(toWei("-1"));
 
-            await testMargin.updateUnitAccumulativeFunding(0, toWei("-100"));
-            await testMargin.updateMarginAccount(0, trader, toWei("-5"), toWei("-100"))
-            var { cash, position } = await testMargin.getMarginAccount(0, trader);
-            expect(cash).to.equal(toWei("1800")); // -100 - 5*-100
-            expect(position).to.equal(toWei("-3.5"));
+            await testMargin.setUnitAccumulativeFunding(0, toWei("-100"));
+            await testMargin.setMarginAccount(0, trader, toWei("-100"), toWei("-5"))
+            expect(await testMargin.getAvailableCash(0, trader)).to.equal(toWei("-600"));
+            expect(await testMargin.getPosition(0, trader)).to.equal(toWei("-5"));
         })
     })
 })

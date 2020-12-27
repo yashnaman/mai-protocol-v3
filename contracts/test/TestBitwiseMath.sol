@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "../libraries/Bitwise.sol";
+import "../libraries/BitwiseMath.sol";
 
-contract TestBitwise {
+contract TestBitwiseMath {
     function test(uint256 value, uint256 bit) public pure returns (bool) {
-        return Bitwise.test(value, bit);
+        return BitwiseMath.test(value, bit);
     }
 
     function set(uint256 value, uint256 bit) public pure returns (uint256) {
-        return Bitwise.set(value, bit);
+        return BitwiseMath.set(value, bit);
     }
 
     function clean(uint256 value, uint256 bit) public pure returns (uint256) {
-        return Bitwise.clean(value, bit);
+        return BitwiseMath.clean(value, bit);
     }
 }
