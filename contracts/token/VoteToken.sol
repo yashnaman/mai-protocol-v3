@@ -46,14 +46,12 @@ contract VoteToken {
     mapping(address => uint256) public redemptionLocks;
 
     /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,uint256 chainId,address verifyingContract)"
-    );
+    bytes32 public constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
-    bytes32 public constant DELEGATION_TYPEHASH = keccak256(
-        "Delegation(address delegatee,uint256 nonce,uint256 expiry)"
-    );
+    bytes32 public constant DELEGATION_TYPEHASH =
+        keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     /// @notice A record of states for signing / validating signatures
     mapping(address => uint256) public nonces;
@@ -118,10 +116,14 @@ contract VoteToken {
      */
     function redeem(address account, uint256 amount) public {
         require(account != address(0), "Burn from the zero address");
-
         balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
         totalSupply = totalSupply.sub(amount);
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
+        require(
+            redemptionLocks[account] <= block.timestamp &&
+                redemptionLocks[delegatee] <= block.timestamp,
+            "Redemption blocked by voting"
+        );
         _moveDelegates(delegatee, address(0), amount);
         emit Transfer(account, address(0), amount);
     }
@@ -222,9 +224,10 @@ contract VoteToken {
         bytes32 r,
         bytes32 s
     ) public {
-        bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this))
-        );
+        bytes32 domainSeparator =
+            keccak256(
+                abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this))
+            );
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -286,9 +289,8 @@ contract VoteToken {
     }
 
     function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator] == address(0)
-            ? delegator
-            : delegates[delegator];
+        address currentDelegate =
+            delegates[delegator] == address(0) ? delegator : delegates[delegator];
         uint256 delegatorBalance = balances[delegator];
         delegates[delegator] = delegatee;
 
@@ -304,11 +306,15 @@ contract VoteToken {
     ) internal {
         require(src != address(0), "_transferTokens: cannot transfer from the zero address");
         require(dst != address(0), "_transferTokens: cannot transfer to the zero address");
-
         balances[src] = balances[src].sub(amount);
         balances[dst] = balances[dst].add(amount);
         emit Transfer(src, dst, amount);
         address srcDelegatee = delegates[src] == address(0) ? src : delegates[src];
+        require(
+            redemptionLocks[src] <= block.timestamp &&
+                redemptionLocks[srcDelegatee] <= block.timestamp,
+            "Redemption blocked by voting"
+        );
         address dstDelegatee = delegates[dst] == address(0) ? dst : delegates[dst];
         _moveDelegates(srcDelegatee, dstDelegatee, amount);
     }

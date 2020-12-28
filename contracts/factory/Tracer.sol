@@ -52,7 +52,7 @@ contract Tracer {
         return _addressSetToList(_liquidityPoolSet, begin, end);
     }
 
-    function ownedLiquidityPoolsCountOf(address operator) public view returns (uint256) {
+    function getOwnedLiquidityPoolsCountOf(address operator) public view returns (uint256) {
         return _operatorOwnedLiquidityPools[operator].length();
     }
 

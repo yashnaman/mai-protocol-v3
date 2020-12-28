@@ -150,7 +150,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("11178.8766232"),
-                        vaultFee: toWei("0.697691610"),
                         operatorFee: toWei("0.348845805"),
                     }
                 },
@@ -166,7 +165,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("4204.068831565497225683"),
-                        vaultFee: toWei("0.699249577859041513"),
                         operatorFee: toWei("0.349624788929520756"),
                     }
                 },
@@ -182,7 +180,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("-15378.373986752065535528"),
-                        vaultFee: toWei("4.617367348751661445"),
                         operatorFee: toWei("2.308683674375830722"),
                     }
                 },
@@ -205,7 +202,6 @@ describe('TradeModule1', () => {
                         await testTrade.trade2(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, false);
                         var { cash } = await testTrade.getMarginAccount(0, user1.address);
                         expect(cash).approximateBigNumber(testCase.expectOutput.cash);
-                        expect(await testTrade.getClaimableFee(user4.address)).approximateBigNumber(testCase.expectOutput.vaultFee);
                         expect(await testTrade.getClaimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
                     } else {
                         await expect(testTrade.trade2(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, false))
