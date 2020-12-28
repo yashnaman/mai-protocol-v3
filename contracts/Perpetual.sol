@@ -157,7 +157,7 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
             perpetual.settleCollateral();
             int256 marginToReturn = perpetual.settle(address(this));
             _liquidityPool.increasePoolCash(marginToReturn);
-            perpetual.enterClearedState();
+            perpetual.setClearedState();
         }
     }
 

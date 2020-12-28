@@ -28,13 +28,9 @@ library PerpetualModule {
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
     event DonateInsuranceFund(uint256 perpetualIndex, int256 amount);
-    event EnterNormalState(uint256 perpetualIndex);
-    event EnterEmergencyState(
-        uint256 perpetualIndex,
-        int256 settlementPrice,
-        uint256 settlementTime
-    );
-    event EnterClearedState(uint256 perpetualIndex);
+    event SetNormalState(uint256 perpetualIndex);
+    event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
+    event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
     event UpdatePoolMargin(int256 poolMargin);
     event ClearAccount(uint256 perpetualIndex, address trader);
@@ -230,31 +226,31 @@ library PerpetualModule {
         perpetual.settlementPriceData = perpetual.indexPriceData;
     }
 
-    function enterNormalState(PerpetualStorage storage perpetual) internal {
+    function setNormalState(PerpetualStorage storage perpetual) internal {
         require(
             perpetual.state == PerpetualState.INITIALIZING,
             "perpetual should be in initializing state"
         );
         perpetual.state = PerpetualState.NORMAL;
-        emit EnterNormalState(perpetual.id);
+        emit SetNormalState(perpetual.id);
     }
 
-    function enterEmergencyState(PerpetualStorage storage perpetual) internal {
+    function setEmergencyState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
         updatePrice(perpetual);
         freezePrice(perpetual);
         perpetual.state = PerpetualState.EMERGENCY;
-        emit EnterEmergencyState(
+        emit SetEmergencyState(
             perpetual.id,
             perpetual.settlementPriceData.price,
             perpetual.settlementPriceData.time
         );
     }
 
-    function enterClearedState(PerpetualStorage storage perpetual) internal {
+    function setClearedState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
         perpetual.state = PerpetualState.CLEARED;
-        emit EnterClearedState(perpetual.id);
+        emit SetClearedState(perpetual.id);
     }
 
     function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {

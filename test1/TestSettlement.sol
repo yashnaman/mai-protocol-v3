@@ -34,11 +34,11 @@ contract TestSettlement is TestMargin, Settlement {
     }
 
     function setEmergency(uint256 perpetualIndex) public {
-        _liquidityPool.perpetuals[perpetualIndex].enterEmergencyState();
+        _liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
     function setClearedState(uint256 perpetualIndex) public {
-        _liquidityPool.perpetuals[perpetualIndex].enterClearedState();
+        _liquidityPool.perpetuals[perpetualIndex].setClearedState();
     }
 
     function totalMarginWithoutPosition(uint256 perpetualIndex) public view returns (int256) {

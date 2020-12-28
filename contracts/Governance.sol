@@ -39,7 +39,11 @@ contract Governance is Storage {
         _;
     }
 
-    function transferOperatingship(address newOperator, uint256 expiration) external onlyOperator {
+    function transferOperatingship(address newOperator, uint256 expiration) external {
+        require(
+            msg.sender == _liquidityPool.operator || _liquidityPool.operator == address(0),
+            "can not transfer now"
+        );
         require(newOperator != address(0), "new operator is invalid");
         _unconfirmedOperator = newOperator;
         _transferExpiration = expiration;
@@ -102,15 +106,15 @@ contract Governance is Storage {
         onlyGovernor
         onlyExistedPerpetual(perpetualIndex)
     {
-        _liquidityPool.perpetuals[perpetualIndex].enterEmergencyState();
+        _liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
-    function enterEmergencyState(uint256 perpetualIndex)
+    function setEmergencyState(uint256 perpetualIndex)
         external
         onlyExistedPerpetual(perpetualIndex)
     {
         // require(amm unsafe)
-        _liquidityPool.perpetuals[perpetualIndex].enterEmergencyState();
+        _liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
     bytes[50] private __gap;

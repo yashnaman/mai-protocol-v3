@@ -24,7 +24,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
-    event Finalize();
+    event RunLiquidityPool();
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -59,7 +59,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
         int256[5] calldata minRiskParamValues,
         int256[5] calldata maxRiskParamValues
     ) external {
-        if (!_liquidityPool.isFinalized || _liquidityPool.isFastCreationEnabled) {
+        if (!_liquidityPool.isInitialized || _liquidityPool.isFastCreationEnabled) {
             require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");
         } else {
             require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
@@ -78,8 +78,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
             IPoolCreator(_liquidityPool.factory).symbolService()
         );
         service.allocateSymbol(address(this), perpetualIndex);
-        if (_liquidityPool.isFinalized) {
-            perpetual.enterNormalState();
+        if (_liquidityPool.isInitialized) {
+            perpetual.setNormalState();
         }
         emit CreatePerpetual(
             perpetualIndex,
@@ -93,14 +93,15 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
         );
     }
 
-    function finalize() external onlyOperator {
-        require(!_liquidityPool.isFinalized, "core is already finalized");
+    function runLiquidityPool() external onlyOperator {
+        require(!_liquidityPool.isInitialized, "pool is already running");
         uint256 length = _liquidityPool.perpetuals.length;
+        require(length > 0, "there should be at least 1 perpetual to run");
         for (uint256 i = 0; i < length; i++) {
-            _liquidityPool.perpetuals[i].enterNormalState();
+            _liquidityPool.perpetuals[i].setNormalState();
         }
-        _liquidityPool.isFinalized = true;
-        emit Finalize();
+        _liquidityPool.isInitialized = true;
+        emit RunLiquidityPool();
     }
 
     function getClaimableFee(address claimer) public view returns (int256) {

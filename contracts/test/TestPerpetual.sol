@@ -123,7 +123,7 @@ contract TestPerpetual is Perpetual {
 
     function setEmergencyState(uint256 perpetualIndex) public {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.enterEmergencyState();
+        perpetual.setEmergencyState();
     }
 
     function registerActiveAccount(uint256 perpetualIndex, address account) public {

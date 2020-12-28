@@ -41,7 +41,7 @@ struct Order {
 }
 
 struct LiquidityPoolStorage {
-    bool isFinalized;
+    bool isInitialized;
     bool isFastCreationEnabled;
     // addresses
     address factory;

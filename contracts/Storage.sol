@@ -20,8 +20,8 @@ contract Storage {
 
     modifier onlyNotPaused(uint256 perpetualIndex) {
         require(
-            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isPaused(),
-            "oracle is paused"
+            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isMarketClosed(),
+            "market is closed now"
         );
         _;
     }

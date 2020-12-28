@@ -30,11 +30,11 @@ contract Events {
     // fee
     event ClaimFee(address claimer, int256 amount);
     // state
-    event EnterNormalState(uint256 perpetualIndex);
+    event SetNormalState(uint256 perpetualIndex);
     event EnterEmergencyState(
         uint256 perpetualIndex,
         int256 settlementPrice,
         uint256 settlementTime
     );
-    event EnterClearedState(uint256 perpetualIndex);
+    event SetClearedState(uint256 perpetualIndex);
 }

@@ -116,6 +116,11 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         }
     }
 
+    function _fillOrder(bytes32 orderHash, int256 amount) internal {
+        _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
+        emit FillOrder(orderHash, amount);
+    }
+
     function _transfer(
         address sender,
         address recipient,
@@ -128,10 +133,5 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         _balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
-    }
-
-    function _fillOrder(bytes32 orderHash, int256 amount) internal {
-        _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
-        emit FillOrder(orderHash, amount);
     }
 }

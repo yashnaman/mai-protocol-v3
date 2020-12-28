@@ -20,6 +20,8 @@ contract VoteToken {
     /// @notice Total number of tokens in circulation
     uint256 public totalSupply = 0;
 
+    address public shareToken;
+
     // Allowance amounts on behalf of others
     mapping(address => mapping(address => uint256)) internal allowances;
 
@@ -40,6 +42,8 @@ contract VoteToken {
 
     /// @notice The number of checkpoints for each account
     mapping(address => uint256) public numCheckpoints;
+
+    mapping(address => uint256) public redemptionLocks;
 
     /// @notice The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH = keccak256(
@@ -76,17 +80,11 @@ contract VoteToken {
     /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
-    modifier onlyOwner() {
-        require(msg.sender == _owner, "");
-        _;
-    }
-
     /**
      * @notice Construct a new Comp token
-     * @param owner The initial account to grant all the tokens
      */
-    function initialize(address owner) external {
-        _owner = owner;
+    function initialize(address _shareToken) external {
+        shareToken = _shareToken;
     }
 
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
@@ -98,7 +96,7 @@ contract VoteToken {
      *
      * - `to` cannot be the zero address.
      */
-    function mint(address account, uint256 amount) public onlyOwner {
+    function deposit(address account, uint256 amount) public {
         require(account != address(0), "Mint to the zero address");
         totalSupply = totalSupply.add(amount);
         balances[account] = balances[account].add(amount);
@@ -118,7 +116,7 @@ contract VoteToken {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function burn(address account, uint256 amount) public onlyOwner {
+    function redeem(address account, uint256 amount) public {
         require(account != address(0), "Burn from the zero address");
 
         balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
