@@ -9,19 +9,15 @@ interface ILiquidityPool {
         external
         view
         returns (
-            // [0] factory
-            // [1] operator
-            // [2] collateral
-            // [3] vault
-            // [4] governor
-            // [5] shareToken
+            // [0] factory,
+            // [1] operator,
+            // [2] collateral,
+            // [3] vault,
+            // [4] governor,
+            // [5] shareToken,
             address[6] memory addresses,
             // [0] vaultFeeRate,
-            // [1] insuranceFundCap,
-            // [2] insuranceFund,
-            // [3] donatedInsuranceFund,
-            // [4] poolCash,
-            // [5] poolCollateralAmount,
+            // [3] poolCash,
             int256[2] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime
@@ -44,11 +40,14 @@ interface ILiquidityPool {
             // [9] liquidationPenaltyRate,
             // [10] keeperGasReward,
             // [11] insuranceFundRate,
-            // [12] halfSpread,
-            // [13] openSlippageFactor,
-            // [14] closeSlippageFactor,
-            // [15] fundingRateLimit,
-            // [16] ammMaxLeverage
+            // [12] insuranceFundCap,
+            // [13] insuranceFund,
+            // [14] donatedInsuranceFund,
+            // [15] halfSpread,
+            // [16] openSlippageFactor,
+            // [17] closeSlippageFactor,
+            // [18] fundingRateLimit,
+            // [19] ammMaxLeverage
             int256[20] memory nums
         );
 

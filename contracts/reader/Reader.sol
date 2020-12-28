@@ -20,9 +20,6 @@ contract Reader {
         address governor;
         address shareToken;
         int256 vaultFeeRate;
-        int256 insuranceFundCap;
-        int256 insuranceFund;
-        int256 donatedInsuranceFund;
         int256 poolCash;
         uint256 fundingTime;
         PerpetualStorage[] perpetualStorages;
@@ -44,6 +41,9 @@ contract Reader {
         int256 liquidationPenaltyRate;
         int256 keeperGasReward;
         int256 insuranceFundRate;
+        int256 insuranceFundCap;
+        int256 insuranceFund;
+        int256 donatedInsuranceFund;
         int256 halfSpread;
         int256 openSlippageFactor;
         int256 closeSlippageFactor;
@@ -70,7 +70,7 @@ contract Reader {
         uint256 perpetualCount;
         {
             address[6] memory addresses;
-            int256[7] memory nums;
+            int256[2] memory nums;
             (addresses, nums, perpetualCount, pool.fundingTime) = ILiquidityPool(liquidityPool)
                 .getLiquidityPoolInfo();
             creator = addresses[0];
@@ -80,10 +80,7 @@ contract Reader {
             pool.governor = addresses[4];
             pool.shareToken = addresses[5];
             pool.vaultFeeRate = nums[0];
-            pool.insuranceFundCap = nums[1];
-            pool.insuranceFund = nums[2];
-            pool.donatedInsuranceFund = nums[3];
-            pool.poolCash = nums[4];
+            pool.poolCash = nums[1];
         }
         address symbolService = IPoolCreator(creator).symbolService();
 
@@ -101,7 +98,7 @@ contract Reader {
     ) private {
         // perpetual
         {
-            int256[17] memory nums;
+            int256[20] memory nums;
             (perp.state, perp.oracle, nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
                 perpetualIndex
             );
@@ -116,11 +113,14 @@ contract Reader {
             perp.liquidationPenaltyRate = nums[9];
             perp.keeperGasReward = nums[10];
             perp.insuranceFundRate = nums[11];
-            perp.halfSpread = nums[12];
-            perp.openSlippageFactor = nums[13];
-            perp.closeSlippageFactor = nums[14];
-            perp.fundingRateLimit = nums[15];
-            perp.ammMaxLeverage = nums[16];
+            perp.insuranceFundCap = nums[12];
+            perp.insuranceFund = nums[13];
+            perp.donatedInsuranceFund = nums[14];
+            perp.halfSpread = nums[15];
+            perp.openSlippageFactor = nums[16];
+            perp.closeSlippageFactor = nums[17];
+            perp.fundingRateLimit = nums[18];
+            perp.ammMaxLeverage = nums[19];
         }
         // underlying
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
