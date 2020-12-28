@@ -310,82 +310,144 @@ describe('AMM', () => {
 
         const successCases = [
             {
-                name: 'open 0 -> -141.421',
+                name: 'open 0 -> -141.421, near pos2 limit',
                 amm: amm0,
                 amount: toWad('-141.421'),
                 partialFill: false,
-                deltaCash: toWad('24166.1916701205'), // trader buy, 24142.0496205 (1 + α)
+                deltaCash: toWad('24142.0496205'),
                 deltaPosition: toWad('-141.421')
             },
             {
-                name: 'open -10 -> -141.067',
+                name: 'open 0 -> -0.1, effected by spread',
+                amm: amm0,
+                amount: toWad('-0.1'),
+                partialFill: false,
+                deltaCash: toWad('10.01'),
+                deltaPosition: toWad('-0.1')
+            },
+            {
+                name: 'open -10 -> -141.067, near pos2 limit',
                 amm: amm1,
                 amount: toWad('-131.067'),
                 partialFill: false,
-                deltaCash: toWad('23029.6558937445'), // trader buy, 23006.6492445 (1 + α)
+                deltaCash: toWad('23006.6492445'),
                 deltaPosition: toWad('-131.067')
             },
             {
-                name: 'open 0 -> 100',
+                name: 'open -10 -> -10.1, effected by spread',
+                amm: amm1,
+                amount: toWad('-0.1'),
+                partialFill: false,
+                deltaCash: toWad('11.011'),
+                deltaPosition: toWad('-0.1')
+            },
+            {
+                name: 'open 0 -> 100, near pos2 limit',
                 amm: amm0,
                 amount: toWad('100'),
-                deltaCash: toWad('-4995'), // trader sell, -5000 (1 - α)
+                deltaCash: toWad('-5000'),
                 deltaPosition: toWad('100')
             },
             {
-                name: 'open 10 -> 100',
+                name: 'open 0 -> 0.1, effected by spread',
+                amm: amm0,
+                amount: toWad('0.1'),
+                partialFill: false,
+                deltaCash: toWad('-9.99'),
+                deltaPosition: toWad('0.1')
+            },
+            {
+                name: 'open 10 -> 100, near pos2 limit',
                 amm: amm4,
                 amount: toWad('90'),
-                deltaCash: toWad('-4045.95'), // trader sell, -4050 (1 - α)
+                deltaCash: toWad('-4050'),
                 deltaPosition: toWad('90')
             },
             {
-                name: 'close -10 -> -9',
+                name: 'open 10 -> 10.1, effected by spread',
+                amm: amm4,
+                amount: toWad('0.1'),
+                partialFill: false,
+                deltaCash: toWad('-8.991'),
+                deltaPosition: toWad('0.1')
+            },
+            {
+                name: 'close -10 -> -9, normal',
                 amm: amm1,
                 amount: toWad('1'),
-                deltaCash: toWad('-108.4371405102481132569021'), // trader sell, -108.5456861964445578147169 (1 - α)
+                deltaCash: toWad('-108.5456861964445578147169'),
                 deltaPosition: toWad('1')
             },
             {
-                name: 'close -10 -> 0',
+                name: 'open -10 -> -9.9, effected by spread',
+                amm: amm1,
+                amount: toWad('0.1'),
+                partialFill: false,
+                deltaCash: toWad('-10.88864636949980139546338319'),
+                deltaPosition: toWad('0.1')
+            },
+            {
+                name: 'close -10 -> 0, to zero',
                 amm: amm1,
                 amount: toWad('10'),
-                deltaCash: toWad('-1043.932318474990069773169'), // trader sell, -1044.977295770760830603773 (1 - α)
+                deltaCash: toWad('-1044.977295770760830603773'),
                 deltaPosition: toWad('10')
             },
             {
-                name: 'close 10 -> 9',
+                name: 'close 10 -> 9, normal',
                 amm: amm4,
                 amount: toWad('-1'),
-                deltaCash: toWad('91.5457681173589976274684'), // trader buy, 91.4543138035554421852831 (1 + α)
+                deltaCash: toWad('91.4543138035554421852831'),
                 deltaPosition: toWad('-1')
+            },
+            {
+                name: 'close 10 -> 9.9, effected by spread',
+                amm: amm4,
+                amount: toWad('-0.1'),
+                partialFill: false,
+                deltaCash: toWad('9.109554538669368171312465896'),
+                deltaPosition: toWad('-0.1')
             },
             {
                 name: 'close 10 -> 0',
                 amm: amm4,
                 amount: toWad('-10'),
-                deltaCash: toWad('955.977726933468408565623'), // trader buy, 955.022704229239169396227 (1 + α)
+                deltaCash: toWad('955.022704229239169396227'),
                 deltaPosition: toWad('-10')
             },
             {
-                name: 'close unsafe -10 -> -9',
+                name: 'close unsafe -10 -> -9, normal',
                 amm: amm3,
                 amount: toWad('1'),
-                deltaCash: toWad('-99.9'), // trader sell, 100 (1 - α),
+                deltaCash: toWad('-99.9'),
                 deltaPosition: toWad('1')
             },
             {
-                name: 'close unsafe 10 -> 9',
+                name: 'close unsafe -10 -> -9.9, small',
+                amm: amm3,
+                amount: toWad('0.1'),
+                deltaCash: toWad('-9.99'),
+                deltaPosition: toWad('0.1')
+            },
+            {
+                name: 'close unsafe 10 -> 9, normal',
                 amm: amm6,
                 amount: toWad('-1'),
-                deltaCash: toWad('100.1'), // trader buy, 100 (1 + α)
+                deltaCash: toWad('100.1'),
                 deltaPosition: toWad('-1')
+            },
+            {
+                name: 'close unsafe 10 -> 9, small',
+                amm: amm6,
+                amount: toWad('-0.1'),
+                deltaCash: toWad('10.01'),
+                deltaPosition: toWad('-0.1')
             },
             {
                 name: 'close negative price, clip to 0',
                 amm: amm7,
                 amount: toWad('-0.01'),
-                deltaCash: _0, // trader buy, 0 (1 + α)
+                deltaCash: _0,
                 deltaPosition: toWad('-0.01')
             },
             {
@@ -393,7 +455,7 @@ describe('AMM', () => {
                 amm: amm0,
                 amount: toWad('-141.422'),
                 partialFill: true,
-                deltaCash: toWad('24166.2777593546814385049041293'), // trader buy, 24142.1356237309504880168872421 (1 + α)
+                deltaCash: toWad('24142.1356237309504880168872421'),
                 deltaPosition: toWad('-141.421356237309504880168872421')
             },
             {
@@ -401,7 +463,7 @@ describe('AMM', () => {
                 amm: amm1,
                 amount: toWad('-131.068'),
                 partialFill: true,
-                deltaCash: toWad('23029.7427156455503096573958546'), // trader buy, 23006.7359796658844252321636909 (1 + α)
+                deltaCash: toWad('23006.7359796658844252321636909'),
                 deltaPosition: toWad('-131.067359796658844252321636909')
             },
             {
@@ -417,7 +479,7 @@ describe('AMM', () => {
                 amm: amm0,
                 amount: toWad('100.001'),
                 partialFill: true,
-                deltaCash: toWad('-4995'), // trader sell, -5000 (1 - α)
+                deltaCash: toWad('-5000'),
                 deltaPosition: toWad('100')
             },
             {
@@ -425,7 +487,7 @@ describe('AMM', () => {
                 amm: amm4,
                 amount: toWad('90.001'),
                 partialFill: true,
-                deltaCash: toWad('-4045.95'), // trader sell, -4050 (1 - α)
+                deltaCash: toWad('-4050'),
                 deltaPosition: toWad('90')
             },
             {

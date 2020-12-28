@@ -46,29 +46,24 @@ library AMMModule {
         Context memory context = prepareContext(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 halfSpread = perpetual.halfSpread.value;
-        if (tradeAmount < 0) {
+        if (tradeAmount > 0) {
             halfSpread = halfSpread.neg();
         }
         (int256 closeAmount, int256 openAmount) = Utils.splitAmount(context.position, tradeAmount);
-        int256 spreadPrice;
-        (deltaCash, spreadPrice) = closePosition(perpetual, context, closeAmount, halfSpread);
+        int256 closeMidPrice;
+        (deltaCash, closeMidPrice) = closePosition(perpetual, context, closeAmount);
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closeAmount);
-        (int256 openDeltaMargin, int256 openDeltaPositionAmount) = openPosition(
-            perpetual,
-            context,
-            openAmount,
-            partialFill,
-            spreadPrice,
-            halfSpread,
-            closeAmount != 0 && openAmount != 0
-        );
+        (int256 openDeltaMargin, int256 openDeltaPositionAmount, int256 openMidPrice) = openPosition(perpetual, context, openAmount, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
         deltaPosition = closeAmount.add(openDeltaPositionAmount);
         if (deltaPosition < 0 && deltaCash < 0) {
             // negative price
             deltaCash = 0;
         }
+        int256 midPrice = closeAmount != 0 ? closeMidPrice : openMidPrice;
+        int256 deltaCashAtBestPrice = midPrice.wmul(halfSpread.add(Constant.SIGNED_ONE)).wmul(deltaPosition).neg();
+        deltaCash = deltaCash.max(deltaCashAtBestPrice);
     }
 
     function getShareToMint(
@@ -158,133 +153,88 @@ library AMMModule {
     function closePosition(
         PerpetualStorage storage perpetual,
         Context memory context,
-        int256 tradeAmount,
-        int256 halfSpread
-    ) public view returns (int256 deltaCash, int256 spreadPrice) {
+        int256 tradeAmount
+    ) public view returns (int256 deltaCash, int256 midPrice) {
         if (tradeAmount == 0) {
             return (0, 0);
         }
         int256 positionBefore = context.position;
         require(positionBefore != 0, "position is zero when close");
-        int256 positionAfter = context.position.add(tradeAmount);
         int256 slippageFactor = perpetual.closeSlippageFactor.value;
         if (isAMMMarginSafe(context, slippageFactor)) {
             int256 poolMargin = regress(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
-            spreadPrice = _getPrice(context.indexPrice, poolMargin, positionBefore, slippageFactor)
-                .wmul(halfSpread.add(Constant.SIGNED_ONE));
-            int256 spreadPosition = _getSpreadPosition(
-                spreadPrice,
-                context.indexPrice,
+            midPrice = _getPrice(context.indexPrice, poolMargin, positionBefore, slippageFactor);
+            deltaCash = _getDeltaMargin(
                 poolMargin,
                 positionBefore,
-                positionAfter,
-                slippageFactor
-            );
-            int256 deltaCash1 = spreadPrice.wmul(positionBefore.sub(spreadPosition));
-            int256 deltaCash2 = _getDeltaMargin(
-                poolMargin,
-                spreadPosition,
-                positionAfter,
+                positionBefore.add(tradeAmount),
                 context.indexPrice,
                 slippageFactor
             );
-            require(Utils.hasTheSameSign(deltaCash1, deltaCash2), "invalid delta cash");
-            deltaCash = deltaCash1.add(deltaCash2);
         } else {
+            midPrice = context.indexPrice;
             deltaCash = context
                 .indexPrice
-                .wmul(halfSpread.add(Constant.SIGNED_ONE))
                 .wmul(tradeAmount)
                 .neg();
         }
-        require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "invalid delta cash");
     }
 
     function openPosition(
         PerpetualStorage storage perpetual,
         Context memory context,
         int256 tradeAmount,
-        bool partialFill,
-        int256 spreadPrice,
-        int256 halfSpread,
-        bool isOpen
-    ) private view returns (int256 deltaCash, int256 deltaPosition) {
+        bool partialFill
+    ) private view returns (int256 deltaCash, int256 deltaPosition, int256 midPrice) {
         if (tradeAmount == 0) {
-            return (0, 0);
+            return (0, 0, 0);
         }
         int256 positionBefore = context.position;
         int256 positionAfter = positionBefore.add(tradeAmount);
         require(positionAfter != 0, "after position is zero when open");
         int256 slippageFactor = perpetual.openSlippageFactor.value;
-        int256 indexPrice = context.indexPrice;
         if (!isAMMMarginSafe(context, slippageFactor)) {
             require(partialFill, "amm is unsafe when open");
-            return (0, 0);
+            return (0, 0, 0);
         }
         int256 poolMargin = regress(context, slippageFactor);
         require(poolMargin > 0, "pool margin must be positive");
-        {
-            int256 ammMaxLeverage = perpetual.ammMaxLeverage.value;
-            if (positionAfter > 0) {
-                int256 maxLongPosition = _getMaxPosition(
-                    context,
-                    poolMargin,
-                    ammMaxLeverage,
-                    slippageFactor,
-                    true
-                );
-                if (positionAfter > maxLongPosition) {
-                    require(partialFill, "trade amount exceeds max amount");
-                    deltaPosition = maxLongPosition.sub(positionBefore);
-                    positionAfter = maxLongPosition;
-                } else {
-                    deltaPosition = tradeAmount;
-                }
+        int256 indexPrice = context.indexPrice;
+        midPrice = _getPrice(indexPrice, poolMargin, positionBefore, slippageFactor);
+        int256 ammMaxLeverage = perpetual.ammMaxLeverage.value;
+        if (positionAfter > 0) {
+            int256 maxLongPosition = _getMaxPosition(
+                context,
+                poolMargin,
+                ammMaxLeverage,
+                slippageFactor,
+                true
+            );
+            if (positionAfter > maxLongPosition) {
+                require(partialFill, "trade amount exceeds max amount");
+                deltaPosition = maxLongPosition.sub(positionBefore);
+                positionAfter = maxLongPosition;
             } else {
-                int256 minShortPosition = _getMaxPosition(
-                    context,
-                    poolMargin,
-                    ammMaxLeverage,
-                    slippageFactor,
-                    false
-                );
-                if (positionAfter < minShortPosition) {
-                    require(partialFill, "trade amount exceeds max amount");
-                    deltaPosition = minShortPosition.sub(positionBefore);
-                    positionAfter = minShortPosition;
-                } else {
-                    deltaPosition = tradeAmount;
-                }
+                deltaPosition = tradeAmount;
+            }
+        } else {
+            int256 minShortPosition = _getMaxPosition(
+                context,
+                poolMargin,
+                ammMaxLeverage,
+                slippageFactor,
+                false
+            );
+            if (positionAfter < minShortPosition) {
+                require(partialFill, "trade amount exceeds max amount");
+                deltaPosition = minShortPosition.sub(positionBefore);
+                positionAfter = minShortPosition;
+            } else {
+                deltaPosition = tradeAmount;
             }
         }
-        if (!isOpen) {
-            spreadPrice = _getPrice(indexPrice, poolMargin, positionBefore, slippageFactor).wmul(
-                halfSpread.add(Constant.SIGNED_ONE)
-            );
-        }
-        int256 deltaCash1;
-        int256 deltaCash2;
-        {
-            int256 spreadPosition = _getSpreadPosition(
-                spreadPrice,
-                indexPrice,
-                poolMargin,
-                positionBefore,
-                positionAfter,
-                slippageFactor
-            );
-            deltaCash1 = spreadPrice.wmul(positionBefore.sub(spreadPosition));
-            deltaCash2 = _getDeltaMargin(
-                poolMargin,
-                spreadPosition,
-                positionAfter,
-                indexPrice,
-                slippageFactor
-            );
-        }
-        require(Utils.hasTheSameSign(deltaCash1, deltaCash2), "invalid delta cash");
-        deltaCash = deltaCash1.add(deltaCash2);
+        deltaCash =  _getDeltaMargin(poolMargin, positionBefore, positionAfter, indexPrice, slippageFactor);
         require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "invalid delta cash");
     }
 
@@ -363,27 +313,6 @@ library AMMModule {
         int256 slippageFactor
     ) internal pure returns (int256) {
         return Constant.SIGNED_ONE.sub(position.wfrac(slippageFactor, poolMargin)).wmul(indexPrice);
-    }
-
-    function _getSpreadPosition(
-        int256 spreadPrice,
-        int256 indexPrice,
-        int256 poolMargin,
-        int256 positionBefore,
-        int256 positionAfter,
-        int256 slippageFactor
-    ) internal pure returns (int256 spreadPosition) {
-        spreadPosition = indexPrice.sub(spreadPrice).mul(2);
-        spreadPosition = spreadPosition.wfrac(poolMargin, indexPrice).wdiv(slippageFactor).sub(
-            positionBefore
-        );
-        if (positionAfter < positionBefore) {
-            spreadPosition = spreadPosition.max(positionAfter);
-            spreadPosition = spreadPosition.min(positionBefore);
-        } else {
-            spreadPosition = spreadPosition.min(positionAfter);
-            spreadPosition = spreadPosition.max(positionBefore);
-        }
     }
 
     function _getDeltaMargin(
