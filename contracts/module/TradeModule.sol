@@ -106,10 +106,10 @@ library TradeModule {
             int256 referrerFee = lpFeeRebate.add(operatorFeeRabate);
             lpFee = lpFee.sub(lpFeeRebate);
             operatorFee = operatorFee.sub(operatorFeeRabate);
-            liquidityPool.increaseFee(referrer, referrerFee);
+            liquidityPool.transferToUser(payable(referrer), referrerFee);
         }
 
-        liquidityPool.increaseFee(liquidityPool.vault, vaultFee);
+        liquidityPool.transferToUser(payable(liquidityPool.vault), vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
         // [perpetual fee] => [pool claimable]
         perpetual.decreaseTotalCollateral(totalFee);
