@@ -64,17 +64,6 @@ library LiquidityPoolModule {
         return availablePoolCash.add(liquidityPool.poolCash);
     }
 
-    function getRebalanceAmount(PerpetualStorage storage perpetual)
-        public
-        view
-        returns (int256 marginToRebalance)
-    {
-        int256 markPrice = perpetual.getMarkPrice();
-        marginToRebalance = perpetual.getMargin(address(this), markPrice).sub(
-            perpetual.getInitialMargin(address(this), markPrice)
-        );
-    }
-
     function isMarginSafe(LiquidityPoolStorage storage liquidityPool)
         public
         view
@@ -221,23 +210,23 @@ library LiquidityPoolModule {
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual
     ) public {
-        int256 marginToRebalance = getRebalanceAmount(perpetual);
-        if (marginToRebalance == 0) {
+        int256 rebalanceMargin = perpetual.getRebalanceMargin();
+        if (rebalanceMargin == 0) {
             // nothing to rebalance
             return;
-        } else if (marginToRebalance > 0) {
+        } else if (rebalanceMargin > 0) {
             // from perp to pool
-            perpetual.decreaseTotalCollateral(marginToRebalance);
-            increasePoolCash(liquidityPool, marginToRebalance);
+            perpetual.decreaseTotalCollateral(rebalanceMargin);
+            increasePoolCash(liquidityPool, rebalanceMargin);
         } else {
             // from pool to perp
             int256 availablePoolCash = getAvailablePoolCash(liquidityPool);
             if (availablePoolCash < 0) {
                 return;
             }
-            marginToRebalance = marginToRebalance.abs().min(availablePoolCash);
-            perpetual.increaseTotalCollateral(marginToRebalance);
-            decreasePoolCash(liquidityPool, marginToRebalance);
+            rebalanceMargin = rebalanceMargin.abs().min(availablePoolCash);
+            perpetual.increaseTotalCollateral(rebalanceMargin);
+            decreasePoolCash(liquidityPool, rebalanceMargin);
         }
     }
 

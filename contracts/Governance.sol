@@ -12,6 +12,7 @@ import "./Storage.sol";
 contract Governance is Storage {
     using SafeMathUpgradeable for uint256;
     using PerpetualModule for PerpetualStorage;
+    using MarginAccountModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
     address internal _unconfirmedOperator;
@@ -100,20 +101,26 @@ contract Governance is Storage {
         emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
-    function forceToEnterEmergencyState(uint256 perpetualIndex)
+    function forceToSetEmergencyState(uint256 perpetualIndex)
         external
         onlyGovernor
         onlyExistedPerpetual(perpetualIndex)
     {
-        _liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        _liquidityPool.rebalanceFrom(perpetual);
+        perpetual.setEmergencyState();
     }
 
     function setEmergencyState(uint256 perpetualIndex)
         external
+        syncState
         onlyExistedPerpetual(perpetualIndex)
     {
-        // require(amm unsafe)
-        _liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        _liquidityPool.rebalanceFrom(perpetual);
+        if (!perpetual.isAMMMarginSafe()) {
+            perpetual.setEmergencyState();
+        }
     }
 
     bytes[50] private __gap;

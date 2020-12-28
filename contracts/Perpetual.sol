@@ -149,11 +149,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         perpetual.clear(dirtyAccount);
 
         if (perpetual.activeAccounts.length() == 0) {
-            _liquidityPool.rebalanceFrom(perpetual);
             perpetual.settleCollateral();
-            int256 marginToReturn = perpetual.settle(address(this));
-            _liquidityPool.increasePoolCash(marginToReturn);
             perpetual.setClearedState();
+            int256 marginToReturn = perpetual.settle(address(this));
+            perpetual.decreaseTotalCollateral(marginToReturn);
+            _liquidityPool.increasePoolCash(marginToReturn);
         }
     }
 

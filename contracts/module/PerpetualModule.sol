@@ -49,6 +49,21 @@ library PerpetualModule {
                 : perpetual.settlementPriceData.price;
     }
 
+    function getRebalanceMargin(PerpetualStorage storage perpetual)
+        public
+        view
+        returns (int256 marginToRebalance)
+    {
+        int256 price = getMarkPrice(perpetual);
+        marginToRebalance = perpetual.getMargin(address(this), price).sub(
+            perpetual.getInitialMargin(address(this), price)
+        );
+    }
+
+    function isAMMMarginSafe(PerpetualStorage storage perpetual) public view returns (bool isSafe) {
+        return perpetual.isMarginSafe(address(this), getMarkPrice(perpetual));
+    }
+
     function initialize(
         PerpetualStorage storage perpetual,
         uint256 id,
@@ -237,7 +252,6 @@ library PerpetualModule {
 
     function setEmergencyState(PerpetualStorage storage perpetual) internal {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-        updatePrice(perpetual);
         freezePrice(perpetual);
         perpetual.state = PerpetualState.EMERGENCY;
         emit SetEmergencyState(
