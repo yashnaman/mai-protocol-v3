@@ -81,7 +81,7 @@ async function set1(accounts: any[], poolCreator, weth) {
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
     )
-    await liquidityPool.finalize();
+    await liquidityPool.runLiquidityPool();
 
     await liquidityPool.addLiquidity(toWei("0"), { value: toWei("4310") });
 
@@ -134,7 +134,7 @@ async function set2(accounts: any[], poolCreator, weth) {
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
     )
-    await liquidityPool.finalize();
+    await liquidityPool.runLiquidityPool();
 
     await usd.mint(accounts[0].address, toWei("12500000"));
     await usd.approve(liquidityPool.address, toWei("2500000"));

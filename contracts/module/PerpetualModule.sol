@@ -27,14 +27,13 @@ library PerpetualModule {
 
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
+    event Clear(uint256 perpetualIndex, address trader);
+    event Settle(uint256 perpetualIndex, address trader, int256 amount);
     event DonateInsuranceFund(uint256 perpetualIndex, int256 amount);
     event SetNormalState(uint256 perpetualIndex);
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
-    event UpdatePoolMargin(int256 poolMargin);
-    event ClearAccount(uint256 perpetualIndex, address trader);
-    event SettleAccount(uint256 perpetualIndex, address trader, int256 amount);
 
     function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
@@ -190,10 +189,11 @@ library PerpetualModule {
     }
 
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
-        int256 deltaUnitLoss = getIndexPrice(perpetual).wfrac(
-            perpetual.fundingRate.wmul(timeElapsed),
-            FUNDING_INTERVAL
-        );
+        int256 deltaUnitLoss =
+            getIndexPrice(perpetual).wfrac(
+                perpetual.fundingRate.wmul(timeElapsed),
+                FUNDING_INTERVAL
+            );
         perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
         emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
     }
@@ -300,7 +300,7 @@ library PerpetualModule {
         }
         perpetual.activeAccounts.remove(trader);
         perpetual.clearedTraders.add(trader);
-        emit ClearAccount(perpetual.id, trader);
+        emit Clear(perpetual.id, trader);
     }
 
     function settle(PerpetualStorage storage perpetual, address trader)
@@ -310,7 +310,7 @@ library PerpetualModule {
         int256 price = getMarkPrice(perpetual);
         marginToReturn = perpetual.getSettleableMargin(trader, price);
         perpetual.resetAccount(trader);
-        emit SettleAccount(perpetual.id, trader, marginToReturn);
+        emit Settle(perpetual.id, trader, marginToReturn);
     }
 
     function updateInsuranceFund(PerpetualStorage storage perpetual, int256 penaltyToFund)

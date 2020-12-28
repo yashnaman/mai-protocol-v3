@@ -21,13 +21,10 @@ import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
 import "./module/CollateralModule.sol";
 
-import "./Events.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-import "hardhat/console.sol";
-
-contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
+contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using SafeCastUpgradeable for int256;
     using SafeCastUpgradeable for uint256;
     using SafeMathUpgradeable for uint256;
@@ -40,7 +37,6 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
 
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
-
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
@@ -53,8 +49,8 @@ contract Perpetual is Storage, Events, ReentrancyGuardUpgradeable {
         onlyExistedPerpetual(perpetualIndex)
         returns (int256 cash, int256 position)
     {
-        MarginAccount storage account = _liquidityPool.perpetuals[perpetualIndex]
-            .marginAccounts[trader];
+        MarginAccount storage account =
+            _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader];
         cash = account.cash;
         position = account.position;
     }

@@ -643,7 +643,7 @@ describe('AMM', () => {
 
         it("poolMargin = 0 && totalShare != 0", async () => {
             await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
-        await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share has no value");
+            await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share has no value");
         })
     })
 

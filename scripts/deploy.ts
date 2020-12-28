@@ -57,7 +57,7 @@ async function main(accounts: any[]) {
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
     )
-    await liquidityPool.finalize();
+    await liquidityPool.runLiquidityPool();
 
     var broker = await createContract("BrokerRelay")
 

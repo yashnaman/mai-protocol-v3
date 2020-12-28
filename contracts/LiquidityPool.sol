@@ -11,20 +11,19 @@ import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
 
-import "./Events.sol";
 import "./Getter.sol";
 import "./Governance.sol";
+import "./LibraryEvents.sol";
 import "./Perpetual.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-contract LiquidityPool is Storage, Perpetual, Getter, Governance {
+contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
-    event RunLiquidityPool();
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -35,6 +34,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
         int256[9] coreParams,
         int256[5] riskParams
     );
+    event RunLiquidityPool();
 
     function initialize(
         address operator,
@@ -74,9 +74,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
             minRiskParamValues,
             maxRiskParamValues
         );
-        ISymbolService service = ISymbolService(
-            IPoolCreator(_liquidityPool.factory).symbolService()
-        );
+        ISymbolService service =
+            ISymbolService(IPoolCreator(_liquidityPool.factory).symbolService());
         service.allocateSymbol(address(this), perpetualIndex);
         if (_liquidityPool.isInitialized) {
             perpetual.setNormalState();
@@ -113,12 +112,10 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance {
     }
 
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
-        require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.addLiquidity(cashToAdd);
     }
 
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
-        require(shareToRemove > 0, "amount is invalid");
         _liquidityPool.removeLiquidity(shareToRemove);
     }
 

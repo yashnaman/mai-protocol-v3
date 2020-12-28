@@ -28,6 +28,23 @@ contract TestLiquidityPool is LiquidityPool {
         );
     }
 
+    function debugSetPerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) external {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        perpetual.setRiskParameter(key, newValue, newValue, newValue);
+    }
+
+    function setGovernor(address governor) public {
+        _liquidityPool.governor = governor;
+    }
+
+    function setState(uint256 perpetualIndex, PerpetualState state) public {
+        _liquidityPool.perpetuals[perpetualIndex].state = state;
+    }
+
     function setPoolCash(int256 amount) public {
         _liquidityPool.poolCash = amount;
     }

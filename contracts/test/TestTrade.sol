@@ -31,7 +31,7 @@ contract TestTrade is TestMarginAccount {
         int256 limitPrice,
         address referrer,
         bool isCloseOnly
-    ) public {
+    ) public syncState {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
     }
 

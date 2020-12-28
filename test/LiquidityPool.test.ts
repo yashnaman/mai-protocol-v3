@@ -19,7 +19,7 @@ describe('LiquidityPool', () => {
         accounts = await getAccounts();
     })
 
-    describe('add liquidity', function () {
+    describe('liquidity', function () {
 
         let user0;
         let user1;
@@ -60,6 +60,7 @@ describe('LiquidityPool', () => {
 
             stk = await createContract("TestShareToken");
             await stk.initialize("TEST", "TEST", liquidityPool.address);
+
             await liquidityPool.setShareToken(stk.address);
 
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
@@ -79,9 +80,6 @@ describe('LiquidityPool', () => {
                 [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
                 [toWei("0.001"), toWei("100"), toWei("90"), toWei("5"), toWei("100")],
             )
-
-            await liquidityPool.setUnitAccumulativeFunding(0, toWei('1.9'));
-            await liquidityPool.setUnitAccumulativeFunding(1, toWei('1.9'));
         })
 
         const successCases = [
@@ -103,7 +101,7 @@ describe('LiquidityPool', () => {
                     position1: toWei("-10"),
                     position2: toWei("10"),
                 },
-                totalShare: toWei('100'),
+                totalShare: toWei('100'), // oracle = 10 0
                 marginToAdd: toWei('1000'),
                 share: toWei('10.091666030631452052')
             },
@@ -129,31 +127,44 @@ describe('LiquidityPool', () => {
                 marginToAdd: toWei('577'),
                 share: toWei('6.021800176340430529')
             },
-            // {
-            //     name: 'long, before unsafe, after unsafe',
-            //     amm: amm6,
-            //     totalShare: toWei('100'),
-            //     marginToAdd: toWei('576'),
-            //     share: toWei('5.321016166281755196304849885')
-            // },
-            // {
-            //     name: 'long, before unsafe, after safe',
-            //     amm: amm6,
-            //     totalShare: toWei('100'),
-            //     marginToAdd: toWei('577'),
-            //     share: toWei('6.021800176340430529365414419')
-            // }
+            {
+                name: 'long, before unsafe, after unsafe',
+                amm: {
+                    cash: toWei('1996'),
+                    position1: toWei('80'),
+                    position2: toWei('10'),
+                },
+                totalShare: toWei('100'),
+                marginToAdd: toWei('576'),
+                share: toWei('5.321016166281755196')
+            },
+            {
+                name: 'long, before unsafe, after safe',
+                amm: {
+                    cash: toWei('1996'),
+                    position1: toWei('80'),
+                    position2: toWei('10'),
+                },
+                totalShare: toWei('100'),
+                marginToAdd: toWei('577'),
+                share: toWei('6.021800176340430529')
+            }
         ]
 
         successCases.forEach(element => {
             it(element.name, async () => {
+                await liquidityPool.setState(0, 2);
+                await liquidityPool.setState(1, 2);
+
                 await ctk.mint(user1.address, element.marginToAdd);
                 await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-                await stk.setTotalSupply(user2.address, element.totalShare);
+                await stk.debugMint(user2.address, element.totalShare);
 
                 await liquidityPool.setPoolCash(element.amm.cash)
                 await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
-                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position2);
+                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
+                await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
+                await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
 
                 let now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(toWei('100'), now);
@@ -167,199 +178,268 @@ describe('LiquidityPool', () => {
             })
         })
 
-        // const failCases = [
-        //     {
-        //         name: 'invalid margin to add',
-        //         totalShare: toWei('100'),
-        //         marginToAdd: _0,
-        //         errorMsg: 'total cashAmount must be positive'
-        //     },
-        //     {
-        //         name: 'poolMargin = 0 && totalShare != 0',
-        //         totalShare: toWei('100'),
-        //         marginToAdd: toWei('100'),
-        //         errorMsg: 'share has no value'
-        //     }
-        // ]
+        const failCases = [
+            {
+                name: 'invalid margin to add',
+                totalShare: toWei('100'),
+                marginToAdd: toWei("0"),
+                errorMsg: 'total cash to add must be positive'
+            },
+            {
+                name: 'poolMargin = 0 && totalShare != 0',
+                totalShare: toWei('100'),
+                marginToAdd: toWei('100'),
+                errorMsg: 'share has no value'
+            }
+        ]
 
-        // failCases.forEach(element => {
-        //     it(element.name, async () => {
-        //         const accounts = await ethers.getSigners();
-        //         const user1 = accounts[1];
-        //         const user2 = accounts[2];
-        //         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        //         await ctk.mint(user1.address, element.marginToAdd);
-        //         const ctkUser1 = CustomErc20Factory.connect(ctk.address, user1);
-        //         await ctkUser1.approve(amm.address, toWei("1000000"));
-        //         var shareToken = await createContract("TestShareToken");
-        //         await shareToken.initialize("TEST", "TEST", amm.address);
-        //         await shareToken.setAdmin(user1.address);
-        //         const shareTokenUser1 = TestShareTokenFactory.connect(shareToken.address, user1);
-        //         await shareTokenUser1.mint(user2.address, element.totalShare);
-        //         await amm.setConfig(ctk.address, shareToken.address, 1);
-        //         await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
-        //         const ammUser1 = TestAmmFactory.connect(amm.address, user1);
-        //         await expect(ammUser1.addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
-        //     })
-        // })
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await liquidityPool.setState(0, 2);
+                await liquidityPool.setState(1, 2);
 
-        // describe('remove liquidity', function () {
+                await ctk.mint(user1.address, element.marginToAdd);
+                await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+                await stk.debugMint(user2.address, element.totalShare);
 
-        //     const successCases = [
-        //         {
-        //             name: 'poolMargin = 0',
-        //             amm: ammInit,
-        //             restShare: toWei('90'), // total 100
-        //             shareToRemove: toWei('10'),
-        //             marginToRemove: _0
-        //         },
-        //         {
-        //             name: 'no position',
-        //             amm: amm0,
-        //             restShare: toWei('90'), // total 100
-        //             shareToRemove: toWei('10'),
-        //             marginToRemove: toWei('1000')
-        //         },
-        //         {
-        //             name: 'no position, remove all',
-        //             amm: amm0,
-        //             restShare: _0, // total 100
-        //             shareToRemove: toWei('100'),
-        //             marginToRemove: toWei('10000')
-        //         },
-        //         {
-        //             name: 'short',
-        //             amm: amm1,
-        //             restShare: toWei('90'), // total 100
-        //             shareToRemove: toWei('10'),
-        //             marginToRemove: toWei('988.888888888888888888888888889')
-        //         },
-        //         {
-        //             name: 'long',
-        //             amm: amm4,
-        //             restShare: toWei('90'), // total 100
-        //             shareToRemove: toWei('10'),
-        //             marginToRemove: toWei('988.888888888888888888888888889')
-        //         }
-        //     ]
+                await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
 
-        //     successCases.forEach(element => {
-        //         it(element.name, async () => {
-        //             const accounts = await ethers.getSigners();
-        //             const user1 = accounts[1];
-        //             const user2 = accounts[2];
-        //             var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        //             await ctk.mint(amm.address, element.marginToRemove);
-        //             var shareToken = await createContract("TestShareToken");
-        //             await shareToken.initialize("TEST", "TEST", amm.address);
-        //             await shareToken.setAdmin(user1.address);
-        //             const shareTokenUser1 = TestShareTokenFactory.connect(shareToken.address, user1);
-        //             await shareTokenUser1.mint(user1.address, element.shareToRemove);
-        //             await shareTokenUser1.mint(user2.address, element.restShare);
-        //             await amm.setConfig(ctk.address, shareToken.address, 1);
-        //             await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-        //             const ammUser1 = TestAmmFactory.connect(amm.address, user1);
-        //             await ammUser1.removeLiquidity(element.shareToRemove);
-        //             expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
-        //             expect(await shareToken.balanceOf(user1.address)).approximateBigNumber(_0);
-        //             expect(await shareToken.totalSupply()).approximateBigNumber(element.restShare);
-        //         })
-        //     })
+                let now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(toWei('100'), now);
+                await oracle1.setMarkPrice(toWei('100'), now);
+                await oracle2.setIndexPrice(toWei('100'), now);
+                await oracle2.setMarkPrice(toWei('100'), now);
 
-        //     const failCases = [
-        //         {
-        //             name: 'zero share to remove',
-        //             amm: amm0,
-        //             restShare: toWei('100'), // total 100
-        //             shareBalance: _0,
-        //             shareToRemove: _0,
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'share to remove must be positive',
-        //         },
-        //         {
-        //             name: 'insufficient share balance',
-        //             amm: amm0,
-        //             restShare: _0, // total 100
-        //             shareBalance: toWei('100'),
-        //             shareToRemove: toWei('100.1'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'insufficient share balance',
-        //         },
-        //         {
-        //             name: 'short, before unsafe',
-        //             amm: amm3,
-        //             restShare: toWei('90'), // total 100
-        //             shareBalance: toWei('10'),
-        //             shareToRemove: toWei('10'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'amm is unsafe before removing liquidity',
-        //         },
-        //         {
-        //             name: 'long, before unsafe',
-        //             amm: amm6,
-        //             restShare: toWei('90'), // total 100
-        //             shareBalance: toWei('10'),
-        //             shareToRemove: toWei('10'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'amm is unsafe before removing liquidity',
-        //         },
-        //         {
-        //             name: 'short, after unsafe',
-        //             amm: amm1,
-        //             restShare: toWei('9.999'), // total 100
-        //             shareBalance: toWei('90.001'),
-        //             shareToRemove: toWei('90.001'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'amm is unsafe after removing liquidity',
-        //         },
-        //         {
-        //             name: 'long, after unsafe',
-        //             amm: amm4,
-        //             restShare: toWei('9.999'), // total 100
-        //             shareBalance: toWei('90.001'),
-        //             shareToRemove: toWei('90.001'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'amm is unsafe after removing liquidity',
-        //         },
-        //         {
-        //             name: 'long, after negative price',
-        //             amm: amm5,
-        //             restShare: toWei('99.999'), // total 100
-        //             shareBalance: toWei('0.001'),
-        //             shareToRemove: toWei('0.001'),
-        //             ammMaxLeverage: params.ammMaxLeverage,
-        //             errorMsg: 'amm is unsafe after removing liquidity',
-        //         },
-        //         {
-        //             name: 'long, after exceed leverage',
-        //             amm: amm4,
-        //             restShare: toWei('99.999'), // total 100
-        //             shareBalance: toWei('0.001'),
-        //             shareToRemove: toWei('0.001'),
-        //             ammMaxLeverage: toWei('0.1'),
-        //             errorMsg: 'amm exceeds max leverage after removing liquidity',
-        //         }
-        //     ]
+                await expect(liquidityPool.connect(user1).addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
+            })
+        })
 
-        //     failCases.forEach(element => {
-        //         it(element.name, async () => {
-        //             const accounts = await ethers.getSigners();
-        //             const user1 = accounts[1];
-        //             const user2 = accounts[2];
-        //             var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        //             var shareToken = await createContract("TestShareToken");
-        //             await shareToken.initialize("TEST", "TEST", amm.address);
-        //             await shareToken.setAdmin(user1.address);
-        //             const shareTokenUser1 = await TestShareTokenFactory.connect(shareToken.address, user1);
-        //             await shareTokenUser1.mint(user1.address, element.shareBalance);
-        //             await shareTokenUser1.mint(user2.address, element.restShare);
-        //             await amm.setConfig(ctk.address, shareToken.address, 1);
-        //             await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
-        //             const ammUser1 = await TestAmmFactory.connect(amm.address, user1);
-        //             await expect(ammUser1.removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
-        //         })
-        //     })
-        // })
+        describe('remove liquidity', function () {
+
+            const successCases = [
+                {
+                    name: 'poolMargin = 0',
+                    amm: {
+                        cash: toWei("0"),
+                        position1: toWei("0"),
+                        position2: toWei("0"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareToRemove: toWei('10'),
+                    marginToRemove: toWei("0"),
+                },
+                {
+                    name: 'no position',
+                    amm: {
+                        cash: toWei('10000'),
+                        position1: toWei("0"),
+                        position2: toWei("0"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareToRemove: toWei('10'),
+                    marginToRemove: toWei('1000')
+                },
+                {
+                    name: 'no position, remove all',
+                    amm: {
+                        cash: toWei('10000'),
+                        position1: toWei("0"),
+                        position2: toWei("0"),
+                    },
+                    shareLeft: toWei("0"), // total 100
+                    shareToRemove: toWei('100'),
+                    marginToRemove: toWei('10000')
+                },
+                {
+                    name: 'short',
+                    amm: {
+                        cash: toWei('10100'),
+                        position1: toWei("-10"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareToRemove: toWei('10'),
+                    marginToRemove: toWei('988.888888888888888889')
+                },
+                {
+                    name: 'long',
+                    amm: {
+                        cash: toWei('8138'),
+                        position1: toWei("10"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareToRemove: toWei('10'),
+                    marginToRemove: toWei('988.888888888888888889')
+                }
+            ]
+
+            successCases.forEach(element => {
+                it(element.name, async () => {
+
+                    await liquidityPool.setState(0, 2);
+                    await liquidityPool.setState(1, 2);
+
+                    await ctk.mint(liquidityPool.address, element.marginToRemove);
+                    await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+                    await stk.debugMint(user1.address, element.shareToRemove);
+                    await stk.debugMint(user2.address, element.shareLeft);
+
+                    await liquidityPool.setPoolCash(element.amm.cash)
+                    await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
+                    await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
+                    await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
+                    await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
+
+                    let now = Math.floor(Date.now() / 1000);
+                    await oracle1.setIndexPrice(toWei('100'), now);
+                    await oracle1.setMarkPrice(toWei('100'), now);
+                    await oracle2.setIndexPrice(toWei('100'), now);
+                    await oracle2.setMarkPrice(toWei('100'), now);
+
+                    await liquidityPool.connect(user1).removeLiquidity(element.shareToRemove);
+                    expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
+                    expect(await stk.balanceOf(user1.address)).approximateBigNumber(toWei("0"));
+                    expect(await stk.totalSupply()).approximateBigNumber(element.shareLeft);
+
+                })
+            })
+
+            const failCases = [
+                {
+                    name: 'zero share to remove',
+                    amm: {
+                        cash: toWei("0"),
+                        position1: toWei("0"),
+                        position2: toWei("0"),
+                    },
+                    shareLeft: toWei('100'), // total 100
+                    shareBalance: toWei("0"),
+                    shareToRemove: toWei("0"),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'share to remove must be positive',
+                },
+                {
+                    name: 'insufficient share balance',
+                    amm: {
+                        cash: toWei("0"),
+                        position1: toWei("0"),
+                        position2: toWei("0"),
+                    },
+                    shareLeft: toWei("0"), // total 100
+                    shareBalance: toWei('100'),
+                    shareToRemove: toWei('100.1'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'insufficient share balance',
+                },
+                {
+                    name: 'short, before unsafe',
+                    amm: {
+                        cash: toWei("17692"),
+                        position1: toWei("-80"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareBalance: toWei('10'),
+                    shareToRemove: toWei('10'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'amm is unsafe before removing liquidity',
+                },
+                {
+                    name: 'long, before unsafe',
+                    amm: {
+                        cash: toWei("1996"),
+                        position1: toWei("80"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('90'), // total 100
+                    shareBalance: toWei('10'),
+                    shareToRemove: toWei('10'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'amm is unsafe before removing liquidity',
+                },
+                {
+                    name: 'short, after unsafe',
+                    amm: {
+                        cash: toWei('10100'),
+                        position1: toWei("-10"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('9.999'), // total 100
+                    shareBalance: toWei('90.001'),
+                    shareToRemove: toWei('90.001'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'amm is unsafe after removing liquidity',
+                },
+                {
+                    name: 'long, after unsafe',
+                    amm: {
+                        cash: toWei('8138'),
+                        position1: toWei("10"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('9.999'), // total 100
+                    shareBalance: toWei('90.001'),
+                    shareToRemove: toWei('90.001'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'amm is unsafe after removing liquidity',
+                },
+                {
+                    name: 'long, after negative price',
+                    amm: {
+                        cash: toWei('1664'),
+                        position1: toWei("50"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('99.999'), // total 100
+                    shareBalance: toWei('0.001'),
+                    shareToRemove: toWei('0.001'),
+                    ammMaxLeverage: toWei("5"),
+                    errorMsg: 'amm is unsafe after removing liquidity',
+                },
+                {
+                    name: 'long, after exceed leverage',
+                    amm: {
+                        cash: toWei('8138'),
+                        position1: toWei("10"),
+                        position2: toWei("10"),
+                    },
+                    shareLeft: toWei('99.999'), // total 100
+                    shareBalance: toWei('0.001'),
+                    shareToRemove: toWei('0.001'),
+                    ammMaxLeverage: toWei('0.1'),
+                    errorMsg: 'amm exceeds max leverage after removing liquidity',
+                }
+            ]
+
+            failCases.forEach(element => {
+                it(element.name, async () => {
+                    await liquidityPool.setState(0, 2);
+                    await liquidityPool.setState(1, 2);
+
+                    await liquidityPool.debugSetPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), element.ammMaxLeverage);
+                    await liquidityPool.debugSetPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), element.ammMaxLeverage);
+
+                    await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+                    await stk.debugMint(user2.address, element.shareLeft);
+                    await stk.debugMint(user1.address, element.shareBalance);
+
+                    await liquidityPool.setPoolCash(element.amm.cash)
+                    await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
+                    await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
+                    await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
+                    await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
+
+                    let now = Math.floor(Date.now() / 1000);
+                    await oracle1.setIndexPrice(toWei('100'), now);
+                    await oracle1.setMarkPrice(toWei('100'), now);
+                    await oracle2.setIndexPrice(toWei('100'), now);
+                    await oracle2.setMarkPrice(toWei('100'), now);
+
+                    await expect(liquidityPool.connect(user1).removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
+                })
+            })
+        })
 
     })
 })

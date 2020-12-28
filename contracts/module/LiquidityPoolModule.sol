@@ -170,9 +170,8 @@ library LiquidityPoolModule {
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
         int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
         require(shareToMint > 0, "received share must be positive");
-
-        liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashToAdd);
         shareToken.mint(msg.sender, shareToMint.toUint256());
+        liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashToAdd);
         emit AddLiquidity(msg.sender, totalCashToAdd, shareToMint);
     }
 
@@ -192,8 +191,8 @@ library LiquidityPoolModule {
         require(cashToReturn <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
 
         shareToken.burn(msg.sender, shareToRemove.toUint256());
-        decreasePoolCash(liquidityPool, cashToReturn);
         liquidityPool.transferToUser(payable(msg.sender), cashToReturn);
+        decreasePoolCash(liquidityPool, cashToReturn);
         emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
     }
 

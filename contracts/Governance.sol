@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "./module/PerpetualModule.sol";
 
 import "./Type.sol";
-import "./Events.sol";
 import "./Storage.sol";
 
 // @title Goovernance is the contract to maintain liquidityPool parameters.

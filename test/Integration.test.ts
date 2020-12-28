@@ -132,7 +132,7 @@ describe("integration", () => {
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.finalize();
+        await perp.runLiquidityPool();
 
         // overview
         const info = await perp.getLiquidityPoolInfo();
@@ -316,7 +316,7 @@ describe("integration", () => {
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
         )
-        await perp.finalize();
+        await perp.runLiquidityPool();
 
         // overview
         print(await perp.callStatic.getLiquidityPoolInfo());

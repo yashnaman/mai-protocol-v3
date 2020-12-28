@@ -15,6 +15,8 @@ import "./CollateralModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -59,20 +61,14 @@ library TradeModule {
             amount = amount.abs() > position.abs() ? position : amount;
         }
         // 0. price / amount
-        (int256 deltaCash, int256 deltaPosition) = liquidityPool.queryTradeWithAMM(
-            perpetualIndex,
-            amount.neg(),
-            false
-        );
+        (int256 deltaCash, int256 deltaPosition) =
+            liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
+
         int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
         validatePrice(amount >= 0, tradePrice, priceLimit);
         // 2. trade
-        (int256 lpFee, int256 totalFee) = updateFees(
-            liquidityPool,
-            perpetual,
-            deltaCash.abs(),
-            referrer
-        );
+        (int256 lpFee, int256 totalFee) =
+            updateFees(liquidityPool, perpetual, deltaCash.abs(), referrer);
         bool isOpen = Utils.isOpen(position, deltaPosition.neg());
         perpetual.updateMargin(address(this), deltaPosition, deltaCash.add(lpFee));
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
@@ -131,28 +127,27 @@ library TradeModule {
         int256 maxAmount = perpetual.marginAccounts[trader].position;
         require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
-        (int256 deltaCash, int256 deltaPosition) = liquidityPool.queryTradeWithAMM(
-            perpetualIndex,
-            maxAmount,
-            false
-        );
+        (int256 deltaCash, int256 deltaPosition) =
+            liquidityPool.queryTradeWithAMM(perpetualIndex, maxAmount, false);
         // 2. trade
         int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         // 3. penalty
         {
-            int256 liquidatePenalty = perpetual
-                .getMarkPrice()
-                .wmul(deltaPosition)
-                .wmul(perpetual.liquidationPenaltyRate)
-                .abs();
-            (int256 penaltyToTaker, int256 penaltyToFund) = getLiquidationPenalty(
-                perpetual,
-                trader,
-                liquidatePenalty,
-                perpetual.keeperGasReward
-            );
+            int256 liquidatePenalty =
+                perpetual
+                    .getMarkPrice()
+                    .wmul(deltaPosition)
+                    .wmul(perpetual.liquidationPenaltyRate)
+                    .abs();
+            (int256 penaltyToTaker, int256 penaltyToFund) =
+                getLiquidationPenalty(
+                    perpetual,
+                    trader,
+                    liquidatePenalty,
+                    perpetual.keeperGasReward
+                );
             require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
             perpetual.updateCash(address(this), penaltyToTaker);
             perpetual.updateInsuranceFund(penaltyToFund);
@@ -187,12 +182,8 @@ library TradeModule {
         // 2. penalty
         {
             int256 liquidatePenalty = deltaCash.wmul(perpetual.liquidationPenaltyRate).abs();
-            (int256 penaltyToTaker, int256 penaltyToFund) = getLiquidationPenalty(
-                perpetual,
-                trader,
-                liquidatePenalty,
-                0
-            );
+            (int256 penaltyToTaker, int256 penaltyToFund) =
+                getLiquidationPenalty(perpetual, trader, liquidatePenalty, 0);
             require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
             perpetual.updateCash(liquidator, penaltyToTaker);
             perpetual.updateInsuranceFund(penaltyToFund);

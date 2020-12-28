@@ -130,18 +130,18 @@ describe('TradeModule1', () => {
                 await testTrade.createPerpetual(
                     oracle.address,
                     // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                    [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                    [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0.0001"), toWei("10000")],
+                    [toWei("0.001"), toWei("100"), toWei("90"), toWei("0.005"), toWei("5")],
                 )
-                await testTrade.setOperator(user0.address)
+                await testTrade.setOperator(user3.address)
                 await testTrade.setVault(user4.address, toWei("0.0002"))
             })
 
             const testCases = [
                 {
                     name: "sell",
-                    getMarginAccount: {
-                        cash: toWei('7698.86'), // 10000 - 2300.23
+                    marginAccount: {
+                        cash: toWei('7698.86'),
                         position: toWei('2.3'),
                     },
                     input: {
@@ -149,99 +149,58 @@ describe('TradeModule1', () => {
                         limitPrice: toWei("0"),
                     },
                     expectOutput: {
-                        cash: toWei("11178.003372325"),
-                        vaultFee: toWei("0.697516785"),
-                        operatorFee: toWei("0.3487583925"),
+                        cash: toWei("11178.8766232"),
+                        vaultFee: toWei("0.697691610"),
+                        operatorFee: toWei("0.348845805"),
                     }
                 },
-                // {
-                //     name: "sell - close mm unsafe",
-                //     getMarginAccount: {
-                //         cash: toWei('-15443'),   // 16070.23 . mm == 626.85
-                //         position: toWei('2.3'),
-                //         entryFunding: toWei('-0.91'),
-                //     },
-                //     input: {
-                //         amount: toWei("-0.5"),
-                //         limitPrice: toWei("0"),
-                //     },
-                //     expectOutput: {
-                //         cash: toWei("-12200.751349815645198533"),
-                //         ammCashBalance: toWei("4451.395359950153748472"),
-                //     }
-                // },
-                // {
-                //     name: "sell - margin unsafe",
-                //     getMarginAccount: {
-                //         cash: toWei('-15761'),   // 16070.23 . mm == 626.85
-                //         position: toWei('2.3'),
-                //         entryFunding: toWei('-0.91'),
-                //     },
-                //     input: {
-                //         amount: toWei("-0.5"),
-                //         limitPrice: toWei("0"),
-                //     },
-                //     expectError: "trader margin is unsafe"
-                // },
                 {
                     name: "buy without cross 0",
-                    getMarginAccount: {
+                    marginAccount: {
                         cash: toWei('7698.86'),
                         position: toWei('2.3'),
-                        entryFunding: toWei('-0.91'),
                     },
                     input: {
                         amount: toWei("0.5"),
                         limitPrice: toWei("99999999999999"),
                     },
                     expectOutput: {
-                        cash: toWei("4203.279770389899701152"),
-                        vaultFee: toWei("0.699407232439580479"),
-                        operatorFee: toWei("0.349703616219790239"),
+                        cash: toWei("4204.068831565497225683"),
+                        vaultFee: toWei("0.699249577859041513"),
+                        operatorFee: toWei("0.349624788929520756"),
                     }
                 },
-                // {
-                //     name: "buy - open im unsafe",
-                //     getMarginAccount: {
-                //         cash: toWei('-14121'),
-                //         position: toWei('2.3'),
-                //         entryFunding: toWei('-0.91'),
-                //     },
-                //     input: {
-                //         amount: toWei("0.5"),
-                //         limitPrice: toWei("99999999999999"),
-                //     },
-                //     expectError: "trader initial margin is unsafe",
-                // },
                 {
                     name: "buy cross 0",
-                    getMarginAccount: {
+                    marginAccount: {
                         cash: toWei('7698.86'),
                         position: toWei('2.3'),
-                        entryFunding: toWei('-0.91'),
                     },
                     input: {
                         amount: toWei("3.3"),
                         limitPrice: toWei("99999999999999"),
                     },
                     expectOutput: {
-                        cash: toWei("-15401.483910332567601064"),
-                        vaultFee: toWei("4.621984716100413107"),
-                        operatorFee: toWei("2.310992358050206553"),
+                        cash: toWei("-15378.373986752065535528"),
+                        vaultFee: toWei("4.617367348751661445"),
+                        operatorFee: toWei("2.308683674375830722"),
                     }
                 },
             ]
 
             testCases.forEach((testCase) => {
                 it(testCase.name, async () => {
+
+                    await testTrade.setState(0, 2);
+                    await testTrade.setTotalCollateral(0, toWei("100000000000000000"));
                     await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
 
                     let now = Math.floor(Date.now() / 1000);
                     await oracle.setMarkPrice(toWei("6965"), now);
                     await oracle.setIndexPrice(toWei("7000"), now);
 
+                    await testTrade.setMarginAccount(0, user1.address, testCase.marginAccount.cash, testCase.marginAccount.position);
                     await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
-                    await testTrade.setMarginAccount(0, user1.address, testCase.getMarginAccount.cash, testCase.getMarginAccount.position);
                     if (typeof testCase.expectOutput != "undefined") {
                         await testTrade.trade2(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, false);
                         var { cash } = await testTrade.getMarginAccount(0, user1.address);
