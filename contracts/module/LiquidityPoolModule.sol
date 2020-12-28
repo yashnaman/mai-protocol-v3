@@ -140,14 +140,15 @@ library LiquidityPoolModule {
 
     function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
         AMMModule.Context memory context = liquidityPool.prepareContext();
-        int256 poolMargin = AMMModule.isAMMMarginSafe(context, 0)
-            ? AMMModule.regress(context, 0)
-            : 0;
+        (int256 poolMargin, bool isAMMSafe) = AMMModule.getPoolMargin(context);
+        emit UpdatePoolMargin(poolMargin);
+        if (!isAMMSafe) {
+            poolMargin = 0;
+        }
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
             liquidityPool.perpetuals[i].updateFundingRate(poolMargin);
         }
-        emit UpdatePoolMargin(poolMargin);
     }
 
     function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) internal {

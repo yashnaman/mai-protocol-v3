@@ -54,7 +54,8 @@ library AMMModule {
         (deltaCash, closeMidPrice) = closePosition(perpetual, context, closeAmount);
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closeAmount);
-        (int256 openDeltaMargin, int256 openDeltaPositionAmount, int256 openMidPrice) = openPosition(perpetual, context, openAmount, partialFill);
+        (int256 openDeltaMargin, int256 openDeltaPositionAmount, int256 openMidPrice) =
+            openPosition(perpetual, context, openAmount, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
         deltaPosition = closeAmount.add(openDeltaPositionAmount);
         if (deltaPosition < 0 && deltaCash < 0) {
@@ -62,7 +63,8 @@ library AMMModule {
             deltaCash = 0;
         }
         int256 midPrice = closeAmount != 0 ? closeMidPrice : openMidPrice;
-        int256 deltaCashAtBestPrice = midPrice.wmul(halfSpread.add(Constant.SIGNED_ONE)).wmul(deltaPosition).neg();
+        int256 deltaCashAtBestPrice =
+            midPrice.wmul(halfSpread.add(Constant.SIGNED_ONE)).wmul(deltaPosition).neg();
         deltaCash = deltaCash.max(deltaCashAtBestPrice);
     }
 
@@ -127,9 +129,8 @@ library AMMModule {
     {
         int256 positionValue = context.indexPrice.wmul(context.position);
         int256 margin = positionValue.add(context.positionValue).add(context.availableCash);
-        int256 tmp = positionValue.wmul(context.position).mul(slippageFactor).add(
-            context.squareValue
-        );
+        int256 tmp =
+            positionValue.wmul(context.position).mul(slippageFactor).add(context.squareValue);
         int256 beforeSqrt = margin.mul(margin).sub(tmp.mul(2));
         require(beforeSqrt >= 0, "amm is unsafe when regressing");
         poolMargin = beforeSqrt.sqrt().add(margin).div(2);
@@ -141,11 +142,8 @@ library AMMModule {
         returns (bool)
     {
         int256 value = context.indexPrice.wmul(context.position).add(context.positionValue);
-        int256 minAvailableCash = context
-            .indexPrice
-            .wmul(context.position)
-            .wmul(context.position)
-            .mul(slippageFactor);
+        int256 minAvailableCash =
+            context.indexPrice.wmul(context.position).wmul(context.position).mul(slippageFactor);
         minAvailableCash = minAvailableCash.add(context.squareValue).mul(2).sqrt().sub(value);
         return context.availableCash >= minAvailableCash;
     }
@@ -174,10 +172,7 @@ library AMMModule {
             );
         } else {
             midPrice = context.indexPrice;
-            deltaCash = context
-                .indexPrice
-                .wmul(tradeAmount)
-                .neg();
+            deltaCash = context.indexPrice.wmul(tradeAmount).neg();
         }
     }
 
@@ -186,7 +181,15 @@ library AMMModule {
         Context memory context,
         int256 tradeAmount,
         bool partialFill
-    ) private view returns (int256 deltaCash, int256 deltaPosition, int256 midPrice) {
+    )
+        private
+        view
+        returns (
+            int256 deltaCash,
+            int256 deltaPosition,
+            int256 midPrice
+        )
+    {
         if (tradeAmount == 0) {
             return (0, 0, 0);
         }
@@ -204,13 +207,8 @@ library AMMModule {
         midPrice = _getPrice(indexPrice, poolMargin, positionBefore, slippageFactor);
         int256 ammMaxLeverage = perpetual.ammMaxLeverage.value;
         if (positionAfter > 0) {
-            int256 maxLongPosition = _getMaxPosition(
-                context,
-                poolMargin,
-                ammMaxLeverage,
-                slippageFactor,
-                true
-            );
+            int256 maxLongPosition =
+                _getMaxPosition(context, poolMargin, ammMaxLeverage, slippageFactor, true);
             if (positionAfter > maxLongPosition) {
                 require(partialFill, "trade amount exceeds max amount");
                 deltaPosition = maxLongPosition.sub(positionBefore);
@@ -219,13 +217,8 @@ library AMMModule {
                 deltaPosition = tradeAmount;
             }
         } else {
-            int256 minShortPosition = _getMaxPosition(
-                context,
-                poolMargin,
-                ammMaxLeverage,
-                slippageFactor,
-                false
-            );
+            int256 minShortPosition =
+                _getMaxPosition(context, poolMargin, ammMaxLeverage, slippageFactor, false);
             if (positionAfter < minShortPosition) {
                 require(partialFill, "trade amount exceeds max amount");
                 deltaPosition = minShortPosition.sub(positionBefore);
@@ -234,7 +227,13 @@ library AMMModule {
                 deltaPosition = tradeAmount;
             }
         }
-        deltaCash =  _getDeltaMargin(poolMargin, positionBefore, positionAfter, indexPrice, slippageFactor);
+        deltaCash = _getDeltaMargin(
+            poolMargin,
+            positionBefore,
+            positionAfter,
+            indexPrice,
+            slippageFactor
+        );
         require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "invalid delta cash");
     }
 
@@ -336,12 +335,13 @@ library AMMModule {
         bool isLongSide
     ) internal pure returns (int256 maxPosition) {
         require(context.indexPrice > 0, "index price must be positive");
-        int256 beforeSqrt = poolMargin
-            .mul(poolMargin)
-            .mul(2)
-            .sub(context.squareValue)
-            .wdiv(context.indexPrice)
-            .wdiv(slippageFactor);
+        int256 beforeSqrt =
+            poolMargin
+                .mul(poolMargin)
+                .mul(2)
+                .sub(context.squareValue)
+                .wdiv(context.indexPrice)
+                .wdiv(slippageFactor);
         if (beforeSqrt <= 0) {
             return 0;
         }
