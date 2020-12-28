@@ -585,4 +585,172 @@ describe('AMM', () => {
             })
         })
     })
+
+
+    describe('mint share', async () => {
+
+        const successCases = [
+            {
+                name: 'init',
+                amm: ammInit,
+                totalShare: _0,
+                cashToAdd: toWad('1000'),
+                share: toWad('1000')
+            },
+            {
+                name: 'before safe, after safe',
+                amm: amm1,
+                totalShare: toWad('100'),
+                cashToAdd: toWad('1000'),
+                share: toWad('10.0916660306314520522392020897')
+            },
+            {
+                name: 'short, before unsafe, after unsafe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                cashToAdd: toWad('576'),
+                share: toWad('5.321016166281755196304849885')
+            },
+            {
+                name: 'short, before unsafe, after safe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                cashToAdd: toWad('577'),
+                share: toWad('6.021800176340430529365414419')
+            },
+            {
+                name: 'long, before unsafe, after unsafe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                cashToAdd: toWad('576'),
+                share: toWad('5.321016166281755196304849885')
+            },
+            {
+                name: 'long, before unsafe, after safe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                cashToAdd: toWad('577'),
+                share: toWad('6.021800176340430529365414419')
+            }
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await amm.getShareToMint(element.totalShare, element.cashToAdd)).approximateBigNumber(element.share);
+            })
+        })
+
+        it("poolMargin = 0 && totalShare != 0", async () => {
+            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
+        await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share has no value");
+        })
+    })
+
+    describe('redeem share', function () {
+
+        const successCases = [
+            {
+                name: 'poolMargin = 0',
+                amm: ammInit,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: _0
+            },
+            {
+                name: 'no position',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('1000')
+            },
+            {
+                name: 'no position, remove all',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('100'),
+                marginToRemove: toWad('10000')
+            },
+            {
+                name: 'short',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('988.888888888888888888888888889')
+            },
+            {
+                name: 'long',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('988.888888888888888888888888889')
+            }
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                expect(await amm.getCashToReturn(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove);
+            })
+        })
+
+        const failCases = [
+            {
+                name: 'short, before unsafe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'amm is unsafe before removing liquidity',
+            },
+            {
+                name: 'long, before unsafe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'amm is unsafe before removing liquidity',
+            },
+            {
+                name: 'short, after unsafe',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('90.001'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'amm is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after unsafe',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('90.001'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'amm is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after negative price',
+                amm: amm5,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('0.001'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'amm is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after exceed leverage',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('0.001'),
+                ammMaxLeverage: toWad('0.1'),
+                errorMsg: 'amm exceeds max leverage after removing liquidity',
+            }
+        ]
+
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await expect(amm.getCashToReturn(element.totalShare, element.shareToRemove)).to.be.revertedWith(element.errorMsg);
+            })
+        })
+    })
+
 });

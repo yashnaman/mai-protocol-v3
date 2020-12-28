@@ -56,12 +56,6 @@ contract TestAMM {
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
-    function setConfig(address collateralToken, address shareToken, uint256 scaler) public {
-        liquidityPool.collateralToken = collateralToken;
-        liquidityPool.shareToken = shareToken;
-        liquidityPool.scaler = scaler;
-    }
-
     function isAMMMarginSafe() public view returns (bool) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
@@ -116,15 +110,19 @@ contract TestAMM {
         );
     }
 
-    // function addLiquidity(int256 marginToAdd)
-    //     public
-    // {
-    //     AMMModule.addLiquidity(liquidityPool, marginToAdd);
-    // }
+    function getShareToMint(int256 shareTotalSupply, int256 cashToAdd)
+        public
+        view
+        returns (int256)
+    {
+        return AMMModule.getShareToMint(liquidityPool, shareTotalSupply, cashToAdd);
+    }
 
-    // function removeLiquidity(int256 shareToRemove)
-    //     public
-    // {
-    //     AMMModule.removeLiquidity(liquidityPool, shareToRemove);
-    // }
+    function getCashToReturn(int256 shareTotalSupply, int256 shareToRemove)
+        public
+        view
+        returns (int256)
+    {
+        return AMMModule.getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
+    }
 }
