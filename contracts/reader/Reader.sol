@@ -57,8 +57,8 @@ contract Reader {
         address liquidityPool,
         uint256 perpetualIndex,
         address account
-    ) public view returns (MarginAccount memory getMarginAccount) {
-        (getMarginAccount.cash, getMarginAccount.position) = ILiquidityPool(liquidityPool)
+    ) public view returns (MarginAccount memory marginAccount) {
+        (marginAccount.cash, marginAccount.position) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, account);
     }
 
