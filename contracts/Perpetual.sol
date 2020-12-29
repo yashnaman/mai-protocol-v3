@@ -172,19 +172,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 deadline,
         address referrer,
         uint32 flags
-    )
-        external
-        syncState
-        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
-        onlyNotPaused(perpetualIndex)
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        returns (int256)
-    {
+    ) external onlyAuthorized(trader, Constant.PRIVILEGE_TRADE) returns (int256) {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+        return _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
     function brokerTrade(bytes memory orderData, int256 amount)
@@ -198,7 +191,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.validateOrder(order, amount);
         _liquidityPool.validateTriggerPrice(order);
         return
-            _liquidityPool.trade(
+            _trade(
                 order.perpetualIndex,
                 order.trader,
                 amount,
@@ -208,7 +201,22 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             );
     }
 
-    // function _trader(uint256 perpetualIndex, address trader, int256 amount, int256 limitPrice, address referrer, uint32 flags)
+    function _trade(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        int256 limitPrice,
+        address referrer,
+        uint32 flags
+    )
+        internal
+        syncState
+        onlyNotPaused(perpetualIndex)
+        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        returns (int256)
+    {
+        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+    }
 
     function liquidateByAMM(
         uint256 perpetualIndex,
