@@ -20,7 +20,9 @@ interface ILiquidityPool {
             // [3] poolCash,
             int256[2] memory nums,
             uint256 perpetualCount,
-            uint256 fundingTime
+            uint256 fundingTime,
+            bool isInitialized,
+            bool isFastCreationEnabled
         );
 
     function getPerpetualInfo(uint256 perpetualIndex)
@@ -67,9 +69,9 @@ interface ILiquidityPool {
         uint256 deadline,
         address referrer,
         bool isCloseOnly
-    ) external;
+    ) external returns (int256);
 
-    function brokerTrade(bytes memory orderData, int256 amount) external;
+    function brokerTrade(bytes memory orderData, int256 amount) external returns (int256);
 
     function activeAccountCount(uint256 perpetualIndex) external view returns (uint256);
 

@@ -33,7 +33,9 @@ contract Getter is Storage {
             // [3] poolCash,
             int256[2] memory nums,
             uint256 perpetualCount,
-            uint256 fundingTime
+            uint256 fundingTime,
+            bool isInitialized,
+            bool isFastCreationEnabled
         )
     {
         addresses = [
@@ -47,6 +49,8 @@ contract Getter is Storage {
         nums = [_liquidityPool.vaultFeeRate, _liquidityPool.poolCash];
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
+        isInitialized = _liquidityPool.isInitialized;
+        isFastCreationEnabled = _liquidityPool.isFastCreationEnabled;
     }
 
     function getPerpetualInfo(uint256 perpetualIndex)

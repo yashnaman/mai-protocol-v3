@@ -22,6 +22,8 @@ contract Reader {
         int256 vaultFeeRate;
         int256 poolCash;
         uint256 fundingTime;
+        bool isInitialized;
+        bool isFastCreationEnabled;
         PerpetualStorage[] perpetualStorages;
     }
 
@@ -71,8 +73,16 @@ contract Reader {
         {
             address[6] memory addresses;
             int256[2] memory nums;
-            (addresses, nums, perpetualCount, pool.fundingTime) = ILiquidityPool(liquidityPool)
-                .getLiquidityPoolInfo();
+            bool isInitialized;
+            bool isFastCreationEnabled;
+            (
+                addresses,
+                nums,
+                perpetualCount,
+                pool.fundingTime,
+                isInitialized,
+                isFastCreationEnabled
+            ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
             creator = addresses[0];
             pool.operator = addresses[1];
             pool.collateralToken = addresses[2];
@@ -81,6 +91,8 @@ contract Reader {
             pool.shareToken = addresses[5];
             pool.vaultFeeRate = nums[0];
             pool.poolCash = nums[1];
+            pool.isInitialized = isInitialized;
+            pool.isFastCreationEnabled = isFastCreationEnabled;
         }
         address symbolService = IPoolCreator(creator).symbolService();
 

@@ -99,10 +99,12 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 emit TradeFailed(orderHash, order, amount, "amount is less than min trade amount");
                 return;
             }
-            try ILiquidityPool(order.liquidityPool).brokerTrade(compressedOrders[i], amount) {
-                _fillOrder(orderHash, amount);
+            try
+                ILiquidityPool(order.liquidityPool).brokerTrade(compressedOrders[i], amount)
+            returns (int256 filledAmount) {
+                _fillOrder(orderHash, filledAmount);
                 _transfer(order.trader, order.broker, gasReward);
-                emit TradeSuccess(orderHash, order, amount, gasReward);
+                emit TradeSuccess(orderHash, order, filledAmount, gasReward);
             } catch Error(string memory reason) {
                 emit TradeFailed(orderHash, order, amount, reason);
                 return;
