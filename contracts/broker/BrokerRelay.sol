@@ -40,9 +40,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     event CancelOrder(bytes32 orderHash);
     event FillOrder(bytes32 orderHash, int256 fillAmount);
 
-    // constructor() {
-    //     _chainID = Utils.chainID();
-    // }
+    constructor() {
+        _chainID = Utils.chainID();
+    }
 
     receive() external payable {
         deposit();
@@ -106,9 +106,11 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 _transfer(order.trader, order.broker, gasReward);
                 emit TradeSuccess(orderHash, order, filledAmount, gasReward);
             } catch Error(string memory reason) {
+                console.log("FAILED", reason);
                 emit TradeFailed(orderHash, order, amount, reason);
                 return;
             } catch {
+                console.log("FAILED transaction failed");
                 emit TradeFailed(orderHash, order, amount, "transaction failed");
                 return;
             }

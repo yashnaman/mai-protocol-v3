@@ -66,10 +66,16 @@ library OrderData {
     function getSigner(Order memory order, bytes memory signature)
         internal
         pure
-        returns (address signerAddress)
+        returns (address signer)
     {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
         uint8 signType;
         assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
             signType := byte(1, mload(add(signature, 0x60)))
         }
         bytes32 hash = getOrderHash(order);
@@ -78,7 +84,8 @@ library OrderData {
         } else if (signType != SIGN_TYPE_EIP712) {
             revert("unsupported sign type");
         }
-        return ECDSAUpgradeable.recover(hash, signature);
+        signer = ecrecover(hash, v, r, s);
+        require(signer != address(0), "invalid signature");
     }
 
     function getOrderHash(Order memory order) internal pure returns (bytes32) {

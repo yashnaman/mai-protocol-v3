@@ -51,11 +51,7 @@ contract TestOrder is Storage {
         return order.salt;
     }
 
-    function getSigner(
-        Order memory order,
-        bytes memory signature,
-        uint8 signType
-    ) public pure returns (address) {
+    function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
         return order.getSigner(signature);
     }
 
@@ -77,5 +73,42 @@ contract TestOrder is Storage {
 
     function setPositionAmount(address trader, int256 amount) public {
         _liquidityPool.perpetuals[0].marginAccounts[trader].position = amount;
+    }
+
+    function compress(
+        Order memory testOrder,
+        bytes32 r,
+        bytes32 s,
+        uint8 v,
+        uint8 signType
+    ) public view returns (bytes memory compressed) {
+        bytes memory p1 =
+            abi.encodePacked(
+                testOrder.trader,
+                testOrder.broker,
+                testOrder.relayer,
+                testOrder.referrer,
+                testOrder.liquidityPool
+            );
+        bytes memory p2 =
+            abi.encodePacked(
+                testOrder.minTradeAmount,
+                testOrder.amount,
+                testOrder.limitPrice,
+                testOrder.triggerPrice,
+                testOrder.chainID
+            );
+        bytes memory p3 =
+            abi.encodePacked(
+                testOrder.expiredAt,
+                testOrder.perpetualIndex,
+                testOrder.brokerFeeLimit,
+                testOrder.flags,
+                testOrder.salt,
+                v,
+                signType
+            ); // 64 + 32 + 32 + 32 + 32 + 8 + 8
+        bytes memory p4 = abi.encodePacked(r, s);
+        compressed = abi.encodePacked(p1, p2, p3, p4);
     }
 }

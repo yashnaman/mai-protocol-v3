@@ -24,7 +24,18 @@ contract TestTrade is TestMarginAccount {
         _liquidityPool.vaultFeeRate = vaultFeeRate;
     }
 
-    function trade2(
+    function debugTrade(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        int256 limitPrice,
+        address referrer,
+        uint32 flags
+    ) public syncState {
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+    }
+
+    function debugBrokerTrade(
         uint256 perpetualIndex,
         address trader,
         int256 amount,

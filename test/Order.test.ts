@@ -133,7 +133,7 @@ describe("Order", () => {
         signType = 1
          */
         const data = "0x11111111111111111111111111111111111111112222222222222222222222222222222222222222333333333333333333333333333333333333333344444444444444444444444444444444444444445555555555555555555555555555555555555555000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000f000000000000000b000000060000000cffffffff0000000e1b01aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-        var { order, signature, signType } = await testOrder.decompress(data);
+        var { order, signature } = await testOrder.decompress(data);
         expect(order.trader).to.equal("0x1111111111111111111111111111111111111111");
         expect(order.broker).to.equal("0x2222222222222222222222222222222222222222");
         expect(order.relayer).to.equal("0x3333333333333333333333333333333333333333");
@@ -152,10 +152,9 @@ describe("Order", () => {
         expect(order.flags).to.equal(0xffffffff);
         expect(order.salt).to.equal(14);
 
-        expect(signType).to.equal(1);
         expect(signature.slice(2, 66)).to.equal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); // r
         expect(signature.slice(66, 130)).to.equal("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"); // s
-        expect(signature.slice(130, 194)).to.equal("000000000000000000000000000000000000000000000000000000000000001b"); // v
+        expect(signature.slice(130, 134)).to.equal("1b01"); // v
     })
 
     it("signer", async () => {
