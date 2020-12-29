@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
+import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
@@ -20,6 +21,8 @@ import "hardhat/console.sol";
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
+    using OrderData for uint32;
+
     using AMMModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
@@ -61,16 +64,18 @@ library TradeModule {
         int256 amount,
         int256 priceLimit,
         address referrer,
-        bool isCloseOnly
+        uint32 flags
     ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 position = perpetual.getPosition(trader);
-        amount = isCloseOnly ? getMaxPositionToClose(position, amount) : amount;
+        amount = flags.isCloseOnly() ? getMaxPositionToClose(position, amount) : amount;
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
         int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
-        validatePrice(amount >= 0, tradePrice, priceLimit);
+        if (!flags.isMarketOrder()) {
+            validatePrice(amount >= 0, tradePrice, priceLimit);
+        }
         // 2. trade
         (int256 lpFee, int256 totalFee) =
             updateFees(liquidityPool, perpetual, deltaCash.abs(), referrer);

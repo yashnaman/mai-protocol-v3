@@ -33,7 +33,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using SignedSafeMathUpgradeable for int256;
     using AddressUpgradeable for address;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
-    using OrderData for Order;
+    using OrderData for bytes;
 
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
@@ -80,7 +80,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
         external
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        onlyExistedPerpetual(perpetualIndex)
     {
         require(amount > 0, "amount is negative");
         int256 totalAmount = _liquidityPool.transferFromUser(msg.sender, amount);
@@ -96,7 +95,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         payable
         onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
@@ -120,9 +118,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
         onlyNotPaused(perpetualIndex)
-        onlyExistedPerpetual(perpetualIndex)
+        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
@@ -141,7 +138,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     function clear(uint256 perpetualIndex)
         public
         onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
-        onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -161,7 +157,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         onlyWhen(perpetualIndex, PerpetualState.CLEARED)
-        onlyExistedPerpetual(perpetualIndex)
         nonReentrant
     {
         require(trader != address(0), "trader is invalid");
@@ -176,48 +171,59 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 limitPrice,
         uint256 deadline,
         address referrer,
-        bool isCloseOnly
+        uint32 flags
     )
         external
         syncState
         onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
         onlyNotPaused(perpetualIndex)
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        returns (int256)
     {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
+        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
-    function brokerTrade(
-        Order memory order,
-        int256 amount,
-        bytes memory signature,
-        uint8 signType
-    ) external syncState onlyWhen(order.perpetualIndex, PerpetualState.NORMAL) {
-        _liquidityPool.validateSignature(order, signature, signType);
+    function brokerTrade(bytes memory orderData, int256 amount)
+        external
+        syncState
+        returns (int256)
+    {
+        Order memory order = orderData.decodeOrderData();
+        bytes memory signature = orderData.decodeSignature();
+        _liquidityPool.validateSignature(order, signature);
         _liquidityPool.validateOrder(order, amount);
         _liquidityPool.validateTriggerPrice(order);
-        _liquidityPool.trade(
-            order.perpetualIndex,
-            order.trader,
-            amount,
-            order.limitPrice,
-            order.referrer,
-            order.isCloseOnly()
-        );
+        return
+            _liquidityPool.trade(
+                order.perpetualIndex,
+                order.trader,
+                amount,
+                order.limitPrice,
+                order.referrer,
+                order.flags
+            );
     }
+
+    // function _trader(uint256 perpetualIndex, address trader, int256 amount, int256 limitPrice, address referrer, uint32 flags)
 
     function liquidateByAMM(
         uint256 perpetualIndex,
         address trader,
         uint256 deadline
-    ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
+    )
+        external
+        syncState
+        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        nonReentrant
+        returns (int256)
+    {
         require(trader != address(0), "trader is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _liquidityPool.liquidateByAMM(perpetualIndex, trader);
+        return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
     }
 
     function liquidateByTrader(
@@ -226,12 +232,25 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 limitPrice,
         uint256 deadline
-    ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
+    )
+        external
+        syncState
+        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
+        nonReentrant
+        returns (int256)
+    {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
-        _liquidityPool.liquidateByTrader(perpetualIndex, msg.sender, trader, amount, limitPrice);
+        return
+            _liquidityPool.liquidateByTrader(
+                perpetualIndex,
+                msg.sender,
+                trader,
+                amount,
+                limitPrice
+            );
     }
 
     bytes[50] private __gap;

@@ -10,19 +10,18 @@ import "hardhat/console.sol";
 
 library OrderData {
     string internal constant DOMAIN_NAME = "Mai Protocol v3";
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
-        abi.encodePacked("EIP712Domain(string name)")
-    );
-    bytes32 internal constant DOMAIN_SEPARATOR = keccak256(
-        abi.encodePacked(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(DOMAIN_NAME)))
-    );
-    bytes32 internal constant EIP712_ORDER_TYPE = keccak256(
-        abi.encodePacked(
-            "Order(address trader,address broker,address relayer,address referrer,address liquidityPool,",
-            "int256 minTradeAmount,int256 amount,int256 limitPrice,int256 triggerPrice,uint256 chainID,",
-            "uint64 expiredAt,uint32 perpetualIndex,uint32 brokerFeeLimit,uint32 flags,uint32 salt)"
-        )
-    );
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+        keccak256(abi.encodePacked("EIP712Domain(string name)"));
+    bytes32 internal constant DOMAIN_SEPARATOR =
+        keccak256(abi.encodePacked(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(DOMAIN_NAME))));
+    bytes32 internal constant EIP712_ORDER_TYPE =
+        keccak256(
+            abi.encodePacked(
+                "Order(address trader,address broker,address relayer,address referrer,address liquidityPool,",
+                "int256 minTradeAmount,int256 amount,int256 limitPrice,int256 triggerPrice,uint256 chainID,",
+                "uint64 expiredAt,uint32 perpetualIndex,uint32 brokerFeeLimit,uint32 flags,uint32 salt)"
+            )
+        );
 
     uint8 internal constant SIGN_TYPE_ETH = 0x0;
     uint8 internal constant SIGN_TYPE_EIP712 = 0x0;
@@ -48,12 +47,32 @@ library OrderData {
         return (order.flags & MASK_TAKE_PROFIT_ORDER) > 0;
     }
 
-    function signer(
-        Order memory order,
-        bytes memory signature,
-        uint8 signType
-    ) internal pure returns (address signerAddress) {
-        bytes32 hash = orderHash(order);
+    function isCloseOnly(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_CLOSE_ONLY) > 0;
+    }
+
+    function isMarketOrder(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_MARKET_ORDER) > 0;
+    }
+
+    function isStopLossOrder(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_STOP_LOSS_ORDER) > 0;
+    }
+
+    function isTakeProfitOrder(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_TAKE_PROFIT_ORDER) > 0;
+    }
+
+    function getSigner(Order memory order, bytes memory signature)
+        internal
+        pure
+        returns (address signerAddress)
+    {
+        uint8 signType;
+        assembly {
+            signType := byte(1, mload(add(signature, 0x60)))
+        }
+        bytes32 hash = getOrderHash(order);
         if (signType == SIGN_TYPE_ETH) {
             hash = ECDSAUpgradeable.toEthSignedMessageHash(hash);
         } else if (signType != SIGN_TYPE_EIP712) {
@@ -62,24 +81,31 @@ library OrderData {
         return ECDSAUpgradeable.recover(hash, signature);
     }
 
-    function orderHash(Order memory order) internal pure returns (bytes32) {
+    function getOrderHash(Order memory order) internal pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result));
     }
 
-    function decompress(bytes memory data)
+    function decodeSignature(bytes memory orderData)
         internal
         pure
-        returns (
-            Order memory order,
-            bytes memory signature,
-            uint8 signType
-        )
+        returns (bytes memory signature)
     {
-        bytes32 tmp;
         bytes32 r;
         bytes32 s;
         uint8 v;
+        uint8 signType;
+        assembly {
+            r := mload(add(orderData, 318))
+            s := mload(add(orderData, 350))
+            v := byte(24, mload(add(orderData, 292)))
+            signType := byte(25, mload(add(orderData, 292)))
+        }
+        signature = abi.encodePacked(r, s, v, signType);
+    }
+
+    function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {
+        bytes32 tmp;
         assembly {
             // trader / 20
             mstore(add(order, 0), mload(add(data, 20)))
@@ -103,19 +129,11 @@ library OrderData {
             mstore(add(order, 288), mload(add(data, 260)))
             // expiredAt + perpetualIndex + brokerFeeLimit + flags + salt + v + signType / 26
             tmp := mload(add(data, 292))
-            // r / 32
-            r := mload(add(data, 318))
-            // s / 32
-            s := mload(add(data, 350))
         }
         order.expiredAt = uint64(bytes8(tmp));
         order.perpetualIndex = uint32(bytes4(tmp << 64));
         order.brokerFeeLimit = uint32(bytes4(tmp << 96));
         order.flags = uint32(bytes4(tmp << 128));
         order.salt = uint32(bytes4(tmp << 160));
-        v = uint8(bytes1(tmp << 192));
-        signature = abi.encode(r, s, v);
-        // 0 == personalSign, 1 == EIP712
-        signType = uint8(bytes1(tmp << 200));
     }
 }

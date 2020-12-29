@@ -27,16 +27,16 @@ library OrderModule {
     function validateSignature(
         LiquidityPoolStorage storage liquidityPool,
         Order memory order,
-        bytes memory signature,
-        uint8 signType
+        bytes memory signature
     ) public view {
-        address signer = order.signer(signature, signType);
+        address signer = order.getSigner(signature);
         if (signer != order.trader) {
-            bool isAuthorized = IAccessController(liquidityPool.accessController).isGranted(
-                order.trader,
-                signer,
-                Constant.PRIVILEGE_TRADE
-            );
+            bool isAuthorized =
+                IAccessController(liquidityPool.accessController).isGranted(
+                    order.trader,
+                    signer,
+                    Constant.PRIVILEGE_TRADE
+                );
             require(isAuthorized, "signer is unauthorized");
         }
     }

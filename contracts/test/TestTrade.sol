@@ -30,9 +30,9 @@ contract TestTrade is TestMarginAccount {
         int256 amount,
         int256 limitPrice,
         address referrer,
-        bool isCloseOnly
+        uint32 flags
     ) public syncState {
-        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, isCloseOnly);
+        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
     function updateFees(

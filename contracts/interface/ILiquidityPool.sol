@@ -69,12 +69,7 @@ interface ILiquidityPool {
         bool isCloseOnly
     ) external;
 
-    function brokerTrade(
-        Order memory order,
-        int256 amount,
-        bytes memory signature,
-        uint8 signType
-    ) external;
+    function brokerTrade(bytes memory orderData, int256 amount) external;
 
     function activeAccountCount(uint256 perpetualIndex) external view returns (uint256);
 

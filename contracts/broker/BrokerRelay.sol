@@ -64,7 +64,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     function cancelOrder(Order memory order) public {
-        bytes32 orderHash = order.orderHash();
+        bytes32 orderHash = order.getOrderHash();
         require(!_orderCanceled[orderHash], "order is already canceled");
         _orderCanceled[orderHash] = true;
         emit CancelOrder(orderHash);
@@ -77,11 +77,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     ) external {
         uint256 orderCount = compressedOrders.length;
         for (uint256 i = 0; i < orderCount; i++) {
-            (Order memory order, bytes memory signature, uint8 signType) = compressedOrders[i]
-                .decompress();
+            Order memory order = compressedOrders[i].decodeOrderData();
             int256 amount = amounts[i];
             uint256 gasReward = gasRewards[i];
-            bytes32 orderHash = order.orderHash();
+            bytes32 orderHash = order.getOrderHash();
             require(order.chainID == _chainID, "chain id mismatch");
             require(!_orderCanceled[orderHash], "order is canceled");
             require(
@@ -100,9 +99,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 emit TradeFailed(orderHash, order, amount, "amount is less than min trade amount");
                 return;
             }
-            try
-                ILiquidityPool(order.liquidityPool).brokerTrade(order, amount, signature, signType)
-             {
+            try ILiquidityPool(order.liquidityPool).brokerTrade(compressedOrders[i], amount) {
                 _fillOrder(orderHash, amount);
                 _transfer(order.trader, order.broker, gasReward);
                 emit TradeSuccess(orderHash, order, amount, gasReward);

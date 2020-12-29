@@ -21,17 +21,14 @@ contract TestOrder is Storage {
     function decompress(bytes memory data)
         public
         pure
-        returns (
-            Order memory order,
-            bytes memory signature,
-            uint8 signType
-        )
+        returns (Order memory order, bytes memory signature)
     {
-        (order, signature, signType) = data.decompress();
+        order = data.decodeOrderData();
+        signature = data.decodeSignature();
     }
 
     function orderHash(Order memory order) public pure returns (bytes32) {
-        return order.orderHash();
+        return order.getOrderHash();
     }
 
     function isCloseOnly(Order memory order) public pure returns (bool) {
@@ -59,7 +56,7 @@ contract TestOrder is Storage {
         bytes memory signature,
         uint8 signType
     ) public pure returns (address) {
-        return order.signer(signature, signType);
+        return order.getSigner(signature);
     }
 
     function validateSignature(
@@ -67,7 +64,7 @@ contract TestOrder is Storage {
         bytes memory signature,
         uint8 signType
     ) public view {
-        _liquidityPool.validateSignature(order, signature, signType);
+        _liquidityPool.validateSignature(order, signature);
     }
 
     function validateOrder(Order memory order, int256 amount) public view {
