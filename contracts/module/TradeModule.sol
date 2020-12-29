@@ -44,6 +44,16 @@ library TradeModule {
         int256 price
     );
 
+    function getMaxPositionToClose(int256 position, int256 amount)
+        internal
+        view
+        returns (int256 maxPositionToClose)
+    {
+        require(position != 0, "trader has no position to close");
+        require(!Utils.hasTheSameSign(position, amount), "trader must be close only");
+        maxPositionToClose = amount.abs() > position.abs() ? position : amount;
+    }
+
     function trade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -52,28 +62,22 @@ library TradeModule {
         int256 priceLimit,
         address referrer,
         bool isCloseOnly
-    ) public {
+    ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 position = perpetual.getPosition(trader);
-        if (isCloseOnly) {
-            require(position != 0, "trader has no position to close");
-            require(!Utils.hasTheSameSign(position, amount), "trader must be close only");
-            amount = amount.abs() > position.abs() ? position : amount;
-        }
+        amount = isCloseOnly ? getMaxPositionToClose(position, amount) : amount;
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
-
         int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
         validatePrice(amount >= 0, tradePrice, priceLimit);
         // 2. trade
         (int256 lpFee, int256 totalFee) =
             updateFees(liquidityPool, perpetual, deltaCash.abs(), referrer);
-        bool isOpen = Utils.isOpen(position, deltaPosition.neg());
         perpetual.updateMargin(address(this), deltaPosition, deltaCash.add(lpFee));
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
         // 4. safe
-        if (isOpen) {
+        if (Utils.isOpen(position, deltaPosition.neg())) {
             require(
                 perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
                 "trader initial margin is unsafe"
@@ -84,7 +88,8 @@ library TradeModule {
                 "trader margin is unsafe"
             );
         }
-        emit Trade(perpetualIndex, trader, deltaPosition, tradePrice, totalFee);
+        emit Trade(perpetualIndex, trader, deltaPosition.neg(), tradePrice, totalFee);
+        return deltaPosition.neg();
     }
 
     function updateFees(
@@ -111,24 +116,22 @@ library TradeModule {
 
         liquidityPool.transferToUser(payable(liquidityPool.vault), vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
-        // [perpetual fee] => [pool claimable]
         perpetual.decreaseTotalCollateral(totalFee);
     }
 
     function liquidateByAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
+        address liquidator,
         address trader
-    ) public {
-        address liquidator = msg.sender;
+    ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 amount = perpetual.getPosition(trader);
         int256 markPrice = perpetual.getMarkPrice();
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
-        int256 maxAmount = perpetual.marginAccounts[trader].position;
-        require(maxAmount != 0, "amount is invalid");
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
-            liquidityPool.queryTradeWithAMM(perpetualIndex, maxAmount, false);
+            liquidityPool.queryTradeWithAMM(perpetualIndex, amount, false);
         // 2. trade
         int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
@@ -153,12 +156,13 @@ library TradeModule {
             perpetual.updateInsuranceFund(penaltyToFund);
             liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
         }
-        emit Liquidate(perpetualIndex, address(this), trader, deltaPosition, liquidatePrice);
+        emit Liquidate(perpetualIndex, address(this), trader, deltaPosition.neg(), liquidatePrice);
         // 4. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.rebalanceFrom(perpetual);
             perpetual.setEmergencyState();
         }
+        return deltaPosition.neg();
     }
 
     function liquidateByTrader(
@@ -168,8 +172,10 @@ library TradeModule {
         address trader,
         int256 amount,
         int256 limitPrice
-    ) public {
+    ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 position = perpetual.getPosition(trader);
+        amount = getMaxPositionToClose(position, amount);
         int256 markPrice = perpetual.getMarkPrice();
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
         // 0. price / amountyo
@@ -177,7 +183,6 @@ library TradeModule {
         validatePrice(amount >= 0, liquidatePrice, limitPrice);
         (int256 deltaCash, int256 deltaPosition) = (liquidatePrice.wmul(amount), amount.neg());
         // 1. execute
-        bool isOpen = Utils.isOpen(perpetual.getPosition(liquidator), amount);
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty
@@ -190,7 +195,7 @@ library TradeModule {
             perpetual.updateInsuranceFund(penaltyToFund);
         }
         // 3. safe
-        if (isOpen) {
+        if (Utils.isOpen(perpetual.getPosition(liquidator), amount)) {
             require(
                 perpetual.isInitialMarginSafe(liquidator, markPrice),
                 "trader initial margin unsafe"
@@ -202,12 +207,13 @@ library TradeModule {
             );
         }
         // 4. events
-        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition, liquidatePrice);
+        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), liquidatePrice);
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.rebalanceFrom(perpetual);
             perpetual.setEmergencyState();
         }
+        return deltaPosition.neg();
     }
 
     function validatePrice(

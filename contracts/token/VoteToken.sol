@@ -94,8 +94,12 @@ contract VoteToken {
      *
      * - `to` cannot be the zero address.
      */
-    function deposit(address account, uint256 amount) public {
+    function deposit(uint256 amount) public {
+        address account = msg.sender;
         require(account != address(0), "Mint to the zero address");
+        require(amount != 0, "Mint zero amount");
+
+        // IERC20(shareToken).transferFrom(account, address(this), amount);
         totalSupply = totalSupply.add(amount);
         balances[account] = balances[account].add(amount);
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
@@ -115,7 +119,10 @@ contract VoteToken {
      * - `account` must have at least `amount` tokens.
      */
     function redeem(address account, uint256 amount) public {
-        require(account != address(0), "Burn from the zero address");
+        address account = msg.sender;
+        require(account != address(0), "Redeem from the zero address");
+        require(amount != 0, "Redeem zero amount");
+
         balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
         totalSupply = totalSupply.sub(amount);
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
@@ -125,6 +132,7 @@ contract VoteToken {
             "Redemption blocked by voting"
         );
         _moveDelegates(delegatee, address(0), amount);
+        // IERC20(shareToken).transferFrom(address(this), account, amount);
         emit Transfer(account, address(0), amount);
     }
 

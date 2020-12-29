@@ -99,7 +99,9 @@ library MarginAccountModule {
         int256 price
     ) internal view returns (bool isSafe) {
         int256 threshold =
-            getInitialMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
+            getPosition(perpetual, trader) == 0
+                ? 0
+                : getInitialMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
         isSafe = getMargin(perpetual, trader, price) >= threshold;
     }
 
@@ -109,7 +111,9 @@ library MarginAccountModule {
         int256 price
     ) internal view returns (bool isSafe) {
         int256 threshold =
-            getMaintenanceMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
+            getPosition(perpetual, trader) == 0
+                ? 0
+                : getMaintenanceMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
         isSafe = getMargin(perpetual, trader, price) >= threshold;
     }
 
