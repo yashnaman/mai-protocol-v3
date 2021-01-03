@@ -10,6 +10,7 @@ import "./interface/ISymbolService.sol";
 import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
+import "./module/SignatureModule.sol";
 
 import "./Getter.sol";
 import "./Governance.sol";
@@ -23,6 +24,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
+    using SignatureModule for bytes32;
 
     event CreatePerpetual(
         uint256 perpetualIndex,
@@ -111,12 +113,26 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         _liquidityPool.claimFee(claimer, amount);
     }
 
-    function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
-        _liquidityPool.addLiquidity(cashToAdd);
+    function addLiquidity(
+        address trader,
+        int256 cashToAdd,
+        bytes32 extData,
+        bytes calldata signature
+    ) external payable syncState nonReentrant {
+        require(trader != address(0), "invalid trader");
+        require(cashToAdd > 0, "invalid cash");
+        _liquidityPool.addLiquidity(trader, cashToAdd, extData, signature);
     }
 
-    function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
-        _liquidityPool.removeLiquidity(shareToRemove);
+    function removeLiquidity(
+        address trader,
+        int256 shareToRemove,
+        bytes32 extData,
+        bytes calldata signature
+    ) external syncState nonReentrant {
+        require(trader != address(0), "invalid trader");
+        require(shareToRemove >= 0, "invalid share");
+        _liquidityPool.removeLiquidity(trader, shareToRemove, extData, signature);
     }
 
     bytes[50] private __gap;

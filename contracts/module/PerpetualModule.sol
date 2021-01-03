@@ -60,10 +60,6 @@ library PerpetualModule {
         );
     }
 
-    function isAMMMarginSafe(PerpetualStorage storage perpetual) public view returns (bool isSafe) {
-        return perpetual.isMarginSafe(address(this), getMarkPrice(perpetual));
-    }
-
     function initialize(
         PerpetualStorage storage perpetual,
         uint256 id,

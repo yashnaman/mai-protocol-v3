@@ -15,6 +15,7 @@ contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
     using CollateralModule for address;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -108,6 +109,40 @@ contract Getter is Storage {
             perpetual.fundingRateLimit.value,
             perpetual.ammMaxLeverage.value
         ];
+    }
+
+    function getMarginAccount(uint256 perpetualIndex, address trader)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (int256 cash, int256 position)
+    {
+        MarginAccount storage account =
+            _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader];
+        cash = account.cash;
+        position = account.position;
+    }
+
+    function getClearProgress(uint256 perpetualIndex)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (uint256 left, uint256 total)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        left = perpetual.activeAccounts.length();
+        total = perpetual.clearedTraders.length().add(left);
+    }
+
+    function getSettleableMargin(uint256 perpetualIndex, address trader)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (int256 settleableMargin)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        int256 markPrice = perpetual.getMarkPrice();
+        settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
     }
 
     bytes[50] private __gap;

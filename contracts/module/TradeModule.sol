@@ -154,8 +154,7 @@ library TradeModule {
         emit Liquidate(perpetualIndex, address(this), trader, deltaPosition.neg(), liquidatePrice);
         // 4. emergency
         if (perpetual.donatedInsuranceFund < 0) {
-            liquidityPool.rebalanceFrom(perpetual);
-            perpetual.setEmergencyState();
+            liquidityPool.setEmergencyState(perpetualIndex);
         }
         return deltaPosition.neg();
     }
@@ -205,8 +204,7 @@ library TradeModule {
         emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), liquidatePrice);
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
-            liquidityPool.rebalanceFrom(perpetual);
-            perpetual.setEmergencyState();
+            liquidityPool.setEmergencyState(perpetualIndex);
         }
         return deltaPosition.neg();
     }

@@ -45,56 +45,14 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
     using SignatureModule for bytes32;
 
-    function getMarginAccount(uint256 perpetualIndex, address trader)
-        public
-        view
-        onlyExistedPerpetual(perpetualIndex)
-        returns (int256 cash, int256 position)
-    {
-        MarginAccount storage account =
-            _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader];
-        cash = account.cash;
-        position = account.position;
-    }
-
-    function getClearProgress(uint256 perpetualIndex)
-        public
-        view
-        onlyExistedPerpetual(perpetualIndex)
-        returns (uint256 left, uint256 total)
-    {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        left = perpetual.activeAccounts.length();
-        total = perpetual.clearedTraders.length().add(left);
-    }
-
-    function getSettleableMargin(uint256 perpetualIndex, address trader)
-        public
-        view
-        onlyExistedPerpetual(perpetualIndex)
-        returns (int256 settleableMargin)
-    {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        int256 markPrice = perpetual.getMarkPrice();
-        settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
-    }
-
     function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
         external
+        payable
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
     {
         require(amount > 0, "amount is negative");
-        int256 totalAmount = _liquidityPool.transferFromUser(msg.sender, amount);
-        _liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
+        _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
     }
-
-    // function deposit(
-    //     uint256 perpetualIndex,
-    //     address trader,
-    //     int256 amount
-    // ) external payable onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI) {
-    //     _deposit(perpetualIndex, trader, amount);
-    // }
 
     function deposit(
         uint256 perpetualIndex,
@@ -105,21 +63,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     ) external payable onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
         require(trader != address(0), "trader is invalid");
         require(amount > 0 || msg.value > 0, "amount is invalid");
-        address signer =
-            SignatureModule.EIP712_TYPED_DEPOSIT.parseExtData(
-                extData,
-                abi.encode(perpetualIndex, trader, amount),
-                signature
-            );
-        require(
-            _liquidityPool.isAuthorized(trader, signer, Constant.PRIVILEGE_DEPOSTI),
-            "unauthorized signer"
-        );
-        int256 totalAmount = _liquidityPool.transferFromUser(trader, amount);
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        if (perpetual.deposit(trader, totalAmount)) {
-            IPoolCreator(_liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
-        }
+        _liquidityPool.deposit(perpetualIndex, trader, amount, extData, signature);
     }
 
     function withdraw(
@@ -137,22 +81,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
-        address signer =
-            SignatureModule.EIP712_TYPED_DEPOSIT.parseExtData(
-                extData,
-                abi.encode(perpetualIndex, trader, amount),
-                signature
-            );
-        require(
-            _liquidityPool.isAuthorized(trader, signer, Constant.PRIVILEGE_DEPOSTI),
-            "unauthorized signer"
-        );
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.rebalanceFrom(perpetual);
-        if (perpetual.withdraw(trader, amount)) {
-            IPoolCreator(_liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
-        }
-        _liquidityPool.transferToUser(payable(trader), amount);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount, extData, signature);
     }
 
     function clear(
@@ -160,22 +89,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         bytes32 extData,
         bytes calldata signature
     ) public onlyWhen(perpetualIndex, PerpetualState.EMERGENCY) nonReentrant {
-        address signer =
-            SignatureModule.EIP712_TYPED_DEPOSIT.parseExtData(
-                extData,
-                abi.encode(perpetualIndex),
-                signature
-            );
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        if (perpetual.clear(perpetual.getNextDirtyAccount())) {
-            int256 marginToReturn = perpetual.settle(address(this));
-            perpetual.decreaseTotalCollateral(marginToReturn);
-            _liquidityPool.increasePoolCash(marginToReturn);
-        }
-        if (perpetual.totalCollateral >= perpetual.keeperGasReward) {
-            perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
-            _liquidityPool.transferToUser(payable(signer), perpetual.keeperGasReward);
-        }
+        _liquidityPool.clear(perpetualIndex, extData, signature);
     }
 
     function settle(
@@ -191,7 +105,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         address signer =
-            SignatureModule.EIP712_TYPED_DEPOSIT.parseExtData(
+            SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
                 extData,
                 abi.encode(perpetualIndex, trader),
                 signature
@@ -260,8 +174,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
 
     function liquidateByAMM(
         uint256 perpetualIndex,
+        address liquidator,
         address trader,
-        uint256 deadline
+        uint256 deadline,
+        bytes32 extData,
+        bytes calldata signature
     )
         external
         syncState
@@ -271,30 +188,59 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
+        address signer =
+            SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(perpetualIndex, liquidator, trader, deadline),
+                signature
+            );
+        require(
+            _liquidityPool.isAuthorized(trader, signer, Constant.PRIVILEGE_DEPOSTI),
+            "unauthorized signer"
+        );
         return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
     }
 
     function liquidateByTrader(
         uint256 perpetualIndex,
+        address liquidator,
         address trader,
         int256 amount,
         int256 limitPrice,
-        uint256 deadline
-    )
-        external
-        syncState
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        nonReentrant
-        returns (int256)
-    {
+        uint256 deadline,
+        bytes32 extData,
+        bytes calldata signature
+    ) external nonReentrant returns (int256) {
         require(trader != address(0), "trader is invalid");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");
+        {
+            address signer =
+                SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                    extData,
+                    abi.encode(perpetualIndex, liquidator, trader, deadline),
+                    signature
+                );
+            require(
+                _liquidityPool.isAuthorized(trader, signer, Constant.PRIVILEGE_DEPOSTI),
+                "unauthorized signer"
+            );
+        }
+        return _liquidateByTrader(perpetualIndex, liquidator, trader, amount, limitPrice);
+    }
+
+    function _liquidateByTrader(
+        uint256 perpetualIndex,
+        address liquidator,
+        address trader,
+        int256 amount,
+        int256 limitPrice
+    ) internal syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) returns (int256) {
         return
             _liquidityPool.liquidateByTrader(
                 perpetualIndex,
-                msg.sender,
+                liquidator,
                 trader,
                 amount,
                 limitPrice

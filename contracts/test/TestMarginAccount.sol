@@ -86,9 +86,8 @@ contract TestMarginAccount is TestPerpetual {
         address trader,
         int256 deltaPosition,
         int256 deltaCash
-    ) external returns (int256, int256) {
+    ) external {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
-        return getMarginAccount(perpetualIndex, trader);
     }
 }

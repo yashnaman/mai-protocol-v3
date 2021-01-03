@@ -46,6 +46,7 @@ struct LiquidityPoolStorage {
     // addresses
     address factory;
     address operator;
+    address transferringOperator;
     address governor;
     address shareToken;
     address accessController;

@@ -119,7 +119,7 @@ library SignatureModule {
     //     address signer = getSigner(signedHash, signature);
     // }
 
-    function parseExtData(
+    function getSigner(
         bytes32 dataType, // EIP712_TYPED_DEPOSIT
         bytes32 extData, // uint64 expiredAt,uint32 brokerFeeLimit,uint32 salt
         bytes memory args, // abi.encode(xxxxx)

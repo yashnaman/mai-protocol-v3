@@ -6,6 +6,8 @@ import "../libraries/SafeMathExt.sol";
 
 import "../interface/ILiquidityPoolGovernance.sol";
 
+import "./Delegatable.sol";
+
 interface IVoteToken {
     function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
 
@@ -48,23 +50,12 @@ struct Proposal {
     mapping(address => Receipt) receipts;
 }
 
-contract Governor {
+contract Governor is Delegatable {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
 
-    /// @notice The name of this contract
-    string public constant name = "MCDEX LP Governor";
-
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,uint256 chainId,address verifyingContract)"
-    );
-
     /// @notice The EIP-712 typehash for the ballot struct used by the contract
     bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,bool support)");
-
-    /// @notice The address of the governance token
-    IVoteToken public voteToken;
 
     address public target;
 
@@ -103,41 +94,41 @@ contract Governor {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
 
-    function initialize(address _voteToken, address _target) external {
-        voteToken = IVoteToken(_voteToken);
+    function initialize(address _shareToken, address _target) public {
+        super.initialize(_shareToken);
         target = _target;
     }
 
     /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
-    function quorumVoteRate() public virtual pure returns (uint256) {
+    function quorumVoteRate() public pure virtual returns (uint256) {
         return 4e16;
     } // 4%
 
     /// @notice The threshold of votes ratio required in order for a voter to become a proposer
-    function proposalRateThreshold() public virtual pure returns (uint256) {
+    function proposalRateThreshold() public pure virtual returns (uint256) {
         return 1e16;
     } // 1%
 
     /// @notice The maximum number of actions that can be included in a proposal
-    function proposalMaxOperations() public virtual pure returns (uint256) {
+    function proposalMaxOperations() public pure virtual returns (uint256) {
         return 10;
     } // 10 actions
 
     /// @notice The delay before voting on a proposal may take place, once proposed
-    function votingDelay() public virtual pure returns (uint256) {
+    function votingDelay() public pure virtual returns (uint256) {
         return 1;
     } // 1 block
 
     /// @notice The duration of voting on a proposal, in blocks
-    function votingPeriod() public virtual pure returns (uint256) {
+    function votingPeriod() public pure virtual returns (uint256) {
         return 17280;
     } // ~3 days in blocks (assuming 15s blocks)
 
-    function executingDelay() public virtual pure returns (uint256) {
+    function executingDelay() public pure virtual returns (uint256) {
         return 86400;
     }
 
-    function executingTimeout() public virtual pure returns (uint256) {
+    function executingTimeout() public pure virtual returns (uint256) {
         return 86400 * 7;
     }
 
@@ -188,8 +179,8 @@ contract Governor {
         string memory description
     ) internal returns (uint256) {
         require(
-            voteToken.getPriorVotes(msg.sender, block.number.sub(1)) >
-                proposalRateThreshold().wmul(voteToken.totalSupply()),
+            getPriorVotes(msg.sender, block.number.sub(1)) >
+                proposalRateThreshold().wmul(totalSupply),
             "GovernorAlpha::propose: proposer votes below proposal threshold"
         );
         require(calldatas.length != 0, "no actions");
@@ -272,7 +263,7 @@ contract Governor {
             return ProposalState.Active;
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.forVotes < quorumVoteRate().wmul(voteToken.totalSupply())
+            proposal.forVotes < quorumVoteRate().wmul(totalSupply)
         ) {
             return ProposalState.Defeated;
         } else if (proposal.executed) {
@@ -297,9 +288,10 @@ contract Governor {
         bytes32 r,
         bytes32 s
     ) public {
-        bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _chainId(), address(this))
-        );
+        bytes32 domainSeparator =
+            keccak256(
+                abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), _chainId(), address(this))
+            );
         bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -316,18 +308,20 @@ contract Governor {
         Proposal storage proposal = proposals[proposalId];
         Receipt storage receipt = proposal.receipts[voter];
         require(receipt.hasVoted == false, "already voted");
-        uint256 votes = voteToken.getPriorVotes(voter, proposal.startBlock);
-
+        uint256 votes = getPriorVotes(voter, proposal.startBlock);
         if (support) {
             proposal.forVotes = proposal.forVotes.add(votes);
         } else {
             proposal.againstVotes = proposal.againstVotes.add(votes);
         }
-
         receipt.hasVoted = true;
         receipt.support = support;
         receipt.votes = votes;
 
+        uint256 unlockBlock = proposal.startBlock.add(votingDelay()).add(votingPeriod());
+        if (unlockBlock > redemptionLocks[voter]) {
+            redemptionLocks[voter] = unlockBlock;
+        }
         emit VoteCast(voter, proposalId, support, votes);
     }
 

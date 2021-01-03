@@ -4,6 +4,7 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./module/PerpetualModule.sol";
+import "./module/SignatureModule.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
@@ -14,20 +15,10 @@ contract Governance is Storage {
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
+    using SignatureModule for bytes32;
 
     address internal _unconfirmedOperator;
     uint256 internal _transferExpiration;
-
-    event SetLiquidityPoolParameter(bytes32 key, int256 value);
-    event SetPerpetualParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event SetPerpetualRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 value,
-        int256 minValue,
-        int256 maxValue
-    );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
     modifier onlyGovernor() {
         require(msg.sender == _governor, "only governor is allowed");
@@ -39,42 +30,34 @@ contract Governance is Storage {
         _;
     }
 
-    function transferOperatingship(address newOperator, uint256 expiration) external {
-        require(
-            msg.sender == _liquidityPool.operator || _liquidityPool.operator == address(0),
-            "can not transfer now"
-        );
-        require(newOperator != address(0), "new operator is invalid");
-        _unconfirmedOperator = newOperator;
-        _transferExpiration = expiration;
+    function transferOperator(address newOperator) external {
+        if (_liquidityPool.operator != address(0)) {
+            require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
+        } else {
+            require(msg.sender == _liquidityPool.governor, "can only be initiated by governor");
+        }
+        _liquidityPool.transferOperator(newOperator);
     }
 
     function claimOperatingship() external {
-        require(msg.sender == _unconfirmedOperator, "claimer must be specified by operator");
-        require(block.timestamp <= _transferExpiration, "transfer is expired");
-        _liquidityPool.operator = _unconfirmedOperator;
-        _unconfirmedOperator = address(0);
-        _transferExpiration = 0;
+        _liquidityPool.claimOperator(msg.sender);
     }
 
-    function revokeOperatingship() external onlyOperator {
-        _liquidityPool.operator = address(0);
+    function revokeOperator() external onlyOperator {
+        require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
+        _liquidityPool.revokeOperator();
     }
 
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
-        _liquidityPool.setParameter(key, newValue);
-        emit SetLiquidityPoolParameter(key, newValue);
+        _liquidityPool.setLiquidityPoolParameter(key, newValue);
     }
 
     function setPerpetualBaseParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.setBaseParameter(key, newValue);
-        perpetual.validateBaseParameters();
-        emit SetPerpetualParameter(perpetualIndex, key, newValue);
+    ) external onlyGovernor {
+        _liquidityPool.setPerpetualBaseParameter(perpetualIndex, key, newValue);
     }
 
     function setPerpetualRiskParameter(
@@ -83,44 +66,25 @@ contract Governance is Storage {
         int256 newValue,
         int256 minValue,
         int256 maxValue
-    ) external onlyGovernor onlyExistedPerpetual(perpetualIndex) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.setRiskParameter(key, newValue, minValue, maxValue);
-        perpetual.validateRiskParameters();
-        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
+    ) external onlyGovernor {
+        _liquidityPool.setPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
     function updatePerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
-    ) external onlyOperator onlyExistedPerpetual(perpetualIndex) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.updateRiskParameter(key, newValue);
-        perpetual.validateRiskParameters();
-        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
+    ) external onlyOperator {
+        _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
-    function forceToSetEmergencyState(uint256 perpetualIndex)
-        external
-        onlyGovernor
-        onlyExistedPerpetual(perpetualIndex)
-    {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.rebalanceFrom(perpetual);
-        perpetual.setEmergencyState();
+    function forceToSetEmergencyState(uint256 perpetualIndex) external syncState onlyGovernor {
+        _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
-    function setEmergencyState(uint256 perpetualIndex)
-        external
-        syncState
-        onlyExistedPerpetual(perpetualIndex)
-    {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.rebalanceFrom(perpetual);
-        if (!perpetual.isAMMMarginSafe()) {
-            perpetual.setEmergencyState();
-        }
+    function setEmergencyState(uint256 perpetualIndex) external syncState {
+        require(!_liquidityPool.isAMMMarginSafe(perpetualIndex), "not emergency state");
+        _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
     bytes[50] private __gap;

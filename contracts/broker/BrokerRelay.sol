@@ -70,6 +70,18 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         emit CancelOrder(orderHash);
     }
 
+    function execute(
+        address liqidityPool,
+        bytes memory callData,
+        uint256 gasReward
+    ) public {
+        // address signer = getSigner(callData);
+        // require(gasReward <= balanceOf(order.trader), "insufficient gas fee");
+        (bool success, ) = liqidityPool.call(callData);
+        require(success);
+        // _transfer(signer, msg.sender, gasReward);
+    }
+
     function batchTrade(
         bytes[] calldata compressedOrders,
         int256[] calldata amounts,

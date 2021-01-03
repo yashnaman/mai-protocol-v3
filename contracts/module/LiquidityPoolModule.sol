@@ -17,6 +17,7 @@ import "./AMMModule.sol";
 import "./CollateralModule.sol";
 import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
+import "./SignatureModule.sol";
 
 import "../Type.sol";
 
@@ -28,6 +29,7 @@ library LiquidityPoolModule {
     using SafeMathExt for int256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
+    using SignatureModule for bytes32;
 
     using AMMModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
@@ -43,6 +45,39 @@ library LiquidityPoolModule {
     event IncreaseFee(address recipient, int256 amount);
     event ClaimFee(address claimer, int256 amount);
     event UpdatePoolMargin(int256 poolMargin);
+    event TransferOperatorTo(address newOperator);
+    event ClaimOperatorTo(address newOperator);
+    event RevokeOperator();
+    event SetLiquidityPoolParameter(bytes32 key, int256 value);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 value,
+        int256 minValue,
+        int256 maxValue
+    );
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+
+    function getAvailablePoolCash(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 exclusiveIndex
+    ) public view returns (int256 availablePoolCash) {
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (i == exclusiveIndex || perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            int256 markPrice = perpetual.getMarkPrice();
+            availablePoolCash = availablePoolCash.add(
+                perpetual.getMargin(address(this), markPrice).sub(
+                    perpetual.getInitialMargin(address(this), markPrice)
+                )
+            );
+        }
+        return availablePoolCash.add(liquidityPool.poolCash);
+    }
 
     function getAvailablePoolCash(LiquidityPoolStorage storage liquidityPool)
         public
@@ -65,14 +100,19 @@ library LiquidityPoolModule {
         return availablePoolCash.add(liquidityPool.poolCash);
     }
 
-    function isMarginSafe(LiquidityPoolStorage storage liquidityPool)
+    function isAMMMarginSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
         view
         returns (bool isSafe)
     {
-        isSafe = (getAvailablePoolCash(liquidityPool) >= 0);
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 margin = perpetual.getMargin(address(this), perpetual.getMarkPrice());
+        int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex).max(0);
+        isSafe = (margin.add(availablePoolCash) >= 0);
     }
 
+    // admin interface
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
@@ -102,7 +142,7 @@ library LiquidityPoolModule {
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
     }
 
-    function setParameter(
+    function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
         bytes32 key,
         int256 newValue
@@ -112,8 +152,82 @@ library LiquidityPoolModule {
         } else {
             revert("key not found");
         }
+        emit SetLiquidityPoolParameter(key, newValue);
     }
 
+    function setPerpetualBaseParameter(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.setBaseParameter(key, newValue);
+        perpetual.validateBaseParameters();
+        emit SetPerpetualBaseParameter(perpetualIndex, key, newValue);
+    }
+
+    function setPerpetualRiskParameter(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue,
+        int256 minValue,
+        int256 maxValue
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.setRiskParameter(key, newValue, minValue, maxValue);
+        perpetual.validateRiskParameters();
+        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
+    }
+
+    function setEmergencyState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        public
+    {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        rebalanceFrom(liquidityPool, perpetualIndex);
+        liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+    }
+
+    function updatePerpetualRiskParameter(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) external {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.updateRiskParameter(key, newValue);
+        perpetual.validateRiskParameters();
+        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
+    }
+
+    function transferOperator(LiquidityPoolStorage storage liquidityPool, address newOperator)
+        public
+    {
+        require(newOperator != address(0), "new operator is invalid");
+        liquidityPool.transferringOperator = newOperator;
+        emit TransferOperatorTo(newOperator);
+    }
+
+    function claimOperator(LiquidityPoolStorage storage liquidityPool, address claimer) public {
+        require(
+            claimer == liquidityPool.transferringOperator,
+            "claimer must be specified by operator"
+        );
+        liquidityPool.operator = claimer;
+        liquidityPool.transferringOperator = address(0);
+        emit ClaimOperatorTo(claimer);
+    }
+
+    function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
+        liquidityPool.operator = address(0);
+        emit RevokeOperator();
+    }
+
+    // state
     function updateFundingState(LiquidityPoolStorage storage liquidityPool, uint256 currentTime)
         public
     {
@@ -152,38 +266,186 @@ library LiquidityPoolModule {
         liquidityPool.priceUpdateTime = currentTime;
     }
 
-    function addLiquidity(LiquidityPoolStorage storage liquidityPool, int256 cashToAdd) public {
-        int256 totalCashToAdd = liquidityPool.transferFromUser(msg.sender, cashToAdd);
-        require(totalCashToAdd > 0, "total cash to add must be positive");
+    function donateInsuranceFund(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256 amount
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        int256 totalAmount = liquidityPool.transferFromUser(msg.sender, amount);
+        liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
+    }
 
+    function deposit(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        address signer;
+        if (extData != "" || signature.length != 0) {
+            signer = SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(perpetualIndex, trader, amount),
+                signature
+            );
+        } else {
+            signer = msg.sender;
+        }
+        require(
+            isAuthorized(liquidityPool, trader, signer, Constant.PRIVILEGE_DEPOSTI),
+            "unauthorized"
+        );
+        int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
+        if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
+            IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+        }
+    }
+
+    function withdraw(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        address signer;
+        if (extData != "" || signature.length != 0) {
+            signer = SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(perpetualIndex, trader, amount),
+                signature
+            );
+        } else {
+            signer = msg.sender;
+        }
+        require(
+            isAuthorized(liquidityPool, trader, signer, Constant.PRIVILEGE_DEPOSTI),
+            "unauthorized"
+        );
+        rebalanceFrom(liquidityPool, perpetualIndex);
+        if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
+            IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+        }
+        liquidityPool.transferToUser(payable(trader), amount);
+    }
+
+    function clear(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        address signer;
+        if (extData != "" || signature.length != 0) {
+            signer = SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(perpetualIndex),
+                signature
+            );
+        } else {
+            signer = msg.sender;
+        }
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        if (perpetual.clear(perpetual.getNextDirtyAccount())) {
+            int256 marginToReturn = perpetual.settle(address(this));
+            perpetual.decreaseTotalCollateral(marginToReturn);
+            increasePoolCash(liquidityPool, marginToReturn);
+        }
+        if (perpetual.totalCollateral >= perpetual.keeperGasReward) {
+            perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
+            liquidityPool.transferToUser(payable(signer), perpetual.keeperGasReward);
+        }
+    }
+
+    function settle(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        require(trader != address(0), "trader is invalid");
+        address signer;
+        if (extData != "" || signature.length != 0) {
+            signer = SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(perpetualIndex, trader),
+                signature
+            );
+        } else {
+            signer = msg.sender;
+        }
+        require(
+            isAuthorized(liquidityPool, trader, signer, Constant.PRIVILEGE_DEPOSTI),
+            "unauthorized"
+        );
+        int256 marginToReturn = liquidityPool.perpetuals[perpetualIndex].settle(trader);
+        liquidityPool.transferToUser(payable(trader), marginToReturn);
+    }
+
+    function addLiquidity(
+        LiquidityPoolStorage storage liquidityPool,
+        address trader,
+        int256 cashToAdd,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        require(cashToAdd >= 0, "cash to add must be positive");
+        address signer;
+        if (extData != "" || signature.length != 0) {
+            signer = SignatureModule.EIP712_TYPED_DEPOSIT.getSigner(
+                extData,
+                abi.encode(trader, cashToAdd),
+                signature
+            );
+        } else {
+            signer = msg.sender;
+        }
+        require(signer == trader, "unauthorized");
+        int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
         int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
         require(shareToMint > 0, "received share must be positive");
-        shareToken.mint(msg.sender, shareToMint.toUint256());
+        shareToken.mint(trader, shareToMint.toUint256());
         liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashToAdd);
-        emit AddLiquidity(msg.sender, totalCashToAdd, shareToMint);
+        emit AddLiquidity(trader, totalCashToAdd, shareToMint);
     }
 
-    function removeLiquidity(LiquidityPoolStorage storage liquidityPool, int256 shareToRemove)
-        public
-    {
-        require(shareToRemove > 0, "share to remove must be positive");
+    function removeLiquidity(
+        LiquidityPoolStorage storage liquidityPool,
+        address trader,
+        int256 shareToRemove,
+        bytes32 extData,
+        bytes calldata signature
+    ) public {
+        require(shareToRemove >= 0, "share to remove must be positive");
+        address signer =
+            SignatureModule.EIP712_TYPED_REMOVE_LIQUIDITY.getSigner(
+                extData,
+                abi.encode(trader, shareToRemove),
+                signature
+            );
+        require(trader == signer, "unauthorized signer");
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         require(
-            shareToRemove.toUint256() <= shareToken.balanceOf(msg.sender),
+            shareToRemove.toUint256() <= shareToken.balanceOf(trader),
             "insufficient share balance"
         );
-
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
         int256 cashToReturn = liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
         require(cashToReturn >= 0, "cash to return is negative");
         require(cashToReturn <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
-
-        shareToken.burn(msg.sender, shareToRemove.toUint256());
-        liquidityPool.transferToUser(payable(msg.sender), cashToReturn);
+        shareToken.burn(trader, shareToRemove.toUint256());
+        liquidityPool.transferToUser(payable(trader), cashToReturn);
         decreasePoolCash(liquidityPool, cashToReturn);
-        emit RemoveLiquidity(msg.sender, cashToReturn, shareToRemove);
+        emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }
 
     function increaseFee(
@@ -207,10 +469,11 @@ library LiquidityPoolModule {
         emit ClaimFee(claimer, amount);
     }
 
-    function rebalanceFrom(
-        LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual
-    ) public {
+    function rebalanceFrom(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        public
+    {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 rebalanceMargin = perpetual.getRebalanceMargin();
         if (rebalanceMargin == 0) {
             // nothing to rebalance
