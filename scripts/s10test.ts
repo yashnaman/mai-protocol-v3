@@ -28,6 +28,10 @@ async function deployOracle(accounts: any[]) {
 async function main(accounts: any[]) {
     // await deployOracle(accounts);
 
+    var broker = await createContract("BrokerRelay");
+    console.log(broker.address);
+    return;
+
     // common
     var vault = accounts[0];
     var vaultFeeRate = toWei("0.0003");

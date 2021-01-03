@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../interface/IAccessController.sol";
+import "../interface/IAccessControll.sol";
 
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
@@ -29,16 +29,16 @@ library OrderModule {
         Order memory order,
         bytes memory signature
     ) public view {
-        address signer = order.getSigner(signature);
-        if (signer != order.trader) {
-            bool isAuthorized =
-                IAccessController(liquidityPool.accessController).isGranted(
-                    order.trader,
-                    signer,
-                    Constant.PRIVILEGE_TRADE
-                );
-            require(isAuthorized, "signer is unauthorized");
-        }
+        // address signer = order.getSigner(signature);
+        // if (signer != order.trader) {
+        //     bool isAuthorized =
+        //         IAccessControll(liquidityPool.accessController).isGranted(
+        //             order.trader,
+        //             signer,
+        //             Constant.PRIVILEGE_TRADE
+        //         );
+        //     require(isAuthorized, "signer is unauthorized");
+        // }
     }
 
     function validateOrder(

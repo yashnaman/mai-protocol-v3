@@ -198,11 +198,6 @@ library PerpetualModule {
         }
     }
 
-    function updatePrice(PerpetualStorage storage perpetual) internal {
-        updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
-        updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
-    }
-
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
         int256 deltaUnitLoss =
             getIndexPrice(perpetual).wfrac(
@@ -237,11 +232,7 @@ library PerpetualModule {
         perpetual.fundingRate = newFundingRate;
     }
 
-    function freezePrice(PerpetualStorage storage perpetual) internal {
-        perpetual.settlementPriceData = perpetual.indexPriceData;
-    }
-
-    function setNormalState(PerpetualStorage storage perpetual) internal {
+    function setNormalState(PerpetualStorage storage perpetual) public {
         require(
             perpetual.state == PerpetualState.INITIALIZING,
             "perpetual should be in initializing state"
@@ -250,9 +241,9 @@ library PerpetualModule {
         emit SetNormalState(perpetual.id);
     }
 
-    function setEmergencyState(PerpetualStorage storage perpetual) internal {
+    function setEmergencyState(PerpetualStorage storage perpetual) public {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-        freezePrice(perpetual);
+        perpetual.settlementPriceData = perpetual.indexPriceData;
         perpetual.state = PerpetualState.EMERGENCY;
         emit SetEmergencyState(
             perpetual.id,
@@ -261,8 +252,9 @@ library PerpetualModule {
         );
     }
 
-    function setClearedState(PerpetualStorage storage perpetual) internal {
+    function setClearedState(PerpetualStorage storage perpetual) public {
         require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
+        settleCollateral(perpetual);
         perpetual.state = PerpetualState.CLEARED;
         emit SetClearedState(perpetual.id);
     }
@@ -278,10 +270,14 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         address trader,
         int256 amount
-    ) public {
+    ) public returns (bool isInitialDeposit) {
         require(amount > 0, "total amount is 0");
+        isInitialDeposit = perpetual.isEmptyAccount(trader);
         perpetual.updateCash(trader, amount);
         increaseTotalCollateral(perpetual, amount);
+        if (isInitialDeposit) {
+            registerActiveAccount(perpetual, trader);
+        }
         emit Deposit(perpetual.id, trader, amount);
     }
 
@@ -289,7 +285,7 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         address trader,
         int256 amount
-    ) public {
+    ) public returns (bool isLastWithdrawal) {
         perpetual.updateCash(trader, amount.neg());
         decreaseTotalCollateral(perpetual, amount);
         int256 markPrice = getMarkPrice(perpetual);
@@ -297,10 +293,17 @@ library PerpetualModule {
             perpetual.isInitialMarginSafe(trader, markPrice),
             "margin is unsafe after withdrawal"
         );
+        isLastWithdrawal = perpetual.isEmptyAccount(trader);
+        if (isLastWithdrawal) {
+            deregisterActiveAccount(perpetual, trader);
+        }
         emit Withdraw(perpetual.id, trader, amount);
     }
 
-    function clear(PerpetualStorage storage perpetual, address trader) public {
+    function clear(PerpetualStorage storage perpetual, address trader)
+        public
+        returns (bool isAllCleared)
+    {
         require(perpetual.activeAccounts.contains(trader), "trader cannot be cleared");
         int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
         if (margin > 0) {
@@ -314,6 +317,7 @@ library PerpetualModule {
         }
         perpetual.activeAccounts.remove(trader);
         perpetual.clearedTraders.add(trader);
+        isAllCleared = (perpetual.activeAccounts.length() == 0);
         emit Clear(perpetual.id, trader);
     }
 
@@ -391,6 +395,11 @@ library PerpetualModule {
     }
 
     // prettier-ignore
+    function updatePrice(PerpetualStorage storage perpetual) internal {
+        updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
+        updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
+    }
+
     function updatePriceData(
         OraclePriceData storage priceData,
         function() external returns (int256, uint256) priceGetter

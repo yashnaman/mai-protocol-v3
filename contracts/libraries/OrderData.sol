@@ -2,8 +2,6 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
-
 import "../Type.sol";
 
 import "hardhat/console.sol";
@@ -22,10 +20,6 @@ library OrderData {
                 "uint64 expiredAt,uint32 perpetualIndex,uint32 brokerFeeLimit,uint32 flags,uint32 salt)"
             )
         );
-
-    uint8 internal constant SIGN_TYPE_ETH = 0x0;
-    uint8 internal constant SIGN_TYPE_EIP712 = 0x0;
-
     uint32 internal constant MASK_CLOSE_ONLY = 0x80000000;
     uint32 internal constant MASK_MARKET_ORDER = 0x40000000;
     uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
@@ -61,31 +55,6 @@ library OrderData {
 
     function isTakeProfitOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_TAKE_PROFIT_ORDER) > 0;
-    }
-
-    function getSigner(Order memory order, bytes memory signature)
-        internal
-        pure
-        returns (address signer)
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        uint8 signType;
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-            signType := byte(1, mload(add(signature, 0x60)))
-        }
-        bytes32 hash = getOrderHash(order);
-        if (signType == SIGN_TYPE_ETH) {
-            hash = ECDSAUpgradeable.toEthSignedMessageHash(hash);
-        } else if (signType != SIGN_TYPE_EIP712) {
-            revert("unsupported sign type");
-        }
-        signer = ecrecover(hash, v, r, s);
-        require(signer != address(0), "invalid signature");
     }
 
     function getOrderHash(Order memory order) internal pure returns (bytes32) {

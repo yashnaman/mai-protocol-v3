@@ -147,7 +147,7 @@ contract Reader {
         address symbolService,
         address liquidityPool,
         uint256 perpetualIndex
-    ) private returns (uint256) {
+    ) private view returns (uint256) {
         uint256[] memory symbols;
         symbols = ISymbolService(symbolService).getSymbols(liquidityPool, perpetualIndex);
         uint256 symbolLength = symbols.length;

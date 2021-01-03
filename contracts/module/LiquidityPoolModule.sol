@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
+import "../interface/IAccessControll.sol";
 import "../interface/IPoolCreator.sol";
 import "../interface/IDecimals.sol";
 import "../interface/IShareToken.sol";
@@ -140,7 +141,7 @@ library LiquidityPoolModule {
         }
     }
 
-    function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) internal {
+    function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) public {
         if (liquidityPool.priceUpdateTime >= currentTime) {
             return;
         }
@@ -236,5 +237,16 @@ library LiquidityPoolModule {
 
     function decreasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
         liquidityPool.poolCash = liquidityPool.poolCash.sub(amount);
+    }
+
+    function isAuthorized(
+        LiquidityPoolStorage storage liquidityPool,
+        address trader,
+        address grantor,
+        uint256 privilege
+    ) public view returns (bool isGranted) {
+        isGranted =
+            trader == grantor ||
+            IAccessControll(liquidityPool.accessController).isGranted(trader, grantor, privilege);
     }
 }

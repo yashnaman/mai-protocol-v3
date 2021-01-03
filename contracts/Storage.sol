@@ -4,7 +4,7 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-import "./interface/IAccessController.sol";
+import "./interface/IAccessControll.sol";
 
 import "./module/LiquidityPoolModule.sol";
 
@@ -58,7 +58,7 @@ contract Storage {
     modifier onlyAuthorized(address trader, uint256 privilege) {
         require(
             trader == msg.sender ||
-                IAccessController(_liquidityPool.accessController).isGranted(
+                IAccessControll(_liquidityPool.accessController).isGranted(
                     trader,
                     msg.sender,
                     privilege

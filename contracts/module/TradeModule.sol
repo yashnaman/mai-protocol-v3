@@ -47,16 +47,6 @@ library TradeModule {
         int256 price
     );
 
-    function getMaxPositionToClose(int256 position, int256 amount)
-        internal
-        view
-        returns (int256 maxPositionToClose)
-    {
-        require(position != 0, "trader has no position to close");
-        require(!Utils.hasTheSameSign(position, amount), "trader must be close only");
-        maxPositionToClose = amount.abs() > position.abs() ? position : amount;
-    }
-
     function trade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -221,11 +211,21 @@ library TradeModule {
         return deltaPosition.neg();
     }
 
+    function getMaxPositionToClose(int256 position, int256 amount)
+        internal
+        pure
+        returns (int256 maxPositionToClose)
+    {
+        require(position != 0, "trader has no position to close");
+        require(!Utils.hasTheSameSign(position, amount), "trader must be close only");
+        maxPositionToClose = amount.abs() > position.abs() ? position : amount;
+    }
+
     function validatePrice(
         bool isLong,
         int256 price,
         int256 priceLimit
-    ) internal view {
+    ) internal pure {
         require(price >= 0, "negative price");
         bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
         require(isPriceSatisfied, "price exceeds limit");

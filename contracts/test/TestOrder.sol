@@ -51,15 +51,11 @@ contract TestOrder is Storage {
         return order.salt;
     }
 
-    function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
-        return order.getSigner(signature);
-    }
+    // function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
+    //     return order.getSigner(signature);
+    // }
 
-    function validateSignature(
-        Order memory order,
-        bytes memory signature,
-        uint8 signType
-    ) public view {
+    function validateSignature(Order memory order, bytes memory signature) public view {
         _liquidityPool.validateSignature(order, signature);
     }
 
@@ -81,7 +77,7 @@ contract TestOrder is Storage {
         bytes32 s,
         uint8 v,
         uint8 signType
-    ) public view returns (bytes memory compressed) {
+    ) public pure returns (bytes memory compressed) {
         bytes memory p1 =
             abi.encodePacked(
                 testOrder.trader,

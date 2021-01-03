@@ -118,7 +118,7 @@ contract VoteToken {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function redeem(address account, uint256 amount) public {
+    function redeem(uint256 amount) public {
         address account = msg.sender;
         require(account != address(0), "Redeem from the zero address");
         require(amount != 0, "Redeem zero amount");
