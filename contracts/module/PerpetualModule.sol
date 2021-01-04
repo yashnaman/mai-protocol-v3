@@ -15,6 +15,8 @@ import "./CollateralModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
@@ -249,7 +251,8 @@ library PerpetualModule {
 
     function setEmergencyState(PerpetualStorage storage perpetual) public {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-        perpetual.settlementPriceData = perpetual.indexPriceData;
+        // use mark price as final price when emergency
+        perpetual.settlementPriceData = perpetual.markPriceData;
         perpetual.state = PerpetualState.EMERGENCY;
         emit SetEmergencyState(
             perpetual.id,
@@ -277,7 +280,7 @@ library PerpetualModule {
         address trader,
         int256 amount
     ) public returns (bool isInitialDeposit) {
-        require(amount > 0, "total amount is 0");
+        require(amount > 0, "amount should greater than 0");
         isInitialDeposit = perpetual.isEmptyAccount(trader);
         perpetual.updateCash(trader, amount);
         increaseTotalCollateral(perpetual, amount);
@@ -292,6 +295,7 @@ library PerpetualModule {
         address trader,
         int256 amount
     ) public returns (bool isLastWithdrawal) {
+        require(amount > 0, "amount should greater than 0");
         perpetual.updateCash(trader, amount.neg());
         decreaseTotalCollateral(perpetual, amount);
         int256 markPrice = getMarkPrice(perpetual);
@@ -310,7 +314,11 @@ library PerpetualModule {
         public
         returns (bool isAllCleared)
     {
-        require(perpetual.activeAccounts.contains(trader), "trader cannot be cleared");
+        require(perpetual.activeAccounts.length() > 0, "no account to clear");
+        require(
+            perpetual.activeAccounts.contains(trader),
+            "account cannot be cleared or already cleared"
+        );
         int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
         if (margin > 0) {
             if (perpetual.getPosition(trader) != 0) {
@@ -327,50 +335,74 @@ library PerpetualModule {
         emit Clear(perpetual.id, trader);
     }
 
+    function getNextActiveAccount(PerpetualStorage storage perpetual)
+        public
+        view
+        returns (address account)
+    {
+        require(perpetual.activeAccounts.length() > 0, "no active account");
+        account = perpetual.activeAccounts.at(0);
+    }
+
     function settle(PerpetualStorage storage perpetual, address trader)
         public
         returns (int256 marginToReturn)
     {
         int256 price = getMarkPrice(perpetual);
         marginToReturn = perpetual.getSettleableMargin(trader, price);
+        decreaseTotalCollateral(perpetual, marginToReturn);
         perpetual.resetAccount(trader);
         emit Settle(perpetual.id, trader, marginToReturn);
     }
 
-    function updateInsuranceFund(PerpetualStorage storage perpetual, int256 penaltyToFund)
+    function updateInsuranceFund(PerpetualStorage storage perpetual, int256 deltaFund)
         public
         returns (int256 penaltyToLP)
     {
-        int256 newInsuranceFund = perpetual.insuranceFund;
-        if (penaltyToFund == 0) {
+        if (deltaFund == 0) {
             penaltyToLP = 0;
         } else if (perpetual.insuranceFund >= perpetual.insuranceFundCap) {
-            penaltyToLP = penaltyToFund;
-        } else if (penaltyToFund > 0) {
-            newInsuranceFund = newInsuranceFund.add(penaltyToFund);
-            if (newInsuranceFund > perpetual.insuranceFundCap) {
-                newInsuranceFund = perpetual.insuranceFundCap;
-                penaltyToLP = perpetual.insuranceFundCap.sub(newInsuranceFund);
-            }
+            penaltyToLP = deltaFund;
         } else {
-            newInsuranceFund = newInsuranceFund.add(penaltyToFund);
-            if (newInsuranceFund < 0) {
-                perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(
-                    newInsuranceFund
-                );
-                newInsuranceFund = 0;
+            int256 newInsuranceFund = perpetual.insuranceFund;
+            if (deltaFund > 0) {
+                newInsuranceFund = newInsuranceFund.add(deltaFund);
+                if (newInsuranceFund > perpetual.insuranceFundCap) {
+                    newInsuranceFund = perpetual.insuranceFundCap;
+                    penaltyToLP = perpetual.insuranceFundCap.sub(newInsuranceFund);
+                }
+            } else {
+                newInsuranceFund = newInsuranceFund.add(deltaFund);
+                if (newInsuranceFund < 0) {
+                    perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(
+                        newInsuranceFund
+                    );
+                    newInsuranceFund = 0;
+                }
             }
+            perpetual.insuranceFund = newInsuranceFund;
         }
-        perpetual.insuranceFund = newInsuranceFund;
     }
 
-    function getNextDirtyAccount(PerpetualStorage storage perpetual)
-        public
-        view
-        returns (address account)
-    {
-        require(perpetual.activeAccounts.length() > 0, "no account to clear");
-        account = perpetual.activeAccounts.at(0);
+    function settleCollateral(PerpetualStorage storage perpetual) public {
+        int256 totalCollateral = perpetual.totalCollateral;
+        // 2. cover margin without position
+        if (totalCollateral < perpetual.totalMarginWithoutPosition) {
+            // margin without positions get balance / total margin
+            perpetual.redemptionRateWithoutPosition = perpetual.totalMarginWithoutPosition > 0
+                ? totalCollateral.wdiv(perpetual.totalMarginWithoutPosition)
+                : 0;
+            // margin with positions will get nothing
+            perpetual.redemptionRateWithPosition = 0;
+        } else {
+            // 3. covere margin with position
+            perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
+            perpetual.redemptionRateWithPosition = perpetual.totalMarginWithPosition > 0
+                ? totalCollateral.sub(perpetual.totalMarginWithoutPosition).wdiv(
+                    perpetual.totalMarginWithPosition
+                )
+                : 0;
+        }
     }
 
     function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
@@ -379,25 +411,6 @@ library PerpetualModule {
 
     function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.remove(trader);
-    }
-
-    function settleCollateral(PerpetualStorage storage perpetual) public {
-        int256 totalCollateral = perpetual.totalCollateral;
-        // 2. cover margin without position
-        if (totalCollateral < perpetual.totalMarginWithoutPosition) {
-            // margin without positions get balance / total margin
-            perpetual.redemptionRateWithoutPosition = totalCollateral.wdiv(
-                perpetual.totalMarginWithoutPosition
-            );
-            // margin with positions will get nothing
-            perpetual.redemptionRateWithPosition = 0;
-        } else {
-            // 3. covere margin with position
-            perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
-            perpetual.redemptionRateWithPosition = totalCollateral
-                .sub(perpetual.totalMarginWithoutPosition)
-                .wdiv(perpetual.totalMarginWithPosition);
-        }
     }
 
     // prettier-ignore

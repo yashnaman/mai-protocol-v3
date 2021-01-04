@@ -34,9 +34,6 @@ describe('Funding', () => {
         const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule, SignatureModule });
         const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
         perpetual = await createContract("TestPerpetual", [], {
-            AMMModule,
-            CollateralModule,
-            OrderModule,
             PerpetualModule,
             LiquidityPoolModule,
             TradeModule,
@@ -210,27 +207,6 @@ describe('Funding', () => {
 
                 expect(await perpetual.callStatic.updateFundingRate(0)).approximateBigNumber(element.targetFundingRate1)
                 expect(await perpetual.callStatic.updateFundingRate(1)).approximateBigNumber(element.targetFundingRate2)
-
-
-                // await perpetual.setParams({
-                //     state: element.state,
-                //     unitAccumulativeFunding: params.unitAccumulativeFunding,
-                //     openSlippageFactor: params.openSlippageFactor,
-                //     ammMaxLeverage: params.ammMaxLeverage,
-                //     fundingRateLimit: params.fundingRateLimit,
-                //     cash: element.cash,
-                //     positionAmount1: element.positionAmount1,
-                //     positionAmount2: element.positionAmount2,
-                //     indexPrice1: params.indexPrice,
-                //     indexPrice2: params.indexPrice,
-                //     fundingRate: _0,
-                //     fundingTime: _0,
-                //     time: _0
-                // })
-
-                // const context = await perpetual.callStatic.updateFundingRate()
-                // expect(context[0]).approximateBigNumber(element.targetFundingRate1)
-                // expect(context[1]).approximateBigNumber(element.targetFundingRate2)
             })
         })
 

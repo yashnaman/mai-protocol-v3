@@ -1,445 +1,497 @@
-import { expect } from "chai";
-const { ethers } = require("hardhat");
+import BigNumber from 'bignumber.js';
+import { expect, use } from "chai";
 import {
     toWei,
     fromWei,
-    fromBytes32,
     toBytes32,
     getAccounts,
-    createFactory,
     createContract,
 } from '../scripts/utils';
-
 import "./helper";
+
 
 describe('LiquidityPool', () => {
     let accounts;
+    let user0;
+    let user1;
+    let user2;
+    let user3;
+    let liquidityPool;
 
     before(async () => {
         accounts = await getAccounts();
+        user0 = accounts[0];
+        user1 = accounts[1];
+        user2 = accounts[2];
+        user3 = accounts[3];
     })
 
-    describe('liquidity', function () {
+    beforeEach(async () => {
+        const CollateralModule = await createContract("CollateralModule")
+        const SignatureModule = await createContract("OrderModule");
+        const PerpetualModule = await createContract("PerpetualModule");
+        const AMMModule = await createContract("AMMModule");
+        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], {
+            AMMModule,
+            CollateralModule,
+            PerpetualModule,
+            SignatureModule,
+        });
+        liquidityPool = await createContract("TestLiquidityPool", [], {
+            LiquidityPoolModule,
+            PerpetualModule
+        });
+    });
 
-        let user0;
-        let user1;
-        let user2;
-        let user3;
-        let user4;
-        let user5;
-
-        let liquidityPool;
+    describe("2 liquidityPool group", async () => {
+        let oracle0;
         let oracle1;
-        let oracle2;
-        let ctk;
-        let stk;
 
         beforeEach(async () => {
-            user0 = accounts[0];
-            user1 = accounts[1];
-            user2 = accounts[2];
-            user3 = accounts[3];
-            user4 = accounts[4];
-            user5 = accounts[5];
-
-            const AMMModule = await createContract("AMMModule");
-            const CollateralModule = await createContract("CollateralModule")
-            const OrderModule = await createContract("OrderModule");
-            const PerpetualModule = await createContract("PerpetualModule");
-
-            const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule });
-
-            liquidityPool = await createContract("TestLiquidityPool", [], {
-                CollateralModule,
-                LiquidityPoolModule,
-                OrderModule,
-                PerpetualModule,
-                TradeModule,
-            });
-
-            stk = await createContract("TestShareToken");
-            await stk.initialize("TEST", "TEST", liquidityPool.address);
-
-            await liquidityPool.setShareToken(stk.address);
-
-            ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            await liquidityPool.setCollateralToken(ctk.address, 1);
-
-            oracle1 = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            await liquidityPool.createPerpetual2(
+            oracle0 = await createContract("OracleWrapper", ["USD", "ETH"]);
+            oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+            await liquidityPool.createPerpetual(
+                oracle0.address,
+                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+            )
+            await liquidityPool.createPerpetual(
                 oracle1.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.001"), toWei("100"), toWei("90"), toWei("5"), toWei("100")],
+                [toWei("0.2"), toWei("0.1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
             )
-            oracle2 = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            await liquidityPool.createPerpetual2(
-                oracle2.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.001"), toWei("100"), toWei("90"), toWei("5"), toWei("100")],
-            )
+            await liquidityPool.setState(0, 2);
+            await liquidityPool.setState(1, 2);
         })
 
-        const successCases = [
-            {
-                name: 'init',
-                amm: {
-                    cash: 0,
-                    position1: 0,
-                    position2: 0,
-                },
-                totalShare: 0,
-                marginToAdd: toWei('1000'),
-                share: toWei('1000')
-            },
-            {
-                name: 'before safe, after safe',
-                amm: {
-                    cash: toWei("10100"),
-                    position1: toWei("-10"),
-                    position2: toWei("10"),
-                },
-                totalShare: toWei('100'), // oracle = 10 0
-                marginToAdd: toWei('1000'),
-                share: toWei('10.091666030631452052')
-            },
-            {
-                name: 'short, before unsafe, after unsafe',
-                amm: {
-                    cash: toWei("17692"),
-                    position1: toWei("-80"),
-                    position2: toWei("10"),
-                },
-                totalShare: toWei('100'),
-                marginToAdd: toWei('576'),
-                share: toWei('5.321016166281755196')
-            },
-            {
-                name: 'short, before unsafe, after safe',
-                amm: {
-                    cash: toWei("17692"),
-                    position1: toWei("-80"),
-                    position2: toWei("10"),
-                },
-                totalShare: toWei('100'),
-                marginToAdd: toWei('577'),
-                share: toWei('6.021800176340430529')
-            },
-            {
-                name: 'long, before unsafe, after unsafe',
-                amm: {
-                    cash: toWei('1996'),
-                    position1: toWei('80'),
-                    position2: toWei('10'),
-                },
-                totalShare: toWei('100'),
-                marginToAdd: toWei('576'),
-                share: toWei('5.321016166281755196')
-            },
-            {
-                name: 'long, before unsafe, after safe',
-                amm: {
-                    cash: toWei('1996'),
-                    position1: toWei('80'),
-                    position2: toWei('10'),
-                },
-                totalShare: toWei('100'),
-                marginToAdd: toWei('577'),
-                share: toWei('6.021800176340430529')
-            }
-        ]
+        // it("updatePrice", async () => {
+        //     var now = 1000;
+        //     await oracle0.setMarkPrice(toWei("100"), now);
+        //     await oracle0.setIndexPrice(toWei("101"), now);
+        //     await oracle1.setMarkPrice(toWei("200"), now);
+        //     await oracle1.setIndexPrice(toWei("201"), now);
 
-        successCases.forEach(element => {
-            it(element.name, async () => {
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
+        //     expect(await liquidityPool.getPriceUpdateTime()).to.equal(0);
+        //     await liquidityPool.updatePrice(1000);
+        //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100"));
+        //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101"));
+        //     expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200"));
+        //     expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201"));
+        //     expect(await liquidityPool.getPriceUpdateTime()).to.equal(1000);
 
-                await ctk.mint(user1.address, element.marginToAdd);
-                await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-                await stk.debugMint(user2.address, element.totalShare);
+        //     now = 2000;
+        //     await oracle0.setMarkPrice(toWei("100.1"), now);
+        //     await oracle0.setIndexPrice(toWei("101.1"), now);
+        //     await oracle1.setMarkPrice(toWei("200.1"), now);
+        //     await oracle1.setIndexPrice(toWei("201.1"), now);
 
-                await liquidityPool.setPoolCash(element.amm.cash)
-                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
-                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
-                await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
-                await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
+        //     await liquidityPool.updatePrice(1000);
+        //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100"));
+        //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101"));
+        //     expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200"));
+        //     expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201"));
+        //     expect(await liquidityPool.getPriceUpdateTime()).to.equal(1000);
 
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
+        //     await liquidityPool.updatePrice(2000);
+        //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100.1"));
+        //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101.1"));
+        //     expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200.1"));
+        //     expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201.1"));
+        //     expect(await liquidityPool.getPriceUpdateTime()).to.equal(2000);
+        // })
 
-                await liquidityPool.connect(user1).addLiquidity(element.marginToAdd);
-                expect(await stk.balanceOf(user1.address)).approximateBigNumber(element.share);
-                expect(await ctk.balanceOf(user1.address)).approximateBigNumber("0");
-            })
+        // it("getAvailablePoolCash", async () => {
+        //     var now = 1000;
+        //     await oracle0.setMarkPrice(toWei("100"), now);
+        //     await oracle0.setIndexPrice(toWei("100"), now);
+        //     await oracle1.setMarkPrice(toWei("200"), now);
+        //     await oracle1.setIndexPrice(toWei("200"), now);
+        //     await liquidityPool.updatePrice(1000);
+
+        //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("100"), toWei("1"));
+        //     await liquidityPool.setMarginAccount(1, liquidityPool.address, toWei("50"), toWei("-1"));
+        //     await liquidityPool.setPoolCash(toWei("10"));
+        //     // all = 10 + [100 + (1*100 - 1*100*0.1)] + [50 + (-1*200 - |-1*200|*0.2)]
+        //     //     = 10 + 190 - 190
+        //     expect(await liquidityPool.getAvailablePoolCash(0)).to.equal(toWei("-180"));
+        //     expect(await liquidityPool.getAvailablePoolCash(2)).to.equal(toWei("10"));
+
+        //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("100"), toWei("1"));
+        //     await liquidityPool.setMarginAccount(1, liquidityPool.address, toWei("50"), toWei("-1"));
+        //     await liquidityPool.setPoolCash(toWei("-100"));
+        //     // all = 10 + [100 + (1*100 - 1*100*0.1)] + [50 + (-1*200 - |-1*200|*0.2)]
+        //     //     = 10 + 190 - 190
+        //     expect(await liquidityPool.getAvailablePoolCash(0)).to.equal(toWei("-290"));
+        //     expect(await liquidityPool.getAvailablePoolCash(2)).to.equal(toWei("-100"));
+        // })
+
+        it("", async () => {
+
         })
-
-        const failCases = [
-            {
-                name: 'invalid margin to add',
-                totalShare: toWei('100'),
-                marginToAdd: toWei("0"),
-                errorMsg: 'total cash to add must be positive'
-            },
-            {
-                name: 'poolMargin = 0 && totalShare != 0',
-                totalShare: toWei('100'),
-                marginToAdd: toWei('100'),
-                errorMsg: 'share has no value'
-            }
-        ]
-
-        failCases.forEach(element => {
-            it(element.name, async () => {
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
-
-                await ctk.mint(user1.address, element.marginToAdd);
-                await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-                await stk.debugMint(user2.address, element.totalShare);
-
-                await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-
-                await expect(liquidityPool.connect(user1).addLiquidity(element.marginToAdd)).to.be.revertedWith(element.errorMsg);
-            })
-        })
-
-        describe('remove liquidity', function () {
-
-            const successCases = [
-                {
-                    name: 'poolMargin = 0',
-                    amm: {
-                        cash: toWei("0"),
-                        position1: toWei("0"),
-                        position2: toWei("0"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareToRemove: toWei('10'),
-                    marginToRemove: toWei("0"),
-                },
-                {
-                    name: 'no position',
-                    amm: {
-                        cash: toWei('10000'),
-                        position1: toWei("0"),
-                        position2: toWei("0"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareToRemove: toWei('10'),
-                    marginToRemove: toWei('1000')
-                },
-                {
-                    name: 'no position, remove all',
-                    amm: {
-                        cash: toWei('10000'),
-                        position1: toWei("0"),
-                        position2: toWei("0"),
-                    },
-                    shareLeft: toWei("0"), // total 100
-                    shareToRemove: toWei('100'),
-                    marginToRemove: toWei('10000')
-                },
-                {
-                    name: 'short',
-                    amm: {
-                        cash: toWei('10100'),
-                        position1: toWei("-10"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareToRemove: toWei('10'),
-                    marginToRemove: toWei('988.888888888888888889')
-                },
-                {
-                    name: 'long',
-                    amm: {
-                        cash: toWei('8138'),
-                        position1: toWei("10"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareToRemove: toWei('10'),
-                    marginToRemove: toWei('988.888888888888888889')
-                }
-            ]
-
-            successCases.forEach(element => {
-                it(element.name, async () => {
-
-                    await liquidityPool.setState(0, 2);
-                    await liquidityPool.setState(1, 2);
-
-                    await ctk.mint(liquidityPool.address, element.marginToRemove);
-                    await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-                    await stk.debugMint(user1.address, element.shareToRemove);
-                    await stk.debugMint(user2.address, element.shareLeft);
-
-                    await liquidityPool.setPoolCash(element.amm.cash)
-                    await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
-                    await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
-                    await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
-                    await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                    let now = Math.floor(Date.now() / 1000);
-                    await oracle1.setIndexPrice(toWei('100'), now);
-                    await oracle1.setMarkPrice(toWei('100'), now);
-                    await oracle2.setIndexPrice(toWei('100'), now);
-                    await oracle2.setMarkPrice(toWei('100'), now);
-
-                    await liquidityPool.connect(user1).removeLiquidity(element.shareToRemove);
-                    expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
-                    expect(await stk.balanceOf(user1.address)).approximateBigNumber(toWei("0"));
-                    expect(await stk.totalSupply()).approximateBigNumber(element.shareLeft);
-
-                })
-            })
-
-            const failCases = [
-                {
-                    name: 'zero share to remove',
-                    amm: {
-                        cash: toWei("0"),
-                        position1: toWei("0"),
-                        position2: toWei("0"),
-                    },
-                    shareLeft: toWei('100'), // total 100
-                    shareBalance: toWei("0"),
-                    shareToRemove: toWei("0"),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'share to remove must be positive',
-                },
-                {
-                    name: 'insufficient share balance',
-                    amm: {
-                        cash: toWei("0"),
-                        position1: toWei("0"),
-                        position2: toWei("0"),
-                    },
-                    shareLeft: toWei("0"), // total 100
-                    shareBalance: toWei('100'),
-                    shareToRemove: toWei('100.1'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'insufficient share balance',
-                },
-                {
-                    name: 'short, before unsafe',
-                    amm: {
-                        cash: toWei("17692"),
-                        position1: toWei("-80"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareBalance: toWei('10'),
-                    shareToRemove: toWei('10'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'amm is unsafe before removing liquidity',
-                },
-                {
-                    name: 'long, before unsafe',
-                    amm: {
-                        cash: toWei("1996"),
-                        position1: toWei("80"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('90'), // total 100
-                    shareBalance: toWei('10'),
-                    shareToRemove: toWei('10'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'amm is unsafe before removing liquidity',
-                },
-                {
-                    name: 'short, after unsafe',
-                    amm: {
-                        cash: toWei('10100'),
-                        position1: toWei("-10"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('9.999'), // total 100
-                    shareBalance: toWei('90.001'),
-                    shareToRemove: toWei('90.001'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'amm is unsafe after removing liquidity',
-                },
-                {
-                    name: 'long, after unsafe',
-                    amm: {
-                        cash: toWei('8138'),
-                        position1: toWei("10"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('9.999'), // total 100
-                    shareBalance: toWei('90.001'),
-                    shareToRemove: toWei('90.001'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'amm is unsafe after removing liquidity',
-                },
-                {
-                    name: 'long, after negative price',
-                    amm: {
-                        cash: toWei('1664'),
-                        position1: toWei("50"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('99.999'), // total 100
-                    shareBalance: toWei('0.001'),
-                    shareToRemove: toWei('0.001'),
-                    ammMaxLeverage: toWei("5"),
-                    errorMsg: 'amm is unsafe after removing liquidity',
-                },
-                {
-                    name: 'long, after exceed leverage',
-                    amm: {
-                        cash: toWei('8138'),
-                        position1: toWei("10"),
-                        position2: toWei("10"),
-                    },
-                    shareLeft: toWei('99.999'), // total 100
-                    shareBalance: toWei('0.001'),
-                    shareToRemove: toWei('0.001'),
-                    ammMaxLeverage: toWei('0.1'),
-                    errorMsg: 'amm exceeds max leverage after removing liquidity',
-                }
-            ]
-
-            failCases.forEach(element => {
-                it(element.name, async () => {
-                    await liquidityPool.setState(0, 2);
-                    await liquidityPool.setState(1, 2);
-
-                    await liquidityPool.debugSetPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), element.ammMaxLeverage);
-                    await liquidityPool.debugSetPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), element.ammMaxLeverage);
-
-                    await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-                    await stk.debugMint(user2.address, element.shareLeft);
-                    await stk.debugMint(user1.address, element.shareBalance);
-
-                    await liquidityPool.setPoolCash(element.amm.cash)
-                    await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
-                    await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
-                    await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
-                    await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                    let now = Math.floor(Date.now() / 1000);
-                    await oracle1.setIndexPrice(toWei('100'), now);
-                    await oracle1.setMarkPrice(toWei('100'), now);
-                    await oracle2.setIndexPrice(toWei('100'), now);
-                    await oracle2.setMarkPrice(toWei('100'), now);
-
-                    await expect(liquidityPool.connect(user1).removeLiquidity(element.shareToRemove)).to.be.revertedWith(element.errorMsg);
-                })
-            })
-        })
-
     })
+
+    // it("getMarkPrice && getIndexPrice", async () => {
+    //     var now = Math.floor(Date.now() / 1000);
+    //     await oracle.setMarkPrice(toWei("500"), now);
+    //     await oracle.setIndexPrice(toWei("501"), now);
+
+    //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("0"));
+
+    //     var tx = await liquidityPool.updatePrice(0);
+    //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("500"));
+    //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("501"));
+
+    //     await liquidityPool.updatePrice(0);
+    //     await liquidityPool.setEmergencyState(0);
+
+    //     await oracle.setMarkPrice(toWei("600"), now);
+    //     await oracle.setIndexPrice(toWei("601"), now);
+    //     expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("500"));
+    //     expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("500"));
+    // });
+
+    // it("getRebalanceMargin", async () => {
+    //     var now = Math.floor(Date.now() / 1000);
+    //     await oracle.setMarkPrice(toWei("500"), now);
+    //     await oracle.setIndexPrice(toWei("500"), now);
+    //     await liquidityPool.updatePrice(0);
+
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("0"), toWei("1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("450"));
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-500"), toWei("1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("-50"));
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-450"), toWei("1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("0"), toWei("0"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("500"), toWei("-1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("-50"));
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-500"), toWei("-1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("-1050"));
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("550"), toWei("-1"));
+    //     expect(await liquidityPool.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+    // });
+
+    // it("setNormalState", async () => {
+    //     await liquidityPool.setState(0, 1);
+    //     expect(await liquidityPool.getState(0)).to.equal(1);
+
+    //     await liquidityPool.setNormalState(0);
+    //     expect(await liquidityPool.getState(0)).to.equal(2);
+
+    //     await liquidityPool.setState(0, 0);
+    //     await expect(liquidityPool.setNormalState(0)).to.be.revertedWith("liquidityPool should be in initializing state");
+    //     await liquidityPool.setState(0, 2);
+    //     await expect(liquidityPool.setNormalState(0)).to.be.revertedWith("liquidityPool should be in initializing state");
+    //     await liquidityPool.setState(0, 3);
+    //     await expect(liquidityPool.setNormalState(0)).to.be.revertedWith("liquidityPool should be in initializing state");
+    //     await liquidityPool.setState(0, 4);
+    //     await expect(liquidityPool.setNormalState(0)).to.be.revertedWith("liquidityPool should be in initializing state");
+    // });
+
+    // it("setEmergencyState", async () => {
+    //     await liquidityPool.setState(0, 2);
+    //     expect(await liquidityPool.getState(0)).to.equal(2);
+
+    //     await liquidityPool.setEmergencyState(0);
+    //     expect(await liquidityPool.getState(0)).to.equal(3);
+
+    //     await liquidityPool.setState(0, 0);
+    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 1);
+    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 3);
+    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 4);
+    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    // });
+
+    // it("setClearedState", async () => {
+    //     await liquidityPool.setState(0, 3);
+    //     expect(await liquidityPool.getState(0)).to.equal(3);
+
+    //     await liquidityPool.setClearedState(0);
+    //     expect(await liquidityPool.getState(0)).to.equal(4);
+
+    //     await liquidityPool.setState(0, 0);
+    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 1);
+    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 2);
+    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    //     await liquidityPool.setState(0, 4);
+    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
+    // })
+
+
+    // it("donateInsuranceFund", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
+    //     await liquidityPool.donateInsuranceFund(0, toWei("10"));
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("10"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("10"));
+
+    //     await liquidityPool.donateInsuranceFund(0, toWei("11"));
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("21"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("21"));
+
+    //     await expect(liquidityPool.donateInsuranceFund(0, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+    //     await expect(liquidityPool.donateInsuranceFund(0, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
+    // })
+
+
+    // it("deposit", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.isTraderRegistered(0, user0.address)).to.be.false;
+
+    //     await liquidityPool.deposit(0, user0.address, toWei("10"));
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("10"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.isTraderRegistered(0, user0.address)).to.be.true;
+
+    //     await liquidityPool.deposit(0, user0.address, toWei("11"));
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("21"));
+    //     expect(position).to.equal(toWei("0"));
+
+    //     await expect(liquidityPool.deposit(0, user0.address, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+    //     await expect(liquidityPool.deposit(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
+    // })
+
+    // it("withdraw", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     await liquidityPool.deposit(0, user0.address, toWei("100"));
+    //     expect(await liquidityPool.isTraderRegistered(0, user0.address)).to.be.true;
+
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("100"));
+    //     expect(position).to.equal(toWei("0"));
+
+    //     await liquidityPool.withdraw(0, user0.address, toWei("10"));
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("90"));
+    //     expect(position).to.equal(toWei("0"));
+
+    //     await liquidityPool.withdraw(0, user0.address, toWei("90"));
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.isTraderRegistered(0, user0.address)).to.be.false;
+
+    //     await expect(liquidityPool.withdraw(0, user0.address, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+    //     await expect(liquidityPool.withdraw(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
+    // })
+
+    // it("clear", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     await liquidityPool.deposit(0, user0.address, toWei("1"));
+    //     await liquidityPool.deposit(0, user1.address, toWei("2"));
+    //     await liquidityPool.deposit(0, user2.address, toWei("3"));
+    //     await liquidityPool.deposit(0, user3.address, toWei("4"));
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(4);
+
+    //     await liquidityPool.setEmergencyState(0);
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(4);
+
+    //     await liquidityPool.clear(0, user0.address);
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(3);
+
+    //     await liquidityPool.clear(0, user1.address);
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(2);
+
+    //     expect(await liquidityPool.callStatic.clear(0, user2.address)).to.be.false;
+    //     await liquidityPool.clear(0, user2.address);
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(1);
+
+    //     await expect(liquidityPool.clear(0, user2.address)).to.be.revertedWith("account cannot be cleared or already cleared");
+
+    //     expect(await liquidityPool.callStatic.clear(0, user3.address)).to.be.true;
+    //     await liquidityPool.clear(0, user3.address);
+    //     expect(await liquidityPool.getActiveUserCount(0)).to.equal(0);
+
+    //     await expect(liquidityPool.clear(0, user3.address)).to.be.revertedWith("no account to clear");
+    // })
+
+    // it("clear - 2", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     var now = Math.floor(Date.now() / 1000);
+    //     await oracle.setMarkPrice(toWei("100"), now);
+    //     await oracle.setIndexPrice(toWei("100"), now);
+    //     await liquidityPool.updatePrice(0);
+
+    //     await liquidityPool.registerActiveAccount(0, user0.address);
+    //     await liquidityPool.registerActiveAccount(0, user1.address);
+    //     await liquidityPool.registerActiveAccount(0, user2.address);
+    //     await liquidityPool.registerActiveAccount(0, user3.address);
+    //     await liquidityPool.setMarginAccount(0, user0.address, toWei("100"), toWei("0"));
+    //     await liquidityPool.setMarginAccount(0, user1.address, toWei("200"), toWei("0"));
+    //     await liquidityPool.setMarginAccount(0, user2.address, toWei("-200"), toWei("1"));
+    //     await liquidityPool.setMarginAccount(0, user3.address, toWei("0"), toWei("1"));
+
+    //     await liquidityPool.setEmergencyState(0);
+
+    //     await liquidityPool.clear(0, user0.address);
+    //     expect(await liquidityPool.getTotalMarginWithPosition(0)).to.equal("0");
+    //     expect(await liquidityPool.getTotalMarginWithoutPosition(0)).to.equal(toWei("100"));
+
+    //     await liquidityPool.clear(0, user1.address);
+    //     expect(await liquidityPool.getTotalMarginWithPosition(0)).to.equal("0");
+    //     expect(await liquidityPool.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
+    //     await liquidityPool.clear(0, user2.address);
+    //     expect(await liquidityPool.getTotalMarginWithPosition(0)).to.equal("0");
+    //     expect(await liquidityPool.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
+
+    //     await liquidityPool.clear(0, user3.address);
+    //     expect(await liquidityPool.getTotalMarginWithPosition(0)).to.equal(toWei("100"));
+    //     expect(await liquidityPool.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
+
+    //     await liquidityPool.setClearedState(0);
+
+    //     // p = 100, nop = 300
+    //     await liquidityPool.setTotalCollateral(0, toWei("300"))
+    //     await liquidityPool.settleCollateral(0);
+    //     expect(await liquidityPool.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+    //     expect(await liquidityPool.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.setTotalCollateral(0, toWei("350"))
+    //     await liquidityPool.settleCollateral(0);
+    //     expect(await liquidityPool.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+    //     expect(await liquidityPool.getRedemptionRateWithPosition(0)).to.equal(toWei("0.5"));
+
+    //     await liquidityPool.setTotalCollateral(0, toWei("150"))
+    //     await liquidityPool.settleCollateral(0);
+    //     expect(await liquidityPool.getRedemptionRateWithoutPosition(0)).to.equal(toWei("0.5"));
+    //     expect(await liquidityPool.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.setTotalCollateral(0, toWei("0"))
+    //     await liquidityPool.settleCollateral(0);
+    //     expect(await liquidityPool.getRedemptionRateWithoutPosition(0)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
+    // })
+
+
+    // it("getNextActiveAccount", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     await liquidityPool.deposit(0, user0.address, toWei("1"));
+    //     await liquidityPool.deposit(0, user1.address, toWei("2"));
+    //     await liquidityPool.deposit(0, user2.address, toWei("3"));
+    //     await liquidityPool.deposit(0, user3.address, toWei("4"));
+
+    //     var account = await liquidityPool.getNextActiveAccount(0);
+    //     expect(account).to.equal(user0.address);
+    //     await liquidityPool.clear(0, account);
+
+    //     var account = await liquidityPool.getNextActiveAccount(0);
+    //     expect(account).to.equal(user3.address);
+    //     await liquidityPool.clear(0, account);
+
+    //     var account = await liquidityPool.getNextActiveAccount(0);
+    //     expect(account).to.equal(user2.address);
+    //     await liquidityPool.clear(0, account);
+
+    //     var account = await liquidityPool.getNextActiveAccount(0);
+    //     expect(account).to.equal(user1.address);
+    //     await liquidityPool.clear(0, account);
+
+    //     await expect(liquidityPool.getNextActiveAccount(0)).to.be.revertedWith("no active account");
+    // })
+
+    // it("settle", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     var now = Math.floor(Date.now() / 1000);
+    //     await oracle.setMarkPrice(toWei("100"), now);
+    //     await oracle.setIndexPrice(toWei("100"), now);
+    //     await liquidityPool.updatePrice(0);
+
+    //     await liquidityPool.registerActiveAccount(0, user0.address);
+    //     await liquidityPool.registerActiveAccount(0, user1.address);
+    //     await liquidityPool.registerActiveAccount(0, user2.address);
+    //     await liquidityPool.registerActiveAccount(0, user3.address);
+    //     await liquidityPool.setMarginAccount(0, user0.address, toWei("100"), toWei("0"));
+    //     await liquidityPool.setMarginAccount(0, user1.address, toWei("200"), toWei("0"));
+    //     await liquidityPool.setMarginAccount(0, user2.address, toWei("-200"), toWei("1"));
+    //     await liquidityPool.setMarginAccount(0, user3.address, toWei("0"), toWei("1"));
+
+    //     await liquidityPool.setEmergencyState(0);
+    //     await liquidityPool.clear(0, user0.address);
+    //     await liquidityPool.clear(0, user1.address);
+    //     await liquidityPool.clear(0, user2.address);
+    //     await liquidityPool.clear(0, user3.address);
+
+    //     await liquidityPool.setClearedState(0);
+    //     // p = 100, nop = 300
+    //     await liquidityPool.setTotalCollateral(0, toWei("350"))
+    //     await liquidityPool.settleCollateral(0);
+    //     expect(await liquidityPool.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+    //     expect(await liquidityPool.getRedemptionRateWithPosition(0)).to.equal(toWei("0.5"));
+
+    //     expect(await liquidityPool.getSettleableMargin(0, user0.address)).to.equal(toWei("100"));
+    //     expect(await liquidityPool.getSettleableMargin(0, user1.address)).to.equal(toWei("200"));
+    //     expect(await liquidityPool.getSettleableMargin(0, user2.address)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getSettleableMargin(0, user3.address)).to.equal(toWei("50"));
+
+    //     expect(await liquidityPool.callStatic.settle(0, user0.address)).to.equal(toWei("100"));
+    //     await liquidityPool.settle(0, user0.address);
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user0.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("250"));
+
+    //     expect(await liquidityPool.callStatic.settle(0, user1.address)).to.equal(toWei("200"));
+    //     await liquidityPool.settle(0, user1.address);
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user1.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
+
+    //     expect(await liquidityPool.callStatic.settle(0, user2.address)).to.equal(toWei("0"));
+    //     await liquidityPool.settle(0, user2.address);
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user2.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
+
+    //     expect(await liquidityPool.callStatic.settle(0, user3.address)).to.equal(toWei("50"));
+    //     await liquidityPool.settle(0, user3.address);
+    //     var { cash, position } = await liquidityPool.getMarginAccount(0, user3.address);
+    //     expect(cash).to.equal(toWei("0"));
+    //     expect(position).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("0"));
+    // })
+
+
+    // it("updateInsuranceFund", async () => {
+    //     await liquidityPool.setState(0, 2);
+
+    //     await liquidityPool.setBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
+
+    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.updateInsuranceFund(0, toWei("0"));
+    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
+
+    //     await liquidityPool.updateInsuranceFund(0, toWei("0"));
+    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
+    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
+    // })
 })
+

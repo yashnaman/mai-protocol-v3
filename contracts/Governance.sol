@@ -83,7 +83,7 @@ contract Governance is Storage {
     }
 
     function setEmergencyState(uint256 perpetualIndex) external syncState {
-        require(!_liquidityPool.isAMMMarginSafe(perpetualIndex), "not emergency state");
+        require(!_liquidityPool.isAMMMarginSafe(perpetualIndex), "amm is safe");
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 

@@ -352,14 +352,14 @@ library LiquidityPoolModule {
             signer = msg.sender;
         }
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        if (perpetual.clear(perpetual.getNextDirtyAccount())) {
-            int256 marginToReturn = perpetual.settle(address(this));
-            perpetual.decreaseTotalCollateral(marginToReturn);
-            increasePoolCash(liquidityPool, marginToReturn);
-        }
         if (perpetual.totalCollateral >= perpetual.keeperGasReward) {
             perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
             liquidityPool.transferToUser(payable(signer), perpetual.keeperGasReward);
+        }
+        if (perpetual.clear(perpetual.getNextActiveAccount())) {
+            perpetual.setClearedState();
+            int256 marginToReturn = perpetual.settle(address(this));
+            increasePoolCash(liquidityPool, marginToReturn);
         }
     }
 

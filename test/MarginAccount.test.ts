@@ -369,7 +369,7 @@ describe('MarginModule', () => {
                     testCase.marginAccount.cash,
                     testCase.marginAccount.position);
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.setPerpetualBaseParameter(0, toBytes32(key), testCase.parameters[key]);
+                    await testMargin.setPerpetualBaseParameterDebug(0, toBytes32(key), testCase.parameters[key]);
                 }
                 await testMargin.setUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {

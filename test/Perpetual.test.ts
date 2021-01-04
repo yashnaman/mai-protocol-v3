@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { expect } from "chai";
+import { expect, use } from "chai";
 import {
     toWei,
     fromWei,
@@ -18,7 +18,6 @@ describe('Perpetual', () => {
     let user3;
     let oracle;
     let perpetual;
-    let ctk;
 
     before(async () => {
         accounts = await getAccounts();
@@ -29,141 +28,380 @@ describe('Perpetual', () => {
     })
 
     beforeEach(async () => {
-        ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        const AMMModule = await createContract("AMMModule");
-        const CollateralModule = await createContract("CollateralModule")
-        const OrderModule = await createContract("OrderModule");
         const PerpetualModule = await createContract("PerpetualModule");
-        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-        const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
         perpetual = await createContract("TestPerpetual", [], {
-            AMMModule,
-            CollateralModule,
-            OrderModule,
-            PerpetualModule,
-            LiquidityPoolModule,
-            TradeModule,
+            PerpetualModule
         });
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
         await perpetual.createPerpetual(
             oracle.address,
             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
         )
-        await perpetual.setCollateralToken(ctk.address, 1);
         await perpetual.setState(0, 2);
     });
 
+    it("getMarkPrice && getIndexPrice", async () => {
+        var now = Math.floor(Date.now() / 1000);
+        await oracle.setMarkPrice(toWei("500"), now);
+        await oracle.setIndexPrice(toWei("501"), now);
+
+        expect(await perpetual.getMarkPrice(0)).to.equal(toWei("0"));
+        expect(await perpetual.getIndexPrice(0)).to.equal(toWei("0"));
+
+        var tx = await perpetual.updatePrice(0);
+        expect(await perpetual.getMarkPrice(0)).to.equal(toWei("500"));
+        expect(await perpetual.getIndexPrice(0)).to.equal(toWei("501"));
+
+        await perpetual.updatePrice(0);
+        await perpetual.setEmergencyState(0);
+
+        await oracle.setMarkPrice(toWei("600"), now);
+        await oracle.setIndexPrice(toWei("601"), now);
+        expect(await perpetual.getMarkPrice(0)).to.equal(toWei("500"));
+        expect(await perpetual.getIndexPrice(0)).to.equal(toWei("500"));
+    });
+
+    it("getRebalanceMargin", async () => {
+        var now = Math.floor(Date.now() / 1000);
+        await oracle.setMarkPrice(toWei("500"), now);
+        await oracle.setIndexPrice(toWei("500"), now);
+        await perpetual.updatePrice(0);
+
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("0"), toWei("1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("450"));
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("-500"), toWei("1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("-50"));
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("-450"), toWei("1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("0"), toWei("0"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("500"), toWei("-1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("-50"));
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("-500"), toWei("-1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("-1050"));
+        await perpetual.setMarginAccount(0, perpetual.address, toWei("550"), toWei("-1"));
+        expect(await perpetual.getRebalanceMargin(0)).to.equal(toWei("0"));
+
+    });
+
+    it("setNormalState", async () => {
+        await perpetual.setState(0, 1);
+        expect(await perpetual.getState(0)).to.equal(1);
+
+        await perpetual.setNormalState(0);
+        expect(await perpetual.getState(0)).to.equal(2);
+
+        await perpetual.setState(0, 0);
+        await expect(perpetual.setNormalState(0)).to.be.revertedWith("perpetual should be in initializing state");
+        await perpetual.setState(0, 2);
+        await expect(perpetual.setNormalState(0)).to.be.revertedWith("perpetual should be in initializing state");
+        await perpetual.setState(0, 3);
+        await expect(perpetual.setNormalState(0)).to.be.revertedWith("perpetual should be in initializing state");
+        await perpetual.setState(0, 4);
+        await expect(perpetual.setNormalState(0)).to.be.revertedWith("perpetual should be in initializing state");
+    });
+
+    it("setEmergencyState", async () => {
+        await perpetual.setState(0, 2);
+        expect(await perpetual.getState(0)).to.equal(2);
+
+        await perpetual.setEmergencyState(0);
+        expect(await perpetual.getState(0)).to.equal(3);
+
+        await perpetual.setState(0, 0);
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 1);
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 3);
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 4);
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+    });
+
+    it("setClearedState", async () => {
+        await perpetual.setState(0, 3);
+        expect(await perpetual.getState(0)).to.equal(3);
+
+        await perpetual.setClearedState(0);
+        expect(await perpetual.getState(0)).to.equal(4);
+
+        await perpetual.setState(0, 0);
+        await expect(perpetual.setClearedState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 1);
+        await expect(perpetual.setClearedState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 2);
+        await expect(perpetual.setClearedState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await perpetual.setState(0, 4);
+        await expect(perpetual.setClearedState(0)).to.be.revertedWith("perpetual should be in normal state");
+    })
+
+
     it("donateInsuranceFund", async () => {
-        await ctk.mint(user1.address, toWei("1000"));
-        await ctk.connect(user1).approve(perpetual.address, toWei("1000000000000"));
+        await perpetual.setState(0, 2);
 
-        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("0"));
         expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-        await perpetual.connect(user1).donateInsuranceFund(0, toWei("666"));
-        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("666"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("666"));
-        expect(await ctk.balanceOf(perpetual.address)).to.equal(toWei("666"));
+        await perpetual.donateInsuranceFund(0, toWei("10"));
+        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("10"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("10"));
+
+        await perpetual.donateInsuranceFund(0, toWei("11"));
+        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("21"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("21"));
+
+        await expect(perpetual.donateInsuranceFund(0, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+        await expect(perpetual.donateInsuranceFund(0, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
     })
 
-    it("clear account", async () => {
+
+    it("deposit", async () => {
+        await perpetual.setState(0, 2);
+
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.false;
+
+        await perpetual.deposit(0, user0.address, toWei("10"));
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("10"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.true;
+
+        await perpetual.deposit(0, user0.address, toWei("11"));
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("21"));
+        expect(position).to.equal(toWei("0"));
+
+        await expect(perpetual.deposit(0, user0.address, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+        await expect(perpetual.deposit(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
+    })
+
+    it("withdraw", async () => {
+        await perpetual.setState(0, 2);
+
+        await perpetual.deposit(0, user0.address, toWei("100"));
+        expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.true;
+
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("100"));
+        expect(position).to.equal(toWei("0"));
+
+        await perpetual.withdraw(0, user0.address, toWei("10"));
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("90"));
+        expect(position).to.equal(toWei("0"));
+
+        await perpetual.withdraw(0, user0.address, toWei("90"));
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.false;
+
+        await expect(perpetual.withdraw(0, user0.address, toWei("0"))).to.be.revertedWith("amount should greater than 0");
+        await expect(perpetual.withdraw(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
+    })
+
+    it("clear", async () => {
+        await perpetual.setState(0, 2);
+
+        await perpetual.deposit(0, user0.address, toWei("1"));
+        await perpetual.deposit(0, user1.address, toWei("2"));
+        await perpetual.deposit(0, user2.address, toWei("3"));
+        await perpetual.deposit(0, user3.address, toWei("4"));
+        expect(await perpetual.getActiveUserCount(0)).to.equal(4);
+
+        await perpetual.setEmergencyState(0);
+        expect(await perpetual.getActiveUserCount(0)).to.equal(4);
+
+        await perpetual.clear(0, user0.address);
+        expect(await perpetual.getActiveUserCount(0)).to.equal(3);
+
+        await perpetual.clear(0, user1.address);
+        expect(await perpetual.getActiveUserCount(0)).to.equal(2);
+
+        expect(await perpetual.callStatic.clear(0, user2.address)).to.be.false;
+        await perpetual.clear(0, user2.address);
+        expect(await perpetual.getActiveUserCount(0)).to.equal(1);
+
+        await expect(perpetual.clear(0, user2.address)).to.be.revertedWith("account cannot be cleared or already cleared");
+
+        expect(await perpetual.callStatic.clear(0, user3.address)).to.be.true;
+        await perpetual.clear(0, user3.address);
+        expect(await perpetual.getActiveUserCount(0)).to.equal(0);
+
+        await expect(perpetual.clear(0, user3.address)).to.be.revertedWith("no account to clear");
+    })
+
+    it("clear - 2", async () => {
+        await perpetual.setState(0, 2);
+
         var now = Math.floor(Date.now() / 1000);
-        await oracle.setIndexPrice(toWei("500"), now);
-        await oracle.setMarkPrice(toWei("500"), now);
+        await oracle.setMarkPrice(toWei("100"), now);
+        await oracle.setIndexPrice(toWei("100"), now);
+        await perpetual.updatePrice(0);
 
-        await perpetual.setMarginAccount(0, user1.address, toWei("100"), toWei("0.1")); // 100 + 50
-        await perpetual.setMarginAccount(0, user2.address, toWei("200"), toWei("0.2")); // 200 + 100
-        await perpetual.setMarginAccount(0, user3.address, toWei("300"), toWei("0.3")); // 300 + 150
-
+        await perpetual.registerActiveAccount(0, user0.address);
         await perpetual.registerActiveAccount(0, user1.address);
         await perpetual.registerActiveAccount(0, user2.address);
         await perpetual.registerActiveAccount(0, user3.address);
+        await perpetual.setMarginAccount(0, user0.address, toWei("100"), toWei("0"));
+        await perpetual.setMarginAccount(0, user1.address, toWei("200"), toWei("0"));
+        await perpetual.setMarginAccount(0, user2.address, toWei("-200"), toWei("1"));
+        await perpetual.setMarginAccount(0, user3.address, toWei("0"), toWei("1"));
 
         await perpetual.setEmergencyState(0);
 
-        var { left, total } = await perpetual.getClearProgress(0);
-        expect(left).to.equal(3);
-        expect(total).to.equal(3);
+        await perpetual.clear(0, user0.address);
+        expect(await perpetual.getTotalMarginWithPosition(0)).to.equal("0");
+        expect(await perpetual.getTotalMarginWithoutPosition(0)).to.equal(toWei("100"));
 
-        // await expect(perpetual.clear(0)).to.be.revertedWith("trader is invalid");
-        await perpetual.clear(0);
-        var { left, total } = await perpetual.getClearProgress(0);
-        expect(left).to.equal(2);
-        expect(total).to.equal(3);
+        await perpetual.clear(0, user1.address);
+        expect(await perpetual.getTotalMarginWithPosition(0)).to.equal("0");
+        expect(await perpetual.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
+        await perpetual.clear(0, user2.address);
+        expect(await perpetual.getTotalMarginWithPosition(0)).to.equal("0");
+        expect(await perpetual.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
 
-        await perpetual.clear(0);
-        var { left, total } = await perpetual.getClearProgress(0);
-        expect(left).to.equal(1);
-        expect(total).to.equal(3);
+        await perpetual.clear(0, user3.address);
+        expect(await perpetual.getTotalMarginWithPosition(0)).to.equal(toWei("100"));
+        expect(await perpetual.getTotalMarginWithoutPosition(0)).to.equal(toWei("300"));
 
-        await perpetual.clear(0);
-        var { left, total } = await perpetual.getClearProgress(0);
-        expect(left).to.equal(0);
-        expect(total).to.equal(3);
+        await perpetual.setClearedState(0);
 
-        await expect(perpetual.clear(0)).to.be.revertedWith("operation is disallowed now");
+        // p = 100, nop = 300
+        await perpetual.setTotalCollateral(0, toWei("300"))
+        await perpetual.settleCollateral(0);
+        expect(await perpetual.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+        expect(await perpetual.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
+
+        await perpetual.setTotalCollateral(0, toWei("350"))
+        await perpetual.settleCollateral(0);
+        expect(await perpetual.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+        expect(await perpetual.getRedemptionRateWithPosition(0)).to.equal(toWei("0.5"));
+
+        await perpetual.setTotalCollateral(0, toWei("150"))
+        await perpetual.settleCollateral(0);
+        expect(await perpetual.getRedemptionRateWithoutPosition(0)).to.equal(toWei("0.5"));
+        expect(await perpetual.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
+
+        await perpetual.setTotalCollateral(0, toWei("0"))
+        await perpetual.settleCollateral(0);
+        expect(await perpetual.getRedemptionRateWithoutPosition(0)).to.equal(toWei("0"));
+        expect(await perpetual.getRedemptionRateWithPosition(0)).to.equal(toWei("0"));
     })
 
-    it("settle and withdraw", async () => {
+
+    it("getNextActiveAccount", async () => {
+        await perpetual.setState(0, 2);
+
+        await perpetual.deposit(0, user0.address, toWei("1"));
+        await perpetual.deposit(0, user1.address, toWei("2"));
+        await perpetual.deposit(0, user2.address, toWei("3"));
+        await perpetual.deposit(0, user3.address, toWei("4"));
+
+        var account = await perpetual.getNextActiveAccount(0);
+        expect(account).to.equal(user0.address);
+        await perpetual.clear(0, account);
+
+        var account = await perpetual.getNextActiveAccount(0);
+        expect(account).to.equal(user3.address);
+        await perpetual.clear(0, account);
+
+        var account = await perpetual.getNextActiveAccount(0);
+        expect(account).to.equal(user2.address);
+        await perpetual.clear(0, account);
+
+        var account = await perpetual.getNextActiveAccount(0);
+        expect(account).to.equal(user1.address);
+        await perpetual.clear(0, account);
+
+        await expect(perpetual.getNextActiveAccount(0)).to.be.revertedWith("no active account");
+    })
+
+    it("settle", async () => {
+        await perpetual.setState(0, 2);
+
         var now = Math.floor(Date.now() / 1000);
-        await oracle.setIndexPrice(toWei("500"), now);
-        await oracle.setMarkPrice(toWei("500"), now);
+        await oracle.setMarkPrice(toWei("100"), now);
+        await oracle.setIndexPrice(toWei("100"), now);
+        await perpetual.updatePrice(0);
 
-        await perpetual.setTotalCollateral(0, toWei("175"));
-
-        await perpetual.setMarginAccount(0, user1.address, toWei("100"), toWei("0"));   // 100 + nopos
-        await perpetual.setMarginAccount(0, user2.address, toWei("100"), toWei("0.1")); // 100 +  50
-        await perpetual.setMarginAccount(0, user3.address, toWei("0"), toWei("0.2"));   //   0 + 100
+        await perpetual.registerActiveAccount(0, user0.address);
         await perpetual.registerActiveAccount(0, user1.address);
         await perpetual.registerActiveAccount(0, user2.address);
         await perpetual.registerActiveAccount(0, user3.address);
+        await perpetual.setMarginAccount(0, user0.address, toWei("100"), toWei("0"));
+        await perpetual.setMarginAccount(0, user1.address, toWei("200"), toWei("0"));
+        await perpetual.setMarginAccount(0, user2.address, toWei("-200"), toWei("1"));
+        await perpetual.setMarginAccount(0, user3.address, toWei("0"), toWei("1"));
 
         await perpetual.setEmergencyState(0);
-        await perpetual.clear(0);
-        await perpetual.clear(0);
-        await perpetual.clear(0);
+        await perpetual.clear(0, user0.address);
+        await perpetual.clear(0, user1.address);
+        await perpetual.clear(0, user2.address);
+        await perpetual.clear(0, user3.address);
 
-        expect(await perpetual.redemptionRateWithoutPosition(0)).to.equal(toWei("1"));
-        expect(await perpetual.redemptionRateWithPosition(0)).to.equal(toWei("0.3"));
+        await perpetual.setClearedState(0);
+        // p = 100, nop = 300
+        await perpetual.setTotalCollateral(0, toWei("350"))
+        await perpetual.settleCollateral(0);
+        expect(await perpetual.getRedemptionRateWithoutPosition(0)).to.equal(toWei("1"));
+        expect(await perpetual.getRedemptionRateWithPosition(0)).to.equal(toWei("0.5"));
 
-        expect(await perpetual.callStatic.getSettleableMargin(0, user1.address)).to.equal(toWei("100"));
-        expect(await perpetual.callStatic.getSettleableMargin(0, user2.address)).to.equal(toWei("45"));
-        expect(await perpetual.callStatic.getSettleableMargin(0, user3.address)).to.equal(toWei("30"));
+        expect(await perpetual.getSettleableMargin(0, user0.address)).to.equal(toWei("100"));
+        expect(await perpetual.getSettleableMargin(0, user1.address)).to.equal(toWei("200"));
+        expect(await perpetual.getSettleableMargin(0, user2.address)).to.equal(toWei("0"));
+        expect(await perpetual.getSettleableMargin(0, user3.address)).to.equal(toWei("50"));
+
+        expect(await perpetual.callStatic.settle(0, user0.address)).to.equal(toWei("100"));
+        await perpetual.settle(0, user0.address);
+        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("250"));
+
+        expect(await perpetual.callStatic.settle(0, user1.address)).to.equal(toWei("200"));
+        await perpetual.settle(0, user1.address);
+        var { cash, position } = await perpetual.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("50"));
+
+        expect(await perpetual.callStatic.settle(0, user2.address)).to.equal(toWei("0"));
+        await perpetual.settle(0, user2.address);
+        var { cash, position } = await perpetual.getMarginAccount(0, user2.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("50"));
+
+        expect(await perpetual.callStatic.settle(0, user3.address)).to.equal(toWei("50"));
+        await perpetual.settle(0, user3.address);
+        var { cash, position } = await perpetual.getMarginAccount(0, user3.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("0"));
     })
 
-    it("settle and withdraw - rebalance", async () => {
-        var now = Math.floor(Date.now() / 1000);
-        await oracle.setIndexPrice(toWei("500"), now);
-        await oracle.setMarkPrice(toWei("500"), now);
 
-        await ctk.mint(perpetual.address, toWei("175"))
-        await perpetual.setPoolCash(toWei("50"));
-        await perpetual.setTotalCollateral(0, toWei("125"));
+    it("updateInsuranceFund", async () => {
+        await perpetual.setState(0, 2);
 
-        await perpetual.setMarginAccount(0, perpetual.address, toWei("-500"), toWei("1"));   // pool im = 500 * 1 * 0.1 = 50. send 50 => pool
-        await perpetual.setMarginAccount(0, user1.address, toWei("100"), toWei("0"));   // 100 + nopos
-        await perpetual.setMarginAccount(0, user2.address, toWei("100"), toWei("0.1")); // 100 +  50
-        await perpetual.setMarginAccount(0, user3.address, toWei("0"), toWei("0.2"));   //   0 + 100
-        await perpetual.registerActiveAccount(0, user1.address);
-        await perpetual.registerActiveAccount(0, user2.address);
-        await perpetual.registerActiveAccount(0, user3.address);
+        await perpetual.setBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
 
-        await perpetual.setEmergencyState(0);
-        await perpetual.clear(0);
-        await perpetual.clear(0);
-        await perpetual.clear(0);
+        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
+        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
 
-        expect(await perpetual.redemptionRateWithoutPosition(0)).to.equal(toWei("1"));
-        expect(await perpetual.redemptionRateWithPosition(0)).to.equal(toWei("0.3"));
+        await perpetual.updateInsuranceFund(0, toWei("0"));
+        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
+        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
 
-        expect(await perpetual.callStatic.getSettleableMargin(0, user1.address)).to.equal(toWei("100"));
-        expect(await perpetual.callStatic.getSettleableMargin(0, user2.address)).to.equal(toWei("45"));
-        expect(await perpetual.callStatic.getSettleableMargin(0, user3.address)).to.equal(toWei("30"));
-
-        expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0"));
-        await perpetual.connect(user1).settle(0, user1.address);
-        expect(await ctk.balanceOf(user1.address)).to.equal(toWei("100"));
+        await perpetual.updateInsuranceFund(0, toWei("0"));
+        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
+        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
     })
 })
 

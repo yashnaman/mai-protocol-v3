@@ -13,7 +13,7 @@ contract TestMarginAccount is TestPerpetual {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    function setPerpetualBaseParameter(
+    function setPerpetualBaseParameterDebug(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
