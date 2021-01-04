@@ -187,6 +187,7 @@ library AMMModule {
             priceLimit = Constant.SIGNED_ONE.sub(maxClosePriceDiscount);
         }
         deltaCash = deltaCash.max(context.indexPrice.wmul(priceLimit).wmul(tradeAmount).neg());
+        require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "invalid delta cash");
     }
 
     function openPosition(

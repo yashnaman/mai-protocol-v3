@@ -18,10 +18,10 @@ const _0 = toWad('0')
 const params = {
     unitAccumulativeFunding: toWad('1.9'),
     halfSpread: toWad('0.001'),
-    openSlippageFactor: toWad('100'),
-    closeSlippageFactor: toWad('90'),
+    openSlippageFactor: toWad('1'),
+    closeSlippageFactor: toWad('0.9'),
     ammMaxLeverage: toWad('5'),
-    maxClosePriceDiscount: toWad('0.05'),
+    maxClosePriceDiscount: toWad('0.2'),
     indexPrice: toWad('100')
 }
 
@@ -420,35 +420,35 @@ describe('AMM', () => {
                 name: 'close unsafe -10 -> -9, normal',
                 amm: amm3,
                 amount: toWad('1'),
-                deltaCash: toWad('-99.9'),
+                deltaCash: toWad('-100'),
                 deltaPosition: toWad('1')
             },
             {
                 name: 'close unsafe -10 -> -9.9, small',
                 amm: amm3,
                 amount: toWad('0.1'),
-                deltaCash: toWad('-9.99'),
+                deltaCash: toWad('-10'),
                 deltaPosition: toWad('0.1')
             },
             {
                 name: 'close unsafe 10 -> 9, normal',
                 amm: amm6,
                 amount: toWad('-1'),
-                deltaCash: toWad('100.1'),
+                deltaCash: toWad('80'),
                 deltaPosition: toWad('-1')
             },
             {
                 name: 'close unsafe 10 -> 9, small',
                 amm: amm6,
                 amount: toWad('-0.1'),
-                deltaCash: toWad('10.01'),
+                deltaCash: toWad('8'),
                 deltaPosition: toWad('-0.1')
             },
             {
-                name: 'close negative price, clip to 0',
+                name: 'close negative price, clip to index*(1-discount)',
                 amm: amm7,
                 amount: toWad('-0.01'),
-                deltaCash: _0,
+                deltaCash: toWad('0.8'),
                 deltaPosition: toWad('-0.01')
             },
             {
