@@ -102,14 +102,14 @@ library LiquidityPoolModule {
 
     function isAMMMarginSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
-        view
         returns (bool isSafe)
     {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        rebalance(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 margin = perpetual.getMargin(address(this), perpetual.getMarkPrice());
-        int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex).max(0);
-        isSafe = (margin.add(availablePoolCash) >= 0);
+        isSafe = liquidityPool.perpetuals[perpetualIndex].isMarginSafe(
+            address(this),
+            perpetual.getMarkPrice()
+        );
     }
 
     // admin interface
@@ -187,7 +187,7 @@ library LiquidityPoolModule {
         public
     {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
-        rebalanceFrom(liquidityPool, perpetualIndex);
+        rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
@@ -328,7 +328,7 @@ library LiquidityPoolModule {
             isAuthorized(liquidityPool, trader, signer, Constant.PRIVILEGE_DEPOSTI),
             "unauthorized"
         );
-        rebalanceFrom(liquidityPool, perpetualIndex);
+        rebalance(liquidityPool, perpetualIndex);
         if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
             IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
         }
@@ -352,11 +352,14 @@ library LiquidityPoolModule {
             signer = msg.sender;
         }
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        if (perpetual.totalCollateral >= perpetual.keeperGasReward) {
+        if (
+            perpetual.keeperGasReward > 0 && perpetual.totalCollateral >= perpetual.keeperGasReward
+        ) {
             perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
             liquidityPool.transferToUser(payable(signer), perpetual.keeperGasReward);
         }
         if (perpetual.clear(perpetual.getNextActiveAccount())) {
+            perpetual.countMargin(address(this));
             perpetual.setClearedState();
             int256 marginToReturn = perpetual.settle(address(this));
             increasePoolCash(liquidityPool, marginToReturn);
@@ -469,9 +472,7 @@ library LiquidityPoolModule {
         emit ClaimFee(claimer, amount);
     }
 
-    function rebalanceFrom(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
-        public
-    {
+    function rebalance(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 rebalanceMargin = perpetual.getRebalanceMargin();
@@ -480,15 +481,17 @@ library LiquidityPoolModule {
             return;
         } else if (rebalanceMargin > 0) {
             // from perp to pool
+            perpetual.updateCash(address(this), rebalanceMargin.neg());
             perpetual.decreaseTotalCollateral(rebalanceMargin);
             increasePoolCash(liquidityPool, rebalanceMargin);
         } else {
             // from pool to perp
-            int256 availablePoolCash = getAvailablePoolCash(liquidityPool);
+            int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex);
             if (availablePoolCash < 0) {
                 return;
             }
             rebalanceMargin = rebalanceMargin.abs().min(availablePoolCash);
+            perpetual.updateCash(address(this), rebalanceMargin);
             perpetual.increaseTotalCollateral(rebalanceMargin);
             decreasePoolCash(liquidityPool, rebalanceMargin);
         }

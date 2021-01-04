@@ -95,12 +95,12 @@ struct PerpetualStorage {
     Option ammMaxLeverage;
     Option maxClosePriceDiscount;
     // users
+    uint256 totalAccount;
     int256 totalMarginWithoutPosition;
     int256 totalMarginWithPosition;
     int256 redemptionRateWithoutPosition;
     int256 redemptionRateWithPosition;
     EnumerableSetUpgradeable.AddressSet activeAccounts;
-    EnumerableSetUpgradeable.AddressSet clearedTraders;
     // insurance fund
     int256 insuranceFund;
     int256 insuranceFundCap;

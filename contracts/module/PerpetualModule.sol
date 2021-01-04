@@ -253,6 +253,7 @@ library PerpetualModule {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
         // use mark price as final price when emergency
         perpetual.settlementPriceData = perpetual.markPriceData;
+        perpetual.totalAccount = perpetual.activeAccounts.length();
         perpetual.state = PerpetualState.EMERGENCY;
         emit SetEmergencyState(
             perpetual.id,
@@ -319,20 +320,22 @@ library PerpetualModule {
             perpetual.activeAccounts.contains(trader),
             "account cannot be cleared or already cleared"
         );
-        int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
-        if (margin > 0) {
-            if (perpetual.getPosition(trader) != 0) {
-                perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
-            } else {
-                perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(
-                    margin
-                );
-            }
-        }
+        countMargin(perpetual, trader);
         perpetual.activeAccounts.remove(trader);
-        perpetual.clearedTraders.add(trader);
         isAllCleared = (perpetual.activeAccounts.length() == 0);
         emit Clear(perpetual.id, trader);
+    }
+
+    function countMargin(PerpetualStorage storage perpetual, address trader) public {
+        int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
+        if (margin <= 0) {
+            return;
+        }
+        if (perpetual.getPosition(trader) != 0) {
+            perpetual.totalMarginWithPosition = perpetual.totalMarginWithPosition.add(margin);
+        } else {
+            perpetual.totalMarginWithoutPosition = perpetual.totalMarginWithoutPosition.add(margin);
+        }
     }
 
     function getNextActiveAccount(PerpetualStorage storage perpetual)
@@ -499,7 +502,8 @@ library PerpetualModule {
         require(perpetual.fundingRateLimit.value >= 0, "frl should be greater than 0");
         require(perpetual.ammMaxLeverage.value > 0, "aml should be greater than 0");
         require(
-            perpetual.maxClosePriceDiscount.value >= 0 && perpetual.maxClosePriceDiscount.value < Constant.SIGNED_ONE,
+            perpetual.maxClosePriceDiscount.value >= 0 &&
+                perpetual.maxClosePriceDiscount.value < Constant.SIGNED_ONE,
             "mcpd shoud be greater than 0 and less than 1"
         );
     }

@@ -37,7 +37,7 @@ describe('Perpetual', () => {
             oracle.address,
             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
             [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05')],
         )
         await perpetual.setState(0, 2);
     });
@@ -200,6 +200,11 @@ describe('Perpetual', () => {
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.false;
+
+        await expect(perpetual.withdraw(0, user0.address, toWei("10"))).to.be.revertedWith("collateral is negative");
+
+        await perpetual.setTotalCollateral(0, toWei("10"));
+        await expect(perpetual.withdraw(0, user0.address, toWei("10"))).to.be.revertedWith("margin is unsafe after withdrawal");
 
         await expect(perpetual.withdraw(0, user0.address, toWei("0"))).to.be.revertedWith("amount should greater than 0");
         await expect(perpetual.withdraw(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");

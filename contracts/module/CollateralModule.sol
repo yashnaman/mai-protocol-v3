@@ -40,7 +40,9 @@ library CollateralModule {
         address account,
         int256 amount
     ) public returns (int256 totalAmount) {
-        require(msg.value == 0 || liquidityPool.isWrapped, "native collateral is not acceptable");
+        if (!liquidityPool.isWrapped) {
+            require(msg.value == 0, "native currency is not acceptable");
+        }
         if (liquidityPool.isWrapped && msg.value > 0) {
             int256 internalAmount = _toInternalAmount(liquidityPool, msg.value).toInt256();
             IWETH weth = IWETH(IPoolCreator(liquidityPool.factory).weth());

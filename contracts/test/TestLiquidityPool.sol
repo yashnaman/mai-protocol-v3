@@ -18,17 +18,33 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.governor = governor;
     }
 
+    function getOperator() public view returns (address) {
+        return _liquidityPool.operator;
+    }
+
+    function getTransferringOperator() public view returns (address) {
+        return _liquidityPool.transferringOperator;
+    }
+
+    function setOperator(address operator) public {
+        _liquidityPool.operator = operator;
+    }
+
     function setShareToken(address shareToken) public {
         _liquidityPool.shareToken = shareToken;
     }
 
-    function setFactory(address governor) public {
-        _liquidityPool.governor = governor;
+    function setFactory(address factory) public {
+        _liquidityPool.factory = factory;
     }
 
     function setCollateralToken(address collateralToken, uint256 scaler) public {
         _liquidityPool.collateralToken = collateralToken;
         _liquidityPool.scaler = scaler;
+    }
+
+    function getPoolCash() public view returns (int256) {
+        return _liquidityPool.poolCash;
     }
 
     function setPoolCash(int256 amount) public {
@@ -56,7 +72,7 @@ contract TestLiquidityPool is TestPerpetual {
         availablePoolCash = _liquidityPool.getAvailablePoolCash(exclusiveIndex);
     }
 
-    function isAMMMarginSafe(uint256 perpetualIndex) public view returns (bool isSafe) {
+    function isAMMMarginSafe(uint256 perpetualIndex) public returns (bool isSafe) {
         isSafe = _liquidityPool.isAMMMarginSafe(perpetualIndex);
     }
 
@@ -98,8 +114,8 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.transferOperator(newOperator);
     }
 
-    function claimOperator(address claimer) public {
-        _liquidityPool.claimOperator(claimer);
+    function claimOperator() public {
+        _liquidityPool.claimOperator(msg.sender);
     }
 
     function revokeOperator() public {
@@ -119,21 +135,21 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.updatePrice(currentTime);
     }
 
-    function donateInsuranceFundPayable(uint256 perpetualIndex, int256 amount) public payable {
+    function donateInsuranceFund2(uint256 perpetualIndex, int256 amount) public payable {
         _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
     }
 
-    function deposit(
+    function depositBySig(
         uint256 perpetualIndex,
         address trader,
         int256 amount,
         bytes32 extData,
         bytes calldata signature
-    ) public {
+    ) public payable {
         _liquidityPool.deposit(perpetualIndex, trader, amount, extData, signature);
     }
 
-    function withdraw(
+    function withdrawBySig(
         uint256 perpetualIndex,
         address trader,
         int256 amount,
@@ -143,7 +159,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.withdraw(perpetualIndex, trader, amount, extData, signature);
     }
 
-    function clear(
+    function clearBySig(
         uint256 perpetualIndex,
         bytes32 extData,
         bytes calldata signature
@@ -151,7 +167,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.clear(perpetualIndex, extData, signature);
     }
 
-    function settle(
+    function settleBySig(
         uint256 perpetualIndex,
         address trader,
         bytes32 extData,
@@ -160,7 +176,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.settle(perpetualIndex, trader, extData, signature);
     }
 
-    function addLiquidity(
+    function addLiquidityBySig(
         address trader,
         int256 cashToAdd,
         bytes32 extData,
@@ -169,7 +185,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.addLiquidity(trader, cashToAdd, extData, signature);
     }
 
-    function removeLiquidity(
+    function removeLiquidityBySig(
         address trader,
         int256 shareToRemove,
         bytes32 extData,
@@ -186,8 +202,8 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.claimFee(account, amount);
     }
 
-    function rebalanceFrom(uint256 perpetualIndex) public {
-        _liquidityPool.rebalanceFrom(perpetualIndex);
+    function rebalance(uint256 perpetualIndex) public {
+        _liquidityPool.rebalance(perpetualIndex);
     }
 
     function increasePoolCash(int256 amount) internal {

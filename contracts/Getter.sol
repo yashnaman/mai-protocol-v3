@@ -133,7 +133,7 @@ contract Getter is Storage {
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         left = perpetual.activeAccounts.length();
-        total = perpetual.clearedTraders.length().add(left);
+        total = perpetual.totalAccount;
     }
 
     function getSettleableMargin(uint256 perpetualIndex, address trader)
