@@ -26,11 +26,12 @@ describe('Governance', () => {
         referrerRebateRate: toWei("0"),
     }
     const riskParameters = {
-        halfSpreadRate: toWei("0.001"),
-        beta1: toWei("0.2"),
-        beta2: toWei("0.1"),
+        halfSpread: toWei("0.001"),
+        openSlippageFactor: toWei("0.2"),
+        closeSlippageFactor: toWei("0.1"),
         fundingRateLimit: toWei("0.005"),
         targetLeverage: toWei("5"),
+        maxClosePriceDiscount: toWei("0.05"),
     }
 
     before(async () => {
@@ -136,6 +137,9 @@ describe('Governance', () => {
 
         await governance.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("0"), toWei("10"));
         expect(await governance.ammMaxLeverage(0)).to.equal(toWei("5"));
+
+        await governance.setPerpetualRiskParameter(0, toBytes32("maxClosePriceDiscount"), toWei("0.05"), toWei("0"), toWei("0.99"));
+        expect(await governance.maxClosePriceDiscount(0)).to.equal(toWei("0.05"));
     })
 
     it('setPerpetualRiskParameter - exception', async () => {
@@ -160,6 +164,10 @@ describe('Governance', () => {
         await expect(governance.setPerpetualRiskParameter(0, toBytes32("fundingRateLimit"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("frl should be greater than 0");
 
         await expect(governance.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("0"), toWei("0"), toWei("1"))).to.be.revertedWith("aml should be greater than 0");
+
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("maxClosePriceDiscount"), toWei("1"), toWei("0"), toWei("1"))).to.be.revertedWith("mcpd shoud be greater than 0 and less than 1");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("maxClosePriceDiscount"), toWei("-1"), toWei("-2"), toWei("0.5"))).to.be.revertedWith("mcpd shoud be greater than 0 and less than 1");
+        await governance.setPerpetualRiskParameter(0, toBytes32("maxClosePriceDiscount"), toWei("0.5"), toWei("0"), toWei("0.99"));
     })
 
     it('updatePerpetualRiskParameter', async () => {

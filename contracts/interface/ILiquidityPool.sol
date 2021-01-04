@@ -49,8 +49,9 @@ interface ILiquidityPool {
             // [16] openSlippageFactor,
             // [17] closeSlippageFactor,
             // [18] fundingRateLimit,
-            // [19] ammMaxLeverage
-            int256[20] memory nums
+            // [19] ammMaxLeverage,
+            // [20] maxClosePriceDiscount
+            int256[21] memory nums
         );
 
     function initialize(

@@ -65,9 +65,9 @@ library PerpetualModule {
         uint256 id,
         address oracle,
         int256[9] calldata coreParams,
-        int256[5] calldata riskParams,
-        int256[5] calldata minRiskParamValues,
-        int256[5] calldata maxRiskParamValues
+        int256[6] calldata riskParams,
+        int256[6] calldata minRiskParamValues,
+        int256[6] calldata maxRiskParamValues
     ) public {
         perpetual.id = id;
         perpetual.oracle = oracle;
@@ -111,6 +111,12 @@ library PerpetualModule {
             riskParams[4],
             minRiskParamValues[4],
             maxRiskParamValues[4]
+        );
+        setOption(
+            perpetual.maxClosePriceDiscount,
+            riskParams[5],
+            minRiskParamValues[5],
+            maxRiskParamValues[5]
         );
         validateRiskParameters(perpetual);
         perpetual.state = PerpetualState.INITIALIZING;
@@ -169,6 +175,8 @@ library PerpetualModule {
             setOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
         } else if (key == "ammMaxLeverage") {
             setOption(perpetual.ammMaxLeverage, newValue, newMinValue, newMaxValue);
+        } else if (key == "maxClosePriceDiscount") {
+            setOption(perpetual.maxClosePriceDiscount, newValue, newMinValue, newMaxValue);
         } else {
             revert("key not found");
         }
@@ -189,6 +197,8 @@ library PerpetualModule {
             updateOption(perpetual.fundingRateLimit, newValue);
         } else if (key == "ammMaxLeverage") {
             updateOption(perpetual.ammMaxLeverage, newValue);
+        } else if (key == "maxClosePriceDiscount") {
+            updateOption(perpetual.maxClosePriceDiscount, newValue);
         } else {
             revert("key not found");
         }
@@ -465,15 +475,19 @@ library PerpetualModule {
     function validateRiskParameters(PerpetualStorage storage perpetual) public view {
         require(
             perpetual.halfSpread.value >= 0 && perpetual.halfSpread.value < Constant.SIGNED_ONE,
-            "hsr shoud be greater than 0 and less than 1"
+            "hs shoud be greater than 0 and less than 1"
         );
-        require(perpetual.openSlippageFactor.value > 0, "beta1 shoud be greater than 0");
+        require(perpetual.openSlippageFactor.value > 0, "osf shoud be greater than 0");
         require(
             perpetual.closeSlippageFactor.value > 0 &&
                 perpetual.closeSlippageFactor.value <= perpetual.openSlippageFactor.value,
-            "beta2 should be within (0, b1]"
+            "csf should be within (0, b1]"
         );
         require(perpetual.fundingRateLimit.value >= 0, "frl should be greater than 0");
         require(perpetual.ammMaxLeverage.value > 0, "aml should be greater than 0");
+        require(
+            perpetual.maxClosePriceDiscount.value >= 0 && perpetual.maxClosePriceDiscount.value < Constant.SIGNED_ONE,
+            "mcpd shoud be greater than 0 and less than 1"
+        );
     }
 }

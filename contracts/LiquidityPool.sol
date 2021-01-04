@@ -34,7 +34,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         address oracle,
         address collateral,
         int256[9] coreParams,
-        int256[5] riskParams
+        int256[6] riskParams
     );
     event RunLiquidityPool();
 
@@ -57,9 +57,9 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     function createPerpetual(
         address oracle,
         int256[9] calldata coreParams,
-        int256[5] calldata riskParams,
-        int256[5] calldata minRiskParamValues,
-        int256[5] calldata maxRiskParamValues
+        int256[6] calldata riskParams,
+        int256[6] calldata minRiskParamValues,
+        int256[6] calldata maxRiskParamValues
     ) external {
         if (!_liquidityPool.isInitialized || _liquidityPool.isFastCreationEnabled) {
             require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");

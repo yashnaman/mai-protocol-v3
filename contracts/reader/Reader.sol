@@ -51,6 +51,7 @@ contract Reader {
         int256 closeSlippageFactor;
         int256 fundingRateLimit;
         int256 ammMaxLeverage;
+        int256 maxClosePriceDiscount;
         int256 ammCashBalance;
         int256 ammPositionAmount;
     }
@@ -110,7 +111,7 @@ contract Reader {
     ) private {
         // perpetual
         {
-            int256[20] memory nums;
+            int256[21] memory nums;
             (perp.state, perp.oracle, nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
                 perpetualIndex
             );
@@ -133,6 +134,7 @@ contract Reader {
             perp.closeSlippageFactor = nums[17];
             perp.fundingRateLimit = nums[18];
             perp.ammMaxLeverage = nums[19];
+            perp.maxClosePriceDiscount = nums[20];
         }
         // underlying
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();

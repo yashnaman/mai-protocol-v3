@@ -81,7 +81,8 @@ contract Getter is Storage {
             // [17] closeSlippageFactor,
             // [18] fundingRateLimit,
             // [19] ammMaxLeverage
-            int256[20] memory nums
+            // [20] maxClosePriceDiscount
+            int256[21] memory nums
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -107,7 +108,8 @@ contract Getter is Storage {
             perpetual.openSlippageFactor.value,
             perpetual.closeSlippageFactor.value,
             perpetual.fundingRateLimit.value,
-            perpetual.ammMaxLeverage.value
+            perpetual.ammMaxLeverage.value,
+            perpetual.maxClosePriceDiscount.value
         ];
     }
 

@@ -28,6 +28,7 @@ contract TestAMM {
         int256 openSlippageFactor,
         int256 closeSlippageFactor,
         int256 ammMaxLeverage,
+        int256 maxClosePriceDiscount,
         int256 cash,
         int256 positionAmount1,
         int256 positionAmount2,
@@ -41,6 +42,7 @@ contract TestAMM {
         liquidityPool.perpetuals[0].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[0].closeSlippageFactor.value = closeSlippageFactor;
         liquidityPool.perpetuals[0].ammMaxLeverage.value = ammMaxLeverage;
+        liquidityPool.perpetuals[0].maxClosePriceDiscount.value = maxClosePriceDiscount;
         liquidityPool.poolCash = cash;
         liquidityPool.perpetuals[0].marginAccounts[address(this)].position = positionAmount1;
         liquidityPool.perpetuals[0].indexPriceData.price = indexPrice1;
@@ -52,6 +54,7 @@ contract TestAMM {
         liquidityPool.perpetuals[1].openSlippageFactor.value = openSlippageFactor;
         liquidityPool.perpetuals[1].closeSlippageFactor.value = closeSlippageFactor;
         liquidityPool.perpetuals[1].ammMaxLeverage.value = ammMaxLeverage;
+        liquidityPool.perpetuals[1].maxClosePriceDiscount.value = maxClosePriceDiscount;
         liquidityPool.perpetuals[1].marginAccounts[address(this)].position = positionAmount2;
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }

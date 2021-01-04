@@ -15,7 +15,7 @@ contract TestPerpetual is Perpetual {
     function createPerpetual(
         address oracle,
         int256[9] calldata coreParams,
-        int256[5] calldata riskParams
+        int256[6] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetuals.length;
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();

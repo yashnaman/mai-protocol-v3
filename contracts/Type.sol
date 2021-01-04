@@ -93,6 +93,7 @@ struct PerpetualStorage {
     Option closeSlippageFactor;
     Option fundingRateLimit;
     Option ammMaxLeverage;
+    Option maxClosePriceDiscount;
     // users
     int256 totalMarginWithoutPosition;
     int256 totalMarginWithPosition;

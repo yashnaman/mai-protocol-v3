@@ -21,6 +21,7 @@ const params = {
     openSlippageFactor: toWad('100'),
     closeSlippageFactor: toWad('90'),
     ammMaxLeverage: toWad('5'),
+    maxClosePriceDiscount: toWad('0.05'),
     indexPrice: toWad('100')
 }
 
@@ -159,7 +160,7 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 if (element.isSafe) {
                     expect(await amm.isAMMMarginSafe()).to.be.true
                 } else {
@@ -200,7 +201,7 @@ describe('AMM', () => {
 
         successCases.forEach((element, index) => {
             it(`success-${index}`, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await amm.regress()).approximateBigNumber(element.poolMargin);
             })
         })
@@ -218,7 +219,7 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 await expect(amm.regress()).to.be.revertedWith('amm is unsafe when regress')
             })
         })
@@ -243,7 +244,7 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await amm.deltaCash(element.amount)).approximateBigNumber(element.deltaCash)
             })
         })
@@ -295,13 +296,13 @@ describe('AMM', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await amm.maxPosition(element.isLongSide)).approximateBigNumber(element.maxPosition)
             })
         })
 
         it('zero index price', async () => {
-            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, amm1.cash, amm1.positionAmount1, amm1.positionAmount2, _0, params.indexPrice)
+            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, amm1.cash, amm1.positionAmount1, amm1.positionAmount2, _0, params.indexPrice)
             await expect(amm.maxPosition(0)).to.be.revertedWith('index price must be positive')
         })
     })
@@ -502,7 +503,7 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 const context = await amm.queryTradeWithAMM(element.amount, element.partialFill)
                 expect(context[0]).approximateBigNumber(element.deltaCash)
                 expect(context[1]).approximateBigNumber(element.deltaPosition)
@@ -580,7 +581,7 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 await expect(amm.queryTradeWithAMM(element.amount, element.partialFill)).to.be.revertedWith(element.errorMsg)
             })
         })
@@ -636,13 +637,13 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await amm.getShareToMint(element.totalShare, element.cashToAdd)).approximateBigNumber(element.share);
             })
         })
 
         it("poolMargin = 0 && totalShare != 0", async () => {
-            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
+            await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice)
             await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share has no value");
         })
     })
@@ -689,7 +690,7 @@ describe('AMM', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, params.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 expect(await amm.getCashToReturn(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove);
             })
         })
@@ -747,7 +748,7 @@ describe('AMM', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
+                await amm.setParams(params.unitAccumulativeFunding, params.halfSpread, params.openSlippageFactor, params.closeSlippageFactor, element.ammMaxLeverage, params.maxClosePriceDiscount, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice)
                 await expect(amm.getCashToReturn(element.totalShare, element.shareToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
