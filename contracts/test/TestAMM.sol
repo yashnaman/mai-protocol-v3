@@ -15,6 +15,11 @@ contract TestAMM {
     using MarginAccountModule for LiquidityPoolStorage;
     using PerpetualModule for PerpetualStorage;
 
+    int256 unitAccumulativeFunding = 19 * 10**17;
+    int256 halfSpread = 1 * 10**15;
+    int256 openSlippageFactor = 1 * 10**18;
+    int256 closeSlippageFactor = 9 * 10**17;
+    int256 maxClosePriceDiscount = 2 * 10**17;
     LiquidityPoolStorage liquidityPool;
 
     constructor() {
@@ -23,17 +28,13 @@ contract TestAMM {
     }
 
     function setParams(
-        int256 unitAccumulativeFunding,
-        int256 halfSpread,
-        int256 openSlippageFactor,
-        int256 closeSlippageFactor,
         int256 ammMaxLeverage,
-        int256 maxClosePriceDiscount,
         int256 cash,
         int256 positionAmount1,
         int256 positionAmount2,
         int256 indexPrice1,
-        int256 indexPrice2
+        int256 indexPrice2,
+        PerpetualState state
     ) public {
         liquidityPool.perpetuals[0].id = 0;
         liquidityPool.perpetuals[0].state = PerpetualState.NORMAL;
@@ -48,7 +49,7 @@ contract TestAMM {
         liquidityPool.perpetuals[0].indexPriceData.price = indexPrice1;
 
         liquidityPool.perpetuals[1].id = 1;
-        liquidityPool.perpetuals[1].state = PerpetualState.NORMAL;
+        liquidityPool.perpetuals[1].state = state;
         liquidityPool.perpetuals[1].unitAccumulativeFunding = unitAccumulativeFunding;
         liquidityPool.perpetuals[1].halfSpread.value = halfSpread;
         liquidityPool.perpetuals[1].openSlippageFactor.value = openSlippageFactor;

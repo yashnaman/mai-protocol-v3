@@ -26,8 +26,10 @@ describe('SymbolService', () => {
             expect(await symbolService.isWhitelistedFactory(factory)).to.be.false;
             await symbolService.addWhitelistedFactory(factory);
             expect(await symbolService.isWhitelistedFactory(factory)).to.be.true;
+            await expect(symbolService.addWhitelistedFactory(factory)).to.be.revertedWith('factory already exists');
             await symbolService.removeWhitelistedFactory(factory);
             expect(await symbolService.isWhitelistedFactory(factory)).to.be.false;
+            await expect(symbolService.removeWhitelistedFactory(accounts[2].address)).to.be.revertedWith('factory not found');
         })
         it('not owner', async () => {
             const factory = accounts[1].address;
@@ -42,6 +44,7 @@ describe('SymbolService', () => {
         it('normal', async () => {
             await symbolService.addWhitelistedFactory(accounts[1].address);
             const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            expect((await testSymbolService.getSymbols(0)).length).to.equal(0);
             await testSymbolService.allocateSymbol(0);
             expect((await testSymbolService.getSymbols(0))[0]).to.equal(10000);
             var context = await testSymbolService.getPerpetualUID(10000);
@@ -52,6 +55,7 @@ describe('SymbolService', () => {
             context = await testSymbolService.getPerpetualUID(10001);
             expect(context.liquidityPool).to.equal(testSymbolService.address);
             expect(context.perpetualIndex).to.equal(1);
+            await expect(testSymbolService.getPerpetualUID(10002)).to.be.revertedWith('symbol not found');
         })
 
         it('not contract', async () => {

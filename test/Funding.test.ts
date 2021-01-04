@@ -12,8 +12,9 @@ const _0 = toWei('0')
 const params = {
     state: 2,
     unitAccumulativeFunding: toWei('1.9'),
-    openSlippageFactor: toWei('100'),
+    openSlippageFactor: toWei('1'),
     ammMaxLeverage: toWei('5'),
+    maxClosePriceDiscount: toWei('0.05'),
     indexPrice: toWei('100'),
     fundingRateLimit: toWei('0.005'),
     negFundingRateLimit: toWei('-0.005')
@@ -29,7 +30,8 @@ describe('Funding', () => {
         const CollateralModule = await createContract("CollateralModule")
         const OrderModule = await createContract("OrderModule");
         const PerpetualModule = await createContract("PerpetualModule");
-        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
+        const SignatureModule = await createContract("SignatureModule");
+        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule, SignatureModule });
         const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
         perpetual = await createContract("TestPerpetual", [], {
             AMMModule,
@@ -38,6 +40,7 @@ describe('Funding', () => {
             PerpetualModule,
             LiquidityPoolModule,
             TradeModule,
+            SignatureModule,
         });
         oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
@@ -102,12 +105,12 @@ describe('Funding', () => {
                 await perpetual.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.setMarginAccount(0, perpetual.address, 0, 0);
                 await perpetual.setIndexPrice(0, element.indexPrice1);
@@ -184,12 +187,12 @@ describe('Funding', () => {
                 await perpetual.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.setMarginAccount(0, perpetual.address, 0, element.positionAmount1);
                 await perpetual.setIndexPrice(0, params.indexPrice);
@@ -247,12 +250,12 @@ describe('Funding', () => {
                 await perpetual.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await perpetual.setMarginAccount(0, perpetual.address, 0, element.positionAmount1);
                 await perpetual.setIndexPrice(0, params.indexPrice);

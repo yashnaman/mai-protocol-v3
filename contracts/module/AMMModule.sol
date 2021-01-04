@@ -54,10 +54,6 @@ library AMMModule {
             openPosition(perpetual, context, openAmount, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
         deltaPosition = closeAmount.add(openDeltaPositionAmount);
-        if (deltaPosition < 0 && deltaCash < 0) {
-            // negative price
-            deltaCash = 0;
-        }
         int256 bestPrice = closeAmount != 0 ? closeBestPrice : openBestPrice;
         deltaCash = deltaCash.max(bestPrice.wmul(deltaPosition).neg());
     }
