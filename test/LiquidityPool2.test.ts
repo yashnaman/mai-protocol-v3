@@ -185,7 +185,7 @@ describe('LiquidityPool', () => {
                 name: 'poolMargin = 0 && totalShare != 0',
                 totalShare: toWei('100'),
                 marginToAdd: toWei('100'),
-                errorMsg: 'share has no value'
+                errorMsg: 'share token has no value'
             }
         ]
 
