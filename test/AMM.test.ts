@@ -166,7 +166,7 @@ describe('AMM', () => {
         })
     })
 
-    describe('regress', function () {
+    describe('getPoolMargin', function () {
 
         const successCases = [
             {
@@ -198,7 +198,7 @@ describe('AMM', () => {
         successCases.forEach((element, index) => {
             it(`success-${index}`, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                expect(await amm.regress()).approximateBigNumber(element.poolMargin);
+                expect(await amm.getPoolMargin()).approximateBigNumber(element.poolMargin);
             })
         })
 
@@ -216,7 +216,7 @@ describe('AMM', () => {
         failCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                await expect(amm.regress()).to.be.revertedWith('amm is unsafe when regress')
+                await expect(amm.getPoolMargin()).to.be.revertedWith('amm is unsafe when getting pool margin')
             })
         })
     })
@@ -522,7 +522,7 @@ describe('AMM', () => {
                 amm: amm0,
                 amount: _0,
                 partialFill: false,
-                errorMsg: 'trade amount is zero'
+                errorMsg: 'trading amount is zero'
             },
             {
                 name: 'poolMargin = 0',
@@ -640,7 +640,7 @@ describe('AMM', () => {
 
         it("poolMargin = 0 && totalShare != 0", async () => {
             await amm.setParams(params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-            await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share has no value");
+            await expect(amm.getShareToMint(toWad('100'), toWad('100'))).to.be.revertedWith("share token has no value");
         })
     })
 
@@ -761,6 +761,14 @@ describe('AMM', () => {
                 await amm.setParams(element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
                 await expect(amm.getCashToReturn(element.totalShare, element.shareToRemove)).to.be.revertedWith(element.errorMsg);
             })
+        })
+        it("zero index", async () => {
+            await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, _0, params.state)
+            await expect(amm.getCashToReturn(toWad('100'), toWad('1'))).to.be.revertedWith("index price must be positive");
+        })
+        it("zero supply of share token", async () => {
+            await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+            await expect(amm.getCashToReturn(_0, _0)).to.be.revertedWith("the supply of share token is zero when removing liquidity");
         })
     })
 

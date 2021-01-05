@@ -3,9 +3,6 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 import "../libraries/Constant.sol";
 import "../libraries/Math.sol";
@@ -17,13 +14,14 @@ import "../module/PerpetualModule.sol";
 
 import "../Type.sol";
 
+/**
+ * @title Mai3 AMM implementation
+ */
 library AMMModule {
+
     using Math for int256;
-    using Math for uint256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
-    using SafeCastUpgradeable for int256;
-    using SafeMathUpgradeable for uint256;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -31,33 +29,56 @@ library AMMModule {
         int256 indexPrice;
         int256 position;
         int256 positionValue;
-        int256 squareValue; // 10^36
+        // this is 10^36, others are 10^18
+        int256 squareValue;
         int256 positionMargin;
         int256 availableCash;
     }
 
+    /**
+     * @dev Get the result when trading with amm
+     * @param liquidityPool The liquidity pool of amm
+     * @param perpetualIndex The index of the perpetual to trade
+     * @param tradeAmount The trading amount, positive if amm longs, negative if amm shorts
+     * @param partialFill Whether to allow partial trading, set to true when liquidation trading,
+              set to false when normal trading
+     * @return deltaCash The trading cash result, positive when amm's cash increases,
+               negative when amm's cash decrease
+     * @return deltaPosition The trading position result, positive when amm longs,
+               negative when amm shorts
+     */
     function queryTradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         int256 tradeAmount,
         bool partialFill
     ) public view returns (int256 deltaCash, int256 deltaPosition) {
-        require(tradeAmount != 0, "trade amount is zero");
+        require(tradeAmount != 0, "trading amount is zero");
         Context memory context = prepareContext(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        (int256 closeAmount, int256 openAmount) = Utils.splitAmount(context.position, tradeAmount);
+        (int256 closePosition, int256 openPosition) = Utils.splitAmount(context.position, tradeAmount);
+        // amm close position
         int256 closeBestPrice;
-        (deltaCash, closeBestPrice) = closePosition(perpetual, context, closeAmount);
+        (deltaCash, closeBestPrice) = ammClosePosition(context, perpetual, closePosition);
         context.availableCash = context.availableCash.add(deltaCash);
-        context.position = context.position.add(closeAmount);
-        (int256 openDeltaMargin, int256 openDeltaPositionAmount, int256 openBestPrice) =
-            openPosition(perpetual, context, openAmount, partialFill);
+        context.position = context.position.add(closePosition);
+        // amm open position
+        (int256 openDeltaMargin, int256 openDeltaPosition, int256 openBestPrice) =
+            ammOpenPosition(perpetual, context, openPosition, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
-        deltaPosition = closeAmount.add(openDeltaPositionAmount);
-        int256 bestPrice = closeAmount != 0 ? closeBestPrice : openBestPrice;
+        deltaPosition = closePosition.add(openDeltaPosition);
+        int256 bestPrice = closePosition != 0 ? closeBestPrice : openBestPrice;
+        // if better than best price, clip to best price
         deltaCash = deltaCash.max(bestPrice.wmul(deltaPosition).neg());
     }
 
+    /**
+     * @dev Calculate the amount of share token to mint when adding liquidity to pool
+     * @param liquidityPool The liquidity pool of amm
+     * @param shareTotalSupply The total supply of the share token before adding liquidity
+     * @param cashToAdd The cash added to the liquidity pool
+     * @return shareToMint The amount of share token to mint
+     */
     function getShareToMint(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
@@ -68,21 +89,30 @@ library AMMModule {
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
         if (poolMargin == 0) {
-            require(shareTotalSupply == 0, "share has no value");
+            require(shareTotalSupply == 0, "share token has no value");
+            // first time
             shareToMint = newPoolMargin;
         } else {
             shareToMint = newPoolMargin.sub(poolMargin).wfrac(shareTotalSupply, poolMargin);
         }
     }
 
+    /**
+     * @dev Calculate the cash to return when removing liquidity from pool
+     * @param liquidityPool The liquidity pool of amm
+     * @param shareTotalSupply The total supply of the share token before removing liquidity
+     * @param shareToRemove The amount of share token to remove
+     * @return cashToReturn The cash to return
+     */
     function getCashToReturn(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
+        require(shareTotalSupply > 0, "the supply of share token is zero when removing liquidity");
         Context memory context = prepareContext(liquidityPool);
         require(isAMMMarginSafe(context, 0), "amm is unsafe before removing liquidity");
-        int256 poolMargin = regress(context, 0);
+        int256 poolMargin = getPoolMargin(context, 0);
         if (poolMargin == 0) {
             return 0;
         }
@@ -99,14 +129,16 @@ library AMMModule {
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
+            int256 indexPrice = perpetual.getIndexPrice();
+            require(indexPrice > 0, "index price must be positive");
+            // prevent amm offering negative price
             require(
                 perpetual.getPosition(address(this)) <=
-                    poolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(
-                        perpetual.getIndexPrice()
-                    ),
+                    poolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(indexPrice),
                 "amm is unsafe after removing liquidity"
             );
         }
+        // prevent amm exceeding max leverage
         require(
             context.availableCash.add(context.positionValue).sub(cashToReturn) >=
                 context.positionMargin,
@@ -114,8 +146,14 @@ library AMMModule {
         );
     }
 
-    function regress(Context memory context, int256 slippageFactor)
-        public
+    /**
+     * @dev Calculate the pool margin of amm
+     * @param context The status of amm
+     * @param slippageFactor The slippage factor of amm
+     * @return poolMargin The pool margin of amm
+     */
+    function getPoolMargin(Context memory context, int256 slippageFactor)
+        internal
         pure
         returns (int256 poolMargin)
     {
@@ -123,12 +161,18 @@ library AMMModule {
         int256 margin = positionValue.add(context.positionValue).add(context.availableCash);
         int256 tmp = positionValue.wmul(positionValue).mul(slippageFactor).add(context.squareValue);
         int256 beforeSqrt = margin.mul(margin).sub(tmp.mul(2));
-        require(beforeSqrt >= 0, "amm is unsafe when regressing");
+        require(beforeSqrt >= 0, "amm is unsafe when getting pool margin");
         poolMargin = beforeSqrt.sqrt().add(margin).div(2);
     }
 
+    /**
+     * @dev Check if amm is safe
+     * @param context The status of amm
+     * @param slippageFactor The slippage factor of amm
+     * @return bool If amm is safe
+     */
     function isAMMMarginSafe(Context memory context, int256 slippageFactor)
-        public
+        internal
         pure
         returns (bool)
     {
@@ -140,11 +184,20 @@ library AMMModule {
         return context.availableCash >= minAvailableCash;
     }
 
-    function closePosition(
-        PerpetualStorage storage perpetual,
+    /**
+     * @dev get the result when amm closing position
+     * @param context The status of amm
+     * @param perpetual The perpetual to trade
+     * @param tradeAmount The trading amount
+     * @return deltaCash The trading cash result, positive when amm's cash increases,
+               negative when amm's cash decrease
+     * @return bestPrice The best spread, calculated by spread parameter
+     */
+    function ammClosePosition(
         Context memory context,
+        PerpetualStorage storage perpetual,
         int256 tradeAmount
-    ) public view returns (int256 deltaCash, int256 bestPrice) {
+    ) internal view returns (int256 deltaCash, int256 bestPrice) {
         if (tradeAmount == 0) {
             return (0, 0);
         }
@@ -157,7 +210,7 @@ library AMMModule {
         }
         int256 maxClosePriceDiscount = perpetual.maxClosePriceDiscount.value;
         if (isAMMMarginSafe(context, slippageFactor)) {
-            int256 poolMargin = regress(context, slippageFactor);
+            int256 poolMargin = getPoolMargin(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
             bestPrice = _getPrice(context.indexPrice, poolMargin, positionBefore, slippageFactor)
                 .wmul(halfSpread.add(Constant.SIGNED_ONE));
@@ -186,7 +239,7 @@ library AMMModule {
         require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "invalid delta cash");
     }
 
-    function openPosition(
+    function ammOpenPosition(
         PerpetualStorage storage perpetual,
         Context memory context,
         int256 tradeAmount,
@@ -211,7 +264,7 @@ library AMMModule {
             require(partialFill, "amm is unsafe when open");
             return (0, 0, 0);
         }
-        int256 poolMargin = regress(context, slippageFactor);
+        int256 poolMargin = getPoolMargin(context, slippageFactor);
         require(poolMargin > 0, "pool margin must be positive");
         int256 indexPrice = context.indexPrice;
         int256 ammMaxLeverage = perpetual.ammMaxLeverage.value;
@@ -393,7 +446,7 @@ library AMMModule {
 
     function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
         if (isAMMMarginSafe(context, 0)) {
-            return (regress(context, 0), true);
+            return (getPoolMargin(context, 0), true);
         } else {
             return (context.availableCash.add(context.positionValue).div(2), false);
         }

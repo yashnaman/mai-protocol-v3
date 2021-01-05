@@ -66,10 +66,10 @@ contract TestAMM {
         return AMMModule.isAMMMarginSafe(context, perpetual.openSlippageFactor.value);
     }
 
-    function regress() public view returns (int256) {
+    function getPoolMargin() public view returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
-        return AMMModule.regress(context, perpetual.openSlippageFactor.value);
+        return AMMModule.getPoolMargin(context, perpetual.openSlippageFactor.value);
     }
 
 
@@ -80,7 +80,7 @@ contract TestAMM {
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         deltaCash = AMMModule._getDeltaMargin(
-            regress(),
+            getPoolMargin(),
             perpetual.marginAccounts[address(this)].position,
             perpetual.marginAccounts[address(this)].position.add(amount),
             perpetual.getIndexPrice(),
@@ -94,7 +94,7 @@ contract TestAMM {
         return
             AMMModule._getMaxPosition(
                 context,
-                regress(),
+                getPoolMargin(),
                 perpetual.ammMaxLeverage.value,
                 perpetual.openSlippageFactor.value,
                 isLongSide
