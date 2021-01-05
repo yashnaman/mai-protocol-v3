@@ -3,9 +3,6 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 contract LibraryEvents {
-    // settle
-    event ClearAccount(uint256 perpetualIndex, address trader);
-    event SettleAccount(uint256 perpetualIndex, address trader, int256 amount);
     // perpetual
     event Deposit(uint256 perpetualIndex, address trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
@@ -30,10 +27,35 @@ contract LibraryEvents {
         int256 amount,
         int256 price
     );
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 value,
+        int256 minValue,
+        int256 maxValue
+    );
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+
     // pool
     event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
     event IncreaseFee(address recipient, int256 amount);
     event ClaimFee(address claimer, int256 amount);
     event UpdatePoolMargin(int256 poolMargin);
+    event TransferOperatorTo(address newOperator);
+    event ClaimOperatorTo(address newOperator);
+    event RevokeOperator();
+    event SetLiquidityPoolParameter(bytes32 key, int256 value);
+    event CreatePerpetual(
+        uint256 perpetualIndex,
+        address governor,
+        address shareToken,
+        address operator,
+        address oracle,
+        address collateral,
+        int256[9] coreParams,
+        int256[6] riskParams
+    );
+    event RunLiquidityPool();
 }

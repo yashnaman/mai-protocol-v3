@@ -36,6 +36,15 @@ library PerpetualModule {
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 value,
+        int256 minValue,
+        int256 maxValue
+    );
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
     function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
@@ -158,6 +167,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
+        emit SetPerpetualBaseParameter(perpetualIndex, key, newValue);
     }
 
     function setRiskParameter(
@@ -182,6 +192,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
+        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
     function updateRiskParameter(
@@ -204,6 +215,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
+        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {

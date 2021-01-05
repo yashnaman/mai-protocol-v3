@@ -5,13 +5,14 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../libraries/SafeMathExt.sol";
-import "../libraries/Utils.sol";
-
 import "../interface/IAccessControll.sol";
 import "../interface/IPoolCreator.sol";
 import "../interface/IDecimals.sol";
 import "../interface/IShareToken.sol";
+import "../interface/ISymbolService.sol";
+
+import "../libraries/SafeMathExt.sol";
+import "../libraries/Utils.sol";
 
 import "./AMMModule.sol";
 import "./CollateralModule.sol";
@@ -49,15 +50,63 @@ library LiquidityPoolModule {
     event ClaimOperatorTo(address newOperator);
     event RevokeOperator();
     event SetLiquidityPoolParameter(bytes32 key, int256 value);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event SetPerpetualRiskParameter(
+    event CreatePerpetual(
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 value,
-        int256 minValue,
-        int256 maxValue
+        address governor,
+        address shareToken,
+        address operator,
+        address oracle,
+        address collateral,
+        int256[9] coreParams,
+        int256[6] riskParams
     );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event RunLiquidityPool();
+
+    function createPerpetual(
+        LiquidityPoolStorage storage liquidityPool,
+        address oracle,
+        int256[9] calldata coreParams,
+        int256[6] calldata riskParams,
+        int256[6] calldata minRiskParamValues,
+        int256[6] calldata maxRiskParamValues
+    ) public {
+        uint256 perpetualIndex = liquidityPool.perpetuals.length;
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
+        perpetual.initialize(
+            perpetualIndex,
+            oracle,
+            coreParams,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
+        ISymbolService service =
+            ISymbolService(IPoolCreator(liquidityPool.factory).symbolService());
+        service.allocateSymbol(address(this), perpetualIndex);
+        if (liquidityPool.isInitialized) {
+            perpetual.setNormalState();
+        }
+        emit CreatePerpetual(
+            perpetualIndex,
+            liquidityPool.governor,
+            liquidityPool.shareToken,
+            liquidityPool.operator,
+            oracle,
+            liquidityPool.collateralToken,
+            coreParams,
+            riskParams
+        );
+    }
+
+    function runLiquidityPool(LiquidityPoolStorage storage liquidityPool) public {
+        uint256 length = liquidityPool.perpetuals.length;
+        require(length > 0, "there should be at least 1 perpetual to run");
+        for (uint256 i = 0; i < length; i++) {
+            liquidityPool.perpetuals[i].setNormalState();
+        }
+        liquidityPool.isInitialized = true;
+        emit RunLiquidityPool();
+    }
 
     function getAvailablePoolCash(
         LiquidityPoolStorage storage liquidityPool,
@@ -165,7 +214,6 @@ library LiquidityPoolModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setBaseParameter(key, newValue);
         perpetual.validateBaseParameters();
-        emit SetPerpetualBaseParameter(perpetualIndex, key, newValue);
     }
 
     function setPerpetualRiskParameter(
@@ -180,7 +228,6 @@ library LiquidityPoolModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setRiskParameter(key, newValue, minValue, maxValue);
         perpetual.validateRiskParameters();
-        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
     function setEmergencyState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
@@ -189,6 +236,17 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+    }
+
+    function setClearedState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        public
+    {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.countMargin(address(this));
+        perpetual.setClearedState();
+        int256 marginToReturn = perpetual.settle(address(this));
+        increasePoolCash(liquidityPool, marginToReturn);
     }
 
     function updatePerpetualRiskParameter(
@@ -201,7 +259,6 @@ library LiquidityPoolModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateRiskParameter(key, newValue);
         perpetual.validateRiskParameters();
-        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
     function transferOperator(LiquidityPoolStorage storage liquidityPool, address newOperator)
@@ -359,10 +416,7 @@ library LiquidityPoolModule {
             liquidityPool.transferToUser(payable(signer), perpetual.keeperGasReward);
         }
         if (perpetual.clear(perpetual.getNextActiveAccount())) {
-            perpetual.countMargin(address(this));
-            perpetual.setClearedState();
-            int256 marginToReturn = perpetual.settle(address(this));
-            increasePoolCash(liquidityPool, marginToReturn);
+            setClearedState(liquidityPool, perpetualIndex);
         }
     }
 

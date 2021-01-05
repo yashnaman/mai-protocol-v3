@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IPoolCreator.sol";
-import "./interface/ISymbolService.sol";
 
 import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
@@ -25,18 +24,6 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
     using SignatureModule for bytes32;
-
-    event CreatePerpetual(
-        uint256 perpetualIndex,
-        address governor,
-        address shareToken,
-        address operator,
-        address oracle,
-        address collateral,
-        int256[9] coreParams,
-        int256[6] riskParams
-    );
-    event RunLiquidityPool();
 
     function initialize(
         address operator,
@@ -66,43 +53,18 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         } else {
             require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
         }
-        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
-        perpetual.initialize(
-            perpetualIndex,
+        _liquidityPool.createPerpetual(
             oracle,
             coreParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues
         );
-        ISymbolService service =
-            ISymbolService(IPoolCreator(_liquidityPool.factory).symbolService());
-        service.allocateSymbol(address(this), perpetualIndex);
-        if (_liquidityPool.isInitialized) {
-            perpetual.setNormalState();
-        }
-        emit CreatePerpetual(
-            perpetualIndex,
-            _liquidityPool.governor,
-            _liquidityPool.shareToken,
-            _liquidityPool.operator,
-            oracle,
-            _liquidityPool.collateralToken,
-            coreParams,
-            riskParams
-        );
     }
 
     function runLiquidityPool() external onlyOperator {
         require(!_liquidityPool.isInitialized, "pool is already running");
-        uint256 length = _liquidityPool.perpetuals.length;
-        require(length > 0, "there should be at least 1 perpetual to run");
-        for (uint256 i = 0; i < length; i++) {
-            _liquidityPool.perpetuals[i].setNormalState();
-        }
-        _liquidityPool.isInitialized = true;
-        emit RunLiquidityPool();
+        _liquidityPool.runLiquidityPool();
     }
 
     function getClaimableFee(address claimer) public view returns (int256) {

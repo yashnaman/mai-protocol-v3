@@ -169,7 +169,7 @@ describe('LiquidityPool', () => {
 
     //     // -pos
     //     await liquidityPool.setPoolCash(toWei("120"));
-    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-200"), toWei("1")); // im = 10 / m = -100 
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-200"), toWei("1")); // im = 10 / m = -100
     //     await liquidityPool.setTotalCollateral(0, toWei("200"));
     //     await liquidityPool.rebalance(0);
     //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("310"));
@@ -180,7 +180,7 @@ describe('LiquidityPool', () => {
 
     //     // -pos but only 10 available
     //     await liquidityPool.setPoolCash(toWei("10"));
-    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-200"), toWei("1")); // im = 10 / m = -100 
+    //     await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-200"), toWei("1")); // im = 10 / m = -100
     //     await liquidityPool.setTotalCollateral(0, toWei("200"));
     //     await liquidityPool.rebalance(0);
     //     expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("210"));
@@ -474,7 +474,7 @@ describe('LiquidityPool', () => {
 
             await ctk.mint(liquidityPool.address, toWei("0.1"));
             await liquidityPool.setTotalCollateral(0, toWei("0.1"));
-            await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-4.5"), toWei("0.05")); // 0.05 * 100 = 5 | 0.5(im) + 4.5(cash) 
+            await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-4.5"), toWei("0.05")); // 0.05 * 100 = 5 | 0.5(im) + 4.5(cash)
 
             await liquidityPool.connect(user0).depositBySig(0, user0.address, toWei("1"), toBytes32(""), "0x");
             await liquidityPool.connect(user1).depositBySig(0, user1.address, toWei("2"), toBytes32(""), "0x");
@@ -618,27 +618,6 @@ describe('LiquidityPool', () => {
     //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
     //     await liquidityPool.setState(0, 4);
     //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    // })
-
-
-
-
-
-    // it("updateInsuranceFund", async () => {
-    //     await liquidityPool.setState(0, 2);
-
-    //     await liquidityPool.setBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
-
-    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
-    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-
-    //     await liquidityPool.updateInsuranceFund(0, toWei("0"));
-    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
-    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-
-    //     await liquidityPool.updateInsuranceFund(0, toWei("0"));
-    //     expect(await liquidityPool.getInsuranceFund(0)).to.equal(toWei("0"));
-    //     expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
     // })
 })
 
