@@ -166,22 +166,22 @@ describe("integration", () => {
         let now = Math.floor(Date.now() / 1000);
         // trade 1
         await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
-        await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, false));
+        await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0));
         print(await perpUser1.getMarginAccount(0, user1.address));
 
         // trade 2
         await updatePrice(toWei("503"), toWei("604"), toWei("705"), toWei("806"))
-        await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
+        await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
         print(await perpUser1.getMarginAccount(0, user1.address));
 
         // trade 3
         await updatePrice(toWei("504"), toWei("605"), toWei("706"), toWei("807"))
-        await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, false));
+        await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, 0));
         print(await perpUser1.getMarginAccount(0, user1.address));
 
         // trade 4
         await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
-        await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
+        await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
         print(await perpUser1.getMarginAccount(0, user1.address));
 
         // broker

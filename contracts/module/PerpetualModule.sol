@@ -21,7 +21,6 @@ library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
-
     using CollateralModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
 
@@ -167,7 +166,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
-        emit SetPerpetualBaseParameter(perpetualIndex, key, newValue);
+        emit SetPerpetualBaseParameter(perpetual.id, key, newValue);
     }
 
     function setRiskParameter(
@@ -192,7 +191,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
-        emit SetPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
+        emit SetPerpetualRiskParameter(perpetual.id, key, newValue, newMinValue, newMaxValue);
     }
 
     function updateRiskParameter(
@@ -215,7 +214,7 @@ library PerpetualModule {
         } else {
             revert("key not found");
         }
-        emit UpdatePerpetualRiskParameter(perpetualIndex, key, newValue);
+        emit UpdatePerpetualRiskParameter(perpetual.id, key, newValue);
     }
 
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
@@ -275,7 +274,10 @@ library PerpetualModule {
     }
 
     function setClearedState(PerpetualStorage storage perpetual) public {
-        require(perpetual.state == PerpetualState.EMERGENCY, "perpetual should be in normal state");
+        require(
+            perpetual.state == PerpetualState.EMERGENCY,
+            "perpetual should be in emergency state"
+        );
         settleCollateral(perpetual);
         perpetual.state = PerpetualState.CLEARED;
         emit SetClearedState(perpetual.id);

@@ -23,24 +23,36 @@ const params = {
 describe('Funding', () => {
     let oracle1;
     let oracle2;
-    let perpetual;
+    let liquidityPool;
 
     beforeEach(async () => {
-        const AMMModule = await createContract("AMMModule");
         const CollateralModule = await createContract("CollateralModule")
-        const OrderModule = await createContract("OrderModule");
         const PerpetualModule = await createContract("PerpetualModule");
-        const SignatureModule = await createContract("SignatureModule");
-        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule, SignatureModule });
-        const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
-        perpetual = await createContract("TestPerpetual", [], {
-            PerpetualModule,
+        const AMMModule = await createContract("AMMModule");
+        const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], {
+            AMMModule,
+            CollateralModule,
+            PerpetualModule
+        });
+        liquidityPool = await createContract("TestLiquidityPool", [], {
             LiquidityPoolModule,
-            TradeModule,
-            SignatureModule,
+            PerpetualModule
         });
         oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+
+        await liquidityPool.createPerpetual(
+            oracle1.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+            [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+        )
+        await liquidityPool.createPerpetual(
+            oracle2.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+            [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+        )
+
+        await liquidityPool.runLiquidityPool();
     });
 
     describe('updateFundingState', function () {
@@ -71,7 +83,7 @@ describe('Funding', () => {
                 targetFundingTime: '1000'
             },
             {
-                name: 'current time = perpetual time',
+                name: 'current time = liquidityPool time',
                 state: params.state,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWei('100'),
@@ -98,33 +110,26 @@ describe('Funding', () => {
 
         cases.forEach(element => {
             it(element.name, async () => {
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(element.indexPrice1, now);
+                await oracle2.setIndexPrice(element.indexPrice2, now);
+                await liquidityPool.updatePrice(0);
+                await liquidityPool.updatePrice(1);
 
-                await perpetual.createPerpetual(
-                    oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.createPerpetual(
-                    oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.setMarginAccount(0, perpetual.address, 0, 0);
-                await perpetual.setIndexPrice(0, element.indexPrice1);
-                await perpetual.setFundingRate(0, element.fundingRate);
-                await perpetual.setUnitAccumulativeFunding(0, element.unitAccumulativeFunding);
-                await perpetual.setState(0, element.state);
+                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
+                await liquidityPool.setFundingRate(0, element.fundingRate);
+                await liquidityPool.setUnitAccumulativeFunding(0, element.unitAccumulativeFunding);
+                await liquidityPool.setState(0, element.state);
 
-                await perpetual.setMarginAccount(1, perpetual.address, 0, 0);
-                await perpetual.setIndexPrice(1, element.indexPrice2);
-                await perpetual.setFundingRate(1, element.fundingRate);
-                await perpetual.setUnitAccumulativeFunding(1, element.unitAccumulativeFunding);
-                await perpetual.setState(1, element.state);
+                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
+                await liquidityPool.setFundingRate(1, element.fundingRate);
+                await liquidityPool.setUnitAccumulativeFunding(1, element.unitAccumulativeFunding);
+                await liquidityPool.setState(1, element.state);
 
-                await perpetual.setPoolCash(0);
+                await liquidityPool.updateFundingStateP(element.timeElapsed);
 
-                expect(await perpetual.callStatic.updateFundingState(0, element.timeElapsed)).approximateBigNumber(element.targetUnitAccumulativeFunding1)
-                expect(await perpetual.callStatic.updateFundingState(1, element.timeElapsed)).approximateBigNumber(element.targetUnitAccumulativeFunding2)
+                expect(await liquidityPool.getUnitAccumulativeFunding(0)).approximateBigNumber(element.targetUnitAccumulativeFunding1)
+                expect(await liquidityPool.getUnitAccumulativeFunding(1)).approximateBigNumber(element.targetUnitAccumulativeFunding2)
             })
         })
     })
@@ -181,32 +186,27 @@ describe('Funding', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await perpetual.createPerpetual(
-                    oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.createPerpetual(
-                    oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.setMarginAccount(0, perpetual.address, 0, element.positionAmount1);
-                await perpetual.setIndexPrice(0, params.indexPrice);
-                await perpetual.setFundingRate(0, 0);
-                await perpetual.setUnitAccumulativeFunding(0, params.unitAccumulativeFunding);
-                await perpetual.setState(0, element.state);
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle2.setIndexPrice(params.indexPrice, now);
+                await liquidityPool.updatePrice(0);
+                await liquidityPool.updatePrice(1);
 
-                await perpetual.setMarginAccount(1, perpetual.address, 0, element.positionAmount2);
-                await perpetual.setIndexPrice(1, params.indexPrice);
-                await perpetual.setFundingRate(1, 0);
-                await perpetual.setUnitAccumulativeFunding(1, params.unitAccumulativeFunding);
-                await perpetual.setState(1, element.state);
+                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.positionAmount1);
+                await liquidityPool.setFundingRate(0, 0);
+                await liquidityPool.setUnitAccumulativeFunding(0, params.unitAccumulativeFunding);
+                await liquidityPool.setState(0, element.state);
 
-                await perpetual.setPoolCash(element.cash);
+                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.positionAmount2);
+                await liquidityPool.setFundingRate(1, 0);
+                await liquidityPool.setUnitAccumulativeFunding(1, params.unitAccumulativeFunding);
+                await liquidityPool.setState(1, element.state);
 
-                expect(await perpetual.callStatic.updateFundingRate(0)).approximateBigNumber(element.targetFundingRate1)
-                expect(await perpetual.callStatic.updateFundingRate(1)).approximateBigNumber(element.targetFundingRate2)
+                await liquidityPool.setPoolCash(element.cash);
+
+                await liquidityPool.updateFundingRateP();
+                expect(await liquidityPool.getFundingRate(0)).approximateBigNumber(element.targetFundingRate1)
+                expect(await liquidityPool.getFundingRate(1)).approximateBigNumber(element.targetFundingRate2)
             })
         })
 
@@ -222,32 +222,25 @@ describe('Funding', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle2.setIndexPrice(params.indexPrice, now);
+                await liquidityPool.updatePrice(0);
+                await liquidityPool.updatePrice(1);
 
-                await perpetual.createPerpetual(
-                    oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.createPerpetual(
-                    oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-                )
-                await perpetual.setMarginAccount(0, perpetual.address, 0, element.positionAmount1);
-                await perpetual.setIndexPrice(0, params.indexPrice);
-                await perpetual.setFundingRate(0, 0);
-                await perpetual.setUnitAccumulativeFunding(0, params.unitAccumulativeFunding);
-                await perpetual.setState(0, params.state);
+                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.positionAmount1);
+                await liquidityPool.setFundingRate(0, 0);
+                await liquidityPool.setUnitAccumulativeFunding(0, params.unitAccumulativeFunding);
+                await liquidityPool.setState(0, params.state);
 
-                await perpetual.setMarginAccount(1, perpetual.address, 0, element.positionAmount2);
-                await perpetual.setIndexPrice(1, params.indexPrice);
-                await perpetual.setFundingRate(1, 0);
-                await perpetual.setUnitAccumulativeFunding(1, params.unitAccumulativeFunding);
-                await perpetual.setState(1, params.state);
+                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.positionAmount2);
+                await liquidityPool.setFundingRate(1, 0);
+                await liquidityPool.setUnitAccumulativeFunding(1, params.unitAccumulativeFunding);
+                await liquidityPool.setState(1, params.state);
 
-                await perpetual.setPoolCash(element.cash);
+                await liquidityPool.setPoolCash(element.cash);
 
-                await expect(perpetual.callStatic.updateFundingRate(0)).to.be.revertedWith(element.errorMsg)
+                await expect(liquidityPool.updateFundingRateP()).to.be.revertedWith(element.errorMsg)
             })
         })
     })

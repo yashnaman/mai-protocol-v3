@@ -55,9 +55,9 @@ describe('Governance', () => {
         await governance.initializeParameters(
             "0x0000000000000000000000000000000000000000",
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
-            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("1")],
         )
     })
 
@@ -151,14 +151,14 @@ describe('Governance', () => {
         await expect(governance.setPerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("0.05"), toWei("0"), toWei("0.04"))).to.be.revertedWith("value is out of range");
 
         await expect(governance.setPerpetualRiskParameter(0, toBytes32("keyNotExist"), toWei("0.2"), toWei("0"), toWei("1"))).to.be.revertedWith("key not found");
-        await expect(governance.setPerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("hsr shoud be greater than 0");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("hs shoud be greater than 0 and less than 1");
 
-        await expect(governance.setPerpetualRiskParameter(0, toBytes32("openSlippageFactor"), toWei("0"), toWei("0"), toWei("1"))).to.be.revertedWith("beta1 shoud be greater than 0");
-        await expect(governance.setPerpetualRiskParameter(0, toBytes32("openSlippageFactor"), toWei("-1"), toWei("-2"), toWei("1"))).to.be.revertedWith("beta1 shoud be greater than 0");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("openSlippageFactor"), toWei("0"), toWei("0"), toWei("1"))).to.be.revertedWith("osf shoud be greater than 0");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("openSlippageFactor"), toWei("-1"), toWei("-2"), toWei("1"))).to.be.revertedWith("osf shoud be greater than 0");
         await governance.setPerpetualRiskParameter(0, toBytes32("openSlippageFactor"), toWei("0.5"), toWei("0"), toWei("1"));
 
-        await expect(governance.setPerpetualRiskParameter(0, toBytes32("closeSlippageFactor"), toWei("0"), toWei("0"), toWei("1"))).to.be.revertedWith("beta2 should be within \\(0, b1\\]");
-        await expect(governance.setPerpetualRiskParameter(0, toBytes32("closeSlippageFactor"), toWei("-1"), toWei("-2"), toWei("1"))).to.be.revertedWith("beta2 should be within \\(0, b1\\]");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("closeSlippageFactor"), toWei("0"), toWei("0"), toWei("1"))).to.be.revertedWith("csf should be within \\(0, b1\\]");
+        await expect(governance.setPerpetualRiskParameter(0, toBytes32("closeSlippageFactor"), toWei("-1"), toWei("-2"), toWei("1"))).to.be.revertedWith("csf should be within \\(0, b1\\]");
         await governance.setPerpetualRiskParameter(0, toBytes32("closeSlippageFactor"), toWei("0.4"), toWei("0"), toWei("1"));
 
         await expect(governance.setPerpetualRiskParameter(0, toBytes32("fundingRateLimit"), toWei("-1"), toWei("-1"), toWei("1"))).to.be.revertedWith("frl should be greater than 0");
@@ -194,26 +194,4 @@ describe('Governance', () => {
         await expect(governance.connect(user1).setLiquidityPoolParameter(toBytes32("notExist"), 1)).to.be.revertedWith("key not found");
     })
 
-    it("settle", async () => {
-        await governance.setState(0, 2);
-        await governance.setGovernor(user1.address);
-        await expect(governance.forceToEnterEmergencyState(0)).to.be.revertedWith("only governor is allowed");
-
-        expect(await governance.settlementPrice(0)).to.equal(0);
-        const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
-        await governance.setOracle(0, oracle.address);
-
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(999, now);
-        await oracle.setIndexPrice(999, now);
-
-        await governance.connect(user1).forceToEnterEmergencyState(0);
-        expect(await governance.state(0)).to.equal(3);
-        expect(await governance.settlementPrice(0)).to.equal(999);
-
-        await oracle.setMarkPrice(1999, now);
-        await oracle.setIndexPrice(1999, now);
-        expect(await governance.settlementPrice(0)).to.equal(999);
-
-    })
 })

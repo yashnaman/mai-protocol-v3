@@ -7,13 +7,11 @@ import "../module/MarginAccountModule.sol";
 import "../module/PerpetualModule.sol";
 import "./TestPerpetual.sol";
 
-import "hardhat/console.sol";
-
 contract TestMarginAccount is TestPerpetual {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    function setPerpetualBaseParameterDebug(
+    function setPerpetualBaseParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue

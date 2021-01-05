@@ -75,26 +75,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         _liquidityPool.claimFee(claimer, amount);
     }
 
-    function addLiquidity(
-        address trader,
-        int256 cashToAdd,
-        bytes32 extData,
-        bytes calldata signature
-    ) external payable syncState nonReentrant {
-        require(trader != address(0), "invalid trader");
-        require(cashToAdd > 0, "invalid cash");
-        _liquidityPool.addLiquidity(trader, cashToAdd, extData, signature);
+    function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
+        require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
+        _liquidityPool.addLiquidity(msg.sender, cashToAdd);
     }
 
-    function removeLiquidity(
-        address trader,
-        int256 shareToRemove,
-        bytes32 extData,
-        bytes calldata signature
-    ) external syncState nonReentrant {
-        require(trader != address(0), "invalid trader");
-        require(shareToRemove >= 0, "invalid share");
-        _liquidityPool.removeLiquidity(trader, shareToRemove, extData, signature);
+    function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
+        require(shareToRemove > 0, "invalid share");
+        _liquidityPool.removeLiquidity(msg.sender, shareToRemove);
     }
 
     bytes[50] private __gap;

@@ -43,14 +43,10 @@ describe('TradeModule1', () => {
             oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
-            const OrderModule = await createContract("OrderModule");
             const PerpetualModule = await createContract("PerpetualModule");
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
             const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
-                AMMModule,
-                CollateralModule,
-                OrderModule,
                 PerpetualModule,
                 LiquidityPoolModule,
                 TradeModule,
@@ -58,8 +54,8 @@ describe('TradeModule1', () => {
             await testTrade.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
             )
             await testTrade.setOperator(user0.address)
             await testTrade.setVault(user4.address, toWei("0.0002"))
@@ -114,17 +110,14 @@ describe('TradeModule1', () => {
                 user4 = accounts[4];
                 user5 = accounts[5];
 
+                ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
                 const AMMModule = await createContract("AMMModule");
                 const CollateralModule = await createContract("CollateralModule")
-                const OrderModule = await createContract("OrderModule");
                 const PerpetualModule = await createContract("PerpetualModule");
                 const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
                 const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
                 testTrade = await createContract("TestTrade", [], {
-                    AMMModule,
-                    CollateralModule,
-                    OrderModule,
                     PerpetualModule,
                     LiquidityPoolModule,
                     TradeModule,
@@ -132,12 +125,15 @@ describe('TradeModule1', () => {
                 await testTrade.createPerpetual(
                     oracle.address,
                     // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                    [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0.0001"), toWei("10000")],
-                    [toWei("0.001"), toWei("100"), toWei("90"), toWei("0.005"), toWei("5")],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0008"), toWei("0"), toWei("0.005"), toWei("2"), toWei("0.0001"), toWei("10000")],
+                    [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05")],
                 )
                 await testTrade.setOperator(user3.address)
-                await testTrade.setVault(user4.address, toWei("0.0002"))
+                await testTrade.setVault(user4.address, toWei("0.0001"))
                 await testTrade.setCollateralToken(ctk.address, 1);
+                await testTrade.setState(0, 2);
+                await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
+                await testTrade.setTotalCollateral(0, toWei("10000000000"));
                 await ctk.mint(testTrade.address, toWei("10000000000"));
             })
 
@@ -191,26 +187,18 @@ describe('TradeModule1', () => {
 
             testCases.forEach((testCase) => {
                 it(testCase.name, async () => {
-
-                    await testTrade.setState(0, 2);
-                    await testTrade.setTotalCollateral(0, toWei("100000000000000000"));
-                    await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
-
                     let now = Math.floor(Date.now() / 1000);
                     await oracle.setMarkPrice(toWei("6965"), now);
                     await oracle.setIndexPrice(toWei("7000"), now);
+                    await testTrade.updatePrice(now);
 
                     await testTrade.setMarginAccount(0, user1.address, testCase.marginAccount.cash, testCase.marginAccount.position);
                     await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
-                    if (typeof testCase.expectOutput != "undefined") {
-                        await testTrade.connect(user1).trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, now + 1000, user5.address, 0);
-                        var { cash } = await testTrade.getMarginAccount(0, user1.address);
-                        expect(cash).approximateBigNumber(testCase.expectOutput.cash);
-                        expect(await testTrade.getClaimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
-                    } else {
-                        await expect(testTrade.connect(user1).trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, now + 1000, user5.address, 0))
-                            .to.be.revertedWith(testCase["expectError"])
-                    }
+
+                    await testTrade.connect(user1).trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, 0);
+                    var { cash } = await testTrade.getMarginAccount(0, user1.address);
+                    expect(cash).approximateBigNumber(testCase.expectOutput.cash);
+                    expect(await testTrade.getClaimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
                 })
             })
         })

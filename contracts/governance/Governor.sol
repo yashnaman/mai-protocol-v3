@@ -80,7 +80,7 @@ contract Governor is Delegatable {
     event ProposalCreated(
         uint256 id,
         address proposer,
-        address targets,
+        address target,
         string signature,
         bytes[] calldatas,
         uint256 startBlock,

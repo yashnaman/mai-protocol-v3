@@ -64,6 +64,11 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     // raw
+
+    function runLiquidityPool() public {
+        _liquidityPool.runLiquidityPool();
+    }
+
     function getAvailablePoolCash(uint256 exclusiveIndex)
         public
         view
@@ -123,11 +128,11 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     // state
-    function updateFundingState(uint256 currentTime) public {
+    function updateFundingStateP(uint256 currentTime) public {
         _liquidityPool.updateFundingState(currentTime);
     }
 
-    function updateFundingRate() public {
+    function updateFundingRateP() public {
         _liquidityPool.updateFundingRate();
     }
 
@@ -135,63 +140,40 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.updatePrice(currentTime);
     }
 
-    function donateInsuranceFund2(uint256 perpetualIndex, int256 amount) public payable {
+    function donateInsuranceFundP(uint256 perpetualIndex, int256 amount) public payable {
         _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
     }
 
-    function depositBySig(
+    function depositP(
         uint256 perpetualIndex,
         address trader,
-        int256 amount,
-        bytes32 extData,
-        bytes calldata signature
+        int256 amount
     ) public payable {
-        _liquidityPool.deposit(perpetualIndex, trader, amount, extData, signature);
+        _liquidityPool.deposit(perpetualIndex, trader, amount);
     }
 
-    function withdrawBySig(
+    function withdrawP(
         uint256 perpetualIndex,
         address trader,
-        int256 amount,
-        bytes32 extData,
-        bytes calldata signature
+        int256 amount
     ) public {
-        _liquidityPool.withdraw(perpetualIndex, trader, amount, extData, signature);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount);
     }
 
-    function clearBySig(
-        uint256 perpetualIndex,
-        bytes32 extData,
-        bytes calldata signature
-    ) public {
-        _liquidityPool.clear(perpetualIndex, extData, signature);
+    function clearP(uint256 perpetualIndex) public {
+        _liquidityPool.clear(perpetualIndex);
     }
 
-    function settleBySig(
-        uint256 perpetualIndex,
-        address trader,
-        bytes32 extData,
-        bytes calldata signature
-    ) public {
-        _liquidityPool.settle(perpetualIndex, trader, extData, signature);
+    function settleP(uint256 perpetualIndex, address trader) public {
+        _liquidityPool.settle(perpetualIndex, trader);
     }
 
-    function addLiquidityBySig(
-        address trader,
-        int256 cashToAdd,
-        bytes32 extData,
-        bytes calldata signature
-    ) public {
-        _liquidityPool.addLiquidity(trader, cashToAdd, extData, signature);
+    function addLiquidity(address trader, int256 cashToAdd) public {
+        _liquidityPool.addLiquidity(trader, cashToAdd);
     }
 
-    function removeLiquidityBySig(
-        address trader,
-        int256 shareToRemove,
-        bytes32 extData,
-        bytes calldata signature
-    ) public {
-        _liquidityPool.addLiquidity(trader, shareToRemove, extData, signature);
+    function removeLiquidity(address trader, int256 shareToRemove) public {
+        _liquidityPool.removeLiquidity(trader, shareToRemove);
     }
 
     function increaseFee(address account, int256 amount) public {

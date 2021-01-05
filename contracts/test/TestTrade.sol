@@ -7,24 +7,20 @@ import "../module/PerpetualModule.sol";
 import "../module/TradeModule.sol";
 
 import "../Type.sol";
-import "./TestMarginAccount.sol";
+import "./TestLiquidityPool.sol";
 
-contract TestTrade is TestMarginAccount {
+contract TestTrade is TestLiquidityPool {
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
     using TradeModule for PerpetualStorage;
-
-    function setOperator(address operator) public {
-        _liquidityPool.operator = operator;
-    }
 
     function setVault(address vault, int256 vaultFeeRate) public {
         _liquidityPool.vault = vault;
         _liquidityPool.vaultFeeRate = vaultFeeRate;
     }
 
-    function debugTrade(
+    function trade(
         uint256 perpetualIndex,
         address trader,
         int256 amount,
@@ -35,7 +31,7 @@ contract TestTrade is TestMarginAccount {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
-    function debugBrokerTrade(
+    function brokerTrade(
         uint256 perpetualIndex,
         address trader,
         int256 amount,

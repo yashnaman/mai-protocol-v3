@@ -16,30 +16,21 @@ describe('MarginModule', () => {
 
     describe('Getters', async () => {
         let testMargin;
+        let oracle;
 
         beforeEach(async () => {
-            const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            const AMMModule = await createContract("AMMModule");
-            const CollateralModule = await createContract("CollateralModule")
-            const OrderModule = await createContract("OrderModule");
             const PerpetualModule = await createContract("PerpetualModule");
-            const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testMargin = await createContract("TestMarginAccount", [], {
-                AMMModule,
-                CollateralModule,
-                OrderModule,
-                PerpetualModule,
-                LiquidityPoolModule,
-                TradeModule,
+                PerpetualModule
             });
-
+            oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                 [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
             )
+            await testMargin.setState(0, 2);
         })
 
         const testCases = [
@@ -361,15 +352,18 @@ describe('MarginModule', () => {
 
         testCases.forEach((testCase) => {
             it(testCase["name"] || testCase.method, async () => {
-                await testMargin.setState(0, 2);
-                await testMargin.setMarkPrice(0, testCase.markPrice);
+                var now = Math.floor(Date.now() / 1000);
+                await oracle.setMarkPrice(testCase.markPrice, now);
+                await testMargin.updatePrice(0);
+
                 await testMargin.setMarginAccount(
                     0,
                     accounts[testCase.trader].address,
                     testCase.marginAccount.cash,
                     testCase.marginAccount.position);
+
                 for (var key in testCase.parameters || {}) {
-                    await testMargin.setPerpetualBaseParameterDebug(0, toBytes32(key), testCase.parameters[key]);
+                    await testMargin.setPerpetualBaseParameter(0, toBytes32(key), testCase.parameters[key]);
                 }
                 await testMargin.setUnitAccumulativeFunding(0, testCase.unitAccumulativeFunding);
                 if (typeof testCase.expect != "undefined") {
@@ -386,35 +380,29 @@ describe('MarginModule', () => {
 
     describe('Setters', async () => {
         let testMargin;
+        let oracle;
 
         before(async () => {
-            const oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
-            const AMMModule = await createContract("AMMModule");
-            const CollateralModule = await createContract("CollateralModule")
-            const OrderModule = await createContract("OrderModule");
             const PerpetualModule = await createContract("PerpetualModule");
-            const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testMargin = await createContract("TestMarginAccount", [], {
-                AMMModule,
-                CollateralModule,
-                OrderModule,
-                PerpetualModule,
-                LiquidityPoolModule,
-                TradeModule,
+                PerpetualModule
             });
-
+            oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                 [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
             )
+            await testMargin.setState(0, 2);
         })
 
         it("setMarginAccount", async () => {
             let trader = accounts[0].address;
-            await testMargin.setMarkPrice(0, toWei("500"));
+            var now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("500"), now);
+            await testMargin.updatePrice(0);
+
             await testMargin.setUnitAccumulativeFunding(0, toWei("-100"));
 
             await testMargin.setMarginAccount(0, trader, toWei("100"), toWei("2")) // +100 + 2*100

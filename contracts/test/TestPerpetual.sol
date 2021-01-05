@@ -207,7 +207,7 @@ contract TestPerpetual is Storage {
         _liquidityPool.perpetuals[perpetualIndex].setClearedState();
     }
 
-    function donateInsuranceFund(uint256 perpetualIndex, int256 amount) public virtual {
+    function donateInsuranceFund(uint256 perpetualIndex, int256 amount) public payable {
         _liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(amount);
     }
 
