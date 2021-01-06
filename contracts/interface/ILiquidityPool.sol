@@ -54,6 +54,19 @@ interface ILiquidityPool {
             int256[21] memory nums
         );
 
+    function getMarginAccount(uint256 perpetualIndex, address trader)
+        external
+        returns (
+            int256 cash,
+            int256 position,
+            int256 availableCash,
+            int256 margin,
+            int256 settleableMargin,
+            bool isInitialMarginSafe,
+            bool isMaintenanceMarginSafe,
+            bool isBankrupt
+        );
+
     function initialize(
         address operator,
         address collateral,
@@ -81,9 +94,4 @@ interface ILiquidityPool {
         uint256 start,
         uint256 count
     ) external view returns (address[] memory result);
-
-    function getMarginAccount(uint256 perpetualIndex, address trader)
-        external
-        view
-        returns (int256 cash, int256 position);
 }

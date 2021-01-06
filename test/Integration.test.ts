@@ -151,7 +151,7 @@ describe("integration", () => {
         // deposit
         const perpUser1 = await LiquidityPoolFactory.connect(perp.address, user1);
         await gs.collect("deposit", perpUser1.deposit(0, user1.address, toWei("100")));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // lp
         await updatePrice(toWei("501"), toWei("601"), toWei("701"), toWei("801"))
@@ -167,22 +167,22 @@ describe("integration", () => {
         // trade 1
         await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
         await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // trade 2
         await updatePrice(toWei("503"), toWei("604"), toWei("705"), toWei("806"))
         await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // trade 3
         await updatePrice(toWei("504"), toWei("605"), toWei("706"), toWei("807"))
         await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, 0));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // trade 4
         await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
         await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // broker
         var broker = await createContract("BrokerRelay");
@@ -213,19 +213,19 @@ describe("integration", () => {
         // const signature = await user1.signMessage(ethers.utils.arrayify(orderHash));
         // await gs.collect("trade 5 - batchTrade", brokerUser1.batchTrade([order], [toWei("0.1")], [signature], [toWei("0.01")]));
         // await gs.collect("trade 5 - batchTrade", perpUser1.brokerTrade(order, toWei("0.1"), signature));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // trade 4
         // await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
         // await gs.collect("trade 6 - close all", perpUser1.trade(0, user1.address, toWei("-0.1"), toWei("0"), now + 999999, none, false));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // withdraw
         await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
         await gs.collect("withdraw", perpUser1.withdraw(0, user1.address, toWei("10")));
         console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
 
-        var { cash, position } = await perpUser2.getMarginAccount(0, perpUser2.address);
+        var { cash, position } = await perpUser2.callStatic.getMarginAccount(0, perpUser2.address);
         console.log(fromWei(cash), fromWei(position));
 
         // remove lp
@@ -335,7 +335,7 @@ describe("integration", () => {
         // deposit
         const perpUser1 = await LiquidityPoolFactory.connect(perp.address, user1);
         await gs.collect("deposit", perpUser1.deposit(0, user1.address, toWei("0"), { value: toWei("10") }));
-        print(await perpUser1.getMarginAccount(0, user1.address));
+        print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // lp
         await updatePrice(toWei("501"), toWei("601"), toWei("701"), toWei("801"))
@@ -350,28 +350,28 @@ describe("integration", () => {
         // // trade 1
         // await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
         // await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, false));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // trade 2
         // await updatePrice(toWei("503"), toWei("604"), toWei("705"), toWei("806"))
         // await gs.collect("trade 2 - open", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // trade 3
         // await updatePrice(toWei("504"), toWei("605"), toWei("706"), toWei("807"))
         // await gs.collect("trade 3 - revert", perpUser1.trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, false));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // trade 4
         // await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
         // await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // withdraw
         // await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
         // await gs.collect("withdraw", perpUser1.withdraw(0, user1.address, toWei("10")));
         // console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
-        // print(await perpUser1.getMarginAccount(0, user1.address));
+        // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // // remove lp
         // await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))

@@ -114,7 +114,7 @@ describe('TradeModule1', () => {
             await testRelay.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
             // await testTrade.brokerTrade(compressed, toWei("-0.5"));
 
-            var { cash } = await testTrade.getMarginAccount(0, user1.address);
+            var { cash } = await testTrade.callStatic.getMarginAccount(0, user1.address);
             expect(cash).approximateBigNumber(toWei("11178.8766232"));
         })
     })

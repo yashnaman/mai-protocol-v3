@@ -5,8 +5,11 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
+import "./libraries/SafeMathExt.sol";
+
 import "./module/MarginAccountModule.sol";
 import "./module/PerpetualModule.sol";
+import "./module/AMMModule.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
@@ -14,10 +17,12 @@ import "./Storage.sol";
 contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
+    using SafeMathExt for int256;
     using CollateralModule for address;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
+    using AMMModule for LiquidityPoolStorage;
 
     function getLiquidityPoolInfo()
         public
@@ -31,7 +36,7 @@ contract Getter is Storage {
             // [5] shareToken,
             address[6] memory addresses,
             // [0] vaultFeeRate,
-            // [3] poolCash,
+            // [1] poolCash,
             int256[2] memory nums,
             uint256 perpetualCount,
             uint256 fundingTime,
@@ -115,14 +120,30 @@ contract Getter is Storage {
 
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
-        view
+        syncState
         onlyExistedPerpetual(perpetualIndex)
-        returns (int256 cash, int256 position)
+        returns (
+            int256 cash,
+            int256 position,
+            int256 availableCash,
+            int256 margin,
+            int256 settleableMargin,
+            bool isInitialMarginSafe,
+            bool isMaintenanceMarginSafe,
+            bool isBankrupt
+        )
     {
-        MarginAccount storage account =
-            _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader];
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        MarginAccount storage account = perpetual.marginAccounts[trader];
+        int256 markPrice = perpetual.getMarkPrice();
         cash = account.cash;
         position = account.position;
+        availableCash = perpetual.getAvailableCash(trader);
+        margin = perpetual.getMargin(trader, markPrice);
+        settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
+        isInitialMarginSafe = perpetual.isInitialMarginSafe(trader, markPrice);
+        isMaintenanceMarginSafe = perpetual.isMaintenanceMarginSafe(trader, markPrice);
+        isBankrupt = !perpetual.isMarginSafe(trader, markPrice);
     }
 
     function getClearProgress(uint256 perpetualIndex)
@@ -136,15 +157,21 @@ contract Getter is Storage {
         total = perpetual.totalAccount;
     }
 
-    function getSettleableMargin(uint256 perpetualIndex, address trader)
+    function getPoolMargin() public view returns (int256 poolMargin) {
+        AMMModule.Context memory context = _liquidityPool.prepareContext();
+        (poolMargin, ) = AMMModule.getPoolMargin(context);
+    }
+
+    function getTradePrice(uint256 perpetualIndex, int256 amount)
         public
         view
-        onlyExistedPerpetual(perpetualIndex)
-        returns (int256 settleableMargin)
+        returns (int256 deltaCash, int256 deltaPosition)
     {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        int256 markPrice = perpetual.getMarkPrice();
-        settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
+        (deltaCash, deltaPosition) = _liquidityPool.queryTradeWithAMM(
+            perpetualIndex,
+            amount.neg(),
+            false
+        );
     }
 
     bytes[50] private __gap;

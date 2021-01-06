@@ -43,6 +43,7 @@ export async function createLiquidityPoolFactory() {
     const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule });
 
     return await createFactory("LiquidityPool", {
+        AMMModule,
         LiquidityPoolModule,
         OrderModule,
         TradeModule,

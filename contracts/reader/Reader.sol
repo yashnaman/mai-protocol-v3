@@ -60,8 +60,8 @@ contract Reader {
         address liquidityPool,
         uint256 perpetualIndex,
         address account
-    ) public view returns (MarginAccount memory marginAccount) {
-        (marginAccount.cash, marginAccount.position) = ILiquidityPool(liquidityPool)
+    ) public returns (MarginAccount memory marginAccount) {
+        (marginAccount.cash, marginAccount.position, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, account);
     }
 
@@ -139,7 +139,7 @@ contract Reader {
         // underlying
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         // amm
-        (perp.ammCashBalance, perp.ammPositionAmount) = ILiquidityPool(liquidityPool)
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, liquidityPool);
         // symbol
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);

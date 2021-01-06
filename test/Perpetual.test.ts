@@ -160,19 +160,19 @@ describe('Perpetual', () => {
     it("deposit", async () => {
         await perpetual.setState(0, 2);
 
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.false;
 
         await perpetual.deposit(0, user0.address, toWei("10"));
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("10"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.true;
 
         await perpetual.deposit(0, user0.address, toWei("11"));
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("21"));
         expect(position).to.equal(toWei("0"));
 
@@ -186,17 +186,17 @@ describe('Perpetual', () => {
         await perpetual.deposit(0, user0.address, toWei("100"));
         expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.true;
 
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("100"));
         expect(position).to.equal(toWei("0"));
 
         await perpetual.withdraw(0, user0.address, toWei("10"));
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("90"));
         expect(position).to.equal(toWei("0"));
 
         await perpetual.withdraw(0, user0.address, toWei("90"));
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.false;
@@ -364,28 +364,28 @@ describe('Perpetual', () => {
 
         expect(await perpetual.callStatic.settle(0, user0.address)).to.equal(toWei("100"));
         await perpetual.settle(0, user0.address);
-        var { cash, position } = await perpetual.getMarginAccount(0, user0.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("250"));
 
         expect(await perpetual.callStatic.settle(0, user1.address)).to.equal(toWei("200"));
         await perpetual.settle(0, user1.address);
-        var { cash, position } = await perpetual.getMarginAccount(0, user1.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user1.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("50"));
 
         expect(await perpetual.callStatic.settle(0, user2.address)).to.equal(toWei("0"));
         await perpetual.settle(0, user2.address);
-        var { cash, position } = await perpetual.getMarginAccount(0, user2.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user2.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("50"));
 
         expect(await perpetual.callStatic.settle(0, user3.address)).to.equal(toWei("50"));
         await perpetual.settle(0, user3.address);
-        var { cash, position } = await perpetual.getMarginAccount(0, user3.address);
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user3.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
         expect(await perpetual.getTotalCollateral(0)).to.equal(toWei("0"));
