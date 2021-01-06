@@ -62,7 +62,7 @@ contract LiquidityPoolSignable is LiquidityPool {
     //     );
     //     rebalance(liquidityPool, perpetualIndex);
     //     if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
-    //         IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+    //         IPoolCreator(liquidityPool.creator).deactivateLiquidityPoolFor(trader, perpetualIndex);
     //     }
     //     liquidityPool.transferToUser(payable(trader), amount);
     // }

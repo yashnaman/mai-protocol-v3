@@ -34,8 +34,8 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.shareToken = shareToken;
     }
 
-    function setFactory(address factory) public {
-        _liquidityPool.factory = factory;
+    function setFactory(address creator) public {
+        _liquidityPool.creator = creator;
     }
 
     function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {

@@ -9,21 +9,21 @@ interface ILiquidityPool {
         external
         view
         returns (
-            // [0] factory,
+            bool isInitialized,
+            bool isFastCreationEnabled,
+            // [0] creator,
             // [1] operator,
-            // [2] collateral,
-            // [3] vault,
-            // [4] governor,
-            // [5] shareToken,
-            address[6] memory addresses,
-            // [0] vaultFeeRate,
-            // [1] poolCash,
-            int256[2] memory nums,
+            // [2] transferringOperator,
+            // [3] governor,
+            // [4] shareToken,
+            // [5] collateralToken,
+            // [6] vault,
+            address[7] memory addresses,
+            int256 vaultFeeRate,
+            int256 poolCash,
             uint256 collateralDecimals,
             uint256 perpetualCount,
-            uint256 fundingTime,
-            bool isInitialized,
-            bool isFastCreationEnabled
+            uint256 fundingTime
         );
 
     function getPerpetualInfo(uint256 perpetualIndex)
@@ -32,27 +32,28 @@ interface ILiquidityPool {
             PerpetualState state,
             address oracle,
             // [0] totalCollateral
-            // [1] markPrice,
+            // [1] markPrice, (return settlementPrice if it is in EMERGENCY state)
             // [2] indexPrice,
-            // [3] unitAccumulativeFunding,
-            // [4] initialMarginRate,
-            // [5] maintenanceMarginRate,
-            // [6] operatorFeeRate,
-            // [7] lpFeeRate,
-            // [8] referrerRebateRate,
-            // [9] liquidationPenaltyRate,
-            // [10] keeperGasReward,
-            // [11] insuranceFundRate,
-            // [12] insuranceFundCap,
-            // [13] insuranceFund,
-            // [14] donatedInsuranceFund,
-            // [15] halfSpread,
-            // [16] openSlippageFactor,
-            // [17] closeSlippageFactor,
-            // [18] fundingRateLimit,
-            // [19] ammMaxLeverage,
-            // [20] maxClosePriceDiscount
-            int256[21] memory nums
+            // [3] fundingRate,
+            // [4] unitAccumulativeFunding,
+            // [5] initialMarginRate,
+            // [6] maintenanceMarginRate,
+            // [7] operatorFeeRate,
+            // [8] lpFeeRate,
+            // [9] referrerRebateRate,
+            // [10] liquidationPenaltyRate,
+            // [11] keeperGasReward,
+            // [12] insuranceFundRate,
+            // [13] insuranceFundCap,
+            // [14] insuranceFund,
+            // [15] donatedInsuranceFund,
+            // [16-18] halfSpread value, min, max,
+            // [19-21] openSlippageFactor value, min, max,
+            // [22-24] closeSlippageFactor value, min, max,
+            // [25-27] fundingRateLimit value, min, max,
+            // [28-30] ammMaxLeverage value, min, max,
+            // [31-33] maxClosePriceDiscount value, min, max,
+            int256[34] memory nums
         );
 
     function getMarginAccount(uint256 perpetualIndex, address trader)

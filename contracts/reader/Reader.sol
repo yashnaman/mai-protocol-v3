@@ -13,46 +13,26 @@ import "../libraries/SafeMathExt.sol";
 contract Reader {
     using SafeMathExt for uint256;
 
-    struct LiquidityPoolStorage {
-        address operator;
-        address collateralToken;
-        address vault;
-        address governor;
-        address shareToken;
+    struct LiquidityPoolReaderResult {
+        bool isInitialized;
+        bool isFastCreationEnabled;
+        // check Getter.sol for detail
+        address[7] addresses;
         int256 vaultFeeRate;
         int256 poolCash;
         uint256 collateralDecimals;
+        uint256 perpetualCount;
         uint256 fundingTime;
-        bool isInitialized;
-        bool isFastCreationEnabled;
-        PerpetualStorage[] perpetualStorages;
+        PerpetualReaderResult[] perpetuals;
     }
 
-    struct PerpetualStorage {
-        uint256 symbol; // minimum number in the symbol service
-        string underlyingAsset;
+    struct PerpetualReaderResult {
         PerpetualState state;
         address oracle;
-        int256 markPrice;
-        int256 indexPrice;
-        int256 unitAccumulativeFunding;
-        int256 initialMarginRate;
-        int256 maintenanceMarginRate;
-        int256 operatorFeeRate;
-        int256 lpFeeRate;
-        int256 referrerRebateRate;
-        int256 liquidationPenaltyRate;
-        int256 keeperGasReward;
-        int256 insuranceFundRate;
-        int256 insuranceFundCap;
-        int256 insuranceFund;
-        int256 donatedInsuranceFund;
-        int256 halfSpread;
-        int256 openSlippageFactor;
-        int256 closeSlippageFactor;
-        int256 fundingRateLimit;
-        int256 ammMaxLeverage;
-        int256 maxClosePriceDiscount;
+        // check Getter.sol for detail
+        int256[34] nums;
+        uint256 symbol; // minimum number in the symbol service
+        string underlyingAsset;
         int256 ammCashBalance;
         int256 ammPositionAmount;
     }
@@ -68,83 +48,46 @@ contract Reader {
 
     function getLiquidityPoolStorage(address liquidityPool)
         public
-        returns (LiquidityPoolStorage memory pool)
+        returns (LiquidityPoolReaderResult memory pool)
     {
-        address creator;
+        // pool
         uint256 perpetualCount;
-        {
-            address[6] memory addresses;
-            int256[2] memory nums;
-            bool isInitialized;
-            bool isFastCreationEnabled;
-            (
-                addresses,
-                nums,
-                perpetualCount,
-                pool.collateralDecimals,
-                pool.fundingTime,
-                isInitialized,
-                isFastCreationEnabled
-            ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
-            creator = addresses[0];
-            pool.operator = addresses[1];
-            pool.collateralToken = addresses[2];
-            pool.vault = addresses[3];
-            pool.governor = addresses[4];
-            pool.shareToken = addresses[5];
-            pool.vaultFeeRate = nums[0];
-            pool.poolCash = nums[1];
-            pool.isInitialized = isInitialized;
-            pool.isFastCreationEnabled = isFastCreationEnabled;
-        }
+        (
+            pool.isInitialized,
+            pool.isFastCreationEnabled,
+            pool.addresses,
+            pool.vaultFeeRate,
+            pool.poolCash,
+            pool.collateralDecimals,
+            perpetualCount,
+            pool.fundingTime
+        ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
+        // perpetual
+        address creator = pool.addresses[0];
         address symbolService = IPoolCreator(creator).symbolService();
-
-        pool.perpetualStorages = new PerpetualStorage[](perpetualCount);
+        pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
         for (uint256 i = 0; i < perpetualCount; i++) {
-            getPerpetual(pool.perpetualStorages[i], symbolService, liquidityPool, i);
+            getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
         }
     }
 
     function getPerpetual(
-        PerpetualStorage memory perp,
+        PerpetualReaderResult memory perp,
         address symbolService,
         address liquidityPool,
         uint256 perpetualIndex
     ) private {
         // perpetual
-        {
-            int256[21] memory nums;
-            (perp.state, perp.oracle, nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
-                perpetualIndex
-            );
-            perp.markPrice = nums[1];
-            perp.indexPrice = nums[2];
-            perp.unitAccumulativeFunding = nums[3];
-            perp.initialMarginRate = nums[4];
-            perp.maintenanceMarginRate = nums[5];
-            perp.operatorFeeRate = nums[6];
-            perp.lpFeeRate = nums[7];
-            perp.referrerRebateRate = nums[8];
-            perp.liquidationPenaltyRate = nums[9];
-            perp.keeperGasReward = nums[10];
-            perp.insuranceFundRate = nums[11];
-            perp.insuranceFundCap = nums[12];
-            perp.insuranceFund = nums[13];
-            perp.donatedInsuranceFund = nums[14];
-            perp.halfSpread = nums[15];
-            perp.openSlippageFactor = nums[16];
-            perp.closeSlippageFactor = nums[17];
-            perp.fundingRateLimit = nums[18];
-            perp.ammMaxLeverage = nums[19];
-            perp.maxClosePriceDiscount = nums[20];
-        }
-        // underlying
-        perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
-        // amm
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
-            .getMarginAccount(perpetualIndex, liquidityPool);
+        (perp.state, perp.oracle, perp.nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
+            perpetualIndex
+        );
         // symbol
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
+        // underlying
+        perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
+        // amm state. amm's account is the same as liquidity pool address
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
+            .getMarginAccount(perpetualIndex, liquidityPool);
     }
 
     function getMinSymbol(

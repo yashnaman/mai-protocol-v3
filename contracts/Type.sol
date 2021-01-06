@@ -44,7 +44,7 @@ struct LiquidityPoolStorage {
     bool isInitialized;
     bool isFastCreationEnabled;
     // addresses
-    address factory;
+    address creator;
     address operator;
     address transferringOperator;
     address governor;
@@ -88,7 +88,7 @@ struct PerpetualStorage {
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
     int256 insuranceFundRate;
-    // ris parameters
+    // risk parameters
     Option halfSpread;
     Option openSlippageFactor;
     Option closeSlippageFactor;

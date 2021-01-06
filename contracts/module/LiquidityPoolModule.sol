@@ -127,12 +127,12 @@ library LiquidityPoolModule {
         require(shareToken != address(0), "shareToken is invalid");
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
-        liquidityPool.factory = msg.sender;
-        IPoolCreator factory = IPoolCreator(liquidityPool.factory);
-        liquidityPool.isWrapped = (collateral == factory.weth());
-        liquidityPool.vault = factory.vault();
-        liquidityPool.vaultFeeRate = factory.vaultFeeRate();
-        liquidityPool.accessController = factory.accessController();
+        liquidityPool.creator = msg.sender;
+        IPoolCreator creator = IPoolCreator(liquidityPool.creator);
+        liquidityPool.isWrapped = (collateral == creator.weth());
+        liquidityPool.vault = creator.vault();
+        liquidityPool.vaultFeeRate = creator.vaultFeeRate();
+        liquidityPool.accessController = creator.accessController();
 
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
@@ -158,7 +158,7 @@ library LiquidityPoolModule {
             maxRiskParamValues
         );
         ISymbolService service =
-            ISymbolService(IPoolCreator(liquidityPool.factory).symbolService());
+            ISymbolService(IPoolCreator(liquidityPool.creator).symbolService());
         service.allocateSymbol(address(this), perpetualIndex);
         if (liquidityPool.isInitialized) {
             perpetual.setNormalState();
@@ -336,7 +336,7 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
         if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
-            IPoolCreator(liquidityPool.factory).activateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.creator).activateLiquidityPoolFor(trader, perpetualIndex);
         }
     }
 
@@ -349,7 +349,7 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
-            IPoolCreator(liquidityPool.factory).deactivateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.creator).deactivateLiquidityPoolFor(trader, perpetualIndex);
         }
         liquidityPool.transferToUser(payable(trader), amount);
     }

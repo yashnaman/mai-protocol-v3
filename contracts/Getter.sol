@@ -28,37 +28,39 @@ contract Getter is Storage {
         public
         view
         returns (
-            // [0] factory,
+            bool isInitialized,
+            bool isFastCreationEnabled,
+            // [0] creator,
             // [1] operator,
-            // [2] collateral,
-            // [3] vault,
-            // [4] governor,
-            // [5] shareToken,
-            address[6] memory addresses,
-            // [0] vaultFeeRate,
-            // [1] poolCash,
-            int256[2] memory nums,
+            // [2] transferringOperator,
+            // [3] governor,
+            // [4] shareToken,
+            // [5] collateralToken,
+            // [6] vault,
+            address[7] memory addresses,
+            int256 vaultFeeRate,
+            int256 poolCash,
             uint256 collateralDecimals,
             uint256 perpetualCount,
-            uint256 fundingTime,
-            bool isInitialized,
-            bool isFastCreationEnabled
+            uint256 fundingTime
         )
     {
+        isInitialized = _liquidityPool.isInitialized;
+        isFastCreationEnabled = _liquidityPool.isFastCreationEnabled;
         addresses = [
-            _liquidityPool.factory,
+            _liquidityPool.creator,
             _liquidityPool.operator,
-            _liquidityPool.collateralToken,
-            _liquidityPool.vault,
+            _liquidityPool.transferringOperator,
             _liquidityPool.governor,
-            _liquidityPool.shareToken
+            _liquidityPool.shareToken,
+            _liquidityPool.collateralToken,
+            _liquidityPool.vault
         ];
-        nums = [_liquidityPool.vaultFeeRate, _liquidityPool.poolCash];
+        vaultFeeRate = _liquidityPool.vaultFeeRate;
+        poolCash = _liquidityPool.poolCash;
         collateralDecimals = _liquidityPool.collateralDecimals;
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
-        isInitialized = _liquidityPool.isInitialized;
-        isFastCreationEnabled = _liquidityPool.isFastCreationEnabled;
     }
 
     function getPerpetualInfo(uint256 perpetualIndex)
@@ -69,42 +71,46 @@ contract Getter is Storage {
             PerpetualState state,
             address oracle,
             // [0] totalCollateral
-            // [1] markPrice,
+            // [1] markPrice, (return settlementPrice if it is in EMERGENCY state)
             // [2] indexPrice,
-            // [3] unitAccumulativeFunding,
-            // [4] initialMarginRate,
-            // [5] maintenanceMarginRate,
-            // [6] operatorFeeRate,
-            // [7] lpFeeRate,
-            // [8] referrerRebateRate,
-            // [9] liquidationPenaltyRate,
-            // [10] keeperGasReward,
-            // [11] insuranceFundRate,
-            // [12] insuranceFundCap,
-            // [13] insuranceFund,
-            // [14] donatedInsuranceFund,
-            // [15] halfSpread,
-            // [16] openSlippageFactor,
-            // [17] closeSlippageFactor,
-            // [18] fundingRateLimit,
-            // [19] ammMaxLeverage
-            // [20] maxClosePriceDiscount
-            int256[21] memory nums
+            // [3] fundingRate,
+            // [4] unitAccumulativeFunding,
+            // [5] initialMarginRate,
+            // [6] maintenanceMarginRate,
+            // [7] operatorFeeRate,
+            // [8] lpFeeRate,
+            // [9] referrerRebateRate,
+            // [10] liquidationPenaltyRate,
+            // [11] keeperGasReward,
+            // [12] insuranceFundRate,
+            // [13] insuranceFundCap,
+            // [14] insuranceFund,
+            // [15] donatedInsuranceFund,
+            // [16-18] halfSpread value, min, max,
+            // [19-21] openSlippageFactor value, min, max,
+            // [22-24] closeSlippageFactor value, min, max,
+            // [25-27] fundingRateLimit value, min, max,
+            // [28-30] ammMaxLeverage value, min, max,
+            // [31-33] maxClosePriceDiscount value, min, max,
+            int256[34] memory nums
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         state = perpetual.state;
         oracle = perpetual.oracle;
         nums = [
+            // [0]
             perpetual.totalCollateral,
             perpetual.getMarkPrice(),
             perpetual.getIndexPrice(),
+            perpetual.fundingRate,
             perpetual.unitAccumulativeFunding,
             perpetual.initialMarginRate,
             perpetual.maintenanceMarginRate,
             perpetual.operatorFeeRate,
             perpetual.lpFeeRate,
             perpetual.referrerRebateRate,
+            // [10]
             perpetual.liquidationPenaltyRate,
             perpetual.keeperGasReward,
             perpetual.insuranceFundRate,
@@ -112,11 +118,25 @@ contract Getter is Storage {
             perpetual.insuranceFund,
             perpetual.donatedInsuranceFund,
             perpetual.halfSpread.value,
+            perpetual.halfSpread.minValue,
+            perpetual.halfSpread.maxValue,
             perpetual.openSlippageFactor.value,
+            // [20]
+            perpetual.openSlippageFactor.minValue,
+            perpetual.openSlippageFactor.maxValue,
             perpetual.closeSlippageFactor.value,
+            perpetual.closeSlippageFactor.minValue,
+            perpetual.closeSlippageFactor.maxValue,
             perpetual.fundingRateLimit.value,
+            perpetual.fundingRateLimit.minValue,
+            perpetual.fundingRateLimit.maxValue,
             perpetual.ammMaxLeverage.value,
-            perpetual.maxClosePriceDiscount.value
+            perpetual.ammMaxLeverage.minValue,
+            // [30]
+            perpetual.ammMaxLeverage.maxValue,
+            perpetual.maxClosePriceDiscount.value,
+            perpetual.maxClosePriceDiscount.minValue,
+            perpetual.maxClosePriceDiscount.maxValue
         ];
     }
 

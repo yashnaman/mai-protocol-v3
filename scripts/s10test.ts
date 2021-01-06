@@ -65,7 +65,7 @@ async function main(accounts: any[]) {
 async function set1(accounts: any[], poolCreator, weth) {
     // │    0    │  'USD - ETH'  │ '0xF34BA0c3c81C88867195143B4368f1cA36AD2571' │
     // │    1    │  'BTC - ETH'  │ '0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82' │
-    const tx = await poolCreator.createLiquidityPool(weth.address, false, 998);
+    const tx = await poolCreator.createLiquidityPool(weth.address, 18 /* decimals */, false /* isFastCreationEnabled */, 998 /* nonce */);
 
     const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
@@ -75,15 +75,15 @@ async function set1(accounts: any[], poolCreator, weth) {
     const mtx1 = await liquidityPool.createPerpetual("0xF34BA0c3c81C88867195143B4368f1cA36AD2571",
         // imr          mmr            operatorfr        lpfr             rebate        penalty        keeper       insur          cap
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000")],
-        [toWei("0.0008"), toWei("0.000010714285714"), toWei("0.000008571428571428"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx2 = await liquidityPool.createPerpetual("0xDe1421E459E9799e8CeCDd57069329E9ca3ebB82",
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000")],
-        [toWei("0.0008"), toWei("0.3"), toWei("0.24"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     await liquidityPool.runLiquidityPool();
 
@@ -107,7 +107,7 @@ async function set2(accounts: any[], poolCreator, weth) {
     // │    4    │  'DPI - USD'   │ '0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA' │
     // │    5    │  'SP500 - USD' │ '0x37398F5C3D11c11386294Dd3e7464717a10Ffb15' │
     var usd = await createContract("CustomERC20", ["USDC", "USDC", 6]);
-    const tx = await poolCreator.createLiquidityPool(usd.address, false, 998);
+    const tx = await poolCreator.createLiquidityPool(usd.address, 6 /* decimals */, false /* isFastCreationEnabled */, 998 /* nonce */);
 
     const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
@@ -116,27 +116,27 @@ async function set2(accounts: any[], poolCreator, weth) {
 
     const mtx1 = await liquidityPool.createPerpetual("0x2dccA2b995651158Fe129Ddd23D658410CEa8254",
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
-        [toWei("0.0008"), toWei("5.25"), toWei("4.2"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx2 = await liquidityPool.createPerpetual("0x90aa806A0a2743991CC05aE2206b7d06d6FDbdc4",
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
-        [toWei("0.0008"), toWei("210"), toWei("168"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx3 = await liquidityPool.createPerpetual("0xD9C29A2FbC360cf673dcDB65A87B101f6FD10DEA",
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
-        [toWei("0.0008"), toWei("0.75"), toWei("0.6"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx4 = await liquidityPool.createPerpetual("0x37398F5C3D11c11386294Dd3e7464717a10Ffb15",
         [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
-        [toWei("0.0008"), toWei("27.75"), toWei("22.2"), toWei("0.005"), toWei("3")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("20000"), toWei("20000"), toWei("1"), toWei("10")],
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     await liquidityPool.runLiquidityPool();
 
