@@ -160,7 +160,7 @@ library LiquidityPoolModule {
         ISymbolService service =
             ISymbolService(IPoolCreator(liquidityPool.creator).symbolService());
         service.allocateSymbol(address(this), perpetualIndex);
-        if (liquidityPool.isInitialized) {
+        if (liquidityPool.isRunning) {
             perpetual.setNormalState();
         }
         emit CreatePerpetual(
@@ -181,7 +181,7 @@ library LiquidityPoolModule {
         for (uint256 i = 0; i < length; i++) {
             liquidityPool.perpetuals[i].setNormalState();
         }
-        liquidityPool.isInitialized = true;
+        liquidityPool.isRunning = true;
         emit RunLiquidityPool();
     }
 

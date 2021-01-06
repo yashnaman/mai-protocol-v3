@@ -28,7 +28,7 @@ contract Getter is Storage {
         public
         view
         returns (
-            bool isInitialized,
+            bool isRunning,
             bool isFastCreationEnabled,
             // [0] creator,
             // [1] operator,
@@ -45,7 +45,7 @@ contract Getter is Storage {
             uint256 fundingTime
         )
     {
-        isInitialized = _liquidityPool.isInitialized;
+        isRunning = _liquidityPool.isRunning;
         isFastCreationEnabled = _liquidityPool.isFastCreationEnabled;
         addresses = [
             _liquidityPool.creator,

@@ -41,7 +41,7 @@ struct Order {
 }
 
 struct LiquidityPoolStorage {
-    bool isInitialized;
+    bool isRunning;
     bool isFastCreationEnabled;
     // addresses
     address creator;

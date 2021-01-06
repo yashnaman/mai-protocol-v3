@@ -14,7 +14,7 @@ contract Reader {
     using SafeMathExt for uint256;
 
     struct LiquidityPoolReaderResult {
-        bool isInitialized;
+        bool isRunning;
         bool isFastCreationEnabled;
         // check Getter.sol for detail
         address[7] addresses;
@@ -53,7 +53,7 @@ contract Reader {
         // pool
         uint256 perpetualCount;
         (
-            pool.isInitialized,
+            pool.isRunning,
             pool.isFastCreationEnabled,
             pool.addresses,
             pool.vaultFeeRate,

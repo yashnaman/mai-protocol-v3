@@ -55,7 +55,7 @@ contract TestSymbolService {
         int256[2] memory nums,
         uint256 perpetualCount,
         uint256 fundingTime,
-        bool isInitialized,
+        bool isRunning,
         bool isFastCreationEnabled
     ) {
         addresses[0] = factory;

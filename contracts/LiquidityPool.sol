@@ -50,7 +50,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
     ) external {
-        if (!_liquidityPool.isInitialized || _liquidityPool.isFastCreationEnabled) {
+        if (!_liquidityPool.isRunning || _liquidityPool.isFastCreationEnabled) {
             require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");
         } else {
             require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
@@ -65,7 +65,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     function runLiquidityPool() external onlyOperator {
-        require(!_liquidityPool.isInitialized, "pool is already running");
+        require(!_liquidityPool.isRunning, "pool is already running");
         _liquidityPool.runLiquidityPool();
     }
 

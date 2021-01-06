@@ -9,7 +9,7 @@ interface ILiquidityPool {
         external
         view
         returns (
-            bool isInitialized,
+            bool isRunning,
             bool isFastCreationEnabled,
             // [0] creator,
             // [1] operator,
