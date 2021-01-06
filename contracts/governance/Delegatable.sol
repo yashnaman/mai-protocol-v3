@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import "../libraries/SafeMathExt.sol";
 
 import "./Stakeable.sol";
+import "./Signable.sol";
 
 contract Delegatable is Stakeable, Signable {
     using SafeMathUpgradeable for uint256;
@@ -48,13 +49,15 @@ contract Delegatable is Stakeable, Signable {
         uint256 newBalance
     );
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) public virtual override {
         super.stake(amount);
+        address account = msg.sender;
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
         _moveDelegates(address(0), delegatee, amount);
     }
 
-    function withdraw(uint256 amount) public {
+    function withdraw(uint256 amount) public virtual override {
+        address account = msg.sender;
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
         require(
             redemptionLocks[account] <= block.timestamp &&
@@ -153,7 +156,7 @@ contract Delegatable is Stakeable, Signable {
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate =
             delegates[delegator] == address(0) ? delegator : delegates[delegator];
-        uint256 delegatorBalance = balances[delegator];
+        uint256 delegatorBalance = _balances[delegator];
         delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);

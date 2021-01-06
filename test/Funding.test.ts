@@ -36,6 +36,7 @@ describe('Funding', () => {
         });
         liquidityPool = await createContract("TestLiquidityPool", [], {
             LiquidityPoolModule,
+            CollateralModule,
             PerpetualModule
         });
         oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);

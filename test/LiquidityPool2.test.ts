@@ -49,6 +49,7 @@ describe('LiquidityPool', () => {
         });
         liquidityPool = await createContract("TestLiquidityPool", [], {
             LiquidityPoolModule,
+            CollateralModule,
             PerpetualModule
         });
 

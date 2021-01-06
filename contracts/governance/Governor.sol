@@ -8,12 +8,6 @@ import "../interface/ILiquidityPoolGovernance.sol";
 
 import "./Delegatable.sol";
 
-interface IVoteToken {
-    function getPriorVotes(address account, uint256 blockNumber) external view returns (uint256);
-
-    function totalSupply() external view returns (uint256);
-}
-
 /// @notice Possible states that a proposal may be in
 enum ProposalState { Pending, Active, Defeated, Succeeded, Expired, Executed }
 
@@ -184,7 +178,7 @@ contract Governor is Delegatable {
     ) internal returns (uint256) {
         require(
             getPriorVotes(msg.sender, block.number.sub(1)) >
-                proposalRateThreshold().wmul(totalSupply),
+                proposalRateThreshold().wmul(totalSupply()),
             "GovernorAlpha::propose: proposer votes below proposal threshold"
         );
         require(calldatas.length != 0, "no actions");
@@ -267,7 +261,7 @@ contract Governor is Delegatable {
             return ProposalState.Active;
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.forVotes < quorumVoteRate().wmul(totalSupply)
+            proposal.forVotes < quorumVoteRate().wmul(totalSupply())
         ) {
             return ProposalState.Defeated;
         } else if (proposal.executed) {

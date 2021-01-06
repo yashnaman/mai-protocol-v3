@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
-
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
 import "./Stakeable.sol";
 
-abstract contract IRewardDistributionRecipient is Ownable {
+abstract contract IRewardDistributionRecipient is OwnableUpgradeable {
     address public rewardDistribution;
 
     function notifyRewardAmount(uint256 reward) external virtual;
@@ -24,7 +26,10 @@ abstract contract IRewardDistributionRecipient is Ownable {
 }
 
 contract Mineable is Stakeable, IRewardDistributionRecipient {
-    IERC20 public rewardToken;
+    using SafeMathUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    IERC20Upgradeable public rewardToken;
 
     uint256 public DURATION = 5 days;
     uint256 public periodFinish;
@@ -41,21 +46,19 @@ contract Mineable is Stakeable, IRewardDistributionRecipient {
 
     function initialize(address tokenAddress, address rewardTokenAddress) public {
         super.initialize(tokenAddress);
-        rewardToken = IERC20(rewardTokenAddress);
+        rewardToken = IERC20Upgradeable(rewardTokenAddress);
     }
 
     function deposits(address account) public view returns (uint256) {
         return _balances[account];
     }
 
-    function stake(uint256 amount) public override updateReward(msg.sender) checkStart {
+    function stake(uint256 amount) public override updateReward(msg.sender) {
         super.stake(amount);
-        emit Staked(msg.sender, amount);
     }
 
-    function withdraw(uint256 amount) public override updateReward(msg.sender) checkStart {
+    function withdraw(uint256 amount) public override updateReward(msg.sender) {
         super.withdraw(amount);
-        emit Withdrawn(msg.sender, amount);
     }
 
     modifier updateReward(address account) {
@@ -69,7 +72,7 @@ contract Mineable is Stakeable, IRewardDistributionRecipient {
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+        return block.timestamp <= periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -97,11 +100,11 @@ contract Mineable is Stakeable, IRewardDistributionRecipient {
         getReward();
     }
 
-    function getReward() public updateReward(msg.sender) checkStart {
+    function getReward() public updateReward(msg.sender) {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
-            mithCash.safeTransfer(msg.sender, reward);
+            rewardToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -113,10 +116,10 @@ contract Mineable is Stakeable, IRewardDistributionRecipient {
         onlyRewardDistribution
         updateReward(address(0))
     {
-        if (newRewardRate = 0) {
+        if (newRewardRate == 0) {
             periodFinish = block.timestamp;
         } else {
-            periodFinish = periodFinish.sub(block.timestamp).wmul(rewardRate).wdiv(newRewardRate);
+            periodFinish = periodFinish.sub(block.timestamp).mul(rewardRate).div(newRewardRate);
         }
         emit RewardRateChanged(rewardRate, newRewardRate);
         rewardRate = newRewardRate;
@@ -129,7 +132,7 @@ contract Mineable is Stakeable, IRewardDistributionRecipient {
         onlyRewardDistribution
         updateReward(address(0))
     {
-        uint256 period = reward.wdiv(rewardRate);
+        uint256 period = reward.mul(10**18).div(rewardRate);
         // already finished or not initialized
         if (block.timestamp > periodFinish) {
             lastUpdateTime = block.timestamp;

@@ -44,8 +44,8 @@ library CollateralModule {
         try IDecimals(collateral).decimals() returns (uint8 decimals) {
             require(decimals == collateralDecimals, "decimals not match");
         } catch {}
-        uint256 factor = SYSTEM_DECIMALS.sub(liquidityPool.collateralDecimals)**10;
-        liquidityPool.scaler = factor == 0 ? 1 : factor;
+        uint256 factor = (SYSTEM_DECIMALS.sub(collateralDecimals))**10;
+        liquidityPool.scaler = (factor == 0 ? 1 : factor);
         liquidityPool.collateralToken = collateral;
         liquidityPool.collateralDecimals = collateralDecimals;
     }

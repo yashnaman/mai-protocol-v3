@@ -5,12 +5,14 @@ pragma experimental ABIEncoderV2;
 import "../module/AMMModule.sol";
 import "../module/PerpetualModule.sol";
 import "../module/LiquidityPoolModule.sol";
+import "../module/CollateralModule.sol";
 
 import "../Type.sol";
 import "./TestPerpetual.sol";
 
 contract TestLiquidityPool is TestPerpetual {
     using PerpetualModule for PerpetualStorage;
+    using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
     // debug
@@ -39,8 +41,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {
-        _liquidityPool.collateralToken = collateralToken;
-        _liquidityPool.collateralDecimals = collateralDecimals;
+        _liquidityPool.initializeCollateral(collateralToken, collateralDecimals);
     }
 
     function getPoolCash() public view returns (int256) {

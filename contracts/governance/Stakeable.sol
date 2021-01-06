@@ -2,19 +2,23 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-contract Stakeable {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 
-    IERC20 public token;
-    uint256 private _totalSupply;
-    mapping(address => uint256) private _balances;
+contract Stakeable {
+    using SafeMathUpgradeable for uint256;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+
+    IERC20Upgradeable public token;
+    uint256 internal _totalSupply;
+    mapping(address => uint256) internal _balances;
 
     event Stake(address indexed account, uint256 amount);
     event Withdraw(address indexed account, uint256 amount);
 
     function initialize(address tokenAddress) public {
-        token = IERC20(tokenAddress);
+        token = IERC20Upgradeable(tokenAddress);
     }
 
     function totalSupply() public view returns (uint256) {
