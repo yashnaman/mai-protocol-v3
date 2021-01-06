@@ -154,7 +154,9 @@ contract Getter is Storage {
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         left = perpetual.activeAccounts.length();
-        total = perpetual.totalAccount;
+        total = perpetual.state == PerpetualState.NORMAL
+            ? perpetual.activeAccounts.length()
+            : perpetual.totalAccount;
     }
 
     function getPoolMargin() public view returns (int256 poolMargin) {
