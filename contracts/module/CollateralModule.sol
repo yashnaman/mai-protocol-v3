@@ -8,6 +8,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
+import "../libraries/Constant.sol";
+
+import "../interface/IDecimals.sol";
 import "../interface/IPoolCreator.sol";
 import "../interface/IWETH.sol";
 
@@ -30,11 +33,23 @@ library CollateralModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    /**
-     * @dev     Transfer token from user if token is erc20 token.
-     * @param   account     Address of account owner.
-     * @param   amount   Amount of token to be transferred into contract.
-     */
+    uint256 internal constant SYSTEM_DECIMALS = 18;
+
+    function initializeCollateral(
+        LiquidityPoolStorage storage liquidityPool,
+        address collateral,
+        uint256 collateralDecimals
+    ) public {
+        require(collateralDecimals <= SYSTEM_DECIMALS, "collateral decimals is out of range");
+        try IDecimals(collateral).decimals() returns (uint8 decimals) {
+            require(decimals == collateralDecimals, "decimals not match");
+        } catch {}
+        uint256 factor = SYSTEM_DECIMALS.sub(liquidityPool.collateralDecimals)**10;
+        liquidityPool.scaler = factor == 0 ? 1 : factor;
+        liquidityPool.collateralToken = collateral;
+        liquidityPool.collateralDecimals = collateralDecimals;
+    }
+
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
         address account,
@@ -44,7 +59,7 @@ library CollateralModule {
             require(msg.value == 0, "native currency is not acceptable");
         }
         if (liquidityPool.isWrapped && msg.value > 0) {
-            int256 internalAmount = _toInternalAmount(liquidityPool, msg.value).toInt256();
+            int256 internalAmount = _toInternalAmount(liquidityPool, msg.value);
             IWETH weth = IWETH(IPoolCreator(liquidityPool.factory).weth());
             uint256 currentBalance = weth.balanceOf(address(this));
             weth.deposit{ value: msg.value }();
@@ -55,7 +70,7 @@ library CollateralModule {
             totalAmount = totalAmount.add(internalAmount);
         }
         if (amount > 0) {
-            uint256 rawAmount = _toRawAmount(liquidityPool, amount.toUint256());
+            uint256 rawAmount = _toRawAmount(liquidityPool, amount);
             IERC20Upgradeable(liquidityPool.collateralToken).safeTransferFrom(
                 account,
                 address(this),
@@ -65,17 +80,12 @@ library CollateralModule {
         }
     }
 
-    /**
-     * @dev     Transfer token to user no matter erc20 token or ether.
-     * @param   account     Address of account owner.
-     * @param   amount   Amount of token to be transferred to user.
-     */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,
         address payable account,
         int256 amount
     ) public {
-        uint256 rawAmount = _toRawAmount(liquidityPool, amount.toUint256());
+        uint256 rawAmount = _toRawAmount(liquidityPool, amount);
         if (liquidityPool.isWrapped) {
             IWETH(IPoolCreator(liquidityPool.factory).weth()).withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);
@@ -84,29 +94,19 @@ library CollateralModule {
         }
     }
 
-    /**
-     * @dev     Convert the represention of amount from internal to raw.
-     * @param   amount  Amount with internal decimals.
-     * @return  Amount  with decimals of token.
-     */
     function _toInternalAmount(LiquidityPoolStorage storage liquidityPool, uint256 amount)
         private
         view
-        returns (uint256)
+        returns (int256 internalAmount)
     {
-        return amount.mul(liquidityPool.scaler);
+        internalAmount = amount.mul(liquidityPool.scaler).toInt256();
     }
 
-    /**
-     * @dev     Convert the represention of amount from internal to raw.
-     * @param   amount  Amount with internal decimals.
-     * @return  Amount  with decimals of token.
-     */
-    function _toRawAmount(LiquidityPoolStorage storage liquidityPool, uint256 amount)
+    function _toRawAmount(LiquidityPoolStorage storage liquidityPool, int256 amount)
         private
         view
-        returns (uint256)
+        returns (uint256 rawAmount)
     {
-        return amount.div(liquidityPool.scaler);
+        rawAmount = amount.toUint256().div(liquidityPool.scaler);
     }
 }

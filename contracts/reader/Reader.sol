@@ -21,6 +21,7 @@ contract Reader {
         address shareToken;
         int256 vaultFeeRate;
         int256 poolCash;
+        uint256 collateralDecimals;
         uint256 fundingTime;
         bool isInitialized;
         bool isFastCreationEnabled;
@@ -80,6 +81,7 @@ contract Reader {
                 addresses,
                 nums,
                 perpetualCount,
+                pool.collateralDecimals,
                 pool.fundingTime,
                 isInitialized,
                 isFastCreationEnabled

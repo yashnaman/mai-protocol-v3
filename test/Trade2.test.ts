@@ -69,7 +69,7 @@ describe('TradeModule1', () => {
             )
             await testTrade.setOperator(user0.address)
             await testTrade.setVault(user4.address, toWei("0.0002"))
-            await testTrade.setCollateralToken(ctk.address, 1);
+            await testTrade.setCollateralToken(ctk.address, 18);
             await ctk.mint(testTrade.address, toWei("10000000000"));
         })
 

@@ -2,7 +2,6 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-
 import "@openzeppelin/contracts/utils/Address.sol";
 import "../thirdparty/proxy/UpgradeableProxy.sol";
 import "../thirdparty/cloneFactory/CloneFactory.sol";
@@ -23,7 +22,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
 
     address internal _governorTemplate;
     address internal _shareTokenTemplate;
- 
+
     constructor(
         address governorTemplate,
         address shareTokenTemplate,
@@ -44,36 +43,56 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         address shareToken,
         address operator,
         address collateral,
+        uint256 collateralDecimals,
         bool isFastCreationEnabled
     );
 
     function createLiquidityPool(
         address collateral,
+        uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
     ) external returns (address) {
-        return _createLiquidityPoolWith(getLatestVersion(), collateral, isFastCreationEnabled, nonce);
+        return
+            _createLiquidityPoolWith(
+                getLatestVersion(),
+                collateral,
+                collateralDecimals,
+                isFastCreationEnabled,
+                nonce
+            );
     }
 
     function createLiquidityPoolWith(
         address implementation,
         address collateral,
+        uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
     ) external returns (address) {
-        return _createLiquidityPoolWith(implementation, collateral, isFastCreationEnabled, nonce);
+        return
+            _createLiquidityPoolWith(
+                implementation,
+                collateral,
+                collateralDecimals,
+                isFastCreationEnabled,
+                nonce
+            );
     }
 
     function _createLiquidityPoolWith(
         address implementation,
         address collateral,
+        uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
         address governor = _createClone(_governorTemplate);
         address shareToken = _createClone(_shareTokenTemplate);
-        address liquidityPool = _createUpgradeableProxy(implementation, governor, nonce);
+        bytes32 argsHash =
+            keccak256(abi.encode(collateral, collateralDecimals, isFastCreationEnabled));
+        address liquidityPool = _createUpgradeableProxy(implementation, governor, argsHash, nonce);
         // initialize
         address operator = msg.sender;
         IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
@@ -81,6 +100,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         ILiquidityPool(liquidityPool).initialize(
             operator,
             collateral,
+            collateralDecimals,
             governor,
             shareToken,
             isFastCreationEnabled
@@ -93,12 +113,13 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
             shareToken,
             operator,
             collateral,
+            collateralDecimals,
             isFastCreationEnabled
         );
         return liquidityPool;
     }
 
-     function _createClone(address implementation) internal returns (address) {
+    function _createClone(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
         return createClone(implementation);
     }
@@ -106,15 +127,17 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     function _createUpgradeableProxy(
         address implementation,
         address admin,
+        bytes32 argsHash,
         int256 nonce
     ) internal returns (address instance) {
         require(implementation != address(0), "invalid implementation");
         require(Address.isContract(implementation), "implementation must be contract");
-        bytes memory deploymentData = abi.encodePacked(
-            type(UpgradeableProxy).creationCode,
-            abi.encode(implementation, admin)
-        );
-        bytes32 salt = keccak256(abi.encode(implementation, admin, msg.sender, nonce));
+        bytes memory deploymentData =
+            abi.encodePacked(
+                type(UpgradeableProxy).creationCode,
+                abi.encode(implementation, admin)
+            );
+        bytes32 salt = keccak256(abi.encode(implementation, admin, msg.sender, argsHash, nonce));
         assembly {
             instance := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }

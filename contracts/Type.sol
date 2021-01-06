@@ -56,6 +56,7 @@ struct LiquidityPoolStorage {
     // collateral
     bool isWrapped;
     uint256 scaler;
+    uint256 collateralDecimals;
     address collateralToken;
     // pool attributes
     int256 poolCash;

@@ -58,7 +58,7 @@ describe('LiquidityPool', () => {
         await liquidityPool.setShareToken(stk.address);
 
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        await liquidityPool.setCollateralToken(ctk.address, 1);
+        await liquidityPool.setCollateralToken(ctk.address, 18);
 
         oracle1 = await createContract("OracleWrapper", ["ctk", "ctk"]);
         await liquidityPool.createPerpetual(

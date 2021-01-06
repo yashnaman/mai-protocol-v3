@@ -85,8 +85,8 @@ describe("integration", () => {
         var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
 
-        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, false, 998);
-        await maker.createLiquidityPool(ctk.address, false, 998);
+        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
+        await maker.createLiquidityPool(ctk.address, 18, false, 998);
 
         const perp = await LiquidityPoolFactory.connect(perpAddr, user0);
 
@@ -268,8 +268,8 @@ describe("integration", () => {
         var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
 
-        const perpAddr = await maker.callStatic.createLiquidityPool(weth.address, false, 998);
-        await maker.createLiquidityPool(weth.address, false, 998);
+        const perpAddr = await maker.callStatic.createLiquidityPool(weth.address, 18, false, 998);
+        await maker.createLiquidityPool(weth.address, 18, false, 998);
 
         const perp = await LiquidityPoolFactory.connect(perpAddr, user0);
 

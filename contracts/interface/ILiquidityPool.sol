@@ -17,8 +17,9 @@ interface ILiquidityPool {
             // [5] shareToken,
             address[6] memory addresses,
             // [0] vaultFeeRate,
-            // [3] poolCash,
+            // [1] poolCash,
             int256[2] memory nums,
+            uint256 collateralDecimals,
             uint256 perpetualCount,
             uint256 fundingTime,
             bool isInitialized,
@@ -70,6 +71,7 @@ interface ILiquidityPool {
     function initialize(
         address operator,
         address collateral,
+        uint256 collateralDecimals,
         address governor,
         address shareToken,
         bool isFastCreationEnabled

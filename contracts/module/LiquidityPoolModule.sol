@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IAccessControll.sol";
 import "../interface/IPoolCreator.sol";
-import "../interface/IDecimals.sol";
 import "../interface/IShareToken.sol";
 import "../interface/ISymbolService.sol";
 
@@ -39,8 +38,6 @@ library LiquidityPoolModule {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    uint256 internal constant MAX_COLLATERAL_DECIMALS = 18;
-
     event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
     event IncreaseFee(address recipient, int256 amount);
@@ -61,52 +58,6 @@ library LiquidityPoolModule {
         int256[6] riskParams
     );
     event RunLiquidityPool();
-
-    function createPerpetual(
-        LiquidityPoolStorage storage liquidityPool,
-        address oracle,
-        int256[9] calldata coreParams,
-        int256[6] calldata riskParams,
-        int256[6] calldata minRiskParamValues,
-        int256[6] calldata maxRiskParamValues
-    ) public {
-        uint256 perpetualIndex = liquidityPool.perpetuals.length;
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
-        perpetual.initialize(
-            perpetualIndex,
-            oracle,
-            coreParams,
-            riskParams,
-            minRiskParamValues,
-            maxRiskParamValues
-        );
-        ISymbolService service =
-            ISymbolService(IPoolCreator(liquidityPool.factory).symbolService());
-        service.allocateSymbol(address(this), perpetualIndex);
-        if (liquidityPool.isInitialized) {
-            perpetual.setNormalState();
-        }
-        emit CreatePerpetual(
-            perpetualIndex,
-            liquidityPool.governor,
-            liquidityPool.shareToken,
-            liquidityPool.operator,
-            oracle,
-            liquidityPool.collateralToken,
-            coreParams,
-            riskParams
-        );
-    }
-
-    function runLiquidityPool(LiquidityPoolStorage storage liquidityPool) public {
-        uint256 length = liquidityPool.perpetuals.length;
-        require(length > 0, "there should be at least 1 perpetual to run");
-        for (uint256 i = 0; i < length; i++) {
-            liquidityPool.perpetuals[i].setNormalState();
-        }
-        liquidityPool.isInitialized = true;
-        emit RunLiquidityPool();
-    }
 
     function getAvailablePoolCash(
         LiquidityPoolStorage storage liquidityPool,
@@ -165,6 +116,7 @@ library LiquidityPoolModule {
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
+        uint256 collateralDecimals,
         address operator,
         address governor,
         address shareToken,
@@ -174,11 +126,7 @@ library LiquidityPoolModule {
         require(governor != address(0), "governor is invalid");
         require(shareToken != address(0), "shareToken is invalid");
 
-        uint8 decimals = IDecimals(collateral).decimals();
-        require(decimals <= MAX_COLLATERAL_DECIMALS, "collateral decimals is out of range");
-        liquidityPool.collateralToken = collateral;
-        liquidityPool.scaler = uint256(10**(MAX_COLLATERAL_DECIMALS.sub(uint256(decimals))));
-
+        liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.factory = msg.sender;
         IPoolCreator factory = IPoolCreator(liquidityPool.factory);
         liquidityPool.isWrapped = (collateral == factory.weth());
@@ -189,6 +137,52 @@ library LiquidityPoolModule {
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
+    }
+
+    function createPerpetual(
+        LiquidityPoolStorage storage liquidityPool,
+        address oracle,
+        int256[9] calldata coreParams,
+        int256[6] calldata riskParams,
+        int256[6] calldata minRiskParamValues,
+        int256[6] calldata maxRiskParamValues
+    ) public {
+        uint256 perpetualIndex = liquidityPool.perpetuals.length;
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
+        perpetual.initialize(
+            perpetualIndex,
+            oracle,
+            coreParams,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
+        ISymbolService service =
+            ISymbolService(IPoolCreator(liquidityPool.factory).symbolService());
+        service.allocateSymbol(address(this), perpetualIndex);
+        if (liquidityPool.isInitialized) {
+            perpetual.setNormalState();
+        }
+        emit CreatePerpetual(
+            perpetualIndex,
+            liquidityPool.governor,
+            liquidityPool.shareToken,
+            liquidityPool.operator,
+            oracle,
+            liquidityPool.collateralToken,
+            coreParams,
+            riskParams
+        );
+    }
+
+    function runLiquidityPool(LiquidityPoolStorage storage liquidityPool) public {
+        uint256 length = liquidityPool.perpetuals.length;
+        require(length > 0, "there should be at least 1 perpetual to run");
+        for (uint256 i = 0; i < length; i++) {
+            liquidityPool.perpetuals[i].setNormalState();
+        }
+        liquidityPool.isInitialized = true;
+        emit RunLiquidityPool();
     }
 
     function setLiquidityPoolParameter(

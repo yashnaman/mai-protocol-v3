@@ -38,6 +38,7 @@ contract Getter is Storage {
             // [0] vaultFeeRate,
             // [1] poolCash,
             int256[2] memory nums,
+            uint256 collateralDecimals,
             uint256 perpetualCount,
             uint256 fundingTime,
             bool isInitialized,
@@ -53,6 +54,7 @@ contract Getter is Storage {
             _liquidityPool.shareToken
         ];
         nums = [_liquidityPool.vaultFeeRate, _liquidityPool.poolCash];
+        collateralDecimals = _liquidityPool.collateralDecimals;
         perpetualCount = _liquidityPool.perpetuals.length;
         fundingTime = _liquidityPool.fundingTime;
         isInitialized = _liquidityPool.isInitialized;

@@ -59,7 +59,7 @@ describe('TradeModule1', () => {
             )
             await testTrade.setOperator(user0.address)
             await testTrade.setVault(user4.address, toWei("0.0002"))
-            await testTrade.setCollateralToken(ctk.address, 1);
+            await testTrade.setCollateralToken(ctk.address, 18);
             await ctk.mint(testTrade.address, toWei("10000000000"));
         })
 
@@ -130,7 +130,7 @@ describe('TradeModule1', () => {
                 )
                 await testTrade.setOperator(user3.address)
                 await testTrade.setVault(user4.address, toWei("0.0001"))
-                await testTrade.setCollateralToken(ctk.address, 1);
+                await testTrade.setCollateralToken(ctk.address, 18);
                 await testTrade.setState(0, 2);
                 await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
                 await testTrade.setTotalCollateral(0, toWei("10000000000"));
@@ -196,7 +196,7 @@ describe('TradeModule1', () => {
                     await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
 
                     await testTrade.connect(user1).trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, 0);
-                    var { cash } = await testTrade.getMarginAccount(0, user1.address);
+                    var { cash } = await testTrade.callStatic.getMarginAccount(0, user1.address);
                     expect(cash).approximateBigNumber(testCase.expectOutput.cash);
                     expect(await testTrade.getClaimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
                 })

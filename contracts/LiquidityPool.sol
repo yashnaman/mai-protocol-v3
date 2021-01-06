@@ -28,12 +28,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     function initialize(
         address operator,
         address collateral,
+        uint256 collateralDecimals,
         address governor,
         address shareToken,
         bool isFastCreationEnabled
     ) external initializer {
         _liquidityPool.initialize(
             collateral,
+            collateralDecimals,
             operator,
             governor,
             shareToken,

@@ -38,9 +38,9 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.factory = factory;
     }
 
-    function setCollateralToken(address collateralToken, uint256 scaler) public {
+    function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {
         _liquidityPool.collateralToken = collateralToken;
-        _liquidityPool.scaler = scaler;
+        _liquidityPool.collateralDecimals = collateralDecimals;
     }
 
     function getPoolCash() public view returns (int256) {
