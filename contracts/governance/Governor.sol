@@ -101,79 +101,83 @@ contract Governor is Delegatable {
 
     /// @notice The votes ratio in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVoteRate() public pure virtual returns (uint256) {
-        return 4e16;
-    } // 4%
+        return 1e17; // 10%
+    }
 
     /// @notice The threshold of votes ratio required in order for a voter to become a proposer
     function proposalRateThreshold() public pure virtual returns (uint256) {
-        return 1e16;
-    } // 1%
+        return 1e16; // 1%
+    }
 
     /// @notice The maximum number of actions that can be included in a proposal
     function proposalMaxOperations() public pure virtual returns (uint256) {
         return 10;
-    } // 10 actions
+    }
 
     /// @notice The delay before voting on a proposal may take place, once proposed
     function votingDelay() public pure virtual returns (uint256) {
         return 1;
-    } // 1 block
+    }
 
     /// @notice The duration of voting on a proposal, in blocks
     function votingPeriod() public pure virtual returns (uint256) {
-        return 17280;
-    } // ~3 days in blocks (assuming 15s blocks)
+        return 3600 * 72;
+    }
 
     function executingDelay() public pure virtual returns (uint256) {
-        return 86400;
+        return 3600 * 48;
+    }
+
+    function voteUnlockDelay() public pure virtual returns (uint256) {
+        return 3600 * 72;
     }
 
     function executingTimeout() public pure virtual returns (uint256) {
-        return 86400 * 7;
+        return 3600 * 24 * 7;
     }
 
-    function proposeCoreParameterUpdate(bytes32[] memory keys, int256[] memory values) public {
-        require(keys.length <= proposalMaxOperations(), "");
-        require(keys.length == values.length, "");
+    // function proposeCoreParameterUpdate(bytes32[] memory keys, int256[] memory values) public {
+    //     require(keys.length <= proposalMaxOperations(), "");
+    //     require(keys.length == values.length, "");
 
-        uint256 numEntries = keys.length;
-        bytes[] memory calldatas = new bytes[](numEntries);
-        for (uint256 i = 0; i < numEntries; i++) {
-            calldatas[i] = abi.encodePacked(keys[i], values[i]);
-        }
-        _propose("setPerpetualParameter(bytes32,int256)", calldatas, "CoreParameterUpdate");
-    }
+    //     uint256 numEntries = keys.length;
+    //     bytes[] memory calldatas = new bytes[](numEntries);
+    //     for (uint256 i = 0; i < numEntries; i++) {
+    //         calldatas[i] = abi.encodePacked(keys[i], values[i]);
+    //     }
+    //     _propose("setPerpetualParameter(bytes32,int256)", calldatas, "CoreParameterUpdate");
+    // }
 
-    function proposeRiskParameterUpdate(
-        bytes32[] memory keys,
-        int256[] memory values,
-        int256[] memory minValues,
-        int256[] memory maxValues
-    ) public {
-        require(keys.length <= proposalMaxOperations(), "");
-        require(keys.length == values.length, "");
-        require(keys.length == minValues.length, "");
-        require(keys.length == maxValues.length, "");
+    // function proposeRiskParameterUpdate(
+    //     bytes32[] memory keys,
+    //     int256[] memory values,
+    //     int256[] memory minValues,
+    //     int256[] memory maxValues
+    // ) public {
+    //     require(keys.length <= proposalMaxOperations(), "");
+    //     require(keys.length == values.length, "");
+    //     require(keys.length == minValues.length, "");
+    //     require(keys.length == maxValues.length, "");
 
-        uint256 numEntries = keys.length;
-        bytes[] memory calldatas = new bytes[](numEntries);
-        for (uint256 i = 0; i < numEntries; i++) {
-            calldatas[i] = abi.encodePacked(keys[i], values[i], minValues[i], maxValues[i]);
-        }
-        _propose(
-            "setPerpetualRiskParameter(bytes32,int256,int256,int256)",
-            calldatas,
-            "setPerpetualRiskParameter"
-        );
-    }
+    //     uint256 numEntries = keys.length;
+    //     bytes[] memory calldatas = new bytes[](numEntries);
+    //     for (uint256 i = 0; i < numEntries; i++) {
+    //         calldatas[i] = abi.encodePacked(keys[i], values[i], minValues[i], maxValues[i]);
+    //     }
+    //     _propose(
+    //         "setPerpetualRiskParameter(bytes32,int256,int256,int256)",
+    //         calldatas,
+    //         "setPerpetualRiskParameter"
+    //     );
+    // }
 
-    function proposeLiquidityPoolUpgrade(address targetImplementation) public {
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = abi.encodePacked(targetImplementation);
-        _propose("upgradeTo(address)", calldatas, "upgradeTo");
-    }
+    // function proposeLiquidityPoolUpgrade(address targetImplementation) public {
+    //     bytes[] memory calldatas = new bytes[](1);
+    //     calldatas[0] = abi.encodePacked(targetImplementation);
+    //     _propose("upgradeTo(address)", calldatas, "upgradeTo");
+    // }
 
-    function _propose(
+    function propose(
         string memory signature,
         bytes[] memory calldatas,
         string memory description

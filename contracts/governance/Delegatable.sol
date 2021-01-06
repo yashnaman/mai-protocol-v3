@@ -4,17 +4,15 @@ pragma experimental ABIEncoderV2;
 
 import "../libraries/SafeMathExt.sol";
 
-contract Delegatable {
+import "./Stakeable.sol";
+
+contract Delegatable is Stakeable, Signable {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for uint256;
 
-    string public constant name = "MAIv3 LP Governor";
-
-    /// @notice Total number of tokens in circulation
-    uint256 public totalSupply = 0;
-
-    // Official record of token balances for each account
-    mapping(address => uint256) internal balances;
+    /// @notice The EIP-712 typehash for the delegation struct used by the contract
+    bytes32 public constant DELEGATION_TYPEHASH =
+        keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     /// @notice A record of each accounts delegate
     mapping(address => address) public delegates;
@@ -33,18 +31,8 @@ contract Delegatable {
 
     mapping(address => uint256) public redemptionLocks;
 
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for the delegation struct used by the contract
-    bytes32 public constant DELEGATION_TYPEHASH =
-        keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
-
     /// @notice A record of states for signing / validating signatures
     mapping(address => uint256) public nonces;
-
-    address public shareToken;
 
     /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(
@@ -60,59 +48,13 @@ contract Delegatable {
         uint256 newBalance
     );
 
-    /// @notice The standard EIP-20 transfer event
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-
-    /// @notice The standard EIP-20 approval event
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
-
-    /**
-     * @notice Construct a new Comp token
-     */
-    function initialize(address _shareToken) public {
-        shareToken = _shareToken;
-    }
-
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     */
-    function deposit(uint256 amount) public {
-        address account = msg.sender;
-        require(account != address(0), "Mint to the zero address");
-        require(amount != 0, "Mint zero amount");
-
-        // IERC20(shareToken).transferFrom(account, address(this), amount);
-        totalSupply = totalSupply.add(amount);
-        balances[account] = balances[account].add(amount);
+    function stake(uint256 amount) public {
+        super.stake(amount);
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
         _moveDelegates(address(0), delegatee, amount);
-        emit Transfer(address(0), account, amount);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
-    function redeem(uint256 amount) public {
-        address account = msg.sender;
-        require(account != address(0), "Redeem from the zero address");
-        require(amount != 0, "Redeem zero amount");
-
-        balances[account] = balances[account].sub(amount, "Burn amount exceeds balance");
-        totalSupply = totalSupply.sub(amount);
+    function withdraw(uint256 amount) public {
         address delegatee = delegates[account] == address(0) ? account : delegates[account];
         require(
             redemptionLocks[account] <= block.timestamp &&
@@ -120,17 +62,7 @@ contract Delegatable {
             "Redemption blocked by voting"
         );
         _moveDelegates(delegatee, address(0), amount);
-        // IERC20(shareToken).transferFrom(address(this), account, amount);
-        emit Transfer(account, address(0), amount);
-    }
-
-    /**
-     * @notice Get the number of tokens held by the `account`
-     * @param account The address of the account to get the balance of
-     * @return The number of tokens held
-     */
-    function balanceOf(address account) external view returns (uint256) {
-        return balances[account];
+        super.withdraw(amount);
     }
 
     /**
@@ -158,10 +90,6 @@ contract Delegatable {
         bytes32 r,
         bytes32 s
     ) public {
-        bytes32 domainSeparator =
-            keccak256(
-                abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this))
-            );
         bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
         address signatory = ecrecover(digest, v, r, s);
@@ -271,13 +199,5 @@ contract Delegatable {
         }
 
         emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
-    }
-
-    function getChainId() internal pure returns (uint256) {
-        uint256 chainId;
-        assembly {
-            chainId := chainid()
-        }
-        return chainId;
     }
 }
