@@ -18,7 +18,6 @@ import "../Type.sol";
  * @title Mai3 AMM implementation
  */
 library AMMModule {
-
     using Math for int256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -56,7 +55,8 @@ library AMMModule {
         require(tradeAmount != 0, "trading amount is zero");
         Context memory context = prepareContext(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        (int256 closePosition, int256 openPosition) = Utils.splitAmount(context.position, tradeAmount);
+        (int256 closePosition, int256 openPosition) =
+            Utils.splitAmount(context.position, tradeAmount);
         // amm close position
         int256 closeBestPrice;
         (deltaCash, closeBestPrice) = ammClosePosition(context, perpetual, closePosition);
@@ -205,12 +205,14 @@ library AMMModule {
         int256 indexPrice = context.indexPrice;
         int256 slippageFactor = perpetual.closeSlippageFactor.value;
         int256 maxClosePriceDiscount = perpetual.maxClosePriceDiscount.value;
-        int256 halfSpread = tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
+        int256 halfSpread =
+            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
         if (isAMMMarginSafe(context, slippageFactor)) {
             int256 poolMargin = calculatePoolMargin(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
-            bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor)
-                .wmul(halfSpread.add(Constant.SIGNED_ONE));
+            bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
+                halfSpread.add(Constant.SIGNED_ONE)
+            );
             deltaCash = _getDeltaCash(
                 poolMargin,
                 positionBefore,
@@ -227,11 +229,17 @@ library AMMModule {
             }
             deltaCash = bestPrice.wmul(tradeAmount).neg();
         }
-        int256 priceLimit = tradeAmount > 0 ? Constant.SIGNED_ONE.add(maxClosePriceDiscount) : Constant.SIGNED_ONE.sub(maxClosePriceDiscount);
+        int256 priceLimit =
+            tradeAmount > 0
+                ? Constant.SIGNED_ONE.add(maxClosePriceDiscount)
+                : Constant.SIGNED_ONE.sub(maxClosePriceDiscount);
         // prevent too bad price
         deltaCash = deltaCash.max(indexPrice.wmul(priceLimit).wmul(tradeAmount).neg());
         // prevent negative price
-        require(!Utils.hasTheSameSign(deltaCash, tradeAmount), "price is negative when amm closes position");
+        require(
+            !Utils.hasTheSameSign(deltaCash, tradeAmount),
+            "price is negative when amm closes position"
+        );
     }
 
     /**
@@ -274,7 +282,14 @@ library AMMModule {
         int256 indexPrice = context.indexPrice;
         int256 positionBefore = context.position;
         int256 positionAfter = positionBefore.add(tradeAmount);
-        int256 maxPosition = _getMaxPosition(context, poolMargin, perpetual.ammMaxLeverage.value, slippageFactor, positionAfter > 0);
+        int256 maxPosition =
+            _getMaxPosition(
+                context,
+                poolMargin,
+                perpetual.ammMaxLeverage.value,
+                slippageFactor,
+                positionAfter > 0
+            );
         if (positionAfter.abs() > maxPosition.abs()) {
             require(partialFill, "trade amount exceeds max amount");
             // trade to max position if partialFill
@@ -291,8 +306,12 @@ library AMMModule {
             slippageFactor
         );
         // prevent negative price
-        require(!Utils.hasTheSameSign(deltaCash, deltaPosition), "price is negative when amm opens position");
-        int256 halfSpread = tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
+        require(
+            !Utils.hasTheSameSign(deltaCash, deltaPosition),
+            "price is negative when amm opens position"
+        );
+        int256 halfSpread =
+            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
         bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
             halfSpread.add(Constant.SIGNED_ONE)
         );
@@ -465,10 +484,7 @@ library AMMModule {
             maxPosition2 = type(int256).max;
         } else {
             maxPosition2 = poolMargin.sub(beforeSqrt.mul(poolMargin).sqrt());
-            maxPosition2 = maxPosition2
-                .wdiv(ammMaxLeverage)
-                .wdiv(slippageFactor)
-                .wdiv(indexPrice);
+            maxPosition2 = maxPosition2.wdiv(ammMaxLeverage).wdiv(slippageFactor).wdiv(indexPrice);
         }
         maxPosition = maxPosition1.min(maxPosition2);
         if (isLongSide) {
