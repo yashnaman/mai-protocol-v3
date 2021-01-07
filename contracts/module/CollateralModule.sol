@@ -16,8 +16,6 @@ import "../interface/IWETH.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title   Collateral Module
  * @dev     Handle underlying collaterals.
@@ -44,7 +42,7 @@ library CollateralModule {
         try IDecimals(collateral).decimals() returns (uint8 decimals) {
             require(decimals == collateralDecimals, "decimals not match");
         } catch {}
-        uint256 factor = (SYSTEM_DECIMALS.sub(collateralDecimals))**10;
+        uint256 factor = 10**(SYSTEM_DECIMALS.sub(collateralDecimals));
         liquidityPool.scaler = (factor == 0 ? 1 : factor);
         liquidityPool.collateralToken = collateral;
         liquidityPool.collateralDecimals = collateralDecimals;
