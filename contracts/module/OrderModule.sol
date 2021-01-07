@@ -10,6 +10,7 @@ import "../interface/IAccessControll.sol";
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
+import "../libraries/Signature.sol";
 
 import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
@@ -29,16 +30,17 @@ library OrderModule {
         Order memory order,
         bytes memory signature
     ) public view {
-        // address signer = order.getSigner(signature);
-        // if (signer != order.trader) {
-        //     bool isAuthorized =
-        //         IAccessControll(liquidityPool.accessController).isGranted(
-        //             order.trader,
-        //             signer,
-        //             Constant.PRIVILEGE_TRADE
-        //         );
-        //     require(isAuthorized, "signer is unauthorized");
-        // }
+        bytes32 orderHash = order.getOrderHash();
+        address signer = Signature.getSigner(orderHash, signature);
+        if (signer != order.trader) {
+            bool isAuthorized =
+                IAccessControll(liquidityPool.accessController).isGranted(
+                    order.trader,
+                    signer,
+                    Constant.PRIVILEGE_TRADE
+                );
+            require(isAuthorized, "signer is unauthorized");
+        }
     }
 
     function validateOrder(

@@ -85,7 +85,8 @@ library CollateralModule {
     ) public {
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
         if (liquidityPool.isWrapped) {
-            IWETH(IPoolCreator(liquidityPool.creator).weth()).withdraw(rawAmount);
+            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).weth());
+            weth.withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);
         } else {
             IERC20Upgradeable(liquidityPool.collateralToken).safeTransfer(account, rawAmount);

@@ -25,6 +25,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using AMMModule for LiquidityPoolStorage;
     using SignatureModule for bytes32;
 
+    receive() external payable {}
+
     function initialize(
         address operator,
         address collateral,

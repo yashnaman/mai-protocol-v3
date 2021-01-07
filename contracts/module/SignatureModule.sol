@@ -2,16 +2,12 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
-
 import "../interface/IAccessControll.sol";
 
 import "../libraries/Utils.sol";
+import "../libraries/Signature.sol";
 
 library SignatureModule {
-    uint8 internal constant SIGN_TYPE_ETH = 0x0;
-    uint8 internal constant SIGN_TYPE_EIP712 = 0x1;
-
     string internal constant DOMAIN_NAME = "Mai Protocol v3";
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
         keccak256(abi.encodePacked("EIP712Domain(string name)"));
@@ -73,30 +69,6 @@ library SignatureModule {
     bytes32 internal constant EIP712_TYPED_SET_EMERGENCY_STATE =
         keccak256(abi.encodePacked("SetEmergencyState(uint256 perpetualIndex)"));
 
-    function getSigner(bytes32 signedHash, bytes memory signature)
-        public
-        pure
-        returns (address signer)
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        uint8 signType;
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-            signType := byte(1, mload(add(signature, 0x60)))
-        }
-        if (signType == SIGN_TYPE_ETH) {
-            signedHash = ECDSAUpgradeable.toEthSignedMessageHash(signedHash);
-        } else if (signType != SIGN_TYPE_EIP712) {
-            revert("unsupported sign type");
-        }
-        signer = ecrecover(signedHash, v, r, s);
-        require(signer != address(0), "invalid signature");
-    }
-
     function getDepositDigest(address trader, int256 amount) public pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_TYPED_DEPOSIT, trader, amount));
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result));
@@ -144,7 +116,7 @@ library SignatureModule {
                     )
                 );
             signedHash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, signedHash));
-            signer = getSigner(signedHash, signature);
+            signer = Signature.getSigner(signedHash, signature);
         }
     }
 }

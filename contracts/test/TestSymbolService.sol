@@ -10,17 +10,28 @@ import "../module/MarginAccountModule.sol";
 import "../module/PerpetualModule.sol";
 
 interface ISymbolService {
+    function allocateSymbol(address liquidityPool, uint256 perpetualIndex)
+        external
+        returns (uint256);
 
-    function allocateSymbol(address liquidityPool, uint256 perpetualIndex) external returns (uint256);
-    function assignReservedSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol) external;
-    function getPerpetualUID(uint256 symbol) external view returns (address liquidityPool, uint256 perpetualIndex);
-    function getSymbols(address liquidityPool, uint256 perpetualIndex) external view returns (uint256[] memory symbols);
+    function assignReservedSymbol(
+        address liquidityPool,
+        uint256 perpetualIndex,
+        uint256 symbol
+    ) external;
 
+    function getPerpetualUID(uint256 symbol)
+        external
+        view
+        returns (address liquidityPool, uint256 perpetualIndex);
+
+    function getSymbols(address liquidityPool, uint256 perpetualIndex)
+        external
+        view
+        returns (uint256[] memory symbols);
 }
 
-
 contract TestSymbolService {
-
     address public factory;
     address public symbolService;
 
@@ -29,20 +40,19 @@ contract TestSymbolService {
         symbolService = _symbolService;
     }
 
-    function allocateSymbol(
-        uint256 perpetualIndex
-    ) public returns (uint256) {
+    function allocateSymbol(uint256 perpetualIndex) public returns (uint256) {
         return ISymbolService(symbolService).allocateSymbol(address(this), perpetualIndex);
     }
 
-    function assignReservedSymbol(
-        uint256 perpetualIndex,
-        uint256 symbol
-    ) public {
+    function assignReservedSymbol(uint256 perpetualIndex, uint256 symbol) public {
         ISymbolService(symbolService).assignReservedSymbol(address(this), perpetualIndex, symbol);
     }
 
-    function getPerpetualUID(uint256 symbol) public view returns (address liquidityPool, uint256 perpetualIndex) {
+    function getPerpetualUID(uint256 symbol)
+        public
+        view
+        returns (address liquidityPool, uint256 perpetualIndex)
+    {
         return ISymbolService(symbolService).getPerpetualUID(symbol);
     }
 
@@ -50,19 +60,28 @@ contract TestSymbolService {
         return ISymbolService(symbolService).getSymbols(address(this), perpetualIndex);
     }
 
-    function getLiquidityPoolInfo() public view returns (
-            bool,
-            bool,
+    function getLiquidityPoolInfo()
+        public
+        view
+        returns (
+            bool isRunning,
+            bool isFastCreationEnabled,
+            // [0] creator,
+            // [1] operator,
+            // [2] transferringOperator,
+            // [3] governor,
+            // [4] shareToken,
+            // [5] collateralToken,
+            // [6] vault,
             address[7] memory addresses,
-            int256,
-            int256,
-            uint256,
-            uint256,
-            uint256
-    ) {
+            int256 vaultFeeRate,
+            int256 poolCash,
+            uint256 collateralDecimals,
+            uint256 perpetualCount,
+            uint256 fundingTime
+        )
+    {
         addresses[0] = factory;
         return (false, false, addresses, 0, 0, 0, 0, 0);
     }
-
 }
- 

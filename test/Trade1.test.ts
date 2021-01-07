@@ -48,6 +48,7 @@ describe('TradeModule1', () => {
             const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
+                CollateralModule,
                 LiquidityPoolModule,
                 TradeModule,
             });
@@ -119,6 +120,7 @@ describe('TradeModule1', () => {
                 const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
                 testTrade = await createContract("TestTrade", [], {
                     PerpetualModule,
+                    CollateralModule,
                     LiquidityPoolModule,
                     TradeModule,
                 });
