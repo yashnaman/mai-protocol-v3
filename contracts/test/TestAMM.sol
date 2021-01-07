@@ -69,7 +69,7 @@ contract TestAMM {
     function getPoolMargin() public view returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
-        return AMMModule.getPoolMargin(context, perpetual.openSlippageFactor.value);
+        return AMMModule.calculatePoolMargin(context, perpetual.openSlippageFactor.value);
     }
 
 
@@ -79,7 +79,7 @@ contract TestAMM {
         returns (int256 deltaCash)
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
-        deltaCash = AMMModule._getDeltaMargin(
+        deltaCash = AMMModule._getDeltaCash(
             getPoolMargin(),
             perpetual.marginAccounts[address(this)].position,
             perpetual.marginAccounts[address(this)].position.add(amount),
