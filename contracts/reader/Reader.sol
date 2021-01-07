@@ -33,6 +33,7 @@ contract Reader {
         int256[34] nums;
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;
+        bool isMarketClosed;
         int256 ammCashBalance;
         int256 ammPositionAmount;
     }
@@ -81,11 +82,12 @@ contract Reader {
         (perp.state, perp.oracle, perp.nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
             perpetualIndex
         );
-        // symbol
+        // read more from symbol service
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
-        // underlying
+        // read more from oracle
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
-        // amm state. amm's account is the same as liquidity pool address
+        perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
+        // read more from account
         (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, liquidityPool);
     }
