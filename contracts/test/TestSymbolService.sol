@@ -50,15 +50,18 @@ contract TestSymbolService {
         return ISymbolService(symbolService).getSymbols(address(this), perpetualIndex);
     }
 
-    function getLiquidityPoolInfo() public returns (
-        address[6] memory addresses,
-        int256[2] memory nums,
-        uint256 perpetualCount,
-        uint256 fundingTime,
-        bool isRunning,
-        bool isFastCreationEnabled
+    function getLiquidityPoolInfo() public view returns (
+            bool,
+            bool,
+            address[7] memory addresses,
+            int256,
+            int256,
+            uint256,
+            uint256,
+            uint256
     ) {
         addresses[0] = factory;
+        return (false, false, addresses, 0, 0, 0, 0, 0);
     }
 
 }

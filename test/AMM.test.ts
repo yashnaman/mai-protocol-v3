@@ -221,7 +221,7 @@ describe('AMM', () => {
         })
     })
 
-    describe('deltaCash', function () {
+    describe('getDeltaCash', function () {
 
         const cases = [
             {
@@ -241,7 +241,7 @@ describe('AMM', () => {
         cases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                expect(await amm.deltaCash(element.amount)).approximateBigNumber(element.deltaCash)
+                expect(await amm.getDeltaCash(element.amount)).approximateBigNumber(element.deltaCash)
             })
         })
     })

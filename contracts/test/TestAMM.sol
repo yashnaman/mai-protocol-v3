@@ -73,7 +73,7 @@ contract TestAMM {
     }
 
 
-    function deltaCash(int256 amount)
+    function getDeltaCash(int256 amount)
         public
         view
         returns (int256 deltaCash)
