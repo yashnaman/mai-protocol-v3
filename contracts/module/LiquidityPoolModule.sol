@@ -593,6 +593,9 @@ library LiquidityPoolModule {
     function rebalance(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        if (perpetual.state != PerpetualState.NORMAL) {
+            return;
+        }
         int256 rebalanceMargin = perpetual.getRebalanceMargin();
         if (rebalanceMargin == 0) {
             // nothing to rebalance

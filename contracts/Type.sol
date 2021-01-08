@@ -84,7 +84,7 @@ struct PerpetualStorage {
     int256 maintenanceMarginRate;
     int256 operatorFeeRate;
     int256 lpFeeRate;
-    int256 referrerRebateRate;
+    int256 referralRebateRate;
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
     int256 insuranceFundRate;

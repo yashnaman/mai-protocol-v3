@@ -40,7 +40,7 @@ interface ILiquidityPool {
             // [6] maintenanceMarginRate,
             // [7] operatorFeeRate,
             // [8] lpFeeRate,
-            // [9] referrerRebateRate,
+            // [9] referralRebateRate,
             // [10] liquidationPenaltyRate,
             // [11] keeperGasReward,
             // [12] insuranceFundRate,

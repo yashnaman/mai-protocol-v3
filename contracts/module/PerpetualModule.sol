@@ -107,7 +107,7 @@ library PerpetualModule {
         perpetual.maintenanceMarginRate = coreParams[1];
         perpetual.operatorFeeRate = coreParams[2];
         perpetual.lpFeeRate = coreParams[3];
-        perpetual.referrerRebateRate = coreParams[4];
+        perpetual.referralRebateRate = coreParams[4];
         perpetual.liquidationPenaltyRate = coreParams[5];
         perpetual.keeperGasReward = coreParams[6];
         perpetual.insuranceFundRate = coreParams[7];
@@ -185,8 +185,8 @@ library PerpetualModule {
             perpetual.liquidationPenaltyRate = newValue;
         } else if (key == "keeperGasReward") {
             perpetual.keeperGasReward = newValue;
-        } else if (key == "referrerRebateRate") {
-            perpetual.referrerRebateRate = newValue;
+        } else if (key == "referralRebateRate") {
+            perpetual.referralRebateRate = newValue;
         } else if (key == "insuranceFundRate") {
             perpetual.insuranceFundRate = newValue;
         } else if (key == "insuranceFundCap") {

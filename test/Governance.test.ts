@@ -23,7 +23,7 @@ describe('Governance', () => {
         keeperGasReward: toWei("1"),
         lpFeeRate: toWei("0.0007"),
         operatorFeeRate: toWei("0.0001"),
-        referrerRebateRate: toWei("0"),
+        referralRebateRate: toWei("0"),
     }
     const riskParameters = {
         halfSpread: toWei("0.001"),
@@ -79,9 +79,9 @@ describe('Governance', () => {
         await governance.setPerpetualBaseParameter(0, toBytes32("lpFeeRate"), toWei("0.002"));
         expect(await governance.lpFeeRate(0)).to.equal(toWei("0.002"));
 
-        expect(await governance.referrerRebateRate(0)).to.equal(toWei("0.2"));
-        await governance.setPerpetualBaseParameter(0, toBytes32("referrerRebateRate"), toWei("0.5"));
-        expect(await governance.referrerRebateRate(0)).to.equal(toWei("0.5"));
+        expect(await governance.referralRebateRate(0)).to.equal(toWei("0.2"));
+        await governance.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
+        expect(await governance.referralRebateRate(0)).to.equal(toWei("0.5"));
 
         expect(await governance.liquidationPenaltyRate(0)).to.equal(toWei("0.02"));
         await governance.setPerpetualBaseParameter(0, toBytes32("liquidationPenaltyRate"), toWei("0.01"));

@@ -66,8 +66,8 @@ contract TestGovernance is Governance {
         return _liquidityPool.perpetuals[perpetualIndex].lpFeeRate;
     }
 
-    function referrerRebateRate(uint256 perpetualIndex) public view returns (int256) {
-        return _liquidityPool.perpetuals[perpetualIndex].referrerRebateRate;
+    function referralRebateRate(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].referralRebateRate;
     }
 
     function liquidationPenaltyRate(uint256 perpetualIndex) public view returns (int256) {

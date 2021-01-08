@@ -209,14 +209,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @notice Liquidate trader if trader is unsafe, amm takes position
      * @param perpetualIndex The index of perpetual
      * @param trader The address of liquidated trader
-     * @param deadline The deadline of liquidation
      * @return int256 The delta position of liquidated trader
      */
-    function liquidateByAMM(
-        uint256 perpetualIndex,
-        address trader,
-        uint256 deadline
-    )
+    function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
         syncState
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
@@ -224,7 +219,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         returns (int256)
     {
         require(trader != address(0), "trader is invalid");
-        require(deadline >= block.timestamp, "deadline exceeded");
+        require(trader != address(this), "cannot liquidate amm");
         return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
     }
 
@@ -251,6 +246,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         returns (int256)
     {
         require(trader != address(0), "trader is invalid");
+        require(trader != address(this), "cannot liquidate amm");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");

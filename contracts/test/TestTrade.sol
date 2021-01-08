@@ -42,13 +42,31 @@ contract TestTrade is TestLiquidityPool {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
+    function getFees(
+        uint256 perpetualIndex,
+        address trader,
+        int256 tradeValue
+    )
+        public
+        view
+        returns (
+            int256 lpFee,
+            int256 operatorFee,
+            int256 vaultFee
+        )
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        (lpFee, operatorFee, vaultFee) = _liquidityPool.getFees(perpetual, trader, tradeValue);
+    }
+
     function updateFees(
         uint256 perpetualIndex,
-        int256 value,
-        address referrer
-    ) public {
+        address trader,
+        address referrer,
+        int256 value
+    ) public returns (int256 lpFee, int256 totalFee) {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.updateFees(perpetual, value, referrer);
+        return _liquidityPool.updateFees(perpetual, trader, referrer, value);
     }
 
     function validatePrice(
@@ -57,15 +75,6 @@ contract TestTrade is TestLiquidityPool {
         int256 limitPrice
     ) public pure {
         TradeModule.validatePrice(isLong, price, limitPrice);
-    }
-
-    function updateFee(
-        uint256 perpetualIndex,
-        int256 tradeValue,
-        address referrer
-    ) public {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        _liquidityPool.updateFees(perpetual, tradeValue, referrer);
     }
 
     function getClaimableFee(address claimer) public view returns (int256) {

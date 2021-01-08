@@ -126,22 +126,37 @@ library MarginAccountModule {
     }
 
     /**
+     * @dev Get available margin of given account.
+     * @param perpetual The perpetual storage reference
+     * @param trader The address of trader
+     * @param price The price to calculate margin / initial margin
+     * @return availableMargin Available margin of trader
+     */
+    function getAvailableMargin(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 price
+    ) internal view returns (int256 availableMargin) {
+        int256 threshold =
+            getPosition(perpetual, trader) == 0
+                ? 0
+                : getInitialMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
+        availableMargin = getMargin(perpetual, trader, price).sub(threshold);
+    }
+
+    /**
      * @dev Check if trader is initial margin safe
      * @param perpetual The perpetual
      * @param trader The trader
      * @param price The price to calculate initial margin
-     * @return isSafe If trader is initial margin safe
+     * @return isSafe True if trader is initial margin safe
      */
     function isInitialMarginSafe(
         PerpetualStorage storage perpetual,
         address trader,
         int256 price
     ) internal view returns (bool isSafe) {
-        int256 threshold =
-            getPosition(perpetual, trader) == 0
-                ? 0
-                : getInitialMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
-        isSafe = getMargin(perpetual, trader, price) >= threshold;
+        isSafe = (getAvailableMargin(perpetual, trader, price) >= 0);
     }
 
     /**
@@ -204,6 +219,9 @@ library MarginAccountModule {
         address trader,
         int256 deltaCash
     ) internal {
+        if (deltaCash == 0) {
+            return;
+        }
         MarginAccount storage account = perpetual.marginAccounts[trader];
         account.cash = account.cash.add(deltaCash);
     }
@@ -222,10 +240,14 @@ library MarginAccountModule {
         int256 deltaCash
     ) internal {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        account.position = account.position.add(deltaPosition);
-        account.cash = account.cash.add(deltaCash).add(
-            perpetual.unitAccumulativeFunding.wmul(deltaPosition)
-        );
+        if (deltaPosition != 0) {
+            account.position = account.position.add(deltaPosition);
+        }
+        if (deltaCash != 0) {
+            account.cash = account.cash.add(deltaCash).add(
+                perpetual.unitAccumulativeFunding.wmul(deltaPosition)
+            );
+        }
     }
 
     /**

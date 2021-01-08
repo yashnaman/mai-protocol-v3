@@ -42,7 +42,8 @@ library TradeModule {
         address indexed liquidator,
         address indexed trader,
         int256 amount,
-        int256 price
+        int256 price,
+        int256 penalty
     );
 
     /**
@@ -67,23 +68,26 @@ library TradeModule {
     ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 position = perpetual.getPosition(trader);
-        amount = flags.isCloseOnly() ? getMaxPositionToClose(position, amount) : amount;
-        // 0. price / amount
+        // close only
+        if (flags.isCloseOnly()) {
+            amount = getMaxPositionToClose(position, amount);
+        }
+        // query price
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
-
-        console.log("{DEBUG}", uint256(deltaCash), uint256(deltaPosition));
-
         int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
+        // check price
         if (!flags.isMarketOrder()) {
             validatePrice(amount >= 0, tradePrice, priceLimit);
         }
-        // 2. trade
+        // trade
+        perpetual.updateMargin(address(this), deltaPosition, deltaCash);
+        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         (int256 lpFee, int256 totalFee) =
-            updateFees(liquidityPool, perpetual, deltaCash.abs(), referrer);
-        perpetual.updateMargin(address(this), deltaPosition, deltaCash.add(lpFee));
-        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg().sub(totalFee));
-        // 4. safe
+            updateFees(liquidityPool, perpetual, trader, referrer, deltaCash.abs());
+        perpetual.updateCash(address(this), lpFee);
+        perpetual.updateCash(trader, totalFee.neg());
+        // account safety
         if (Utils.isOpen(position, deltaPosition.neg())) {
             require(
                 perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
@@ -100,36 +104,80 @@ library TradeModule {
     }
 
     /**
-     * @notice Update fees in perpetual
+     * @notice Get fees during trading.
      * @param liquidityPool The liquidity pool
      * @param perpetual The perpetual
+     * @param trader The trader
      * @param tradeValue The value of trade
+     * @return lpFee The fee belongs to LP
+     * @return totalFee The total fee of trade
+     */
+    function getFees(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 tradeValue
+    )
+        public
+        view
+        returns (
+            int256,
+            int256,
+            int256
+        )
+    {
+        int256 available = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+        if (available <= 0) {
+            return (0, 0, 0);
+        }
+        int256 lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+        if (available <= lpFee) {
+            return (available, 0, 0);
+        }
+        available = available.sub(lpFee);
+        int256 operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
+        if (available <= operatorFee) {
+            return (lpFee, available, 0);
+        }
+        available = available.sub(operatorFee);
+        int256 vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
+        if (available <= vaultFee) {
+            return (lpFee, operatorFee, available);
+        }
+        return (lpFee, operatorFee, vaultFee);
+    }
+
+    /**
+     * @notice Update fees during trading.
+     * @param liquidityPool The liquidity pool
+     * @param perpetual The perpetual
+     * @param trader The trader
      * @param referrer The referrer
+     * @param tradeValue The value of trade
      * @return lpFee The fee belongs to LP
      * @return totalFee The total fee of trade
      */
     function updateFees(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
-        int256 tradeValue,
-        address referrer
+        address trader,
+        address referrer,
+        int256 tradeValue
     ) public returns (int256 lpFee, int256 totalFee) {
         require(tradeValue >= 0, "negative trade value");
-
-        int256 vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
-        int256 operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
-        lpFee = tradeValue.wmul(perpetual.lpFeeRate);
-        totalFee = vaultFee.add(operatorFee).add(lpFee);
-
-        if (referrer != INVALID_ADDRESS && perpetual.referrerRebateRate > 0) {
-            int256 lpFeeRebate = lpFee.wmul(perpetual.referrerRebateRate);
-            int256 operatorFeeRabate = operatorFee.wmul(perpetual.referrerRebateRate);
-            int256 referrerFee = lpFeeRebate.add(operatorFeeRabate);
+        int256 referrerFee;
+        int256 operatorFee;
+        int256 vaultFee;
+        (lpFee, operatorFee, vaultFee) = getFees(liquidityPool, perpetual, trader, tradeValue);
+        totalFee = lpFee.add(operatorFee).add(vaultFee);
+        if (referrer != INVALID_ADDRESS && perpetual.referralRebateRate > 0) {
+            int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
+            int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
             lpFee = lpFee.sub(lpFeeRebate);
             operatorFee = operatorFee.sub(operatorFeeRabate);
+            referrerFee = lpFeeRebate.add(operatorFeeRabate);
             liquidityPool.transferToUser(payable(referrer), referrerFee);
         }
-
         liquidityPool.transferToUser(payable(liquidityPool.vault), vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
         perpetual.decreaseTotalCollateral(totalFee);
@@ -155,32 +203,45 @@ library TradeModule {
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
-            liquidityPool.queryTradeWithAMM(perpetualIndex, amount, false);
+            liquidityPool.queryTradeWithAMM(perpetualIndex, amount, true);
+        require(deltaPosition != 0, "insufficient liquidity");
         // 2. trade
         int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
-        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        perpetual.updateMargin(
+            trader,
+            deltaPosition.neg(),
+            deltaCash.add(perpetual.keeperGasReward).neg()
+        );
         // 3. penalty
+        int256 penalty =
+            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
+                perpetual.getMargin(trader, markPrice)
+            );
         {
-            int256 liquidatePenalty =
-                perpetual
-                    .getMarkPrice()
-                    .wmul(deltaPosition)
-                    .wmul(perpetual.liquidationPenaltyRate)
-                    .abs();
-            (int256 penaltyToTaker, int256 penaltyToFund) =
-                getLiquidationPenalty(
-                    perpetual,
-                    trader,
-                    liquidatePenalty,
-                    perpetual.keeperGasReward
-                );
-            require(penaltyToTaker >= 0, "penalty to taker should be greater equal than 0");
+            int256 penaltyToFund;
+            int256 penaltyToTaker;
+            if (penalty > 0) {
+                penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
+                penaltyToTaker = penalty.sub(penaltyToFund);
+            } else {
+                penaltyToFund = penalty;
+                penaltyToTaker = 0;
+            }
             int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
-            perpetual.updateCash(address(this), penaltyToTaker.add(penaltyToLP));
-            liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+            perpetual.updateCash(address(this), penaltyToLP.add(penaltyToTaker));
+            perpetual.updateCash(trader, penalty.neg());
         }
-        emit Liquidate(perpetualIndex, address(this), trader, deltaPosition.neg(), liquidatePrice);
+        perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
+        liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+        emit Liquidate(
+            perpetualIndex,
+            address(this),
+            trader,
+            deltaPosition.neg(),
+            liquidatePrice,
+            penalty
+        );
         // 4. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);
@@ -219,14 +280,22 @@ library TradeModule {
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty
+        int256 penalty =
+            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
+                perpetual.getMargin(trader, markPrice)
+            );
         {
-            int256 liquidatePenalty = deltaCash.wmul(perpetual.liquidationPenaltyRate).abs();
-            (int256 penaltyToTaker, int256 penaltyToFund) =
-                getLiquidationPenalty(perpetual, trader, liquidatePenalty, 0);
-            require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
-            int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
+            int256 penaltyToFund;
+            int256 penaltyToTaker;
+            if (penalty > 0) {
+                penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
+                penaltyToTaker = penalty.sub(penaltyToFund);
+            } else {
+                penaltyToFund = penalty;
+            }
+            perpetual.updateCash(address(this), perpetual.updateInsuranceFund(penaltyToFund));
             perpetual.updateCash(liquidator, penaltyToTaker);
-            perpetual.updateCash(address(this), penaltyToLP);
+            perpetual.updateCash(trader, penalty.neg());
         }
         // 3. safe
         if (Utils.isOpen(perpetual.getPosition(liquidator), amount)) {
@@ -240,8 +309,14 @@ library TradeModule {
                 "trader maintenance margin unsafe"
             );
         }
-        // 4. events
-        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), liquidatePrice);
+        emit Liquidate(
+            perpetualIndex,
+            liquidator,
+            trader,
+            deltaPosition.neg(),
+            liquidatePrice,
+            penalty
+        );
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);
@@ -279,34 +354,5 @@ library TradeModule {
         require(price >= 0, "negative price");
         bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
         require(isPriceSatisfied, "price exceeds limit");
-    }
-
-    /**
-     * @dev Get penalty of liquidation
-     * @param perpetual The perpetual
-     * @param trader The liquidated account
-     * @param softPenalty The penalty taken as possible
-     * @param hardPenalty The penalty must be taken
-     * @return penaltyToTaker The penalty taken by taker
-     * @return penaltyToFund The penalty taken by fund
-     */
-    function getLiquidationPenalty(
-        PerpetualStorage storage perpetual,
-        address trader,
-        int256 softPenalty,
-        int256 hardPenalty
-    ) internal view returns (int256 penaltyToTaker, int256 penaltyToFund) {
-        require(softPenalty >= 0, "soft penalty is negative");
-        require(hardPenalty >= 0, "hard penalty is negative");
-        int256 fullPenalty = hardPenalty.add(softPenalty);
-        int256 traderMargin = perpetual.getMargin(trader, perpetual.getMarkPrice());
-        int256 traderMarginLeft = fullPenalty.min(traderMargin).sub(hardPenalty);
-        if (traderMarginLeft > 0) {
-            penaltyToFund = traderMarginLeft.wmul(perpetual.insuranceFundRate);
-            penaltyToTaker = traderMarginLeft.sub(penaltyToFund);
-        } else {
-            penaltyToFund = traderMarginLeft;
-            penaltyToTaker = 0;
-        }
     }
 }

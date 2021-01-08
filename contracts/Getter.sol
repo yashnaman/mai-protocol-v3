@@ -9,6 +9,7 @@ import "./libraries/SafeMathExt.sol";
 
 import "./module/MarginAccountModule.sol";
 import "./module/PerpetualModule.sol";
+import "./module/LiquidityPoolModule.sol";
 import "./module/AMMModule.sol";
 
 import "./Type.sol";
@@ -22,6 +23,7 @@ contract Getter is Storage {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
     /**
@@ -97,7 +99,7 @@ contract Getter is Storage {
             // [6] maintenanceMarginRate,
             // [7] operatorFeeRate,
             // [8] lpFeeRate,
-            // [9] referrerRebateRate,
+            // [9] referralRebateRate,
             // [10] liquidationPenaltyRate,
             // [11] keeperGasReward,
             // [12] insuranceFundRate,
@@ -127,7 +129,7 @@ contract Getter is Storage {
             perpetual.maintenanceMarginRate,
             perpetual.operatorFeeRate,
             perpetual.lpFeeRate,
-            perpetual.referrerRebateRate,
+            perpetual.referralRebateRate,
             // [10]
             perpetual.liquidationPenaltyRate,
             perpetual.keeperGasReward,
@@ -186,6 +188,9 @@ contract Getter is Storage {
             bool isBankrupt
         )
     {
+        if (trader == address(this)) {
+            _liquidityPool.rebalance(perpetualIndex);
+        }
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         MarginAccount storage account = perpetual.marginAccounts[trader];
         int256 markPrice = perpetual.getMarkPrice();
