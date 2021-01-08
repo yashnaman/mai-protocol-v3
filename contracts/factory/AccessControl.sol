@@ -12,42 +12,59 @@ contract AccessControl {
     mapping(address => EnumerableMapExt.AddressToUintMap) internal _accessControls;
 
     // privilege
-    event GrantPrivilege(address indexed account, address indexed grantor, uint256 privilege);
-    event RevokePrivilege(address indexed account, address indexed grantor, uint256 privilege);
+    event GrantPrivilege(address indexed grantor, address indexed grantee, uint256 privilege);
+    event RevokePrivilege(address indexed grantor, address indexed grantee, uint256 privilege);
 
-    function grantPrivilege(address grantor, uint256 privilege) external {
+    /**
+     * @notice Grant grantee privilege
+     * @param grantee The grantee
+     * @param privilege The privilege
+     */
+    function grantPrivilege(address grantee, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        require(!isGranted(msg.sender, grantor, privilege), "privilege is already granted");
-        uint256 grantedPrivileges = _accessControls[msg.sender].contains(grantor)
-            ? _accessControls[msg.sender].get(grantor)
+        require(!isGranted(msg.sender, grantee, privilege), "privilege is already granted");
+        uint256 grantedPrivileges = _accessControls[msg.sender].contains(grantee)
+            ? _accessControls[msg.sender].get(grantee)
             : 0;
         grantedPrivileges = grantedPrivileges.set(privilege);
-        _accessControls[msg.sender].set(grantor, grantedPrivileges);
-        emit GrantPrivilege(msg.sender, grantor, privilege);
+        _accessControls[msg.sender].set(grantee, grantedPrivileges);
+        emit GrantPrivilege(msg.sender, grantee, privilege);
     }
 
-    function revokePrivilege(address grantor, uint256 privilege) external {
+    /**
+     * @notice Revoke grantee privilege
+     * @param grantee The grantee
+     * @param privilege The privilege
+     */
+    function revokePrivilege(address grantee, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
-        require(isGranted(msg.sender, grantor, privilege), "privilege is not granted");
+        require(isGranted(msg.sender, grantee, privilege), "privilege is not granted");
         _accessControls[msg.sender].set(
-            grantor,
-            _accessControls[msg.sender].get(grantor).clean(privilege)
+            grantee,
+            _accessControls[msg.sender].get(grantee).clean(privilege)
         );
-        emit RevokePrivilege(msg.sender, grantor, privilege);
+        emit RevokePrivilege(msg.sender, grantee, privilege);
     }
 
+    /**
+     * @notice Check if grantee is granted privilege
+     * @param grantor The grantor
+     * @param grantee The grantee
+     * @param privilege The privilege
+     * @return bool If the grantee is granted
+     */
     function isGranted(
-        address account,
-        address trader,
+        address grantor,
+        address grantee,
         uint256 privilege
     ) public view returns (bool) {
         if (!_isValid(privilege)) {
             return false;
         }
-        if (!_accessControls[account].contains(trader)) {
+        if (!_accessControls[grantor].contains(grantee)) {
             return false;
         }
-        uint256 granted = _accessControls[account].get(trader);
+        uint256 granted = _accessControls[grantor].get(grantee);
         return granted > 0 && granted.test(privilege);
     }
 

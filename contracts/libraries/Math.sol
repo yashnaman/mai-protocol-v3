@@ -4,13 +4,23 @@ pragma solidity >=0.7.4;
 library Math {
     uint256 private constant _POSITIVE_INT256_MAX = 2**255 - 1;
 
+    /**
+     * @dev Convert uint256 to int256 safely
+     * @param x The uint256 input
+     * @return int256 The int256 output
+     */
     function toInt256(uint256 x) internal pure returns (int256) {
         require(x <= _POSITIVE_INT256_MAX, "uint256 overflow");
         return int256(x);
     }
 
-    // 0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3
-    // 606 ~ 672 gas
+    /**
+     * @dev Get most significant bit,
+            0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3,
+            606 ~ 672 gas
+     * @param x The input
+     * @return uint8 The output
+     */
     function mostSignificantBit(uint256 x) internal pure returns (uint8) {
         uint256 t;
         uint8 r;
@@ -50,28 +60,33 @@ library Math {
     }
 
     // https://en.wikipedia.org/wiki/Integer_square_root
-    function sqrt(int256 y) internal pure returns (int256) {
-        require(y >= 0, "negative sqrt");
-        if (y < 3) {
-            return (y + 1) / 2;
+    /**
+     * @dev Get square root
+     * @param x The input, 10^36
+     * @return int256 The square root, 10^18
+     */
+    function sqrt(int256 x) internal pure returns (int256) {
+        require(x >= 0, "negative sqrt");
+        if (x < 3) {
+            return (x + 1) / 2;
         }
 
         // binary estimate
         // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
         int256 next;
         {
-            uint8 n = mostSignificantBit(uint256(y));
+            uint8 n = mostSignificantBit(uint256(x));
             n = (n + 1) / 2;
-            next = int256((1 << (n - 1)) + (uint256(y) >> (n + 1)));
+            next = int256((1 << (n - 1)) + (uint256(x) >> (n + 1)));
         }
 
         // modified babylonian method
         // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
-        int256 z = y;
-        while (next < z) {
-            z = next;
-            next = (next + y / next) >> 1;
+        int256 y = x;
+        while (next < y) {
+            y = next;
+            next = (next + x / next) >> 1;
         }
-        return z;
+        return y;
     }
 }

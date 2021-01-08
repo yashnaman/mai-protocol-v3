@@ -13,17 +13,23 @@ library SafeMathExt {
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
 
-    // uint256 always half up
+    /*
+     * @dev Always half up for uint256
+     */
     function wmul(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(y).add(Constant.UNSIGNED_ONE / 2) / Constant.UNSIGNED_ONE;
     }
 
-    // uint256 always half up
+    /*
+     * @dev Always half up for uint256
+     */
     function wdiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = x.mul(Constant.UNSIGNED_ONE).add(y / 2).div(y);
     }
 
-    // uint256 always half up
+    /*
+     * @dev Always half up for uint256
+     */
     function wfrac(
         uint256 x,
         uint256 y,
@@ -32,12 +38,16 @@ library SafeMathExt {
         r = x.mul(y).add(z / 2).div(z);
     }
 
-    // no round parameter always half up
+    /*
+     * @dev Always half up if no rounding parameter
+     */
     function wmul(int256 x, int256 y) internal pure returns (int256 z) {
         z = roundHalfUp(x.mul(y), Constant.SIGNED_ONE) / Constant.SIGNED_ONE;
     }
 
-    // no round parameter always half up
+    /*
+     * @dev Always half up if no rounding parameter
+     */
     function wdiv(int256 x, int256 y) internal pure returns (int256 z) {
         if (y < 0) {
             y = neg(y);
@@ -46,7 +56,9 @@ library SafeMathExt {
         z = roundHalfUp(x.mul(Constant.SIGNED_ONE), y).div(y);
     }
 
-    // no round parameter always half up
+    /*
+     * @dev Always half up if no rounding parameter
+     */
     function wfrac(
         int256 x,
         int256 y,
@@ -94,9 +106,11 @@ library SafeMathExt {
         return SignedSafeMathUpgradeable.sub(int256(0), a);
     }
 
-    /// @dev ROUND_HALF_UP rule helper.
-    ///      You have to call roundHalfUp(x, y) / y to finish the rounding operation
-    ///      0.5 ≈ 1, 0.4 ≈ 0, -0.5 ≈ -1, -0.4 ≈ 0
+    /*
+     * @dev ROUND_HALF_UP rule helper.
+     *      You have to call roundHalfUp(x, y) / y to finish the rounding operation.
+     *      0.5 ≈ 1, 0.4 ≈ 0, -0.5 ≈ -1, -0.4 ≈ 0
+     */
     function roundHalfUp(int256 x, int256 y) internal pure returns (int256) {
         require(y > 0, "roundHalfUp only supports y > 0");
         if (x >= 0) {
@@ -105,6 +119,9 @@ library SafeMathExt {
         return x.sub(y / 2);
     }
 
+    /*
+     * @dev Division, rounding up or rounding down
+     */
     function div(
         int256 x,
         int256 y,

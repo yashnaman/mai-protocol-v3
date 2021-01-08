@@ -25,43 +25,93 @@ library OrderData {
     uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
     uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
 
+    /*
+     * @dev Check if order is close-only order
+     * @param order The order
+     * @return bool If order is close-only order
+     */
     function isCloseOnly(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_CLOSE_ONLY) > 0;
     }
 
+    /*
+     * @dev Check if order is market order
+     * @param order The order
+     * @return bool If order is market order
+     */
     function isMarketOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_MARKET_ORDER) > 0;
     }
 
+    /*
+     * @dev Check if order is stop-losss order
+     * @param order The order
+     * @return bool If order is stop-losss order
+     */
     function isStopLossOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_STOP_LOSS_ORDER) > 0;
     }
 
+    /*
+     * @dev Check if order is take-profit order
+     * @param order The order
+     * @return bool If order is take-profit order
+     */
     function isTakeProfitOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_TAKE_PROFIT_ORDER) > 0;
     }
 
+    /*
+     * @dev Check if flag is close-only flag
+     * @param flags The flag
+     * @return bool If flag is close-only flag
+     */
     function isCloseOnly(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_CLOSE_ONLY) > 0;
     }
 
+    /*
+     * @dev Check if flag is market flag
+     * @param flags The flag
+     * @return bool If flag is market flag
+     */
     function isMarketOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_MARKET_ORDER) > 0;
     }
 
+    /*
+     * @dev Check if flag is stop-loss flag
+     * @param flags The flag
+     * @return bool If flag is stop-loss flag
+     */
     function isStopLossOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_STOP_LOSS_ORDER) > 0;
     }
 
+    /*
+     * @dev Check if flag is take-profit flag
+     * @param flags The flag
+     * @return bool If flag is take-profit flag
+     */
     function isTakeProfitOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_TAKE_PROFIT_ORDER) > 0;
     }
 
+    /*
+     * @dev Get hash of order
+     * @param order The order
+     * @return bytes32 The hash of order
+     */
     function getOrderHash(Order memory order) internal pure returns (bytes32) {
         bytes32 result = keccak256(abi.encode(EIP712_ORDER_TYPE, order));
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, result));
     }
 
+    /*
+     * @dev Encode order data to signature
+     * @param orderData The order data
+     * @return signature The signature of order
+     */
     function decodeSignature(bytes memory orderData)
         internal
         pure
@@ -80,6 +130,11 @@ library OrderData {
         signature = abi.encodePacked(r, s, v, signType);
     }
 
+    /*
+     * @dev Decode data to order data
+     * @param data The data
+     * @return order The order data
+     */
     function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {
         bytes32 tmp;
         assembly {

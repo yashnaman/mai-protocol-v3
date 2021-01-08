@@ -33,6 +33,11 @@ library CollateralModule {
 
     uint256 internal constant SYSTEM_DECIMALS = 18;
 
+    /**
+     * @notice Initialize collateral of liquidity pool
+     * @param collateral The collateral
+     * @param collateralDecimals The decimal of collateral
+     */
     function initializeCollateral(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
@@ -48,6 +53,15 @@ library CollateralModule {
         liquidityPool.collateralDecimals = collateralDecimals;
     }
 
+    /**
+     * @notice Transfer eth or erc20 token from account to liquidity pool.
+     *         Eth will be automatically wrapped if liquidity pool is wrapped
+     * @param liquidityPool The liquidity pool
+     * @param account The account
+     * @param amount The amount of transferred erc20 token
+     * @param totalAmount The total amount transferred, eth amount + weth amount
+     *                    if liquidity pool is wrapped
+     */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
         address account,

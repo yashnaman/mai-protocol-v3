@@ -48,21 +48,37 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         deposit();
     }
 
+    /**
+     * @notice Get the balance of the trader's account
+     * @param trader The trader
+     * @return uint256 The balance of the trader's account
+     */
     function balanceOf(address trader) public view returns (uint256) {
         return _balances[trader];
     }
 
+    /**
+     * @notice Deposit to msg.sender's account
+     */
     function deposit() public payable nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].add(msg.value);
         emit Deposit(msg.sender, msg.value);
     }
 
+    /**
+     * @notice Withdraw from msg.sender's account
+     * @param amount The amount to withdraw
+     */
     function withdraw(uint256 amount) public nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
         AddressUpgradeable.sendValue(payable(msg.sender), amount);
         emit Withdraw(msg.sender, amount);
     }
 
+    /**
+     * @notice Cancel a order
+     * @param order The order to cancel
+     */
     function cancelOrder(Order memory order) public {
         bytes32 orderHash = order.getOrderHash();
         require(!_orderCanceled[orderHash], "order is already canceled");
@@ -70,18 +86,30 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         emit CancelOrder(orderHash);
     }
 
+    /**
+     * @notice Execute a transaction of liquidity pool's method
+     * @param liquidityPool The liquidity pool
+     * @param callData The method data
+     * @param gasReward The gas reward of msg.sender
+     */
     function execute(
-        address liqidityPool,
+        address liquidityPool,
         bytes memory callData,
         uint256 gasReward
     ) public {
         // address signer = getSigner(callData);
         // require(gasReward <= balanceOf(order.trader), "insufficient gas fee");
-        (bool success, ) = liqidityPool.call(callData);
+        (bool success, ) = liquidityPool.call(callData);
         require(success);
         // _transfer(signer, msg.sender, gasReward);
     }
 
+    /**
+     * @notice Trade multiple orders
+     * @param compressedOrders The orders to trade
+     * @param amounts The trading amounts
+     * @param gasRewards The gas rewards of broker
+     */
     function batchTrade(
         bytes[] calldata compressedOrders,
         int256[] calldata amounts,
@@ -129,11 +157,22 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         }
     }
 
+    /**
+     * @dev Fill a order
+     * @param orderHash The order hash
+     * @param amount The filled amount
+     */
     function _fillOrder(bytes32 orderHash, int256 amount) internal {
         _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
         emit FillOrder(orderHash, amount);
     }
 
+    /**
+     * @dev Transfer from sender to recipient
+     * @param sender The sender
+     * @param recipient The recipient
+     * @param amount The amount transferred
+     */
     function _transfer(
         address sender,
         address recipient,

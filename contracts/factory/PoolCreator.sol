@@ -47,6 +47,14 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         bool isFastCreationEnabled
     );
 
+    /**
+     * @notice Create a liquidity pool with latest implementation
+     * @param collateral The collateral of liquidity pool
+     * @param collateralDecimals The collateral's decimal of liquidity pool
+     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     * @param nonce The nonce of liquidity pool
+     * @return address The address of liquidity pool
+     */
     function createLiquidityPool(
         address collateral,
         uint256 collateralDecimals,
@@ -63,6 +71,15 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
             );
     }
 
+    /**
+     * @notice Create a liquidity pool with specific implementation
+     * @param implementation The implementation
+     * @param collateral The collateral of liquidity pool
+     * @param collateralDecimals The collateral's decimal of liquidity pool
+     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     * @param nonce The nonce of liquidity pool
+     * @return address The address of liquidity pool
+     */
     function createLiquidityPoolWith(
         address implementation,
         address collateral,
@@ -80,6 +97,15 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
             );
     }
 
+    /**
+     * @dev Create a liquidity pool with a specific implementation
+     * @param implementation The implementation
+     * @param collateral The collateral of liquidity pool
+     * @param collateralDecimals The collateral's decimal of liquidity pool
+     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     * @param nonce The nonce of liquidity pool
+     * @return address The address of liquidity pool
+     */
     function _createLiquidityPoolWith(
         address implementation,
         address collateral,
@@ -119,11 +145,24 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         return liquidityPool;
     }
 
+    /**
+     * @dev Create a clone of the implementation
+     * @param implementation The implementation
+     * @return address The address of cloned implementation
+     */
     function _createClone(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
         return createClone(implementation);
     }
 
+    /**
+     * @dev Create an upgradeable proxy
+     * @param implementation The implementation
+     * @param admin The admin
+     * @param argsHash The hash of args
+     * @param nonce The nonce
+     * @return instance The upgradeable proxy
+     */
     function _createUpgradeableProxy(
         address implementation,
         address admin,

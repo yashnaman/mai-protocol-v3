@@ -28,6 +28,12 @@ contract Implementation is Ownable {
 
     constructor() Ownable() {}
 
+    /**
+     * @notice Add the version of implementation
+     * @param implementation The implementation
+     * @param compatibility The compatibility of the implementation
+     * @param note The note of the implementation
+     */
     function addVersion(
         address implementation,
         uint256 compatibility,
@@ -47,11 +53,23 @@ contract Implementation is Ownable {
         emit AddVersion(implementation);
     }
 
+    /**
+     * @notice Get the latest version of implementation
+     * @return address The latest version of implementation
+     */
     function getLatestVersion() public view returns (address) {
         require(_versions.length() > 0, "no version");
         return _versions.at(_versions.length() - 1);
     }
 
+    /**
+     * @notice Get the description of implementation
+     * @param implementation The implementation
+     * @return creator The creator of the implementation
+     * @return creationTime The create time of the implementation
+     * @return compatibility The compatibility of the implementation
+     * @return note The note of the implementation
+     */
     function getDescription(address implementation)
         public
         view
@@ -69,16 +87,33 @@ contract Implementation is Ownable {
         note = _descriptions[implementation].note;
     }
 
+    /**
+     * @notice Check if the version of the implementation is valid
+     * @param implementation The implementation
+     * @return bool If the version of the implementation is valid
+     */
     function isVersionValid(address implementation) public view returns (bool) {
         return _versions.contains(implementation);
     }
 
+    /**
+     * @notice Check if the version of base is compatible with the version of target
+     * @param base The base implementation
+     * @param target The target implementation
+     * @return bool If the version of base is compatible with the version of target
+     */
     function isVersionCompatibleWith(address base, address target) public view returns (bool) {
         require(isVersionValid(base), "base version is invalid");
         require(isVersionValid(target), "target version is invalid");
         return _descriptions[target].compatibility >= _descriptions[base].compatibility;
     }
 
+    /**
+     * @dev List available versions
+     * @param start The start index of all versions
+     * @param count The count of listed versions
+     * @return result The listed versions
+     */
     function listAvailableVersions(uint256 start, uint256 count)
         internal
         view
