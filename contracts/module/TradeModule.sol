@@ -55,6 +55,20 @@ library TradeModule {
      * @param flags The flags of trade
      * @return int256 The delta position of trader
      */
+
+    /**
+     * @notice  Trade position between trader (taker) and AMM (maker).
+     *          Trading price is determined by AMM based on current index price.
+     *          Closing position
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param trader The trader
+     * @param amount The amount to trade
+     * @param priceLimit The limit price
+     * @param referrer The referrer
+     * @param flags The flags of trade
+     * @return int256 The delta position of trader
+     */
     function trade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -79,14 +93,15 @@ library TradeModule {
             validatePrice(amount >= 0, tradePrice, priceLimit);
         }
         // trade
+        bool isOpen = Utils.isOpen(position, deltaPosition.neg());
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         (int256 lpFee, int256 totalFee) =
-            updateFees(liquidityPool, perpetual, trader, referrer, deltaCash.abs());
+            updateFees(liquidityPool, perpetual, trader, referrer, deltaCash.abs(), isOpen);
         perpetual.updateCash(address(this), lpFee);
         perpetual.updateCash(trader, totalFee.neg());
         // account safety
-        if (Utils.isOpen(position, deltaPosition.neg())) {
+        if (isOpen) {
             require(
                 perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
                 "trader initial margin is unsafe"
@@ -113,7 +128,7 @@ library TradeModule {
     function getFees(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
-        address trader,
+        int256 avaiableMargin,
         int256 tradeValue
     )
         public
@@ -124,7 +139,7 @@ library TradeModule {
             int256
         )
     {
-        int256 available = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+        int256 available = avaiableMargin;
         if (available <= 0) {
             return (0, 0, 0);
         }
@@ -160,13 +175,31 @@ library TradeModule {
         PerpetualStorage storage perpetual,
         address trader,
         address referrer,
-        int256 tradeValue
+        int256 tradeValue,
+        bool isOpen
     ) public returns (int256 lpFee, int256 totalFee) {
         require(tradeValue >= 0, "negative trade value");
+        int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+        if (isOpen) {
+            require(
+                availableMargin >=
+                    tradeValue.wmul(
+                        perpetual.lpFeeRate.add(perpetual.operatorFeeRate).add(
+                            liquidityPool.vaultFeeRate
+                        )
+                    ),
+                "insufficient margin for fee"
+            );
+        }
         int256 referrerFee;
         int256 operatorFee;
         int256 vaultFee;
-        (lpFee, operatorFee, vaultFee) = getFees(liquidityPool, perpetual, trader, tradeValue);
+        (lpFee, operatorFee, vaultFee) = getFees(
+            liquidityPool,
+            perpetual,
+            availableMargin,
+            tradeValue
+        );
         totalFee = lpFee.add(operatorFee).add(vaultFee);
 
         if (referrer != address(0) && perpetual.referralRebateRate > 0) {
