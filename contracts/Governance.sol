@@ -30,6 +30,12 @@ contract Governance is Storage {
         _;
     }
 
+    /**
+     * @notice Transfer operator of liquidity pool.
+     *         Only operator can transfer if operator exists.
+     *         Only governor can transfer if operator doesn't exist
+     * @param newOperator The new operator
+     */
     function transferOperator(address newOperator) external {
         if (_liquidityPool.operator != address(0)) {
             require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
@@ -39,14 +45,20 @@ contract Governance is Storage {
         _liquidityPool.transferOperator(newOperator);
     }
 
+    /**
+     * @notice Claim operator of liquidity pool.
+     */
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;
         _liquidityPool.claimOperator(msg.sender);
         _liquidityPool.claimFee(previousOperator, _liquidityPool.claimableFees[previousOperator]);
     }
 
+    /**
+     * @notice Revoke operator of liquidity pool.
+     *         Only operator can revoke
+     */
     function revokeOperator() external onlyOperator {
-        require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
         _liquidityPool.revokeOperator();
     }
 
@@ -55,10 +67,23 @@ contract Governance is Storage {
         _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
     }
 
+    /**
+     * @notice Set parameter of liquidity pool.
+     *         Only governor can set
+     * @param key The key of parameter
+     * @param newValue The new value of parameter
+     */
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(key, newValue);
     }
 
+    /**
+     * @notice Set base parameter of perpetual.
+     *         Only governor can set
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of base parameter
+     * @param newValue The new value of base parameter
+     */
     function setPerpetualBaseParameter(
         uint256 perpetualIndex,
         bytes32 key,
@@ -67,6 +92,15 @@ contract Governance is Storage {
         _liquidityPool.setPerpetualBaseParameter(perpetualIndex, key, newValue);
     }
 
+    /**
+     * @notice Set risk parameter of perpetual.
+     *         Only governor can set
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of risk parameter
+     * @param newValue The new value of risk parameter
+     * @param minValue The minimum value of risk parameter
+     * @param maxValue The maximum value of risk parameter
+     */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
@@ -77,6 +111,13 @@ contract Governance is Storage {
         _liquidityPool.setPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
     }
 
+    /**
+     * @notice Update risk parameter of perpetual.
+     *         Only operator can update
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of risk parameter
+     * @param newValue The new value of risk parameter
+     */
     function updatePerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
@@ -85,12 +126,21 @@ contract Governance is Storage {
         _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, key, newValue);
     }
 
+    /**
+     * @notice Force to set state of perpetual to emergency.
+     *         Only governor can set
+     * @param perpetualIndex The index of perpetual
+     */
     function forceToSetEmergencyState(uint256 perpetualIndex) external syncState onlyGovernor {
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
+    /**
+     * @notice Set state of perpetual to emergency if amm isn't maintenance margin safe
+     * @param perpetualIndex The index of perpetual
+     */
     function setEmergencyState(uint256 perpetualIndex) external syncState {
-        require(!_liquidityPool.isAMMMarginSafe(perpetualIndex), "amm is safe");
+        require(!_liquidityPool.isAMMMaintenanceSafe(perpetualIndex), "amm is safe");
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 

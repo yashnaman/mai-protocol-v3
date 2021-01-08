@@ -25,6 +25,12 @@ library OrderModule {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
+    /**
+     * @notice Validate signature of order
+     * @param liquidityPool The liquidity pool
+     * @param order The order
+     * @param signature The signature
+     */
     function validateSignature(
         LiquidityPoolStorage storage liquidityPool,
         Order memory order,
@@ -43,6 +49,12 @@ library OrderModule {
         }
     }
 
+    /**
+     * @notice Validate the order
+     * @param liquidityPool The liquidity pool
+     * @param order The order
+     * @param amount The trading amount
+     */
     function validateOrder(
         LiquidityPoolStorage storage liquidityPool,
         Order memory order,
@@ -73,6 +85,11 @@ library OrderModule {
         );
     }
 
+    /**
+     * @notice Validate trigger price of order
+     * @param liquidityPool The liquidity pool
+     * @param order The order
+     */
     function validateTriggerPrice(LiquidityPoolStorage storage liquidityPool, Order memory order)
         public
         view

@@ -24,6 +24,17 @@ contract Getter is Storage {
     using PerpetualModule for PerpetualStorage;
     using AMMModule for LiquidityPoolStorage;
 
+    /**
+     * @notice Get liquidity pool info
+     * @return isRunning If liquidity pool is running
+     * @return isFastCreationEnabled If operator is allowed to create perpetual
+     * @return addresses The related addresses of liquidity pool
+     * @return vaultFeeRate The vault fee rate of liquidity pool
+     * @return poolCash The pool cash of liquidity pool
+     * @return collateralDecimals The decimal of collateral
+     * @return perpetualCount The count of all perpetuals
+     * @return fundingTime The last time updated funding state
+     */
     function getLiquidityPoolInfo()
         public
         view
@@ -63,6 +74,13 @@ contract Getter is Storage {
         fundingTime = _liquidityPool.fundingTime;
     }
 
+    /**
+     * @notice Get perpetual info
+     * @param perpetualIndex The index of perpetual
+     * @return state The state of perpetual
+     * @return oracle The oracle of perpetual
+     * @return nums The related numbers of perpetual
+     */
     function getPerpetualInfo(uint256 perpetualIndex)
         public
         syncState
@@ -140,6 +158,19 @@ contract Getter is Storage {
         ];
     }
 
+    /**
+     * @notice Get account info of trader
+     * @param perpetualIndex The index of perpetual
+     * @param trader The trader
+     * @return cash The cash of the account
+     * @return position The position of the account
+     * @return availableCash The available cash of the account
+     * @return margin The margin of the account
+     * @return settleableMargin The settleable margin of the account
+     * @return isInitialMarginSafe If the account is initial margin safe
+     * @return isMaintenanceMarginSafe If the account is maintenance margin safe
+     * @return isBankrupt If the account is bankrupt
+     */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
         syncState
@@ -168,6 +199,12 @@ contract Getter is Storage {
         isBankrupt = !perpetual.isMarginSafe(trader, markPrice);
     }
 
+    /**
+     * @notice Get progress of clearing active accounts
+     * @param perpetualIndex The index of perpetual
+     * @return left The left active accounts
+     * @return total The total active accounts
+     */
     function getClearProgress(uint256 perpetualIndex)
         public
         view
@@ -181,12 +218,23 @@ contract Getter is Storage {
             : perpetual.totalAccount;
     }
 
+    /**
+     * @notice Get pool margin of liquidity pool
+     * @return poolMargin The pool margin of liquidity pool
+     */
     function getPoolMargin() public view returns (int256 poolMargin) {
         AMMModule.Context memory context = _liquidityPool.prepareContext();
         (poolMargin, ) = AMMModule.getPoolMargin(context);
     }
 
-    function getTradePrice(uint256 perpetualIndex, int256 amount)
+    /**
+     * @notice Get query result of trading with amm, excluding fee
+     * @param perpetualIndex The index of perpetual
+     * @param amount The trading amount
+     * @return deltaCash The delta cash of trader
+     * @return deltaPosition The delta position of trader
+     */
+    function queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
         public
         view
         returns (int256 deltaCash, int256 deltaPosition)
@@ -196,6 +244,8 @@ contract Getter is Storage {
             amount.neg(),
             false
         );
+        deltaCash = deltaCash.neg();
+        deltaPosition = deltaPosition.neg();
     }
 
     function getClaimableOperatorFee() public view returns (int256) {

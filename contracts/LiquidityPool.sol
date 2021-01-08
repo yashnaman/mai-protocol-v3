@@ -27,6 +27,15 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
 
     receive() external payable {}
 
+    /**
+     * @notice Initialize liquidity pool 
+     * @param operator The address of operator
+     * @param collateral The address of collateral
+     * @param collateralDecimals The decimal of collateral
+     * @param governor The address of governor
+     * @param shareToken The address of share token
+     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     */
     function initialize(
         address operator,
         address collateral,
@@ -45,6 +54,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         );
     }
 
+    /**
+     * @notice Create perpetual
+     * @param oracle The oracle of perpetual
+     * @param coreParams The core parameters of perpetual
+     * @param riskParams The risk parameters of perpetual
+     * @param minRiskParamValues The risk parameters' minimum values of perpetual
+     * @param maxRiskParamValues The risk parameters' maximum values of perpetual
+     */
     function createPerpetual(
         address oracle,
         int256[9] calldata coreParams,
@@ -66,20 +83,36 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         );
     }
 
+    /**
+     * @notice Run liquidity pool. Only operator can run
+     */
     function runLiquidityPool() external onlyOperator {
         require(!_liquidityPool.isRunning, "pool is already running");
         _liquidityPool.runLiquidityPool();
     }
 
+    /**
+     * @notice Claim fee
+     * @param claimer The claimer
+     * @param amount The amount to claim
+     */
     function claimFee(address claimer, int256 amount) external nonReentrant {
         _liquidityPool.claimFee(claimer, amount);
     }
 
+    /**
+     * @notice Add liquidity to liquidity pool
+     * @param cashToAdd The amount of collateral to add
+     */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
         require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.addLiquidity(msg.sender, cashToAdd);
     }
 
+    /**
+     * @notice Remove liquidity from liquidity pool
+     * @param shareToRemove The amount of share token to remove
+     */
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
         require(shareToRemove > 0, "invalid share");
         _liquidityPool.removeLiquidity(msg.sender, shareToRemove);

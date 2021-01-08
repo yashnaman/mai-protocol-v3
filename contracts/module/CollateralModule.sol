@@ -54,13 +54,13 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer eth or erc20 token from account to liquidity pool.
-     *         Eth will be automatically wrapped if liquidity pool is wrapped
+     * @notice Transfer collateral from account to liquidity pool.
+     *         Eth will be automatically wrapped to weth if liquidity pool is wrapped
      * @param liquidityPool The liquidity pool
      * @param account The account
      * @param amount The amount of transferred erc20 token
-     * @param totalAmount The total amount transferred, eth amount + weth amount
-     *                    if liquidity pool is wrapped
+     * @return totalAmount The total amount transferred, eth amount + weth amount
+     *                     if liquidity pool is wrapped
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
@@ -92,6 +92,13 @@ library CollateralModule {
         }
     }
 
+    /**
+     * @notice Transfer collateral from liquidity pool to account.
+     *         Weth will be automatically unwrapped to eth if liquidity pool is wrapped
+     * @param liquidityPool The liquidity pool
+     * @param account The account
+     * @param amount The amount of transferred collateral
+     */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,
         address payable account,

@@ -32,16 +32,29 @@ contract SymbolService is Ownable {
         _reservedSymbolCount = reservedSymbolCount;
     }
 
+    /**
+     * @notice Check if factory is whitelisted
+     * @param factory The factory
+     * @return bool If the factory is whitelisted
+     */
     function isWhitelistedFactory(address factory) public view returns (bool) {
         return _whitelistedFactories.contains(factory);
     }
 
+    /**
+     * @notice Add factory to whitelist, only owner can add
+     * @param factory The factory
+     */
     function addWhitelistedFactory(address factory) public onlyOwner {
         require(!isWhitelistedFactory(factory), "factory already exists");
         _whitelistedFactories.add(factory);
         emit AddWhitelistedFactory(factory);
     }
 
+    /**
+     * @notice Remove factory from whitelist, only owner can remove
+     * @param factory The factory
+     */
     function removeWhitelistedFactory(address factory) public onlyOwner {
         require(isWhitelistedFactory(factory), "factory not found");
         _whitelistedFactories.remove(factory);
@@ -56,6 +69,12 @@ contract SymbolService is Ownable {
         _;
     }
 
+    /**
+     * @notice Get unique id(liquidity pool + perpetual index) of perpetual by symbol
+     * @param symbol The symbol
+     * @return liquidityPool The liquidity pool
+     * @return perpetualIndex The index of perpetual
+     */
     function getPerpetualUID(uint256 symbol)
         public
         view
@@ -67,6 +86,12 @@ contract SymbolService is Ownable {
         perpetualIndex = perpetualUID.perpetualIndex;
     }
 
+    /**
+     * @notice Get symbols of perpetual by unique id(liquidity pool + perpetual index)
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @return symbols The symbols of perpetual
+     */
     function getSymbols(address liquidityPool, uint256 perpetualIndex)
         public
         view
@@ -83,6 +108,12 @@ contract SymbolService is Ownable {
         }
     }
 
+    /**
+     * @notice Allocate perpetual an unreserved symbol
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @return symbol The symbol allocated
+     */
     function allocateSymbol(address liquidityPool, uint256 perpetualIndex)
         public
         onlyWhitelisted(msg.sender)
@@ -102,6 +133,13 @@ contract SymbolService is Ownable {
         emit AllocateSymbol(liquidityPool, perpetualIndex, symbol);
     }
 
+    /**
+     * @notice Assign perpetual a reserved symbol, perpetual must have unreserved symbol
+     *         and not have reserved symbol before assigning. Only owner can assign.
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param symbol The symbol assigned
+     */
     function assignReservedSymbol(
         address liquidityPool,
         uint256 perpetualIndex,
@@ -124,6 +162,12 @@ contract SymbolService is Ownable {
         emit AllocateSymbol(liquidityPool, perpetualIndex, symbol);
     }
 
+    /**
+     * @dev Get key of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @return bytes32 The key of perpetual
+     */
     function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal
         pure

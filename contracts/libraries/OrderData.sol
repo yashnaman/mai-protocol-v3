@@ -62,8 +62,8 @@ library OrderData {
     }
 
     /*
-     * @dev Check if flag is close-only flag
-     * @param flags The flag
+     * @dev Check if flags contain close-only flag
+     * @param flags The flags
      * @return bool If flag is close-only flag
      */
     function isCloseOnly(uint32 flags) internal pure returns (bool) {
@@ -71,8 +71,8 @@ library OrderData {
     }
 
     /*
-     * @dev Check if flag is market flag
-     * @param flags The flag
+     * @dev Check if flags contain market flag
+     * @param flags The flags
      * @return bool If flag is market flag
      */
     function isMarketOrder(uint32 flags) internal pure returns (bool) {
@@ -80,8 +80,8 @@ library OrderData {
     }
 
     /*
-     * @dev Check if flag is stop-loss flag
-     * @param flags The flag
+     * @dev Check if flags contain stop-loss flag
+     * @param flags The flags
      * @return bool If flag is stop-loss flag
      */
     function isStopLossOrder(uint32 flags) internal pure returns (bool) {
@@ -89,8 +89,8 @@ library OrderData {
     }
 
     /*
-     * @dev Check if flag is take-profit flag
-     * @param flags The flag
+     * @dev Check if flags contain take-profit flag
+     * @param flags The flags
      * @return bool If flag is take-profit flag
      */
     function isTakeProfitOrder(uint32 flags) internal pure returns (bool) {
@@ -108,11 +108,11 @@ library OrderData {
     }
 
     /*
-     * @dev Encode order data to signature
-     * @param orderData The order data
-     * @return signature The signature of order
+     * @dev Decode signature from data
+     * @param data The data to decode
+     * @return signature The signature
      */
-    function decodeSignature(bytes memory orderData)
+    function decodeSignature(bytes memory data)
         internal
         pure
         returns (bytes memory signature)
@@ -122,18 +122,18 @@ library OrderData {
         uint8 v;
         uint8 signType;
         assembly {
-            r := mload(add(orderData, 318))
-            s := mload(add(orderData, 350))
-            v := byte(24, mload(add(orderData, 292)))
-            signType := byte(25, mload(add(orderData, 292)))
+            r := mload(add(data, 318))
+            s := mload(add(data, 350))
+            v := byte(24, mload(add(data, 292)))
+            signType := byte(25, mload(add(data, 292)))
         }
         signature = abi.encodePacked(r, s, v, signType);
     }
 
     /*
-     * @dev Decode data to order data
-     * @param data The data
-     * @return order The order data
+     * @dev Decode order from data
+     * @param data The data to decode
+     * @return order The order
      */
     function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {
         bytes32 tmp;

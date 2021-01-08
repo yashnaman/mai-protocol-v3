@@ -43,6 +43,11 @@ library PerpetualModule {
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
+    /**
+     * @dev Get mark price of perpetual
+     * @param perpetual The perpetual
+     * @return int256 The mark price of perpetual
+     */
     function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
@@ -50,6 +55,11 @@ library PerpetualModule {
                 : perpetual.settlementPriceData.price;
     }
 
+    /**
+     * @dev Get index price of perpetual
+     * @param perpetual The perpetual
+     * @return int256 The index price of perpetual
+     */
     function getIndexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
             perpetual.state == PerpetualState.NORMAL
@@ -57,6 +67,11 @@ library PerpetualModule {
                 : perpetual.settlementPriceData.price;
     }
 
+    /**
+     * @notice Get margin to rebalance of perpetual
+     * @param perpetual The perpetual
+     * @return marginToRebalance The margin to rebalance of perpetual
+     */
     function getRebalanceMargin(PerpetualStorage storage perpetual)
         public
         view
@@ -68,6 +83,15 @@ library PerpetualModule {
         );
     }
 
+    /**
+     * @notice Initialize perpetual
+     * @param id The id of perpetual
+     * @param oracle The oracle of perpetual
+     * @param coreParams The core parameters of perpetual
+     * @param riskParams The risk parameters of perpetual
+     * @param minRiskParamValues The risk parameters' minimum values of perpetual
+     * @param maxRiskParamValues The risk parameters' maximum values of perpetual
+     */
     function initialize(
         PerpetualStorage storage perpetual,
         uint256 id,
@@ -130,6 +154,12 @@ library PerpetualModule {
         perpetual.state = PerpetualState.INITIALIZING;
     }
 
+    /**
+     * @notice Set base parameter of perpetual
+     * @param perpetual The perpetual
+     * @param key The key of base parameter
+     * @param newValue The new value of base parameter
+     */
     function setBaseParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
@@ -167,6 +197,14 @@ library PerpetualModule {
         emit SetPerpetualBaseParameter(perpetual.id, key, newValue);
     }
 
+    /**
+     * @notice Set risk parameter of perpetual
+     * @param perpetual The perpetual
+     * @param key The key of risk parameter
+     * @param newValue The new value of risk parameter
+     * @param newMinValue The new minimum value of risk parameter
+     * @param newMaxValue The new maximum value of risk parameter
+     */
     function setRiskParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
@@ -192,6 +230,12 @@ library PerpetualModule {
         emit SetPerpetualRiskParameter(perpetual.id, key, newValue, newMinValue, newMaxValue);
     }
 
+    /**
+     * @notice Update risk parameter of perpetual
+     * @param perpetual The perpetual
+     * @param key The key of risk parameter
+     * @param newValue The new value of risk parameter
+     */
     function updateRiskParameter(
         PerpetualStorage storage perpetual,
         bytes32 key,
@@ -215,6 +259,11 @@ library PerpetualModule {
         emit UpdatePerpetualRiskParameter(perpetual.id, key, newValue);
     }
 
+    /**
+     * @notice Update funding state of perpetual, which means updating unitAccumulativeFunding variable
+     * @param perpetual The perpetual
+     * @param timeElapsed The elapsed time since last updating
+     */
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
         int256 deltaUnitLoss =
             getIndexPrice(perpetual).wfrac(
@@ -225,6 +274,12 @@ library PerpetualModule {
         emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
     }
 
+    /**
+     * @notice Update funding rate of perpetual,
+     *         funding rate = (-)limit if pool margin = 0 and position != 0
+     * @param perpetual The perpetual
+     * @param poolMargin The pool margin of liquidity
+     */
     function updateFundingRate(PerpetualStorage storage perpetual, int256 poolMargin) public {
         int256 newFundingRate = 0;
         int256 position = perpetual.getPosition(address(this));
@@ -249,6 +304,10 @@ library PerpetualModule {
         perpetual.fundingRate = newFundingRate;
     }
 
+    /**
+     * @notice Set state of perpetual to normal
+     * @param perpetual The perpetual
+     */
     function setNormalState(PerpetualStorage storage perpetual) public {
         require(
             perpetual.state == PerpetualState.INITIALIZING,
@@ -258,6 +317,10 @@ library PerpetualModule {
         emit SetNormalState(perpetual.id);
     }
 
+    /**
+     * @notice Set state of perpetual to emergency
+     * @param perpetual The perpetual
+     */
     function setEmergencyState(PerpetualStorage storage perpetual) public {
         require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
         // use mark price as final price when emergency
@@ -271,6 +334,10 @@ library PerpetualModule {
         );
     }
 
+    /**
+     * @notice Set state of perpetual to cleared
+     * @param perpetual The perpetual
+     */
     function setClearedState(PerpetualStorage storage perpetual) public {
         require(
             perpetual.state == PerpetualState.EMERGENCY,
@@ -281,6 +348,11 @@ library PerpetualModule {
         emit SetClearedState(perpetual.id);
     }
 
+    /**
+     * @notice Donate to insurance fund of perpetual
+     * @param perpetual The perpetual
+     * @param amount The amount to donate
+     */
     function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount > 0, "amount should greater than 0");
         perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(amount);
@@ -288,6 +360,13 @@ library PerpetualModule {
         emit DonateInsuranceFund(perpetual.id, amount);
     }
 
+    /**
+     * @notice Deposit to account of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account
+     * @param amount The amount to deposit
+     * @return isInitialDeposit If the account is empty before depositing
+     */
     function deposit(
         PerpetualStorage storage perpetual,
         address trader,
@@ -303,6 +382,13 @@ library PerpetualModule {
         emit Deposit(perpetual.id, trader, amount);
     }
 
+    /**
+     * @notice Withdraw from account of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account
+     * @param amount The amount to withdraw
+     * @return isLastWithdrawal If the account is empty after withdrawing
+     */
     function withdraw(
         PerpetualStorage storage perpetual,
         address trader,
@@ -323,6 +409,12 @@ library PerpetualModule {
         emit Withdraw(perpetual.id, trader, amount);
     }
 
+    /**
+     * @notice Clear account of perpetual, need to clear all active accounts to complete settle
+     * @param perpetual The perpetual
+     * @param trader The account
+     * @return isAllCleared If all active accounts are cleared
+     */
     function clear(PerpetualStorage storage perpetual, address trader)
         public
         returns (bool isAllCleared)
@@ -338,6 +430,11 @@ library PerpetualModule {
         emit Clear(perpetual.id, trader);
     }
 
+    /**
+     * @notice Count margin of account to update total margin of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account
+     */
     function countMargin(PerpetualStorage storage perpetual, address trader) public {
         int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
         if (margin <= 0) {
@@ -350,6 +447,10 @@ library PerpetualModule {
         }
     }
 
+    /**
+     * @notice Get next active account
+     * @param perpetual The perpetual
+     */
     function getNextActiveAccount(PerpetualStorage storage perpetual)
         public
         view
@@ -359,6 +460,12 @@ library PerpetualModule {
         account = perpetual.activeAccounts.at(0);
     }
 
+    /**
+     * @notice Settle account of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account to settle
+     * @param marginToReturn The margin to return after settlement
+     */
     function settle(PerpetualStorage storage perpetual, address trader)
         public
         returns (int256 marginToReturn)
@@ -370,6 +477,12 @@ library PerpetualModule {
         emit Settle(perpetual.id, trader, marginToReturn);
     }
 
+    /**
+     * @notice Update insurance fund, if exceeding cap, the extra part belongs to LP
+     * @param perpetual The perpetual
+     * @param deltaFund The delta fund
+     * @return penaltyToLP The extra part if insurance fund exceeds cap
+     */
     function updateInsuranceFund(PerpetualStorage storage perpetual, int256 deltaFund)
         public
         returns (int256 penaltyToLP)
@@ -396,6 +509,11 @@ library PerpetualModule {
         }
     }
 
+    /**
+     * @notice Settle collateral of perpetual,
+     *         which means update redemptionRateWithPosition and redemptionRateWithoutPosition
+     * @param perpetual The perpetual
+     */
     function settleCollateral(PerpetualStorage storage perpetual) public {
         int256 totalCollateral = perpetual.totalCollateral;
         // 2. cover margin without position
@@ -417,20 +535,38 @@ library PerpetualModule {
         }
     }
 
+    /**
+     * @dev Register account to active accounts of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account
+     */
     function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.add(trader);
     }
 
+    /**
+     * @dev Deregister account from active accounts of perpetual
+     * @param perpetual The perpetual
+     * @param trader The account
+     */
     function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.remove(trader);
     }
 
-    // prettier-ignore
+    /**
+     * @dev Update price of perpetual from oracle
+     * @param perpetual The perpetual
+     */
     function updatePrice(PerpetualStorage storage perpetual) internal {
         updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
         updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
     }
 
+    /**
+     * @dev Update price data
+     * @param priceData The price data
+     * @param priceGetter The function to get price
+     */
     function updatePriceData(
         OraclePriceData storage priceData,
         function() external returns (int256, uint256) priceGetter
@@ -442,17 +578,32 @@ library PerpetualModule {
         }
     }
 
+    /**
+     * @dev Increase collateral of perpetual
+     * @param perpetual The perpetual
+     * @param amount The amount to increase
+     */
     function increaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
         require(amount >= 0, "amount is negative");
         perpetual.totalCollateral = perpetual.totalCollateral.add(amount);
     }
 
+    /**
+     * @dev Decrease collateral of perpetual
+     * @param perpetual The perpetual
+     * @param amount The amount to decrease
+     */
     function decreaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
         require(amount >= 0, "amount is negative");
         perpetual.totalCollateral = perpetual.totalCollateral.sub(amount);
         require(perpetual.totalCollateral >= 0, "collateral is negative");
     }
 
+    /**
+     * @dev Update option
+     * @param option The option
+     * @param newValue The new value of option
+     */
     function updateOption(Option storage option, int256 newValue) internal {
         require(
             newValue >= option.minValue && newValue <= option.maxValue,
@@ -461,6 +612,13 @@ library PerpetualModule {
         option.value = newValue;
     }
 
+    /**
+     * @dev Set option
+     * @param option The option
+     * @param newValue The new value of option
+     * @param newMinValue The minimum value of option
+     * @param newMaxValue The maximum value of option
+     */
     function setOption(
         Option storage option,
         int256 newValue,
@@ -473,6 +631,10 @@ library PerpetualModule {
         option.maxValue = newMaxValue;
     }
 
+    /**
+     * @notice Validate base parameters of perpetual
+     * @param perpetual The perpetual
+     */
     function validateBaseParameters(PerpetualStorage storage perpetual) public view {
         require(perpetual.initialMarginRate > 0, "imr should be greater than 0");
         require(perpetual.maintenanceMarginRate > 0, "mmr should be greater than 0");
@@ -497,6 +659,10 @@ library PerpetualModule {
         require(perpetual.keeperGasReward >= 0, "kgr should be non-negative");
     }
 
+    /**
+     * @notice Validate risk parameters of perpetual
+     * @param perpetual The perpetual
+     */
     function validateRiskParameters(PerpetualStorage storage perpetual) public view {
         require(
             perpetual.halfSpread.value >= 0 && perpetual.halfSpread.value < Constant.SIGNED_ONE,

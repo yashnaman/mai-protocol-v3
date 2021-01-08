@@ -14,9 +14,6 @@ import "../module/PerpetualModule.sol";
 
 import "../Type.sol";
 
-/**
- * @title Mai3 AMM implementation
- */
 library AMMModule {
     using Math for int256;
     using SafeMathExt for int256;

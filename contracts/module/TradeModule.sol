@@ -45,6 +45,17 @@ library TradeModule {
         int256 price
     );
 
+    /**
+     * @notice Trade in perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param trader The trader
+     * @param amount The amount to trade
+     * @param priceLimit The limit price
+     * @param referrer The referrer
+     * @param flags The flags of trade
+     * @return int256 The delta position of trader
+     */
     function trade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -88,6 +99,15 @@ library TradeModule {
         return deltaPosition.neg();
     }
 
+    /**
+     * @notice Update fees in perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetual The perpetual
+     * @param tradeValue The value of trade
+     * @param referrer The referrer
+     * @return lpFee The fee belongs to LP
+     * @return totalFee The total fee of trade
+     */
     function updateFees(
         LiquidityPoolStorage storage liquidityPool,
         PerpetualStorage storage perpetual,
@@ -115,6 +135,14 @@ library TradeModule {
         perpetual.decreaseTotalCollateral(totalFee);
     }
 
+    /**
+     * @notice Liquidate by amm, which means amm takes the position
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param liquidator The account which initiating the liquidation
+     * @param trader The liquidated account
+     * @return int256 The delta position of liquidated account
+     */
     function liquidateByAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -160,6 +188,16 @@ library TradeModule {
         return deltaPosition.neg();
     }
 
+    /**
+     * @notice Liquidate by trader, which means liquidator takes the position
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param liquidator The account which initiating the liquidation
+     * @param trader The liquidated account
+     * @param amount The liquidated amount
+     * @param limitPrice The worst price which liquidator accepts
+     * @return int256 The delta position of liquidated account
+     */
     function liquidateByTrader(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -211,6 +249,12 @@ library TradeModule {
         return deltaPosition.neg();
     }
 
+    /**
+     * @dev Get max amount of closing position
+     * @param position The current position
+     * @param amount The amount of trade
+     * @return maxPositionToClose The max amount of closing position
+     */
     function getMaxPositionToClose(int256 position, int256 amount)
         internal
         pure
@@ -221,6 +265,12 @@ library TradeModule {
         maxPositionToClose = amount.abs() > position.abs() ? position : amount;
     }
 
+    /**
+     * @dev Check if price is better than limit price
+     * @param isLong If side is long
+     * @param price The price
+     * @param priceLimit The limit price
+     */
     function validatePrice(
         bool isLong,
         int256 price,
@@ -231,6 +281,15 @@ library TradeModule {
         require(isPriceSatisfied, "price exceeds limit");
     }
 
+    /**
+     * @dev Get penalty of liquidation
+     * @param perpetual The perpetual
+     * @param trader The liquidated account
+     * @param softPenalty The penalty taken as possible
+     * @param hardPenalty The penalty must be taken
+     * @return penaltyToTaker The penalty taken by taker
+     * @return penaltyToFund The penalty taken by fund
+     */
     function getLiquidationPenalty(
         PerpetualStorage storage perpetual,
         address trader,

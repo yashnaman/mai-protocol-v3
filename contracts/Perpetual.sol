@@ -45,6 +45,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
     using SignatureModule for bytes32;
 
+    /**
+     * @notice Donate collateral to insurance fund of perpetual
+     * @param perpetualIndex The index of perpetual
+     * @param amount The amount of collateral to donate
+     */
     function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
         external
         payable
@@ -54,6 +59,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
     }
 
+    /**
+     * @notice Deposit collateral to account of perpetual
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of trader
+     * @param amount The amount of collatetal to deposit
+     */
     function deposit(
         uint256 perpetualIndex,
         address trader,
@@ -64,6 +75,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.deposit(perpetualIndex, trader, amount);
     }
 
+    /**
+     * @notice Withdraw collateral from account of perpetual
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of trader
+     * @param amount The amount of collatetal to withdraw
+     */
     function withdraw(
         uint256 perpetualIndex,
         address trader,
@@ -80,6 +97,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.withdraw(perpetualIndex, trader, amount);
     }
 
+    /**
+     * @notice Settle account of perpetual
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of trader
+     */
     function settle(uint256 perpetualIndex, address trader)
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
@@ -90,6 +112,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.settle(perpetualIndex, trader);
     }
 
+    /**
+     * @notice Clear perpetual
+     * @param perpetualIndex The index of perpetual
+     */
     function clear(uint256 perpetualIndex)
         public
         onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
@@ -98,6 +124,17 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         _liquidityPool.clear(perpetualIndex);
     }
 
+    /**
+     * @notice Trade in perpetual, require trader to have trade privilege
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of trader
+     * @param amount The amount of trade
+     * @param limitPrice The worst price trader accepts
+     * @param deadline The deadline of trade
+     * @param referrer The referrer of trade
+     * @param flags The flags of trade
+     * @return int256 The delta position of trader
+     */
     function trade(
         uint256 perpetualIndex,
         address trader,
@@ -114,6 +151,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         return _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
+    /**
+     * @notice Trade with amm by order, initiated by broker
+     * @param orderData The order
+     * @param amount The amount of trade
+     * @return int256 The delta position of trader
+     */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
         syncState
@@ -135,6 +178,16 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             );
     }
 
+    /**
+     * @dev Trade with amm
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of trader
+     * @param amount The position amount of trade
+     * @param limitPrice The worst price trader accepts
+     * @param referrer The referrer of trade
+     * @param flags The flags of trade
+     * @return int256 The delta position of trader
+     */
     function _trade(
         uint256 perpetualIndex,
         address trader,
@@ -152,6 +205,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
+    /**
+     * @notice Liquidate trader if trader is unsafe, amm takes position
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of liquidated trader
+     * @param deadline The deadline of liquidation
+     * @return int256 The delta position of liquidated trader
+     */
     function liquidateByAMM(
         uint256 perpetualIndex,
         address trader,
@@ -168,6 +228,15 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
     }
 
+    /**
+     * @notice Liquidate trader if trader is unsafe, liquidator takes position
+     * @param perpetualIndex The index of perpetual
+     * @param trader The address of liquidated trader
+     * @param amount The amount of liquidation
+     * @param limitPrice The worst price liquidator accepts
+     * @param deadline The deadline of liquidation
+     * @return int256 The delta position of liquidated trader
+     */
     function liquidateByTrader(
         uint256 perpetualIndex,
         address trader,

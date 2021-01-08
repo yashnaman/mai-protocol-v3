@@ -38,6 +38,13 @@ contract Reader {
         int256 ammPositionAmount;
     }
 
+    /**
+     * @notice Get account status of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param account The account
+     * @return marginAccount The account status
+     */
     function getAccountStorage(
         address liquidityPool,
         uint256 perpetualIndex,
@@ -47,6 +54,11 @@ contract Reader {
             .getMarginAccount(perpetualIndex, account);
     }
 
+    /**
+     * @notice Get liquidity pool status
+     * @param liquidityPool The liquidity pool
+     * @return pool The liquidity pool status
+     */
     function getLiquidityPoolStorage(address liquidityPool)
         public
         returns (LiquidityPoolReaderResult memory pool)

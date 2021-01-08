@@ -91,6 +91,14 @@ library SignatureModule {
     //     address signer = getSigner(signedHash, signature);
     // }
 
+    /**
+     * @notice Get signer of transaction
+     * @param dataType The data type
+     * @param extData The external data
+     * @param args The arguments
+     * @param signature The signature
+     * @return signer The signer of transaction
+     */
     function getSigner(
         bytes32 dataType, // EIP712_TYPED_DEPOSIT
         bytes32 extData, // uint64 expiredAt,uint32 brokerFeeLimit,uint32 salt

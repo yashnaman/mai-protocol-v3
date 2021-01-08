@@ -59,6 +59,12 @@ library LiquidityPoolModule {
     );
     event RunLiquidityPool();
 
+    /**
+     * @notice Get available pool cash of liquidity pool excluding specific perpetual
+     * @param liquidityPool The liquidity pool
+     * @param exclusiveIndex The index of perpetual to exclude, set to liquidityPool.perpetuals.length to skip excluding.
+     * @return availablePoolCash The available pool cash of liquidity pool excluding specific perpetual
+     */
     function getAvailablePoolCash(
         LiquidityPoolStorage storage liquidityPool,
         uint256 exclusiveIndex
@@ -79,40 +85,47 @@ library LiquidityPoolModule {
         return availablePoolCash.add(liquidityPool.poolCash);
     }
 
+    /**
+     * @notice Get available pool cash of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @return availablePoolCash The available pool cash of liquidity pool
+     */
     function getAvailablePoolCash(LiquidityPoolStorage storage liquidityPool)
         public
         view
         returns (int256 availablePoolCash)
     {
-        uint256 length = liquidityPool.perpetuals.length;
-        for (uint256 i = 0; i < length; i++) {
-            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
-            if (perpetual.state != PerpetualState.NORMAL) {
-                continue;
-            }
-            int256 markPrice = perpetual.getMarkPrice();
-            availablePoolCash = availablePoolCash.add(
-                perpetual.getMargin(address(this), markPrice).sub(
-                    perpetual.getInitialMargin(address(this), markPrice)
-                )
-            );
-        }
-        return availablePoolCash.add(liquidityPool.poolCash);
+        return getAvailablePoolCash(liquidityPool, liquidityPool.perpetuals.length);
     }
 
-    function isAMMMarginSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+    /**
+     * @notice Check if amm is margin safe in perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual in liquidity pool
+     * @return isSafe If amm is margin safe in perpetual
+     */
+    function isAMMMaintenanceSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
         returns (bool isSafe)
     {
         rebalance(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        isSafe = liquidityPool.perpetuals[perpetualIndex].isMarginSafe(
+        isSafe = liquidityPool.perpetuals[perpetualIndex].isMaintenanceMarginSafe(
             address(this),
             perpetual.getMarkPrice()
         );
     }
 
-    // admin interface
+    /**
+     * @notice Initialize liquidity pool, admin interface
+     * @param liquidityPool The liquidity pool
+     * @param collateral The collateral of liquidity pool
+     * @param collateralDecimals The collateral's decimal of liquidity pool
+     * @param operator The operator of liquidity pool
+     * @param governor The governor of liquidity pool
+     * @param shareToken The share token of liquidity pool
+     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     */
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
         address collateral,
@@ -139,6 +152,15 @@ library LiquidityPoolModule {
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
     }
 
+    /**
+     * @notice Create new perpetual in liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param oracle The oracle of perpetual
+     * @param coreParams The core parameters of perpetual
+     * @param riskParams The risk parameters of perpetual
+     * @param minRiskParamValues The risk parameters' minimum values of perpetual
+     * @param maxRiskParamValues The risk parameters' maximum values of perpetual
+     */
     function createPerpetual(
         LiquidityPoolStorage storage liquidityPool,
         address oracle,
@@ -175,6 +197,10 @@ library LiquidityPoolModule {
         );
     }
 
+    /**
+     * @notice Run liquidity pool, operator can create new perpetual before running
+     * @param liquidityPool The liquidity pool
+     */
     function runLiquidityPool(LiquidityPoolStorage storage liquidityPool) public {
         uint256 length = liquidityPool.perpetuals.length;
         require(length > 0, "there should be at least 1 perpetual to run");
@@ -185,6 +211,12 @@ library LiquidityPoolModule {
         emit RunLiquidityPool();
     }
 
+    /**
+     * @notice Set parameter of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param key The key of parameter
+     * @param newValue The new value of parameter
+     */
     function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
         bytes32 key,
@@ -198,6 +230,13 @@ library LiquidityPoolModule {
         emit SetLiquidityPoolParameter(key, newValue);
     }
 
+    /**
+     * @notice Set base parameter of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of base parameter
+     * @param newValue The new value of base parameter
+     */
     function setPerpetualBaseParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -210,6 +249,15 @@ library LiquidityPoolModule {
         perpetual.validateBaseParameters();
     }
 
+    /**
+     * @notice Set risk parameter of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of parameter
+     * @param newValue The new value of risk parameter
+     * @param minValue The minimum value of risk parameter
+     * @param maxValue The maximum value of risk parameter
+     */
     function setPerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -224,6 +272,11 @@ library LiquidityPoolModule {
         perpetual.validateRiskParameters();
     }
 
+    /**
+     * @notice Set state of perpetual to emergency
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     */
     function setEmergencyState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
     {
@@ -232,6 +285,11 @@ library LiquidityPoolModule {
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
+    /**
+     * @notice Set state of perpetual to cleared
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     */
     function setClearedState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
     {
@@ -243,6 +301,13 @@ library LiquidityPoolModule {
         increasePoolCash(liquidityPool, marginToReturn);
     }
 
+    /**
+     * @notice Update risk parameter of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param key The key of risk parameter
+     * @param newValue The new value of risk perpetual
+     */
     function updatePerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -255,6 +320,11 @@ library LiquidityPoolModule {
         perpetual.validateRiskParameters();
     }
 
+    /**
+     * @notice Transfer operator of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param newOperator The new operator
+     */
     function transferOperator(LiquidityPoolStorage storage liquidityPool, address newOperator)
         public
     {
@@ -263,6 +333,11 @@ library LiquidityPoolModule {
         emit TransferOperatorTo(newOperator);
     }
 
+    /**
+     * @notice Claim operator of liquidity pool, claimer must be transferred operator before
+     * @param liquidityPool The liquidity pool
+     * @param claimer The claimer
+     */
     function claimOperator(LiquidityPoolStorage storage liquidityPool, address claimer) public {
         require(
             claimer == liquidityPool.transferringOperator,
@@ -273,16 +348,25 @@ library LiquidityPoolModule {
         emit ClaimOperatorTo(claimer);
     }
 
+    /**
+     * @notice Revoke operator of liquidity pool
+     * @param liquidityPool The liquidity pool
+     */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
         liquidityPool.operator = address(0);
         emit RevokeOperator();
     }
 
-    // state
+    /**
+     * @notice Update funding state of each perpetual of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param currentTime The current time
+     */
     function updateFundingState(LiquidityPoolStorage storage liquidityPool, uint256 currentTime)
         public
     {
         if (liquidityPool.fundingTime >= currentTime) {
+            // invalid time
             return;
         }
         int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
@@ -293,6 +377,10 @@ library LiquidityPoolModule {
         liquidityPool.fundingTime = currentTime;
     }
 
+    /**
+     * @notice Update funding rate of each perpetual of liquidity pool
+     * @param liquidityPool The liquidity pool
+     */
     function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
         AMMModule.Context memory context = liquidityPool.prepareContext();
         (int256 poolMargin, bool isAMMSafe) = AMMModule.getPoolMargin(context);
@@ -306,6 +394,11 @@ library LiquidityPoolModule {
         }
     }
 
+    /**
+     * @notice Update price of each perpetual of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param currentTime The current time
+     */
     function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) public {
         if (liquidityPool.priceUpdateTime >= currentTime) {
             return;
@@ -317,6 +410,12 @@ library LiquidityPoolModule {
         liquidityPool.priceUpdateTime = currentTime;
     }
 
+    /**
+     * @notice Donate to insurance fund of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param amount The amount to donate
+     */
     function donateInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -327,6 +426,13 @@ library LiquidityPoolModule {
         liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
     }
 
+    /**
+     * @notice Deposit to account of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param trader The account to deposit
+     * @param amount The amount to deposit
+     */
     function deposit(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -340,6 +446,13 @@ library LiquidityPoolModule {
         }
     }
 
+    /**
+     * @notice Withdraw from account of perpetual
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param trader The account to withdraw
+     * @param amount The amount to withdraw
+     */
     function withdraw(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -354,6 +467,12 @@ library LiquidityPoolModule {
         liquidityPool.transferToUser(payable(trader), amount);
     }
 
+    /**
+     * @notice Settle account of perpetual and get the returned collateral
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     * @param trader The account to settle
+     */
     function settle(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
@@ -364,6 +483,11 @@ library LiquidityPoolModule {
         liquidityPool.transferToUser(payable(trader), marginToReturn);
     }
 
+    /**
+     * @notice Clear perpetual of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     */
     function clear(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         if (
@@ -377,6 +501,12 @@ library LiquidityPoolModule {
         }
     }
 
+    /**
+     * @notice Add liquidity to liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param trader The account that adding liquidity
+     * @param cashToAdd The cash to add
+     */
     function addLiquidity(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
@@ -394,6 +524,12 @@ library LiquidityPoolModule {
         emit AddLiquidity(trader, totalCashToAdd, shareToMint);
     }
 
+    /**
+     * @notice Remove liquidity from liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param trader The account that removing liquidity
+     * @param shareToRemove The share to remove
+     */
     function removeLiquidity(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
@@ -416,6 +552,12 @@ library LiquidityPoolModule {
         emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }
 
+    /**
+     * @notice Increase the claimable fee of the account
+     * @param liquidityPool The liquidity pool
+     * @param account The account
+     * @param amount The amount to increase
+     */
     function increaseFee(
         LiquidityPoolStorage storage liquidityPool,
         address account,
@@ -425,6 +567,12 @@ library LiquidityPoolModule {
         emit IncreaseFee(account, amount);
     }
 
+    /**
+     * @notice Claim fee
+     * @param liquidityPool The liquidity pool
+     * @param claimer The claimer
+     * @param amount The amount to claim
+     */
     function claimFee(
         LiquidityPoolStorage storage liquidityPool,
         address claimer,
@@ -437,6 +585,11 @@ library LiquidityPoolModule {
         emit ClaimFee(claimer, amount);
     }
 
+    /**
+     * @notice Rebalance perpetual of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param perpetualIndex The index of perpetual
+     */
     function rebalance(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -453,6 +606,7 @@ library LiquidityPoolModule {
             // from pool to perp
             int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex);
             if (availablePoolCash < 0) {
+                // pool has no more collateral, nothing to rebalance
                 return;
             }
             rebalanceMargin = rebalanceMargin.abs().min(availablePoolCash);
@@ -462,14 +616,32 @@ library LiquidityPoolModule {
         }
     }
 
+    /**
+     * @notice Increase pool margin of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param amount The amount to increase
+     */
     function increasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
         liquidityPool.poolCash = liquidityPool.poolCash.add(amount);
     }
 
+    /**
+     * @notice Decrease pool margin of liquidity pool
+     * @param liquidityPool The liquidity pool
+     * @param amount The amount to decrease
+     */
     function decreasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
         liquidityPool.poolCash = liquidityPool.poolCash.sub(amount);
     }
 
+    /**
+     * @notice Check if trader is authorized
+     * @param liquidityPool The liquidity pool
+     * @param trader The trader
+     * @param grantor The grantor
+     * @param privilege The privilege
+     * @return isGranted If trader is authorized
+     */
     function isAuthorized(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
