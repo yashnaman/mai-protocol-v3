@@ -28,8 +28,6 @@ library TradeModule {
     using MarginAccountModule for MarginAccount;
     using CollateralModule for LiquidityPoolStorage;
 
-    address internal constant INVALID_ADDRESS = address(0);
-
     event Trade(
         uint256 perpetualIndex,
         address indexed trader,
@@ -170,7 +168,8 @@ library TradeModule {
         int256 vaultFee;
         (lpFee, operatorFee, vaultFee) = getFees(liquidityPool, perpetual, trader, tradeValue);
         totalFee = lpFee.add(operatorFee).add(vaultFee);
-        if (referrer != INVALID_ADDRESS && perpetual.referralRebateRate > 0) {
+
+        if (referrer != address(0) && perpetual.referralRebateRate > 0) {
             int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
             int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
             lpFee = lpFee.sub(lpFeeRebate);
@@ -178,6 +177,7 @@ library TradeModule {
             referrerFee = lpFeeRebate.add(operatorFeeRabate);
             liquidityPool.transferToUser(payable(referrer), referrerFee);
         }
+
         liquidityPool.transferToUser(payable(liquidityPool.vault), vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
         perpetual.decreaseTotalCollateral(totalFee);
