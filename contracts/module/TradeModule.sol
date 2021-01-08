@@ -147,9 +147,9 @@ library TradeModule {
                     liquidatePenalty,
                     perpetual.keeperGasReward
                 );
-            require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
-            perpetual.updateCash(address(this), penaltyToTaker);
-            perpetual.updateInsuranceFund(penaltyToFund);
+            require(penaltyToTaker >= 0, "penalty to taker should be greater equal than 0");
+            int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
+            perpetual.updateCash(address(this), penaltyToTaker.add(penaltyToLP));
             liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
         }
         emit Liquidate(perpetualIndex, address(this), trader, deltaPosition.neg(), liquidatePrice);
@@ -186,8 +186,9 @@ library TradeModule {
             (int256 penaltyToTaker, int256 penaltyToFund) =
                 getLiquidationPenalty(perpetual, trader, liquidatePenalty, 0);
             require(penaltyToTaker >= 0, "penalty to taker should be greater than 0");
+            int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
             perpetual.updateCash(liquidator, penaltyToTaker);
-            perpetual.updateInsuranceFund(penaltyToFund);
+            perpetual.updateCash(address(this), penaltyToLP);
         }
         // 3. safe
         if (Utils.isOpen(perpetual.getPosition(liquidator), amount)) {

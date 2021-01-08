@@ -15,8 +15,6 @@ import "./CollateralModule.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
@@ -376,11 +374,8 @@ library PerpetualModule {
         public
         returns (int256 penaltyToLP)
     {
-        if (deltaFund == 0) {
-            penaltyToLP = 0;
-        } else if (perpetual.insuranceFund >= perpetual.insuranceFundCap) {
-            penaltyToLP = deltaFund;
-        } else {
+        penaltyToLP = 0;
+        if (deltaFund != 0) {
             int256 newInsuranceFund = perpetual.insuranceFund;
             if (deltaFund > 0) {
                 newInsuranceFund = newInsuranceFund.add(deltaFund);

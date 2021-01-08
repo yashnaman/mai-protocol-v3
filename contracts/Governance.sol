@@ -48,6 +48,10 @@ contract Governance is Storage {
         _liquidityPool.revokeOperator();
     }
 
+    function claimOperatorFee() external onlyOperator {
+        _liquidityPool.claimFee(_liquidityPool.operator);
+    }
+
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(key, newValue);
     }
