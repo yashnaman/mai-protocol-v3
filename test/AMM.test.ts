@@ -158,9 +158,9 @@ describe('AMM', () => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
                 if (element.isSafe) {
-                    expect(await amm.isAMMMarginSafe()).to.be.true
+                    expect(await amm.isAMMSafe()).to.be.true
                 } else {
-                    expect(await amm.isAMMMarginSafe()).to.be.false
+                    expect(await amm.isAMMSafe()).to.be.false
                 }
             })
         })

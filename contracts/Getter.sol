@@ -248,10 +248,19 @@ contract Getter is Storage {
         deltaPosition = deltaPosition.neg();
     }
 
+    /**
+     * @notice Get claimable fee of operator
+     * @return int256 The claimable fee of the operator
+     */
     function getClaimableOperatorFee() public view returns (int256) {
         return _liquidityPool.claimableFees[_liquidityPool.operator];
     }
 
+    /**
+     * @notice Get claimable fee of claimer
+     * @param claimer The claimer
+     * @return int256 The claimable fee of the claimer
+     */
     function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];
     }

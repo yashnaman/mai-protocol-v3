@@ -108,7 +108,7 @@ library AMMModule {
     ) public view returns (int256 cashToReturn) {
         require(shareTotalSupply > 0, "the supply of share token is zero when removing liquidity");
         Context memory context = prepareContext(liquidityPool);
-        require(isAMMMarginSafe(context, 0), "amm is unsafe before removing liquidity");
+        require(isAMMSafe(context, 0), "amm is unsafe before removing liquidity");
         int256 poolMargin = calculatePoolMargin(context, 0);
         if (poolMargin == 0) {
             return 0;
@@ -168,7 +168,7 @@ library AMMModule {
      * @param slippageFactor The slippage factor of amm
      * @return bool If amm is safe
      */
-    function isAMMMarginSafe(Context memory context, int256 slippageFactor)
+    function isAMMSafe(Context memory context, int256 slippageFactor)
         internal
         pure
         returns (bool)
@@ -204,7 +204,7 @@ library AMMModule {
         int256 maxClosePriceDiscount = perpetual.maxClosePriceDiscount.value;
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
-        if (isAMMMarginSafe(context, slippageFactor)) {
+        if (isAMMSafe(context, slippageFactor)) {
             int256 poolMargin = calculatePoolMargin(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
             bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
@@ -270,7 +270,7 @@ library AMMModule {
             return (0, 0, 0);
         }
         int256 slippageFactor = perpetual.openSlippageFactor.value;
-        if (!isAMMMarginSafe(context, slippageFactor)) {
+        if (!isAMMSafe(context, slippageFactor)) {
             require(partialFill, "amm is unsafe when open");
             return (0, 0, 0);
         }
@@ -500,7 +500,7 @@ library AMMModule {
      * @return bool If amm is safe
      */
     function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
-        if (isAMMMarginSafe(context, 0)) {
+        if (isAMMSafe(context, 0)) {
             return (calculatePoolMargin(context, 0), true);
         } else {
             return (context.availableCash.add(context.positionValue).div(2), false);

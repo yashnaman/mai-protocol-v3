@@ -62,6 +62,9 @@ contract Governance is Storage {
         _liquidityPool.revokeOperator();
     }
 
+    /**
+     * @notice Claim fee of operator. Only operator can claim
+     */
     function claimOperatorFee() external onlyOperator {
         address operator = _liquidityPool.operator;
         _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
@@ -140,7 +143,7 @@ contract Governance is Storage {
      * @param perpetualIndex The index of perpetual
      */
     function setEmergencyState(uint256 perpetualIndex) external syncState {
-        require(!_liquidityPool.isAMMMaintenanceSafe(perpetualIndex), "amm is safe");
+        require(!_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex), "amm is safe");
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 

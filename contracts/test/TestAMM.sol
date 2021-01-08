@@ -60,10 +60,10 @@ contract TestAMM {
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
     }
 
-    function isAMMMarginSafe() public view returns (bool) {
+    function isAMMSafe() public view returns (bool) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
-        return AMMModule.isAMMMarginSafe(context, perpetual.openSlippageFactor.value);
+        return AMMModule.isAMMSafe(context, perpetual.openSlippageFactor.value);
     }
 
     function getPoolMargin() public view returns (int256) {

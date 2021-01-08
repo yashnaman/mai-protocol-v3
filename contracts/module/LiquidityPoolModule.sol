@@ -104,7 +104,7 @@ library LiquidityPoolModule {
      * @param perpetualIndex The index of perpetual in liquidity pool
      * @return isSafe If amm is margin safe in perpetual
      */
-    function isAMMMaintenanceSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+    function isAMMMaintenanceMarginSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
         returns (bool isSafe)
     {
