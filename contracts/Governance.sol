@@ -39,7 +39,7 @@ contract Governance is Storage {
         _liquidityPool.transferOperator(newOperator);
     }
 
-    function claimOperatingship() external {
+    function claimOperator() external {
         _liquidityPool.claimOperator(msg.sender);
     }
 

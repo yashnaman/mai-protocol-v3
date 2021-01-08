@@ -4,5 +4,7 @@ module.exports = {
         "test",
         "thirdparty",
         "interface",
+        "governance",
+        "token",
     ],
 };

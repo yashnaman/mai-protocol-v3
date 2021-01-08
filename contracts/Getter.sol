@@ -198,5 +198,9 @@ contract Getter is Storage {
         );
     }
 
+    function getClaimableFee(address claimer) public view returns (int256) {
+        return _liquidityPool.claimableFees[claimer];
+    }
+
     bytes[50] private __gap;
 }

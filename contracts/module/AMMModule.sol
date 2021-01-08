@@ -83,7 +83,7 @@ library AMMModule {
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 cashToAdd
-    ) internal view returns (int256 shareToMint) {
+    ) public view returns (int256 shareToMint) {
         Context memory context = prepareContext(liquidityPool);
         (int256 poolMargin, ) = getPoolMargin(context);
         context.availableCash = context.availableCash.add(cashToAdd);

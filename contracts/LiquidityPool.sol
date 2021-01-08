@@ -71,10 +71,6 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         _liquidityPool.runLiquidityPool();
     }
 
-    function getClaimableFee(address claimer) public view returns (int256) {
-        return _liquidityPool.claimableFees[claimer];
-    }
-
     function claimFee(address claimer, int256 amount) external nonReentrant {
         _liquidityPool.claimFee(claimer, amount);
     }
