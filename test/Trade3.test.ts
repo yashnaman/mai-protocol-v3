@@ -77,8 +77,12 @@ describe('TradeModule1', () => {
             await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("1000"), toWei("0"));
-            await testTrade.setMarginAccount(0, testTrade.address, toWei("1000"), toWei("0"));
+            await mocker.setPrice(toWei("1000"));
+            await ctk.mint(testTrade.address, toWei("1000"));
+            await testTrade.setTotalCollateral(0, toWei("1000"));
+
+            await testTrade.setMarginAccount(0, user1.address, toWei("10000"), toWei("0"));
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0);
         })
