@@ -40,7 +40,9 @@ contract Governance is Storage {
     }
 
     function claimOperator() external {
+        address previousOperator = _liquidityPool.operator;
         _liquidityPool.claimOperator(msg.sender);
+        _liquidityPool.claimFee(previousOperator, _liquidityPool.claimableFees[previousOperator]);
     }
 
     function revokeOperator() external onlyOperator {
@@ -49,7 +51,8 @@ contract Governance is Storage {
     }
 
     function claimOperatorFee() external onlyOperator {
-        _liquidityPool.claimFee(_liquidityPool.operator);
+        address operator = _liquidityPool.operator;
+        _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
     }
 
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
