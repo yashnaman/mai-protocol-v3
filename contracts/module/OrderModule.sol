@@ -26,7 +26,7 @@ library OrderModule {
     using PerpetualModule for PerpetualStorage;
 
     /**
-     * @notice Validate signature of order
+     * @notice Validate that order's signer is granted trade privilege by order's trader
      * @param liquidityPool The liquidity pool
      * @param order The order
      * @param signature The signature
@@ -86,7 +86,11 @@ library OrderModule {
     }
 
     /**
-     * @notice Validate trigger price of order
+     * @notice Validate the trigger price of the order
+     *         When position > 0, if stop loss order: index price must <= trigger price,
+     *                            if take profit order: index price must >= trigger price.
+     *         When position < 0, if stop loss order: index price must >= trigger price,
+     *                            if take profit order: index price must <= trigger price
      * @param liquidityPool The liquidity pool
      * @param order The order
      */

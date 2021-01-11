@@ -17,11 +17,11 @@ library MarginAccountModule {
     using SignedSafeMathUpgradeable for int256;
 
     /**
-     * @dev Get initial margin of trader in perpetual
+     * @dev Initial margin = price * abs(position) * initial margin rate
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate initial margin
-     * @return initialMargin The initial margin
+     * @param trader The address of the trader
+     * @param price The price to calculate the initial margin
+     * @return initialMargin The initial margin of the trader
      */
     function getInitialMargin(
         PerpetualStorage storage perpetual,
@@ -36,11 +36,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get maintenance margin of trader in perpetual
+     * @dev Maintenance margin = price * abs(position) * maintenance margin rate
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate maintenance margin
-     * @return maintenanceMargin The maintenance margin
+     * @param trader The address of the trader
+     * @param price The price to calculate the  maintenance margin
+     * @return maintenanceMargin The maintenance margin of the trader
      */
     function getMaintenanceMargin(
         PerpetualStorage storage perpetual,
@@ -56,10 +56,10 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get available cash of trader in perpetual
+     * @dev Available cash = cash - position * unit accumulative funding
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @return availableCash The available cash
+     * @param trader The address of the trader
+     * @return availableCash The available cash of the trader
      */
     function getAvailableCash(PerpetualStorage storage perpetual, address trader)
         internal
@@ -71,10 +71,10 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get position of trader in perpetual
+     * @dev Get the position of the trader in the perpetual
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @return position The position
+     * @param trader The address of the trader
+     * @return position The position of the trader
      */
     function getPosition(PerpetualStorage storage perpetual, address trader)
         internal
@@ -85,11 +85,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get margin of trader in perpetual
+     * @dev Margin = available cash + position * price
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate margin
-     * @return margin The margin
+     * @param trader The address of the trader
+     * @param price The price to calculate the margin
+     * @return margin The margin of the trader
      */
     function getMargin(
         PerpetualStorage storage perpetual,
@@ -102,11 +102,12 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get settleable margin of trader in perpetual
+     * @dev Get the settleable margin of the trader in the perpetual, if the state of
+     *      the perpetual is not "cleared", the settleable margin is always zero
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate settleable margin
-     * @return margin The settleable margin
+     * @param trader The address of the trader
+     * @param price The price to calculate the settleable margin
+     * @return margin The settleable margin of the trader
      */
     function getSettleableMargin(
         PerpetualStorage storage perpetual,
@@ -126,11 +127,12 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get available margin of given account.
-     * @param perpetual The perpetual storage reference
-     * @param trader The address of trader
-     * @param price The price to calculate margin / initial margin
-     * @return availableMargin Available margin of trader
+     * @dev Available margin = margin - max(initial margin, keeper gas reward), keeper gas
+     *      reward = 0 if position = 0
+     * @param perpetual The perpetual
+     * @param trader The address of the trader
+     * @param price The price to calculate available margin
+     * @return availableMargin The available margin of the trader
      */
     function getAvailableMargin(
         PerpetualStorage storage perpetual,
@@ -145,11 +147,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if trader is initial margin safe
+     * @dev Check if the trader is initial margin safe, which means available margin >= 0
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate initial margin
-     * @return isSafe True if trader is initial margin safe
+     * @param trader The address of the trader
+     * @param price The price to calculate the available margin
+     * @return isSafe If the trader is initial margin safe
      */
     function isInitialMarginSafe(
         PerpetualStorage storage perpetual,
@@ -160,11 +162,13 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if trader is maintenance margin safe
+     * @dev Check if the trader is maintenance margin safe, which means
+     *      margin >= max(maintenance margin, keeper gas reward). Keeper gas reward = 0
+     *      if position = 0
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate maintenance margin
-     * @return isSafe If trader is maintenance margin safe
+     * @param trader The address of the trader
+     * @param price The price to calculate the maintenance margin
+     * @return isSafe If the trader is maintenance margin safe
      */
     function isMaintenanceMarginSafe(
         PerpetualStorage storage perpetual,
@@ -179,11 +183,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if trader is margin safe
+     * @dev Check if the trader is margin safe, which means margin >= 0
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param price The price to calculate margin
-     * @return isSafe If trader is margin safe
+     * @param trader The address of the trader
+     * @param price The price to calculate the margin
+     * @return isSafe If the trader is margin safe
      */
     function isMarginSafe(
         PerpetualStorage storage perpetual,
@@ -194,10 +198,10 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if account of trader is empty
+     * @dev Check if the account of the trader is empty, which means cash = 0 and position = 0
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @return isEmpty If account of trader is empty
+     * @param trader The address of the trader
+     * @return isEmpty If the account of the trader is empty
      */
     function isEmptyAccount(PerpetualStorage storage perpetual, address trader)
         internal
@@ -209,10 +213,10 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Update trader's cash of perpetual
+     * @dev Update the trader's cash of the perpetual
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param deltaCash The delta cash
+     * @param trader The address of the trader
+     * @param deltaCash The cash to add, can be negative
      */
     function updateCash(
         PerpetualStorage storage perpetual,
@@ -227,11 +231,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Update trader's margin of perpetual
+     * @dev Update the trader's margin of the perpetual
      * @param perpetual The perpetual
-     * @param trader The trader
-     * @param deltaPosition The delta position
-     * @param deltaCash The delta cash
+     * @param trader The address of the trader
+     * @param deltaPosition The position to add, can be negative
+     * @param deltaCash The cash to add, can be negative
      */
     function updateMargin(
         PerpetualStorage storage perpetual,
@@ -251,9 +255,9 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Reset trader's margin of perpetual
+     * @dev Reset the trader's account to empty, which means position = 0 and cash = 0
      * @param perpetual The perpetual
-     * @param trader The trader
+     * @param trader The address of the trader
      */
     function resetAccount(PerpetualStorage storage perpetual, address trader) internal {
         MarginAccount storage account = perpetual.marginAccounts[trader];

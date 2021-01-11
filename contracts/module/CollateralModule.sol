@@ -34,9 +34,10 @@ library CollateralModule {
     uint256 internal constant SYSTEM_DECIMALS = 18;
 
     /**
-     * @notice Initialize collateral of liquidity pool
-     * @param collateral The collateral
-     * @param collateralDecimals The decimal of collateral
+     * @notice Initialize the collateral of the liquidity pool
+     * @param collateral The address of the collateral
+     * @param collateralDecimals The decimals of the collateral, must less than SYSTEM_DECIMALS,
+     *                           must equal to decimals() if the function exists
      */
     function initializeCollateral(
         LiquidityPoolStorage storage liquidityPool,
@@ -54,13 +55,13 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer collateral from account to liquidity pool.
-     *         Eth will be automatically wrapped to weth if liquidity pool is wrapped
+     * @notice Transfer collateral from the account to the liquidity pool.
+     *         Eth will be automatically wrapped to weth if the liquidity pool is wrapped
      * @param liquidityPool The liquidity pool
-     * @param account The account
-     * @param amount The amount of transferred erc20 token
-     * @return totalAmount The total amount transferred, eth amount + weth amount
-     *                     if liquidity pool is wrapped
+     * @param account The address of the account
+     * @param amount The amount of transferred erc20 token, the amount of eth is msg.value
+     * @return totalAmount The total amount transferred, eth amount + weth amount if the liquidity
+     *                     pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
@@ -93,10 +94,10 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer collateral from liquidity pool to account.
-     *         Weth will be automatically unwrapped to eth if liquidity pool is wrapped
+     * @notice Transfer collateral from the liquidity pool to the account.
+     *         Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
      * @param liquidityPool The liquidity pool
-     * @param account The account
+     * @param account The address of the account
      * @param amount The amount of transferred collateral
      */
     function transferToUser(
