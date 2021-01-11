@@ -49,11 +49,12 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
 
     /**
      * @notice Create a liquidity pool with latest implementation
-     * @param collateral The collateral of liquidity pool
-     * @param collateralDecimals The collateral's decimal of liquidity pool
-     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
-     * @param nonce The nonce of liquidity pool
-     * @return address The address of liquidity pool
+     * @param collateral The collateral address of liquidity pool
+     * @param collateralDecimals The collateral's decimals of liquidity pool
+     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     *                              when the liquidity pool is running
+     * @param nonce The nonce for the creation
+     * @return address The address of the created liquidity pool
      */
     function createLiquidityPool(
         address collateral,
@@ -73,12 +74,13 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
 
     /**
      * @notice Create a liquidity pool with specific implementation
-     * @param implementation The implementation
+     * @param implementation The address of implementation
      * @param collateral The collateral of liquidity pool
-     * @param collateralDecimals The collateral's decimal of liquidity pool
-     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
-     * @param nonce The nonce of liquidity pool
-     * @return address The address of liquidity pool
+     * @param collateralDecimals The collateral's decimals of liquidity pool
+     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     *                              when the liquidity pool is running
+     * @param nonce The nonce for the creation
+     * @return address The address of the created liquidity pool
      */
     function createLiquidityPoolWith(
         address implementation,
@@ -98,13 +100,14 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create a liquidity pool with a specific implementation
-     * @param implementation The implementation
+     * @dev Create a liquidity pool with specific implementation
+     * @param implementation The address of implementation
      * @param collateral The collateral of liquidity pool
-     * @param collateralDecimals The collateral's decimal of liquidity pool
-     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
-     * @param nonce The nonce of liquidity pool
-     * @return address The address of liquidity pool
+     * @param collateralDecimals The collateral's decimals of liquidity pool
+     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     *                              when the liquidity pool is running
+     * @param nonce The nonce for the creation
+     * @return address The address of the created liquidity pool
      */
     function _createLiquidityPoolWith(
         address implementation,
@@ -146,9 +149,9 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create a clone of the implementation
-     * @param implementation The implementation
-     * @return address The address of cloned implementation
+     * @dev Create a clone contract of the implementation
+     * @param implementation The address of implementation
+     * @return address The address of cloned contract
      */
     function _createClone(address implementation) internal returns (address) {
         require(implementation != address(0), "invalid implementation");
@@ -156,12 +159,12 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create an upgradeable proxy
-     * @param implementation The implementation
-     * @param admin The admin
-     * @param argsHash The hash of args
-     * @param nonce The nonce
-     * @return instance The upgradeable proxy
+     * @dev Create an upgradeable proxy contract of implementation
+     * @param implementation The address of implementation
+     * @param admin The admin address of created contract
+     * @param argsHash The hash of arguments for the creation
+     * @param nonce The nonce for the creation
+     * @return instance The address of created upgradeable proxy contract
      */
     function _createUpgradeableProxy(
         address implementation,

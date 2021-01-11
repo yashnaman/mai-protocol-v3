@@ -16,9 +16,10 @@ contract AccessControl {
     event RevokePrivilege(address indexed grantor, address indexed grantee, uint256 privilege);
 
     /**
-     * @notice Grant grantee privilege
-     * @param grantee The grantee
-     * @param privilege The privilege
+     * @notice Grant the grantee the privilege
+     * @param grantee The address of grantee
+     * @param privilege The privilege to grand.
+     *                  There are three kinds of valid privilege: deposit, withdraw, trade
      */
     function grantPrivilege(address grantee, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
@@ -32,9 +33,10 @@ contract AccessControl {
     }
 
     /**
-     * @notice Revoke grantee privilege
-     * @param grantee The grantee
-     * @param privilege The privilege
+     * @notice Revoke the grantee the privilege
+     * @param grantee The address of grantee
+     * @param privilege The privilege to revoke.
+     *                  There are three kinds of valid privilege: deposit, withdraw, trade
      */
     function revokePrivilege(address grantee, uint256 privilege) external {
         require(_isValid(privilege), "privilege is invalid");
@@ -47,11 +49,11 @@ contract AccessControl {
     }
 
     /**
-     * @notice Check if grantee is granted privilege
-     * @param grantor The grantor
-     * @param grantee The grantee
+     * @notice Check if the grantee is granted the privilege by the grantor
+     * @param grantor The address of grantor
+     * @param grantee The address of grantee
      * @param privilege The privilege
-     * @return bool If the grantee is granted
+     * @return bool If the grantee is granted the privilege by the grantor
      */
     function isGranted(
         address grantor,

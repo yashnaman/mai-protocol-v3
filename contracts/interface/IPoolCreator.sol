@@ -6,9 +6,9 @@ interface IPoolCreator {
 
     function vaultFeeRate() external view returns (int256);
 
-    function activateLiquidityPoolFor(address trader, uint256 perpetualIndex) external;
+    function activatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
-    function deactivateLiquidityPoolFor(address trader, uint256 perpetualIndex) external;
+    function deactivatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
     function weth() external view returns (address);
 

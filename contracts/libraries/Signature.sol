@@ -13,10 +13,10 @@ library Signature {
     uint8 internal constant SIGN_TYPE_EIP712 = 0x1;
 
     /*
-     * @dev Get signer of transaction
-     * @param signedHash The hash of transaction
-     * @param signature The signature of transaction
-     * @return signer The signer of transaction
+     * @dev Get the signer of the transaction
+     * @param signedHash The hash of the transaction
+     * @param signature The signature of the transaction
+     * @return signer The signer of the transaction
      */
     function getSigner(bytes32 signedHash, bytes memory signature)
         internal

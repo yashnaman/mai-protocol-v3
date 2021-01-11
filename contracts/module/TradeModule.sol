@@ -120,10 +120,11 @@ library TradeModule {
      * @notice Get fees during trading.
      * @param liquidityPool The liquidity pool
      * @param perpetual The perpetual
-     * @param trader The trader
+     * @param avaiableMargin The avaiable margin of trader
      * @param tradeValue The value of trade
-     * @return lpFee The fee belongs to LP
-     * @return totalFee The total fee of trade
+     * @return int256 The fee belongs to LP
+     * @return int256 The fee belongs to operator
+     * @return int256 The fee belongs to vault
      */
     function getFees(
         LiquidityPoolStorage storage liquidityPool,
@@ -167,6 +168,7 @@ library TradeModule {
      * @param trader The trader
      * @param referrer The referrer
      * @param tradeValue The value of trade
+     * @param isOpen If the trader is opening position
      * @return lpFee The fee belongs to LP
      * @return totalFee The total fee of trade
      */

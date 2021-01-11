@@ -32,16 +32,16 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the result when trading with amm
+     * @dev Get the trading result when trading with amm
      * @param liquidityPool The liquidity pool of amm
      * @param perpetualIndex The index of the perpetual to trade
      * @param tradeAmount The trading amount, positive if amm longs, negative if amm shorts
-     * @param partialFill Whether to allow partial trading, set to true when liquidation trading,
-              set to false when normal trading
-     * @return deltaCash The trading cash result, positive when amm's cash increases,
-               negative when amm's cash decrease
-     * @return deltaPosition The trading position result, positive when amm longs,
-               negative when amm shorts
+     * @param partialFill Whether to allow partially trading. Set to true when liquidation trading,
+     *                    set to false when normal trading
+     * @return deltaCash The trading cash result, positive mean amm's cash will increase,
+     *                   negative means amm's cash will decrease
+     * @return deltaPosition The trading position result, positive means amm will long,
+     *                       negative means amm will short
      */
     function queryTradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
@@ -70,7 +70,9 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the amount of share token to mint when adding liquidity to pool
+     * @dev Calculate the amount of share token to mint when adding liquidity to the liquidity pool
+     *      If adding liquidity at first time, the amount of share token to mint equals to the
+     *      amount of cash to add
      * @param liquidityPool The liquidity pool of amm
      * @param shareTotalSupply The total supply of the share token before adding liquidity
      * @param cashToAdd The cash added to the liquidity pool
@@ -95,7 +97,12 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the cash to return when removing liquidity from pool
+     * @dev Calculate the cash to return when removing liquidity from the liquidity pool,
+     *      removing liquidity is forbidden at several cases:
+     *      1. amm is unsafe before removing liquidity
+     *      2. amm is unsafe after removing liquidity
+     *      3. amm will offer negative price at any perpetual after removing liquidity
+     *      3. amm will exceed maximum leverage at any perpetual after removing liquidity
      * @param liquidityPool The liquidity pool of amm
      * @param shareTotalSupply The total supply of the share token before removing liquidity
      * @param shareToRemove The amount of share token to remove
@@ -144,9 +151,10 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the pool margin of amm
+     * @dev Calculate the pool margin of amm when amm is safe. The context don't include current
+     *      perpetual, the status of current perpetual should be added
      * @param context The status of amm
-     * @param slippageFactor The slippage factor of amm
+     * @param slippageFactor The slippage factor of current perpetual
      * @return poolMargin The pool margin of amm
      */
     function calculatePoolMargin(Context memory context, int256 slippageFactor)
@@ -164,8 +172,9 @@ library AMMModule {
 
     /**
      * @dev Check if amm is safe
-     * @param context The status of amm
-     * @param slippageFactor The slippage factor of amm
+     * @param context The status of amm. The context don't include current
+     *                perpetual, the status of current perpetual should be added
+     * @param slippageFactor The slippage factor of current perpetual
      * @return bool If amm is safe
      */
     function isAMMSafe(Context memory context, int256 slippageFactor)
@@ -182,13 +191,18 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the result when amm closes position
+     * @dev Get the result when amm closes position. If amm is unsafe, trading price is best price.
+     *      If trading price is too bad, it will limit to index price * (1 +/- maximum close price discount)
      * @param context The status of amm
      * @param perpetual The perpetual to trade
      * @param tradeAmount The trading amount, positive if amm longs, negative if amm shorts
-     * @return deltaCash The trading cash result, positive when amm's cash increases,
-               negative when amm's cash decrease
-     * @return bestPrice The best price
+     * @return deltaCash The trading cash result, positive mean amm's cash will increase,
+     *                   negative means amm's cash will decrease
+     * @return bestPrice The best price, use for clipping to spread price outside.
+     *                   If amm is safe, best price = middle price * (1 +/- half spread).
+     *                   If amm is unsafe and normal case, best price = index price.
+     *                   If amm is unsafe and special case(position > 0 and slippage factor > 0.5),
+     *                   best price = index price * (1 - maximum close price discount)
      */
     function ammClosePosition(
         Context memory context,
@@ -240,17 +254,18 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the result when amm opens position
+     * @dev Get the result when amm opens position. AMM can't open position when unsafe
+     *      and can't open position to exceed the maximum position
      * @param context The status of amm
      * @param perpetual The perpetual to trade
      * @param tradeAmount The trading amount, positive if amm longs, negative if amm shorts
-     * @param partialFill Whether to allow partial trading, set to true when liquidation trading,
-              set to false when normal trading
-     * @return deltaCash The trading cash result, positive when amm's cash increases,
-               negative when amm's cash decrease
-     * @return deltaPosition The trading position result, positive when amm longs,
-               negative when amm shorts
-     * @return bestPrice The best price
+     * @param partialFill Whether to allow partially trading. Set to true when liquidation trading,
+     *                    set to false when normal trading
+     * @return deltaCash The trading cash result, positive mean amm's cash will increase,
+     *                   negative means amm's cash will decrease
+     * @return deltaPosition The trading position result, positive means amm will long,
+     *                       negative means amm will short
+     * @return bestPrice The best price. Equal to middle price * (1 +/- half spread)
      */
     function ammOpenPosition(
         Context memory context,
@@ -382,7 +397,7 @@ library AMMModule {
      * @dev Calculate the cash to return when removing liquidity
      * @param context The status of amm
      * @param poolMargin The pool margin of amm before removing liquidity
-     * @return cashToReturn The cash to return when removing liquidity
+     * @return cashToReturn The cash to return
      */
     function calculateCashToReturn(Context memory context, int256 poolMargin)
         public
@@ -428,7 +443,8 @@ library AMMModule {
      * @param positionAfter The position of amm in the perpetual after trading
      * @param indexPrice The index price of the perpetual
      * @param slippageFactor The slippage factor of amm in the perpetual
-     * @return deltaCash The delta cash of amm if trading
+     * @return deltaCash The delta cash of amm if trading, positive means amm's cash
+     *                   will increase, negative means amm's cash will decrease
      */
     function _getDeltaCash(
         int256 poolMargin,
@@ -447,7 +463,11 @@ library AMMModule {
     }
 
     /**
-     * @dev Get max position of amm in the perpetual
+     * @dev Get the max position of amm in the perpetual, there are three restrictions to calculate it:
+     *      1. AMM must be safe.
+     *      2. AMM mustn't exceed maximum leverage in any perpetual.
+     *      3. AMM must offer positive price in any perpetual. It's easy to prove that, in the
+     *         perpetual, amm definitely offers positive price when amm holds short positions
      * @param context The status of amm
      * @param poolMargin The pool margin of amm
      * @param ammMaxLeverage The max leverage of amm in the perpetual
@@ -496,7 +516,7 @@ library AMMModule {
     /**
      * @dev Get pool margin of amm, equal to 1/2 margin balance when amm is unsafe
      * @param context The status of amm
-     * @return int256 The pool margin
+     * @return int256 The pool margin of amm
      * @return bool If amm is safe
      */
     function getPoolMargin(Context memory context) internal pure returns (int256, bool) {

@@ -44,21 +44,24 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         _chainID = Utils.chainID();
     }
 
+    /**
+     * @notice Receive eth, call the deposit() function
+     */
     receive() external payable {
         deposit();
     }
 
     /**
-     * @notice Get the balance of the trader's account
-     * @param trader The trader
-     * @return uint256 The balance of the trader's account
+     * @notice Get the balance of eth the trader deposited
+     * @param trader The address of the trader
+     * @return uint256 The balance of eth the trader deposited
      */
     function balanceOf(address trader) public view returns (uint256) {
         return _balances[trader];
     }
 
     /**
-     * @notice Deposit to msg.sender's account
+     * @notice Deposit eth as gas reward of the broker
      */
     function deposit() public payable nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].add(msg.value);
@@ -66,8 +69,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw from msg.sender's account
-     * @param amount The amount to withdraw
+     * @notice Withdraw eth the trader deposited
+     * @param amount The amount of eth to withdraw
      */
     function withdraw(uint256 amount) public nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
@@ -76,7 +79,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Cancel a order
+     * @notice TODO: 现在能cancel别人的单
      * @param order The order to cancel
      */
     function cancelOrder(Order memory order) public {
@@ -88,9 +91,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
 
     /**
      * @notice Execute a transaction of liquidity pool's method
-     * @param liquidityPool The liquidity pool
-     * @param callData The method data
-     * @param gasReward The gas reward of msg.sender
+     * @param liquidityPool The address of liquidity pool
+     * @param callData The call data of transaction
+     * @param gasReward The gas reward given to msg.sender
      */
     function execute(
         address liquidityPool,
@@ -107,8 +110,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     /**
      * @notice Trade multiple orders
      * @param compressedOrders The orders to trade
-     * @param amounts The trading amounts
-     * @param gasRewards The gas rewards of broker
+     * @param amounts The trading amounts of position
+     * @param gasRewards The gas rewards of eth given to the brokers
      */
     function batchTrade(
         bytes[] calldata compressedOrders,
@@ -158,9 +161,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Fill a order
-     * @param orderHash The order hash
-     * @param amount The filled amount
+     * @dev Update the filled position amount of the order
+     * @param orderHash The hash of the order
+     * @param amount The filled amount of position to update
      */
     function _fillOrder(bytes32 orderHash, int256 amount) internal {
         _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
@@ -168,10 +171,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Transfer from sender to recipient
-     * @param sender The sender
-     * @param recipient The recipient
-     * @param amount The amount transferred
+     * @dev Transfer from sender's balance to recipient's balance
+     * @param sender The address of the sender
+     * @param recipient The address of the recipient
+     * @param amount The amount of eth transferred
      */
     function _transfer(
         address sender,

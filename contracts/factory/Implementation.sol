@@ -29,8 +29,8 @@ contract Implementation is Ownable {
     constructor() Ownable() {}
 
     /**
-     * @notice Add the version of implementation
-     * @param implementation The implementation
+     * @notice Record the implementation, the implementation should not be recorded before
+     * @param implementation The address of implementation
      * @param compatibility The compatibility of the implementation
      * @param note The note of the implementation
      */
@@ -54,8 +54,8 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Get the latest version of implementation
-     * @return address The latest version of implementation
+     * @notice Get the latest implementation, revert if there is no implementation
+     * @return address The address of the latest version of implementation
      */
     function getLatestVersion() public view returns (address) {
         require(_versions.length() > 0, "no version");
@@ -63,8 +63,9 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Get the description of implementation
-     * @param implementation The implementation
+     * @notice Get the description of the implementation.
+     *         Description contains creator, create time, compatibility and note.
+     * @param implementation The address of the implementation
      * @return creator The creator of the implementation
      * @return creationTime The create time of the implementation
      * @return compatibility The compatibility of the implementation
@@ -88,31 +89,33 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Check if the version of the implementation is valid
-     * @param implementation The implementation
-     * @return bool If the version of the implementation is valid
+     * @notice Check if the implementation is recorded
+     * @param implementation The address of implementation
+     * @return bool If the implementation is recorded
      */
     function isVersionValid(address implementation) public view returns (bool) {
         return _versions.contains(implementation);
     }
 
     /**
-     * @notice Check if the version of base is compatible with the version of target
-     * @param base The base implementation
-     * @param target The target implementation
-     * @return bool If the version of base is compatible with the version of target
+     * @notice Check if the implementation target is compatible with the implementation base.
+     *         Being compatible means having bigger compatibility
+     * @param base The address of implementation base
+     * @param target The address of implementation target
+     * @return bool If the implementation target is compatible with the implementation base
      */
-    function isVersionCompatibleWith(address base, address target) public view returns (bool) {
-        require(isVersionValid(base), "base version is invalid");
+    function isVersionCompatible(address target, address base) public view returns (bool) {
         require(isVersionValid(target), "target version is invalid");
+        require(isVersionValid(base), "base version is invalid");
         return _descriptions[target].compatibility >= _descriptions[base].compatibility;
     }
 
     /**
-     * @dev List available versions
-     * @param start The start index of all versions
-     * @param count The count of listed versions
-     * @return result The listed versions
+     * @dev Get a certain number of implementations starting with the index
+     * @param start The index to start with
+     * @param count The number of implementations to get.
+     *              If there isn't the number of implementations left, returning the rest of implementations
+     * @return result The addresses of implementations to get
      */
     function listAvailableVersions(uint256 start, uint256 count)
         internal

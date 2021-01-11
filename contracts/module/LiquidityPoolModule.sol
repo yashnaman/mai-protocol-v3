@@ -442,7 +442,7 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
         if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
-            IPoolCreator(liquidityPool.creator).activateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.creator).activatePerpetualFor(trader, perpetualIndex);
         }
     }
 
@@ -462,7 +462,7 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
-            IPoolCreator(liquidityPool.creator).deactivateLiquidityPoolFor(trader, perpetualIndex);
+            IPoolCreator(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
         }
         liquidityPool.transferToUser(payable(trader), amount);
     }

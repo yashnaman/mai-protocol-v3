@@ -18,15 +18,15 @@ contract Variables {
     }
 
     /**
-     * @notice Get address of vault
-     * @return address The address of vault
+     * @notice Get the address of the vault
+     * @return address The address of the vault
      */
     function vault() public view returns (address) {
         return _vault;
     }
 
     /**
-     * @notice Get vault fee rate
+     * @notice Get the vault fee rate
      * @return int256 The vault fee rate
      */
     function vaultFeeRate() public view returns (int256) {
@@ -34,7 +34,7 @@ contract Variables {
     }
 
     /**
-     * @notice Get address of weth
+     * @notice Get the address of weth
      * @return address The address of weth
      */
     function weth() public view returns (address) {
@@ -42,16 +42,16 @@ contract Variables {
     }
 
     /**
-     * @notice Get address of access controller
-     * @return address The address of access controller
+     * @notice Get the address of the access controller
+     * @return address The address of the access controller
      */
     function accessController() public view returns (address) {
         return address(this);
     }
 
     /**
-     * @notice Get address of symbol service
-     * @return address The address of symbol service
+     * @notice Get the address of the symbol service
+     * @return address The address of the symbol service
      */
     function symbolService() public view returns (address) {
         return _symbolService;

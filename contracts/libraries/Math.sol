@@ -15,11 +15,11 @@ library Math {
     }
 
     /**
-     * @dev Get most significant bit,
+     * @dev Get the most significant bit of the number,
             0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3,
             606 ~ 672 gas
-     * @param x The input
-     * @return uint8 The output
+     * @param x The number
+     * @return uint8 The significant bit of the number
      */
     function mostSignificantBit(uint256 x) internal pure returns (uint8) {
         uint256 t;
@@ -61,9 +61,9 @@ library Math {
 
     // https://en.wikipedia.org/wiki/Integer_square_root
     /**
-     * @dev Get square root
-     * @param x The input, 10^36
-     * @return int256 The square root, 10^18
+     * @dev Get the square root of the number
+     * @param x The number, usually 10^36
+     * @return int256 The square root of the number, usually 10^18
      */
     function sqrt(int256 x) internal pure returns (int256) {
         require(x >= 0, "negative sqrt");
