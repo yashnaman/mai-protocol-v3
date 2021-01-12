@@ -79,10 +79,21 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice TODO: 现在能cancel别人的单
-     * @param order The order to cancel
+     * @notice  Cancel an order. Canceled order is not able to be filled.
+     *          Only order.trader / order.relayer and anthorized account (by order.trader)
+     *          is able to call this method.
+     * @param   order   The order object to cancel.
      */
     function cancelOrder(Order memory order) public {
+        if (msg.sender != order.trader || msg.sender != order.relayer) {
+            (, , address[7] memory addresses, , , , , ) =
+                ILiquidityPool(order.liquidityPool).getLiquidityPoolInfo();
+            IAccessControll accessControl =
+                IAccessControll(IPoolCreator(addresses[0]).accessController());
+            bool isGranted =
+                accessControl.isGranted(order.trader, msg.sender, Constant.PRIVILEGE_TRADE);
+            require(isGranted, "sender must be trader or relayer or authorized");
+        }
         bytes32 orderHash = order.getOrderHash();
         require(!_orderCanceled[orderHash], "order is already canceled");
         _orderCanceled[orderHash] = true;
