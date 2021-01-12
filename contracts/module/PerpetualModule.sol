@@ -503,15 +503,13 @@ library PerpetualModule {
     {
         penaltyToLP = 0;
         if (deltaFund != 0) {
-            int256 newInsuranceFund = perpetual.insuranceFund;
+            int256 newInsuranceFund = perpetual.insuranceFund.add(deltaFund);
             if (deltaFund > 0) {
-                newInsuranceFund = newInsuranceFund.add(deltaFund);
                 if (newInsuranceFund > perpetual.insuranceFundCap) {
+                    penaltyToLP = newInsuranceFund.sub(perpetual.insuranceFundCap);
                     newInsuranceFund = perpetual.insuranceFundCap;
-                    penaltyToLP = perpetual.insuranceFundCap.sub(newInsuranceFund);
                 }
             } else {
-                newInsuranceFund = newInsuranceFund.add(deltaFund);
                 if (newInsuranceFund < 0) {
                     perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(
                         newInsuranceFund

@@ -10,6 +10,8 @@ interface IPoolCreator {
 
     function deactivatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
+    function setLiquidityPoolOwnership(address liquidityPool, address operator) external;
+
     function weth() external view returns (address);
 
     function accessController() external view returns (address);

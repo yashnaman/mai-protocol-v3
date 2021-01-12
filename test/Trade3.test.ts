@@ -68,8 +68,8 @@ describe('TradeModule1', () => {
 
             mocker = await createContract("MockAMMPriceEntries");
             await testTrade.setGovernor(mocker.address);
+            await testTrade.setState(0, 2);
         })
-
 
         it("regular", async () => {
             let now = Math.floor(Date.now() / 1000);
@@ -85,6 +85,117 @@ describe('TradeModule1', () => {
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("1"))
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("11000.7")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("-1"))
+        })
+
+        it("close", async () => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
+            await testTrade.updatePrice(now);
+
+            await mocker.setPrice(toWei("1000"));
+            await ctk.mint(testTrade.address, toWei("1000"));
+            await testTrade.setTotalCollateral(0, toWei("1000"));
+
+            await testTrade.setMarginAccount(0, user1.address, toWei("10000"), toWei("10"));
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            // close only
+            await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0x80000000)).to.be.revertedWith("trader must be close only");
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("10999")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("9"))
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("9000.7")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("1"))
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("19990")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("0"))
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("7")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("10"))
+        })
+
+        it("close - but no fee", async () => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
+            await testTrade.updatePrice(now);
+
+            await mocker.setPrice(toWei("1000"));
+            await ctk.mint(testTrade.address, toWei("1000"));
+            await testTrade.setTotalCollateral(0, toWei("1000"));
+
+            // close only + half fee
+            await testTrade.setMarginAccount(0, user1.address, toWei("-9099.5"), toWei("10")); // margin = 9000 900
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("-8100")) // 1000 + fee = 0.001 //
+            expect(position).to.equal(toWei("9"))
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("9000.35")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("1"))
+
+            // close only + no fee
+            await testTrade.setMarginAccount(0, user1.address, toWei("-9100"), toWei("10")); // margin = 9000 900
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("-8100")) // 1000 + fee = 0.001 //
+            expect(position).to.equal(toWei("9"))
+            expect(await testTrade.getMargin(0, user1.address)).to.equal(toWei("900")) // im safe
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("9000")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("1"))
+
+            // close only + no margin
+            await testTrade.setMarginAccount(0, user1.address, toWei("-10000"), toWei("10")); // margin = 9000 900
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("-9000")) // 1000 + fee = 0.001 //
+            expect(position).to.equal(toWei("9"))
+            expect(await testTrade.getMargin(0, user1.address)).to.equal("0") // im unsafe/margin safe
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("9000")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("1"))
+        })
+
+        it("market", async () => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
+            await testTrade.updatePrice(now);
+
+            await mocker.setPrice(toWei("1000"));
+            await ctk.mint(testTrade.address, toWei("1000"));
+            await testTrade.setTotalCollateral(0, toWei("1000"));
+
+            await testTrade.setMarginAccount(0, user1.address, toWei("10000"), toWei("10"));
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("0"), none, 0)).to.be.revertedWith("price exceeds limit");
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("0"), none, 0x40000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("11"))
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("11000.7")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("-1"))
         })
     })
 })

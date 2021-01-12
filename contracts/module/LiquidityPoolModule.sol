@@ -104,10 +104,10 @@ library LiquidityPoolModule {
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @return isSafe If amm is maintenance safe in the perpetual
      */
-    function isAMMMaintenanceMarginSafe(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
-        public
-        returns (bool isSafe)
-    {
+    function isAMMMaintenanceMarginSafe(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex
+    ) public returns (bool isSafe) {
         rebalance(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         isSafe = liquidityPool.perpetuals[perpetualIndex].isMaintenanceMarginSafe(
@@ -334,6 +334,7 @@ library LiquidityPoolModule {
         public
     {
         require(newOperator != address(0), "new operator is invalid");
+        require(newOperator != liquidityPool.operator, "cannot transfer to current operator");
         liquidityPool.transferringOperator = newOperator;
         emit TransferOperatorTo(newOperator);
     }
@@ -351,6 +352,8 @@ library LiquidityPoolModule {
         );
         liquidityPool.operator = claimer;
         liquidityPool.transferringOperator = address(0);
+        // update record in Tracer.sol
+        IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), claimer);
         emit ClaimOperatorTo(claimer);
     }
 

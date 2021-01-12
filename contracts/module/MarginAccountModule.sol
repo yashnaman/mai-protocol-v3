@@ -51,8 +51,7 @@ library MarginAccountModule {
             .position
             .wmul(price)
             .wmul(perpetual.maintenanceMarginRate)
-            .abs()
-            .max(perpetual.keeperGasReward);
+            .abs();
     }
 
     /**

@@ -6,5 +6,6 @@ module.exports = {
         "interface",
         "governance",
         "token",
+        "reader",
     ],
 };

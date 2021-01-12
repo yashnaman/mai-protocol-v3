@@ -105,6 +105,9 @@ library CollateralModule {
         address payable account,
         int256 amount
     ) public {
+        if (amount == 0) {
+            return;
+        }
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
         if (liquidityPool.isWrapped) {
             IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).weth());

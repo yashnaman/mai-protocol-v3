@@ -11,7 +11,7 @@ import "./TestLiquidityPool.sol";
 
 contract TestTrade is TestLiquidityPool {
     using PerpetualModule for PerpetualStorage;
-    using MarginAccountModule for LiquidityPoolStorage;
+    using MarginAccountModule for PerpetualStorage;
     using TradeModule for LiquidityPoolStorage;
     using TradeModule for PerpetualStorage;
 
@@ -45,39 +45,66 @@ contract TestTrade is TestLiquidityPool {
     function getFees(
         uint256 perpetualIndex,
         address trader,
-        int256 tradeValue
+        address referrer,
+        int256 tradeValue,
+        bool hasOpened
     )
         public
         view
         returns (
             int256 lpFee,
             int256 operatorFee,
-            int256 vaultFee
+            int256 vaultFee,
+            int256 referralRebate
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        (lpFee, operatorFee, vaultFee) = _liquidityPool.getFees(perpetual, trader, tradeValue);
+        (lpFee, operatorFee, vaultFee, referralRebate) = _liquidityPool.getFees(
+            perpetual,
+            trader,
+            referrer,
+            tradeValue,
+            hasOpened
+        );
     }
 
-    function updateFees(
+    function postTrade(
         uint256 perpetualIndex,
         address trader,
         address referrer,
-        int256 value
-    ) public returns (int256 lpFee, int256 totalFee) {
+        int256 deltaCash,
+        int256 deltaPosition
+    ) public returns (int256 totalFee) {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        return _liquidityPool.updateFees(perpetual, trader, referrer, value);
+        totalFee = _liquidityPool.postTrade(perpetual, trader, referrer, deltaCash, deltaPosition);
     }
 
     function validatePrice(
         bool isLong,
         int256 price,
         int256 limitPrice
-    ) public pure {
+    ) public view {
         TradeModule.validatePrice(isLong, price, limitPrice);
     }
 
     function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];
+    }
+
+    function hasOpenedPosition(int256 amount, int256 delta) public pure returns (bool hasOpened) {
+        hasOpened = TradeModule.hasOpenedPosition(amount, delta);
+    }
+
+    function getMargin(uint256 perpetualIndex, address trader) public view returns (int256) {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        return perpetual.getMargin(trader, perpetual.getMarkPrice());
+    }
+
+    function liquidateByAMM(
+        uint256 perpetualIndex,
+        address liquidator,
+        address trader
+    ) public returns (int256 deltaPosition) {
+        deltaPosition = _liquidityPool.liquidateByAMM(perpetualIndex, liquidator, trader);
     }
 }

@@ -51,7 +51,12 @@ contract Governance is Storage {
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;
         _liquidityPool.claimOperator(msg.sender);
-        _liquidityPool.claimFee(previousOperator, _liquidityPool.claimableFees[previousOperator]);
+        if (_liquidityPool.claimableFees[previousOperator] > 0) {
+            _liquidityPool.claimFee(
+                previousOperator,
+                _liquidityPool.claimableFees[previousOperator]
+            );
+        }
     }
 
     /**
