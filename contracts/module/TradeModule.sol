@@ -98,17 +98,20 @@ library TradeModule {
     }
 
     /**
-     * @notice Get fees during trading.
+     * @notice  Get fees during trading.
+     *          For traders who try to close position, fee will be decreasing in proportion according to
+     *          margin left in the trader's margin account;
+     *
      * @param liquidityPool The liquidity pool
      * @param perpetual The perpetual
      * @param trader The trader
      * @param referrer The trader
      * @param tradeValue The value of trade
      * @param hasOpened True if trader has opened position during this trade;
-     * @return int256 The fee belongs to LP
-     * @return int256 The fee belongs to operator
-     * @return int256 The fee belongs to vault
-     * @return referralRebate The total fee of trade
+     * @return lpFee            The fee belongs to LP
+     * @return operatorFee      The fee belongs to operator
+     * @return vaultFee         The fee belongs to vault
+     * @return referralRebate   The total fee of trade
      */
     function getFees(
         LiquidityPoolStorage storage liquidityPool,
@@ -135,7 +138,7 @@ library TradeModule {
 
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-        require(availableMargin >= totalFee || !hasOpened, "insufficient fee");
+        require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
 
         if (availableMargin <= 0) {
             lpFee = 0;
