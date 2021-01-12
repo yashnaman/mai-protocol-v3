@@ -50,10 +50,20 @@ library OrderModule {
     }
 
     /**
-     * @notice Validate the order
+     * @notice Validate the order:
+     *         1. broker of order = msg.sender
+     *         2. relayer of order = tx.origin
+     *         3. liquidity pool of order = address(this)
+     *         4. perpetual index of order < count of perpetuals
+     *         5. trading amount != 0 and has the same sign with amount of order
+     *         6. amount of order != 0
+     *         7. minimum trading amount of order <= abs(trading amount) <= abs(amount of order)
+     *         8. order is not expire
+     *         9. chain id of order is correct
+     *         10. order is stop loss order and taker profit order at the same time
      * @param liquidityPool The liquidity pool
      * @param order The order
-     * @param amount The trading amount
+     * @param amount The trading amount of position
      */
     function validateOrder(
         LiquidityPoolStorage storage liquidityPool,

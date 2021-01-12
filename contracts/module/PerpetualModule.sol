@@ -44,9 +44,10 @@ library PerpetualModule {
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
     /**
-     * @dev Get mark price of perpetual
+     * @dev Get the mark price of the perpetual. If the state of the perpetual is not "normal",
+     *      return the settlement price
      * @param perpetual The perpetual
-     * @return int256 The mark price of perpetual
+     * @return int256 The mark price of the perpetual
      */
     function getMarkPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
@@ -56,9 +57,10 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Get index price of perpetual
+     * @dev Get the index price of the perpetual. If the state of the perpetual is not "normal",
+     *      return the settlement price
      * @param perpetual The perpetual
-     * @return int256 The index price of perpetual
+     * @return int256 The index price of the perpetual
      */
     function getIndexPrice(PerpetualStorage storage perpetual) internal view returns (int256) {
         return
@@ -68,9 +70,9 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Get margin to rebalance of perpetual
+     * @notice Margin to rebalance = margin - initial margin
      * @param perpetual The perpetual
-     * @return marginToRebalance The margin to rebalance of perpetual
+     * @return marginToRebalance The margin to rebalance of the perpetual
      */
     function getRebalanceMargin(PerpetualStorage storage perpetual)
         public
@@ -84,13 +86,13 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Initialize perpetual
-     * @param id The id of perpetual
-     * @param oracle The oracle of perpetual
-     * @param coreParams The core parameters of perpetual
-     * @param riskParams The risk parameters of perpetual
-     * @param minRiskParamValues The risk parameters' minimum values of perpetual
-     * @param maxRiskParamValues The risk parameters' maximum values of perpetual
+     * @notice Initialize the perpetual
+     * @param id The id of the perpetual
+     * @param oracle The oracle of the perpetual
+     * @param coreParams The core parameters of the perpetual
+     * @param riskParams The risk parameters of the perpetual, must between minimum values and maximum values
+     * @param minRiskParamValues The risk parameters' minimum values of the perpetual
+     * @param maxRiskParamValues The risk parameters' maximum values of the perpetual
      */
     function initialize(
         PerpetualStorage storage perpetual,
@@ -155,10 +157,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set base parameter of perpetual
+     * @notice Set the base parameter of the perpetual
      * @param perpetual The perpetual
-     * @param key The key of base parameter
-     * @param newValue The new value of base parameter
+     * @param key The key of the base parameter
+     * @param newValue The new value of the base parameter
      */
     function setBaseParameter(
         PerpetualStorage storage perpetual,
@@ -198,12 +200,12 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set risk parameter of perpetual
+     * @notice Set the risk parameter of the perpetual
      * @param perpetual The perpetual
-     * @param key The key of risk parameter
-     * @param newValue The new value of risk parameter
-     * @param newMinValue The new minimum value of risk parameter
-     * @param newMaxValue The new maximum value of risk parameter
+     * @param key The key of the risk parameter
+     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
+     * @param newMinValue The new minimum value of the risk parameter
+     * @param newMaxValue The new maximum value of the risk parameter
      */
     function setRiskParameter(
         PerpetualStorage storage perpetual,
@@ -231,10 +233,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update risk parameter of perpetual
+     * @notice Update the risk parameter of the perpetual
      * @param perpetual The perpetual
-     * @param key The key of risk parameter
-     * @param newValue The new value of risk parameter
+     * @param key The key of the risk parameter
+     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
      */
     function updateRiskParameter(
         PerpetualStorage storage perpetual,
@@ -260,9 +262,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update funding state of perpetual, which means updating unitAccumulativeFunding variable
+     * @notice Update the funding state of the perpetual, which means updating the unitAccumulativeFunding variable of the perpetual
+     *         unitAccumulativeFunding <- unitAccumulativeFunding + index * funding rate * elapsed time / FUNDING_INTERVAL
      * @param perpetual The perpetual
-     * @param timeElapsed The elapsed time since last updating
+     * @param timeElapsed The elapsed time since the last update
      */
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
         int256 deltaUnitLoss =
@@ -275,8 +278,11 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update funding rate of perpetual,
-     *         funding rate = (-)limit if pool margin = 0 and position != 0
+     * @notice Update the funding rate of the perpetual,
+     *         funding rate = - index * position * limit / pool margin
+     *         funding rate = (+/-)limit if
+     *         1. pool margin = 0 and position != 0
+     *         2. abs(funding rate) > limit
      * @param perpetual The perpetual
      * @param poolMargin The pool margin of liquidity
      */
@@ -287,7 +293,7 @@ library PerpetualModule {
             int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
                 newFundingRate = getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
-                    perpetual.fundingRateLimit.value
+                    fundingRateLimit
                 );
                 newFundingRate = newFundingRate > fundingRateLimit
                     ? fundingRateLimit
@@ -305,7 +311,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set state of perpetual to normal
+     * @notice Set the state of the perpetual to "normal", the state must be "initializing" before
      * @param perpetual The perpetual
      */
     function setNormalState(PerpetualStorage storage perpetual) public {
@@ -318,7 +324,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set state of perpetual to emergency
+     * @notice Set the state of the perpetual to "emergency", the state must be "normal" before
      * @param perpetual The perpetual
      */
     function setEmergencyState(PerpetualStorage storage perpetual) public {
@@ -335,7 +341,8 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set state of perpetual to cleared
+     * @notice Set the state of the perpetual to "cleared" and settle the collateral of the perpetual,
+     *         the state must be "emergency" before
      * @param perpetual The perpetual
      */
     function setClearedState(PerpetualStorage storage perpetual) public {
@@ -349,9 +356,11 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Donate to insurance fund of perpetual
+     * @notice Donate collateral to the insurance fund of the perpetual. All the donated collateral counts towards
+     *         the total collateral of perpetual, which means these collateral will be settled when settling the
+     *         collateral of the perpetual
      * @param perpetual The perpetual
-     * @param amount The amount to donate
+     * @param amount The amount of collateral to donate
      */
     function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount > 0, "amount should greater than 0");
@@ -361,11 +370,12 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Deposit to account of perpetual
+     * @notice Deposit collateral to the trader's account of the perpetual
      * @param perpetual The perpetual
-     * @param trader The account
-     * @param amount The amount to deposit
-     * @return isInitialDeposit If the account is empty before depositing
+     * @param trader The address of the trader
+     * @param amount The amount of collateral to deposit
+     * @return isInitialDeposit If the trader's account is empty before depositing. If it's true, register the
+     *                          trader's account to the perpetual
      */
     function deposit(
         PerpetualStorage storage perpetual,
@@ -383,11 +393,12 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Withdraw from account of perpetual
+     * @notice Withdraw collateral from the trader's account of the perpetual
      * @param perpetual The perpetual
-     * @param trader The account
-     * @param amount The amount to withdraw
-     * @return isLastWithdrawal If the account is empty after withdrawing
+     * @param trader The address of the trader
+     * @param amount The amount of collateral to withdraw
+     * @return isLastWithdrawal If the trader's account is empty after withdrawing. If it's true, deregister
+     *                          the trader's account from the perpetual
      */
     function withdraw(
         PerpetualStorage storage perpetual,
@@ -410,10 +421,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Clear account of perpetual, need to clear all active accounts to complete settle
+     * @notice Clear the trader's account of the perpetual. Need to clear all the active accounts to complete the settlement
      * @param perpetual The perpetual
-     * @param trader The account
-     * @return isAllCleared If all active accounts are cleared
+     * @param trader The address of the trader
+     * @return isAllCleared If all the active accounts are cleared
      */
     function clear(PerpetualStorage storage perpetual, address trader)
         public
@@ -431,9 +442,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Count margin of account to update total margin of perpetual
+     * @notice Check the trader's account to update total margin with position or without position of the perpetual.
+     *         If the margin of the trader's account is not positive, skip updating
      * @param perpetual The perpetual
-     * @param trader The account
+     * @param trader The address of the trader
      */
     function countMargin(PerpetualStorage storage perpetual, address trader) public {
         int256 margin = perpetual.getMargin(trader, getMarkPrice(perpetual));
@@ -448,8 +460,9 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Get next active account
+     * @notice Get the address of the next active account in the perpetual
      * @param perpetual The perpetual
+     * @return account The address of the next active account
      */
     function getNextActiveAccount(PerpetualStorage storage perpetual)
         public
@@ -461,10 +474,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Settle account of perpetual
+     * @notice Settle the trader's account of the perpetual and return the collateral if the perpetual's state is "cleared"
      * @param perpetual The perpetual
-     * @param trader The account to settle
-     * @param marginToReturn The margin to return after settlement
+     * @param trader The adddress of the trader
+     * @param marginToReturn The collateral to return to the trader after the settlement
      */
     function settle(PerpetualStorage storage perpetual, address trader)
         public
@@ -478,10 +491,11 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update insurance fund, if exceeding cap, the extra part belongs to LP
+     * @notice Update the insurance fund, if exceeding the cap, the extra part of collateral belongs to LP
      * @param perpetual The perpetual
-     * @param deltaFund The delta fund
-     * @return penaltyToLP The extra part if insurance fund exceeds cap
+     * @param deltaFund The amount of collateral to update, positive means the insurance fund increases,
+     *                  negative means the insurance fund decreases
+     * @return penaltyToLP The extra part of collateral if the insurance fund exceeds the cap
      */
     function updateInsuranceFund(PerpetualStorage storage perpetual, int256 deltaFund)
         public
@@ -510,8 +524,11 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Settle collateral of perpetual,
-     *         which means update redemptionRateWithPosition and redemptionRateWithoutPosition
+     * @notice Settle the total collateral of the perpetual, which means update redemptionRateWithPosition
+     *         and redemptionRateWithoutPosition variables. If the total collateral is not enough for the
+     *         accounts without position, all the total collateral is given to them proportionally. If the
+     *         total collateral is more than the accounts without position needs, the extra part of
+     *         collateral if given to the accounts with position proportionally
      * @param perpetual The perpetual
      */
     function settleCollateral(PerpetualStorage storage perpetual) public {
@@ -536,25 +553,25 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Register account to active accounts of perpetual
+     * @dev Register the trader's account to the active accounts of the perpetual
      * @param perpetual The perpetual
-     * @param trader The account
+     * @param trader The address of the trader
      */
     function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.add(trader);
     }
 
     /**
-     * @dev Deregister account from active accounts of perpetual
+     * @dev Deregister the trader's account from the active accounts of the perpetual
      * @param perpetual The perpetual
-     * @param trader The account
+     * @param trader The address of the trader
      */
     function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.remove(trader);
     }
 
     /**
-     * @dev Update price of perpetual from oracle
+     * @dev Update the oracle price of the perpetual, including the index price and the mark price
      * @param perpetual The perpetual
      */
     function updatePrice(PerpetualStorage storage perpetual) internal {
@@ -563,9 +580,9 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Update price data
-     * @param priceData The price data
-     * @param priceGetter The function to get price
+     * @dev Update the price data, which means the price and the update time
+     * @param priceData The price data to update
+     * @param priceGetter The function to get the price
      */
     function updatePriceData(
         OraclePriceData storage priceData,
@@ -579,9 +596,9 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Increase collateral of perpetual
+     * @dev Increase the total collateral of the perpetual
      * @param perpetual The perpetual
-     * @param amount The amount to increase
+     * @param amount The amount of collateral to increase
      */
     function increaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
         require(amount >= 0, "amount is negative");
@@ -589,9 +606,9 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Decrease collateral of perpetual
+     * @dev Decrease the total collateral of the perpetual
      * @param perpetual The perpetual
-     * @param amount The amount to decrease
+     * @param amount The amount of collateral to decrease
      */
     function decreaseTotalCollateral(PerpetualStorage storage perpetual, int256 amount) internal {
         require(amount >= 0, "amount is negative");
@@ -600,9 +617,9 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Update option
-     * @param option The option
-     * @param newValue The new value of option
+     * @dev Update the option
+     * @param option The option to update
+     * @param newValue The new value of the option, must between the minimum value and the maximum value
      */
     function updateOption(Option storage option, int256 newValue) internal {
         require(
@@ -613,11 +630,11 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Set option
-     * @param option The option
-     * @param newValue The new value of option
-     * @param newMinValue The minimum value of option
-     * @param newMaxValue The maximum value of option
+     * @dev Set the option
+     * @param option The option to set
+     * @param newValue The new value of the option, must between the minimum value and the maximum value
+     * @param newMinValue The minimum value of the option
+     * @param newMaxValue The maximum value of the option
      */
     function setOption(
         Option storage option,
@@ -632,7 +649,13 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Validate base parameters of perpetual
+     * @notice Validate the base parameters of the perpetual:
+     *         1. initial margin rate > 0
+     *         2. 0 < maintenance margin rate <= initial margin rate
+     *         3. 0 <= operator fee rate <= 0.01
+     *         4. 0 <= lp fee rate <= 0.01
+     *         5. 0 <= liquidation penalty rate < maintenance margin rate
+     *         6. keeper gas reward >= 0
      * @param perpetual The perpetual
      */
     function validateBaseParameters(PerpetualStorage storage perpetual) public view {
@@ -660,7 +683,13 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Validate risk parameters of perpetual
+     * @notice Validate the risk parameters of the perpetual
+     *         1. 0 <= half spread < 1
+     *         2. open slippage factor > 0
+     *         3. 0 < close slippage factor <= open slippage factor
+     *         4. funding rate limit >= 0
+     *         5. amm max leverage > 0
+     *         6. 0 <= max close price discount < 1
      * @param perpetual The perpetual
      */
     function validateRiskParameters(PerpetualStorage storage perpetual) public view {
