@@ -31,10 +31,11 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Transfer operator of liquidity pool.
-     *         Only operator can transfer if operator exists.
-     *         Only governor can transfer if operator doesn't exist
-     * @param newOperator The new operator
+     * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator()
+     *         next to complete the action
+     *         Only operator can transfer if the operator exists.
+     *         Only governor can transfer if the operator doesn't exist
+     * @param newOperator The address of the new operator
      */
     function transferOperator(address newOperator) external {
         if (_liquidityPool.operator != address(0)) {
@@ -46,7 +47,8 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Claim operator of liquidity pool.
+     * @notice Claim the ownership of the liquidity pool to msg.sender,
+     *         msg.sender must be transferred the ownership before
      */
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;
@@ -60,7 +62,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Revoke operator of liquidity pool.
+     * @notice Revoke the operator of the liquidity pool.
      *         Only operator can revoke
      */
     function revokeOperator() external onlyOperator {
@@ -68,7 +70,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Claim fee of operator. Only operator can claim
+     * @notice Claim the fee of the operator. Only operator can claim
      */
     function claimOperatorFee() external onlyOperator {
         address operator = _liquidityPool.operator;
@@ -76,21 +78,21 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set parameter of liquidity pool.
+     * @notice Set the parameter of the liquidity pool.
      *         Only governor can set
-     * @param key The key of parameter
-     * @param newValue The new value of parameter
+     * @param key The key of the parameter
+     * @param newValue The new value of the parameter
      */
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(key, newValue);
     }
 
     /**
-     * @notice Set base parameter of perpetual.
+     * @notice Set the base parameter of the perpetual.
      *         Only governor can set
-     * @param perpetualIndex The index of perpetual
-     * @param key The key of base parameter
-     * @param newValue The new value of base parameter
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param key The key of the base parameter
+     * @param newValue The new value of the base parameter
      */
     function setPerpetualBaseParameter(
         uint256 perpetualIndex,
@@ -101,13 +103,13 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set risk parameter of perpetual.
+     * @notice Set the risk parameter of the perpetual.
      *         Only governor can set
-     * @param perpetualIndex The index of perpetual
-     * @param key The key of risk parameter
-     * @param newValue The new value of risk parameter
-     * @param minValue The minimum value of risk parameter
-     * @param maxValue The maximum value of risk parameter
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param key The key of the risk parameter
+     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
+     * @param minValue The minimum value of the risk parameter
+     * @param maxValue The maximum value of the risk parameter
      */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
@@ -120,11 +122,11 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Update risk parameter of perpetual.
+     * @notice Update the risk parameter of the perpetual.
      *         Only operator can update
-     * @param perpetualIndex The index of perpetual
-     * @param key The key of risk parameter
-     * @param newValue The new value of risk parameter
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param key The key of the risk parameter
+     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
      */
     function updatePerpetualRiskParameter(
         uint256 perpetualIndex,
@@ -135,17 +137,19 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Force to set state of perpetual to emergency.
+     * @notice Force to set the state of the perpetual to "emergency". Need to update the funding state and
+     *         the oracle price of each perpetual before and update the funding rate of each perpetual after
      *         Only governor can set
-     * @param perpetualIndex The index of perpetual
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function forceToSetEmergencyState(uint256 perpetualIndex) external syncState onlyGovernor {
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
     /**
-     * @notice Set state of perpetual to emergency if amm isn't maintenance margin safe
-     * @param perpetualIndex The index of perpetual
+     * @notice Set the state of the perpetual to "emergency" if AMM isn't maintenance margin safe. Need to update the funding
+     *         state and the oracle price of each perpetual before and update the funding rate of each perpetual after
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function setEmergencyState(uint256 perpetualIndex) external syncState {
         require(!_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex), "amm is safe");

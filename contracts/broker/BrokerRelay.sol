@@ -47,23 +47,23 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Receive eth, call the deposit() function
+     * @notice Sending eth to this contract is equivalent to depositing eth to the account of msg.sender
      */
     receive() external payable {
         deposit();
     }
 
     /**
-     * @notice Get the balance of eth the trader deposited
+     * @notice Get the eth balance of the trader's account
      * @param trader The address of the trader
-     * @return uint256 The balance of eth the trader deposited
+     * @return uint256 The eth balance of the trader's account
      */
     function balanceOf(address trader) public view returns (uint256) {
         return _balances[trader];
     }
 
     /**
-     * @notice Deposit eth as gas reward of the broker
+     * @notice Deposit eth to the account of msg.sender as gas reward of the broker
      */
     function deposit() public payable nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].add(msg.value);
@@ -71,7 +71,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw eth the trader deposited
+     * @notice Withdraw eth from the account of msg.sender
      * @param amount The amount of eth to withdraw
      */
     function withdraw(uint256 amount) public nonReentrant {
@@ -81,10 +81,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice  Cancel an order. Canceled order is not able to be filled.
-     *          Only order.trader / order.relayer and anthorized account (by order.trader)
-     *          is able to call this method.
-     * @param   order   The order object to cancel.
+     * @notice Cancel the order. Canceled order is not able to be filled.
+     *         Only order.trader / order.relayer and anthorized account (by order.trader)
+     *         are able to cancel the order
+     * @param order The order object to cancel
      */
     function cancelOrder(Order memory order) public {
         if (msg.sender != order.trader || msg.sender != order.relayer) {
@@ -103,9 +103,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Execute a transaction of liquidity pool's method
-     * @param liquidityPool The address of liquidity pool
-     * @param callData The call data of transaction
+     * @notice Execute the transaction of the liquidity pool's method
+     * @param liquidityPool The address of the liquidity pool
+     * @param callData The call data of the transaction
      * @param gasReward The gas reward given to msg.sender
      */
     function execute(
@@ -121,10 +121,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade multiple orders
-     * @param compressedOrders The orders to trade
+     * @notice Trade the multiple orders
+     * @param compressedOrders The order objects to trade
      * @param amounts The trading amounts of position
-     * @param gasRewards The gas rewards of eth given to the brokers
+     * @param gasRewards The gas rewards of eth given to their brokers
      */
     function batchTrade(
         bytes[] calldata compressedOrders,
@@ -176,7 +176,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     /**
      * @dev Update the filled position amount of the order
      * @param orderHash The hash of the order
-     * @param amount The filled amount of position to update
+     * @param amount The changed amount of filled position
      */
     function _fillOrder(bytes32 orderHash, int256 amount) internal {
         _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
@@ -184,10 +184,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Transfer from sender's balance to recipient's balance
+     * @dev Transfer eth from sender's account to recipient's account
      * @param sender The address of the sender
      * @param recipient The address of the recipient
-     * @param amount The amount of eth transferred
+     * @param amount The amount of eth to transfer
      */
     function _transfer(
         address sender,

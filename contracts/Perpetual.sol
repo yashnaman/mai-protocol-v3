@@ -46,8 +46,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using SignatureModule for bytes32;
 
     /**
-     * @notice Donate collateral to insurance fund of perpetual
-     * @param perpetualIndex The index of perpetual
+     * @notice Donate collateral to the insurance fund of the perpetual, can only donate when the perpetual's
+     *         state is "normal"
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param amount The amount of collateral to donate
      */
     function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
@@ -60,9 +61,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Deposit collateral to account of perpetual
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of trader
+     * @notice Deposit collateral to the trader's account of the perpetual, can only deposit when the perpetual's
+     *         state is "normal"
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the trader
      * @param amount The amount of collatetal to deposit
      */
     function deposit(
@@ -76,9 +78,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw collateral from account of perpetual
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of trader
+     * @notice Withdraw collateral from the trader's account of the perpetual, can only withdraw when the perpetual's
+     *         state is "normal". Need to update the funding state and the oracle price of each perpetual before
+     *         and update the funding rate of each perpetual after
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the trader
      * @param amount The amount of collatetal to withdraw
      */
     function withdraw(
@@ -98,9 +102,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Settle account of perpetual
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of trader
+     * @notice Settle the trader's account of the perpetual, can only settle when the perpetual's
+     *         state is "cleared"
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the trader
      */
     function settle(uint256 perpetualIndex, address trader)
         public
@@ -113,8 +118,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Clear perpetual
-     * @param perpetualIndex The index of perpetual
+     * @notice Clear the next active account of the perpetual, can only settle when the perpetual's
+     *         state is "emergency"
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function clear(uint256 perpetualIndex)
         public
@@ -125,15 +131,16 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade in perpetual, require trader to have trade privilege
-     * @param perpetualIndex The index of perpetual
+     * @notice Trade with AMM in the perpetual, require msg.sender is granted the trade privilege by the trader.
+     *         The trading price is determined by the AMM based on the index price of the perpetual
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of trader
-     * @param amount The amount of trade
-     * @param limitPrice The worst price trader accepts
-     * @param deadline The deadline of trade
-     * @param referrer The referrer of trade
-     * @param flags The flags of trade
-     * @return int256 The delta position of trader
+     * @param amount The position amount of the trade
+     * @param limitPrice The worst price the trader accepts
+     * @param deadline The deadline of the trade
+     * @param referrer The referrer's address of the trade
+     * @param flags The flags of the trade
+     * @return int256 The update position amount of the trader after the trade
      */
     function trade(
         uint256 perpetualIndex,
@@ -152,10 +159,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade with amm by order, initiated by broker
-     * @param orderData The order
-     * @param amount The amount of trade
-     * @return int256 The delta position of trader
+     * @notice Trade with AMM by the order, initiated by the broker. Need to update the funding state and
+     *         the oracle price of each perpetual before and update the funding rate of each perpetual after
+     * @param orderData The order data object
+     * @param amount The position amount of the trade
+     * @return int256 The update position amount of the trader after the trade
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
@@ -179,14 +187,16 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Trade with amm
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of trader
-     * @param amount The position amount of trade
-     * @param limitPrice The worst price trader accepts
-     * @param referrer The referrer of trade
-     * @param flags The flags of trade
-     * @return int256 The delta position of trader
+     * @dev Trade with AMM in the perpetual. Need to update the funding state and the oracle price of each perpetual
+     *      before and update the funding rate of each perpetual after. Can only trade when the perpetual's state
+     *      is "normal" and the perpetual is not paused
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the trader
+     * @param amount The position amount of the trade
+     * @param limitPrice The worst price the trader accepts
+     * @param referrer The referrer's address of trade
+     * @param flags The flags of the trade
+     * @return int256 The update position amount of the trader after the trade
      */
     function _trade(
         uint256 perpetualIndex,
@@ -206,10 +216,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Liquidate trader if trader is unsafe, amm takes position
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of liquidated trader
-     * @return int256 The delta position of liquidated trader
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. AMM takes the position.
+     *         Need to update the funding state and the oracle price of each perpetual before and
+     *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
+     *         is "normal"
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the liquidated trader
+     * @return int256 The update position amount of the liquidated trader after the liquidation
      */
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
@@ -224,7 +237,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Liquidate trader if trader is unsafe, liquidator takes position
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. msg.sender takes the position.
+     *         Need to update the funding state and the oracle price of each perpetual before and
+     *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
+     *         is "normal"
      * @param perpetualIndex The index of perpetual
      * @param trader The address of liquidated trader
      * @param amount The amount of liquidation

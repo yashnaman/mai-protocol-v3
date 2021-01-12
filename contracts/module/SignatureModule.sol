@@ -92,12 +92,12 @@ library SignatureModule {
     // }
 
     /**
-     * @notice Get signer of transaction
-     * @param dataType The data type
-     * @param extData The external data
-     * @param args The arguments
-     * @param signature The signature
-     * @return signer The signer of transaction
+     * @notice Get the signer of the transaction
+     * @param dataType The data type of the transaction
+     * @param extData The external data of the transaction
+     * @param args The arguments of the transaction
+     * @param signature The signature of the transaction
+     * @return signer The signer of the transaction
      */
     function getSigner(
         bytes32 dataType, // EIP712_TYPED_DEPOSIT

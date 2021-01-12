@@ -29,8 +29,8 @@ contract Implementation is Ownable {
     constructor() Ownable() {}
 
     /**
-     * @notice Record the implementation, the implementation should not be recorded before
-     * @param implementation The address of implementation
+     * @notice Create the implementation by msg.sender, the implementation should not be created before
+     * @param implementation The address of the implementation
      * @param compatibility The compatibility of the implementation
      * @param note The note of the implementation
      */
@@ -55,7 +55,7 @@ contract Implementation is Ownable {
 
     /**
      * @notice Get the latest implementation, revert if there is no implementation
-     * @return address The address of the latest version of implementation
+     * @return address The address of the latest implementation
      */
     function getLatestVersion() public view returns (address) {
         require(_versions.length() > 0, "no version");
@@ -89,9 +89,9 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Check if the implementation is recorded
-     * @param implementation The address of implementation
-     * @return bool If the implementation is recorded
+     * @notice Check if the implementation is created
+     * @param implementation The address of the implementation
+     * @return bool If the implementation is created
      */
     function isVersionValid(address implementation) public view returns (bool) {
         return _versions.contains(implementation);
@@ -99,9 +99,9 @@ contract Implementation is Ownable {
 
     /**
      * @notice Check if the implementation target is compatible with the implementation base.
-     *         Being compatible means having bigger compatibility
-     * @param base The address of implementation base
+     *         Being compatible means having larger compatibility
      * @param target The address of implementation target
+     * @param base The address of implementation base
      * @return bool If the implementation target is compatible with the implementation base
      */
     function isVersionCompatible(address target, address base) public view returns (bool) {
@@ -114,7 +114,7 @@ contract Implementation is Ownable {
      * @dev Get a certain number of implementations starting with the index
      * @param start The index to start with
      * @param count The number of implementations to get.
-     *              If there isn't the number of implementations left, returning the rest of implementations
+     *              If there isn't the number of implementations left after the index, returning the rest of implementations
      * @return result The addresses of implementations to get
      */
     function listAvailableVersions(uint256 start, uint256 count)

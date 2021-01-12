@@ -28,13 +28,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     receive() external payable {}
 
     /**
-     * @notice Initialize liquidity pool 
-     * @param operator The address of operator
-     * @param collateral The address of collateral
-     * @param collateralDecimals The decimal of collateral
-     * @param governor The address of governor
-     * @param shareToken The address of share token
-     * @param isFastCreationEnabled If operator of the liquidity pool is allowed to create new perpetual
+     * @notice Initialize the liquidity pool 
+     * @param operator The operator's address of the liquidity pool
+     * @param collateral The collateral's address of the liquidity pool
+     * @param collateralDecimals The collateral's decimals of the liquidity pool
+     * @param governor The governor's address of the liquidity pool
+     * @param shareToken The share token's address of the liquidity pool
+     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     *                              when the liquidity pool is running
      */
     function initialize(
         address operator,
@@ -55,12 +56,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Create perpetual
-     * @param oracle The oracle of perpetual
-     * @param coreParams The core parameters of perpetual
-     * @param riskParams The risk parameters of perpetual
-     * @param minRiskParamValues The risk parameters' minimum values of perpetual
-     * @param maxRiskParamValues The risk parameters' maximum values of perpetual
+     * @notice Create new perpetual of the liquidity pool. The operator can create only when the liquidity
+     *         pool is not running or isFastCreationEnabled is set to true. In other cases, only the
+     *         governor can create
+     * @param oracle The oracle's address of the perpetual
+     * @param coreParams The core parameters of the perpetual
+     * @param riskParams The risk parameters of the perpetual, must between minimum values and maximum values
+     * @param minRiskParamValues The risk parameters' minimum values of the perpetual
+     * @param maxRiskParamValues The risk parameters' maximum values of the perpetual
      */
     function createPerpetual(
         address oracle,
@@ -84,7 +87,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Run liquidity pool. Only operator can run
+     * @notice Run the liquidity pool. Only operator can run
      */
     function runLiquidityPool() external onlyOperator {
         require(!_liquidityPool.isRunning, "pool is already running");
@@ -92,17 +95,18 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Claim fee
-     * @param claimer The claimer
-     * @param amount The amount to claim
+     * @notice Claim fee(collateral) to the claimer
+     * @param claimer The address of the claimer
+     * @param amount The amount of fee(collateral) to claim
      */
     function claimFee(address claimer, int256 amount) external nonReentrant {
         _liquidityPool.claimFee(claimer, amount);
     }
 
     /**
-     * @notice Add liquidity to liquidity pool
-     * @param cashToAdd The amount of collateral to add
+     * @notice Add liquidity to the liquidity pool. Need to update the funding state and the oracle price
+     *         of each perpetual before and update the funding rate of each perpetual after
+     * @param cashToAdd The amount of cash(collateral) to add
      */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
         require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
@@ -110,7 +114,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Remove liquidity from liquidity pool
+     * @notice Remove liquidity from the liquidity pool. Need to update the funding state and the oracle price
+     *         of each perpetual before and update the funding rate of each perpetual after
      * @param shareToRemove The amount of share token to remove
      */
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {

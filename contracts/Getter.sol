@@ -27,15 +27,16 @@ contract Getter is Storage {
     using AMMModule for LiquidityPoolStorage;
 
     /**
-     * @notice Get liquidity pool info
-     * @return isRunning If liquidity pool is running
-     * @return isFastCreationEnabled If operator is allowed to create perpetual
-     * @return addresses The related addresses of liquidity pool
-     * @return vaultFeeRate The vault fee rate of liquidity pool
-     * @return poolCash The pool cash of liquidity pool
-     * @return collateralDecimals The decimal of collateral
-     * @return perpetualCount The count of all perpetuals
-     * @return fundingTime The last time updated funding state
+     * @notice Get the info of the liquidity pool
+     * @return isRunning If the liquidity pool is running
+     * @return isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     *                               when the liquidity pool is running
+     * @return addresses The related addresses of the liquidity pool
+     * @return vaultFeeRate The vault fee rate of the liquidity pool
+     * @return poolCash The pool cash(collateral) of the liquidity pool
+     * @return collateralDecimals The collateral's decimals of the liquidity pool
+     * @return perpetualCount The count of all perpetuals of the liquidity pool
+     * @return fundingTime The last update time of funding state
      */
     function getLiquidityPoolInfo()
         public
@@ -77,11 +78,12 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get perpetual info
-     * @param perpetualIndex The index of perpetual
-     * @return state The state of perpetual
-     * @return oracle The oracle of perpetual
-     * @return nums The related numbers of perpetual
+     * @notice Get the info of the perpetual. Need to update the funding state and the oracle price
+     *         of each perpetual before and update the funding rate of each perpetual after
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @return state The state of the perpetual
+     * @return oracle The oracle's address of the perpetual
+     * @return nums The related numbers of the perpetual
      */
     function getPerpetualInfo(uint256 perpetualIndex)
         public
@@ -161,10 +163,11 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get account info of trader
-     * @param perpetualIndex The index of perpetual
-     * @param trader The trader
-     * @return cash The cash of the account
+     * @notice Get the account info of the trader. . Need to update the funding state and the oracle price
+     *         of each perpetual before and update the funding rate of each perpetual after
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param trader The address of the trader
+     * @return cash The cash(collateral) of the account
      * @return position The position of the account
      * @return availableCash The available cash of the account
      * @return margin The margin of the account
@@ -205,8 +208,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get progress of clearing active accounts
-     * @param perpetualIndex The index of perpetual
+     * @notice Get the progress of clearing active accounts
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @return left The left active accounts
      * @return total The total active accounts
      */
@@ -224,8 +227,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get pool margin of liquidity pool
-     * @return poolMargin The pool margin of liquidity pool
+     * @notice Get the pool margin of the liquidity pool
+     * @return poolMargin The pool margin of the liquidity pool
      */
     function getPoolMargin() public view returns (int256 poolMargin) {
         AMMModule.Context memory context = _liquidityPool.prepareContext();
@@ -233,11 +236,11 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get query result of trading with amm, excluding fee
-     * @param perpetualIndex The index of perpetual
-     * @param amount The trading amount
-     * @return deltaCash The delta cash of trader
-     * @return deltaPosition The delta position of trader
+     * @notice Get the trading result when trader trades with AMM
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param amount The trading amount of position
+     * @return deltaCash The update cash(collateral) of the trader after the trade
+     * @return deltaPosition The update position of the trader after the trade
      */
     function queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
         public
@@ -254,7 +257,7 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get claimable fee of operator
+     * @notice Get claimable fee of the operator
      * @return int256 The claimable fee of the operator
      */
     function getClaimableOperatorFee() public view returns (int256) {
@@ -262,8 +265,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get claimable fee of claimer
-     * @param claimer The claimer
+     * @notice Get claimable fee of the claimer
+     * @param claimer The address of the claimer
      * @return int256 The claimable fee of the claimer
      */
     function getClaimableFee(address claimer) public view returns (int256) {

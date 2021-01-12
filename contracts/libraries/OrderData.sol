@@ -26,8 +26,9 @@ library OrderData {
     uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
 
     /*
-     * @dev Check if the order is close-only order
-     * @param order The order
+     * @dev Check if the order is close-only order, close-only order means the order can only close position
+     *      of the trader
+     * @param order The order object
      * @return bool If the order is close-only order
      */
     function isCloseOnly(Order memory order) internal pure returns (bool) {
@@ -35,8 +36,8 @@ library OrderData {
     }
 
     /*
-     * @dev Check if the order is market order
-     * @param order The order
+     * @dev Check if the order is market order, market order means the order which has no limit price
+     * @param order The order object
      * @return bool If the order is market order
      */
     function isMarketOrder(Order memory order) internal pure returns (bool) {
@@ -44,17 +45,19 @@ library OrderData {
     }
 
     /*
-     * @dev Check if the order is stop-losss order
-     * @param order The order
-     * @return bool If the order is stop-losss order
+     * @dev Check if the order is stop-loss order, stop-loss order means the order will trigger when the
+     *      price is worst than the trigger price
+     * @param order The order object
+     * @return bool If the order is stop-loss order
      */
     function isStopLossOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_STOP_LOSS_ORDER) > 0;
     }
 
     /*
-     * @dev Check if the order is take-profit order
-     * @param order The order
+     * @dev Check if the order is take-profit order, take-profit order means the order will trigger when
+     *      the price is better than the trigger price
+     * @param order The order object
      * @return bool If the order is take-profit order
      */
     function isTakeProfitOrder(Order memory order) internal pure returns (bool) {
@@ -99,7 +102,7 @@ library OrderData {
 
     /*
      * @dev Get the hash of the order
-     * @param order The order
+     * @param order The order object
      * @return bytes32 The hash of the order
      */
     function getOrderHash(Order memory order) internal pure returns (bytes32) {
@@ -109,7 +112,7 @@ library OrderData {
 
     /*
      * @dev Decode the signature from the data
-     * @param data The data to decode
+     * @param data The data object to decode
      * @return signature The signature
      */
     function decodeSignature(bytes memory data)
@@ -132,7 +135,7 @@ library OrderData {
 
     /*
      * @dev Decode the order from the data
-     * @param data The data to decode
+     * @param data The data object to decode
      * @return order The order
      */
     function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {

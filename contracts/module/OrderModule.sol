@@ -26,9 +26,9 @@ library OrderModule {
     using PerpetualModule for PerpetualStorage;
 
     /**
-     * @notice Validate that order's signer is granted trade privilege by order's trader
-     * @param liquidityPool The liquidity pool
-     * @param order The order
+     * @notice Validate that order's signer is granted the trade privilege by order's trader
+     * @param liquidityPool The liquidity pool object
+     * @param order The order object
      * @param signature The signature
      */
     function validateSignature(

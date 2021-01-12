@@ -18,10 +18,10 @@ library MarginAccountModule {
 
     /**
      * @dev Initial margin = price * abs(position) * initial margin rate
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the initial margin
-     * @return initialMargin The initial margin of the trader
+     * @return initialMargin The initial margin of the trader in the perpetual
      */
     function getInitialMargin(
         PerpetualStorage storage perpetual,
@@ -37,10 +37,10 @@ library MarginAccountModule {
 
     /**
      * @dev Maintenance margin = price * abs(position) * maintenance margin rate
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the  maintenance margin
-     * @return maintenanceMargin The maintenance margin of the trader
+     * @return maintenanceMargin The maintenance margin of the trader in the perpetual
      */
     function getMaintenanceMargin(
         PerpetualStorage storage perpetual,
@@ -56,9 +56,9 @@ library MarginAccountModule {
 
     /**
      * @dev Available cash = cash - position * unit accumulative funding
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
-     * @return availableCash The available cash of the trader
+     * @return availableCash The available cash of the trader in the perpetual
      */
     function getAvailableCash(PerpetualStorage storage perpetual, address trader)
         internal
@@ -71,9 +71,9 @@ library MarginAccountModule {
 
     /**
      * @dev Get the position of the trader in the perpetual
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
-     * @return position The position of the trader
+     * @return position The position of the trader in the perpetual
      */
     function getPosition(PerpetualStorage storage perpetual, address trader)
         internal
@@ -85,10 +85,10 @@ library MarginAccountModule {
 
     /**
      * @dev Margin = available cash + position * price
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the margin
-     * @return margin The margin of the trader
+     * @return margin The margin of the trader in the perpetual
      */
     function getMargin(
         PerpetualStorage storage perpetual,
@@ -103,10 +103,10 @@ library MarginAccountModule {
     /**
      * @dev Get the settleable margin of the trader in the perpetual, if the state of
      *      the perpetual is not "cleared", the settleable margin is always zero
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the settleable margin
-     * @return margin The settleable margin of the trader
+     * @return margin The settleable margin of the trader in the perpetual
      */
     function getSettleableMargin(
         PerpetualStorage storage perpetual,
@@ -128,10 +128,10 @@ library MarginAccountModule {
     /**
      * @dev Available margin = margin - max(initial margin, keeper gas reward), keeper gas
      *      reward = 0 if position = 0
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate available margin
-     * @return availableMargin The available margin of the trader
+     * @return availableMargin The available margin of the trader in the perpetual
      */
     function getAvailableMargin(
         PerpetualStorage storage perpetual,
@@ -147,10 +147,10 @@ library MarginAccountModule {
 
     /**
      * @dev Check if the trader is initial margin safe, which means available margin >= 0
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the available margin
-     * @return isSafe If the trader is initial margin safe
+     * @return isSafe If the trader is initial margin safe in the perpetual
      */
     function isInitialMarginSafe(
         PerpetualStorage storage perpetual,
@@ -162,12 +162,11 @@ library MarginAccountModule {
 
     /**
      * @dev Check if the trader is maintenance margin safe, which means
-     *      margin >= max(maintenance margin, keeper gas reward). Keeper gas reward = 0
-     *      if position = 0
-     * @param perpetual The perpetual
+     *      margin >= max(maintenance margin, keeper gas reward). Keeper gas reward = 0 if position = 0
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the maintenance margin
-     * @return isSafe If the trader is maintenance margin safe
+     * @return isSafe If the trader is maintenance margin safe in the perpetual
      */
     function isMaintenanceMarginSafe(
         PerpetualStorage storage perpetual,
@@ -182,11 +181,12 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if the trader is margin safe, which means margin >= 0
-     * @param perpetual The perpetual
+     * @dev Check if the trader is margin safe, which means margin >= keeper gas reward. Keeper gas
+     *      reward = 0 if position = 0
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the margin
-     * @return isSafe If the trader is margin safe
+     * @return isSafe If the trader is margin safe in the perpetual
      */
     function isMarginSafe(
         PerpetualStorage storage perpetual,
@@ -198,9 +198,9 @@ library MarginAccountModule {
 
     /**
      * @dev Check if the account of the trader is empty, which means cash = 0 and position = 0
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
-     * @return isEmpty If the account of the trader is empty
+     * @return isEmpty If the account of the trader is empty in the perpetual
      */
     function isEmptyAccount(PerpetualStorage storage perpetual, address trader)
         internal
@@ -213,9 +213,9 @@ library MarginAccountModule {
 
     /**
      * @dev Update the trader's cash of the perpetual
-     * @param perpetual The perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
-     * @param deltaCash The cash to add, can be negative
+     * @param deltaCash The update cash(collateral) of the trader's account in the perpetual
      */
     function updateCash(
         PerpetualStorage storage perpetual,
@@ -230,11 +230,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Update the trader's margin of the perpetual
-     * @param perpetual The perpetual
+     * @dev Update the trader's account of the perpetual
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
-     * @param deltaPosition The position to add, can be negative
-     * @param deltaCash The cash to add, can be negative
+     * @param deltaPosition The update position of the trader's account in the perpetual
+     * @param deltaCash The update cash(collateral) of the trader's account in the perpetual
      */
     function updateMargin(
         PerpetualStorage storage perpetual,
@@ -254,8 +254,8 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Reset the trader's account to empty, which means position = 0 and cash = 0
-     * @param perpetual The perpetual
+     * @dev Reset the trader's account in the perpetual to empty, which means position = 0 and cash = 0
+     * @param perpetual The perpetual object
      * @param trader The address of the trader
      */
     function resetAccount(PerpetualStorage storage perpetual, address trader) internal {

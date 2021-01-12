@@ -39,11 +39,11 @@ contract Reader {
     }
 
     /**
-     * @notice Get account status of perpetual
-     * @param liquidityPool The liquidity pool
-     * @param perpetualIndex The index of perpetual
-     * @param account The account
-     * @return marginAccount The account status
+     * @notice Get the status of the account in the perpetual
+     * @param liquidityPool The address of the liquidity pool
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param account The address of the account
+     * @return marginAccount The status of the account in the perpetual
      */
     function getAccountStorage(
         address liquidityPool,
@@ -55,9 +55,9 @@ contract Reader {
     }
 
     /**
-     * @notice Get liquidity pool status
-     * @param liquidityPool The liquidity pool
-     * @return pool The liquidity pool status
+     * @notice Get the status of the liquidity pool
+     * @param liquidityPool The address of the liquidity pool
+     * @return pool The status of the liquidity pool
      */
     function getLiquidityPoolStorage(address liquidityPool)
         public

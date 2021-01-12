@@ -33,8 +33,8 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Check if factory is whitelisted
-     * @param factory The factory
+     * @notice Check if the factory is whitelisted
+     * @param factory The address of the factory
      * @return bool If the factory is whitelisted
      */
     function isWhitelistedFactory(address factory) public view returns (bool) {
@@ -42,8 +42,8 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Add factory to whitelist, only owner can add
-     * @param factory The factory
+     * @notice Add the factory to the whitelist, only owner can add
+     * @param factory The address of the factory
      */
     function addWhitelistedFactory(address factory) public onlyOwner {
         require(!isWhitelistedFactory(factory), "factory already exists");
@@ -52,8 +52,8 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Remove factory from whitelist, only owner can remove
-     * @param factory The factory
+     * @notice Remove the factory from the whitelist, only owner can remove
+     * @param factory The address of the factory
      */
     function removeWhitelistedFactory(address factory) public onlyOwner {
         require(isWhitelistedFactory(factory), "factory not found");
@@ -70,10 +70,10 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Get unique id(liquidity pool + perpetual index) of perpetual by symbol
+     * @notice Get the unique id(liquidity pool + perpetual index) of the perpetual by the symbol
      * @param symbol The symbol
-     * @return liquidityPool The liquidity pool
-     * @return perpetualIndex The index of perpetual
+     * @return liquidityPool The address of the liquidity pool
+     * @return perpetualIndex The index of the perpetual in the liquidity pool
      */
     function getPerpetualUID(uint256 symbol)
         public
@@ -87,10 +87,10 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Get symbols of perpetual by unique id(liquidity pool + perpetual index)
-     * @param liquidityPool The liquidity pool
-     * @param perpetualIndex The index of perpetual
-     * @return symbols The symbols of perpetual
+     * @notice Get the symbols of the perpetual by the unique id(liquidity pool + perpetual index)
+     * @param liquidityPool The address of the liquidity pool
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @return symbols The symbols of the perpetual
      */
     function getSymbols(address liquidityPool, uint256 perpetualIndex)
         public
@@ -109,9 +109,10 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Allocate perpetual an unreserved symbol
-     * @param liquidityPool The liquidity pool
-     * @param perpetualIndex The index of perpetual
+     * @notice Allocate the perpetual an unreserved symbol, the perpetual must have no symbol before.
+     *         Only whitelisted factory can allocate
+     * @param liquidityPool The address of the liquidity pool
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @return symbol The symbol allocated
      */
     function allocateSymbol(address liquidityPool, uint256 perpetualIndex)
@@ -135,9 +136,9 @@ contract SymbolService is Ownable {
 
     /**
      * @notice Assign perpetual a reserved symbol, perpetual must have unreserved symbol
-     *         and not have reserved symbol before assigning. Only owner can assign.
-     * @param liquidityPool The liquidity pool
-     * @param perpetualIndex The index of perpetual
+     *         and not have reserved symbol before. Only owner can assign.
+     * @param liquidityPool The address of the liquidity pool
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param symbol The symbol assigned
      */
     function assignReservedSymbol(
@@ -163,10 +164,10 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @dev Get key of perpetual
-     * @param liquidityPool The liquidity pool
-     * @param perpetualIndex The index of perpetual
-     * @return bytes32 The key of perpetual
+     * @dev Get the key of the perpetual
+     * @param liquidityPool The address of the liquidity pool which the perpetual belongs to
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @return bytes32 The key of the perpetual
      */
     function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal

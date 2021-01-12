@@ -42,7 +42,7 @@ contract Variables {
     }
 
     /**
-     * @notice Get the address of the access controller
+     * @notice Get the address of the access controller, it's always itself
      * @return address The address of the access controller
      */
     function accessController() public view returns (address) {

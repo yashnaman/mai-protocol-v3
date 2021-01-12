@@ -35,6 +35,7 @@ library CollateralModule {
 
     /**
      * @notice Initialize the collateral of the liquidity pool
+     * @param liquidityPool The liquidity pool object
      * @param collateral The address of the collateral
      * @param collateralDecimals The decimals of the collateral, must less than SYSTEM_DECIMALS,
      *                           must equal to decimals() if the function exists
@@ -55,13 +56,14 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer collateral from the account to the liquidity pool.
-     *         Eth will be automatically wrapped to weth if the liquidity pool is wrapped
-     * @param liquidityPool The liquidity pool
+     * @notice Transfer collateral from the account to the liquidity pool. If the liquidity pool
+     *         is wrapped, eth will be automatically wrapped to weth and it's allowed to send
+     *         eth and weth at the same time
+     * @param liquidityPool The liquidity pool object
      * @param account The address of the account
-     * @param amount The amount of transferred erc20 token, the amount of eth is msg.value
-     * @return totalAmount The total amount transferred, eth amount + weth amount if the liquidity
-     *                     pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
+     * @param amount The amount of erc20 token to transfer, the amount of eth is msg.value
+     * @return totalAmount The total amount of collateral to transfer, eth amount + weth amount if the
+     *                     liquidity pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
@@ -96,9 +98,9 @@ library CollateralModule {
     /**
      * @notice Transfer collateral from the liquidity pool to the account.
      *         Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
-     * @param liquidityPool The liquidity pool
+     * @param liquidityPool The liquidity pool object
      * @param account The address of the account
-     * @param amount The amount of transferred collateral
+     * @param amount The amount of collateral to transfer
      */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,

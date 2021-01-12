@@ -16,8 +16,8 @@ library Math {
 
     /**
      * @dev Get the most significant bit of the number,
-            0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3,
-            606 ~ 672 gas
+            example: 0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3,
+            about use 606 ~ 672 gas
      * @param x The number
      * @return uint8 The significant bit of the number
      */
