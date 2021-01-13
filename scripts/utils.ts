@@ -10,6 +10,12 @@ export function fromWei(n) { return ethers.utils.formatEther(n); }
 export function toBytes32(s) { return ethers.utils.formatBytes32String(s); }
 export function fromBytes32(s) { return ethers.utils.parseBytes32String(s); }
 
+var defaultSigner = null
+
+export function setDefaultSigner(signer) {
+    defaultSigner = signer
+}
+
 export async function getAccounts(): Promise<any[]> {
     const accounts = await ethers.getSigners();
     const users = [];
@@ -29,8 +35,11 @@ export async function createFactory(path, libraries = {}) {
 
 export async function createContract(path, args = [], libraries = {}) {
     const factory = await createFactory(path, libraries);
-    const deployed = await factory.deploy(...args);
-    return deployed;
+    if (defaultSigner != null) {
+        return await factory.connect(defaultSigner).deploy(...args)
+    } else {
+        return await factory.deploy(...args);
+    }
 }
 
 export async function createLiquidityPoolFactory(name = "LiquidityPool") {

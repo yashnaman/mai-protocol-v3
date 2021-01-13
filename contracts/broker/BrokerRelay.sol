@@ -34,9 +34,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     mapping(bytes32 => int256) internal _orderFilled;
     mapping(bytes32 => bool) internal _orderCanceled;
 
-    event Deposit(address trader, uint256 amount);
-    event Withdraw(address trader, uint256 amount);
-    event Transfer(address sender, address recipient, uint256 amount);
+    event Deposit(address indexed trader, uint256 amount);
+    event Withdraw(address indexed trader, uint256 amount);
+    event Transfer(address indexed sender, address indexed recipient, uint256 amount);
     event TradeFailed(bytes32 orderHash, Order order, int256 amount, string reason);
     event TradeSuccess(bytes32 orderHash, Order order, int256 amount, uint256 gasReward);
     event CancelOrder(bytes32 orderHash);

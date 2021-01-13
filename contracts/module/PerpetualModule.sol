@@ -24,10 +24,10 @@ library PerpetualModule {
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
-    event Deposit(uint256 perpetualIndex, address trader, int256 amount);
-    event Withdraw(uint256 perpetualIndex, address trader, int256 amount);
-    event Clear(uint256 perpetualIndex, address trader);
-    event Settle(uint256 perpetualIndex, address trader, int256 amount);
+    event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
+    event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
+    event Clear(uint256 perpetualIndex, address indexed trader);
+    event Settle(uint256 perpetualIndex, address indexed trader, int256 amount);
     event DonateInsuranceFund(uint256 perpetualIndex, int256 amount);
     event SetNormalState(uint256 perpetualIndex);
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);

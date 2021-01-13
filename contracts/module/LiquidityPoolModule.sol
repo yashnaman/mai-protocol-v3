@@ -38,13 +38,13 @@ library LiquidityPoolModule {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    event AddLiquidity(address trader, int256 addedCash, int256 mintedShare);
-    event RemoveLiquidity(address trader, int256 returnedCash, int256 burnedShare);
-    event IncreaseFee(address recipient, int256 amount);
-    event ClaimFee(address claimer, int256 amount);
+    event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);
+    event RemoveLiquidity(address indexed trader, int256 returnedCash, int256 burnedShare);
+    event IncreaseFee(address indexed recipient, int256 amount);
+    event ClaimFee(address indexed claimer, int256 amount);
     event UpdatePoolMargin(int256 poolMargin);
-    event TransferOperatorTo(address newOperator);
-    event ClaimOperatorTo(address newOperator);
+    event TransferOperatorTo(address indexed newOperator);
+    event ClaimOperatorTo(address indexed newOperator);
     event RevokeOperator();
     event SetLiquidityPoolParameter(bytes32 key, int256 value);
     event CreatePerpetual(

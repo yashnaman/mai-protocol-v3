@@ -3,10 +3,11 @@ import {
     toWei,
     createFactory,
     createContract,
-    createLiquidityPoolFactory
+    createLiquidityPoolFactory,
+    setDefaultSigner
 } from "./utils";
 
-async function deployOracle(accounts: any[]) {
+async function deployOracle() {
     const oracle1 = await createContract("OracleWrapper", ["ETH", "USD"]);
     const oracle2 = await createContract("OracleWrapper", ["ETH", "BTC"]);
 
@@ -26,15 +27,17 @@ async function deployOracle(accounts: any[]) {
 }
 
 async function main(accounts: any[]) {
-    // await deployOracle(accounts);
+    var deployer = { address: "0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a", private: "0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4" }
+    var vault = { address: "0xd69c3820627daC4408CE629730EB8E891F8d5731", private: "0x55ebe4b701c11e6a04b5d77bb25276f090a6fd03a88c6d97ea85e40cd2a3926e" }
+    var vaultFeeRate = toWei("0.0003");
+    const provider = new ethers.providers.JsonRpcProvider("https://kovan.infura.io/v3/3582010d3cc14ab183653e5861d0c118");
+    setDefaultSigner(new ethers.Wallet(deployer.private, provider))
 
-    var broker = await createContract("BrokerRelay");
-    console.log(broker.address);
+    await deployOracle();
+
     return;
 
     // common
-    var vault = accounts[0];
-    var vaultFeeRate = toWei("0.0003");
 
     var symbol = await createContract("SymbolService", [10000]);
 
@@ -45,9 +48,11 @@ async function main(accounts: any[]) {
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
     );
+    var broker = await createContract("BrokerRelay");
     const addresses = [
         ["poolCreator", poolCreator.address],
-        ["symbol", symbol.address]
+        ["symbol", symbol.address],
+        ["broker", broker.address],
     ]
     console.table(addresses)
 

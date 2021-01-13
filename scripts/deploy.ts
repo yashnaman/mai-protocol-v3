@@ -28,9 +28,9 @@ async function deployOracle(signer, addresses) {
 }
 
 async function deployBrokerRelay(signer, addresses) {
-    var brokerRelay = await createContract("BrokerRelay");
+    var brokerRelay = await createContract("BrokerRelay", signer = signer);
     addresses = addresses.concat([
-        ["BrokerRelay", broker.address],
+        ["BrokerRelay", brokerRelay.address],
     ])
     return { brokerRelay }
 }
@@ -52,6 +52,11 @@ async function deployPoolCreator(signer, weth, symbol, vault, vaultFeeRate, addr
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
     );
+    await symbol.addWhitelistedFactory(poolCreator.address);
+    const LiquidityPool = await createLiquidityPoolFactory();
+    var liquidityPoolTmpl = await LiquidityPool.deploy();
+    await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version");
+
     addresses = addresses.concat([
         ["ShareToken Implementation", shareTokenTmpl.address],
         ["Governor Implementation", governorTmpl.address],
@@ -59,41 +64,32 @@ async function deployPoolCreator(signer, weth, symbol, vault, vaultFeeRate, addr
         ["Vault", vault.address],
         ["VaultFeeRate", fromWei(vaultFeeRate)],
     ])
+    return { poolCreator }
 }
 
 async function main(accounts) {
-    // await deployOracle(accounts);
 
-    // await deployBrokerRelay(accounts);
-
-    // common
-    var vault = accounts[0];
+    var deployer = { address: "0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a", private: "d961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4" }
+    var vault = { address: "0xd69c3820627daC4408CE629730EB8E891F8d5731", private: "55ebe4b701c11e6a04b5d77bb25276f090a6fd03a88c6d97ea85e40cd2a3926e" }
     var vaultFeeRate = toWei("0.0003");
 
-    var symbol = await createContract("SymbolService", [10000]);
+    const provider = new ethers.providers.JsonRpcProvider("https://kovan2.arbitrum.io/rpc");
+    const signer = new ethers.Wallet(deployer.private, provider)
 
-    var weth = await createContract("WETH9");
-    var shareTokenTmpl = await createContract("ShareToken");
-    var governorTmpl = await createContract("TestGovernor");
-    var poolCreator = await createContract(
-        "PoolCreator",
-        [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
-    );
-    const addresses = [
-        ["poolCreator", poolCreator.address],
-        ["symbol", symbol.address]
-    ]
-    console.table(addresses)
+    let addresses = []
+    // let { oracle1, oracle2, oracle3, oracle4, oracle5, oracle6 } = await deployOracle(signer, addresses);
+    let { brokerRelay } = await deployBrokerRelay(signer, addresses);
+    // let { symbol, weth } = await deployInfrastructures(signer, addresses);
+    // let { poolCreator } = await deployPoolCreator(signer, addresses);
 
-    await symbol.addWhitelistedFactory(poolCreator.address);
-    const LiquidityPool = await createLiquidityPoolFactory();
-    var liquidityPoolTmpl = await LiquidityPool.deploy();
-    await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version");
 
-    const pool1 = await set1(accounts, poolCreator, weth);
-    const pool2 = await set2(accounts, poolCreator, weth);
 
-    await reader(accounts, { pool1, pool2 });
+
+
+    // const pool1 = await set1(accounts, poolCreator, weth);
+    // const pool2 = await set2(accounts, poolCreator, weth);
+
+    // await reader(accounts, { pool1, pool2 });
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
