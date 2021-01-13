@@ -3,6 +3,8 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "hardhat/console.sol";
+
 contract UpgradeableProxy {
     /**
      * @dev Emitted when the implementation is upgraded.

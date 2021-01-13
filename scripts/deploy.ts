@@ -12,7 +12,7 @@ async function main(accounts: any[]) {
     var weth = await createContract("WETH9");
     var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
     var lpTokenTemplate = await createContract("ShareToken");
-    var govTemplate = await createContract("Governor");
+    var govTemplate = await createContract("TestGovernor");
     var poolCreator = await createContract(
         "PoolCreator",
         [

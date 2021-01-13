@@ -69,7 +69,7 @@ describe("integration", () => {
     //     var symbol = await createContract("SymbolService", [10000]);
     //     var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
     //     var lpTokenTemplate = await createContract("ShareToken");
-    //     var govTemplate = await createContract("Governor");
+    //     var govTemplate = await createContract("TestGovernor");
     //     var maker = await createContract(
     //         "PoolCreator",
     //         [
@@ -260,7 +260,7 @@ describe("integration", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var lpTokenTemplate = await createContract("ShareToken");
-        var govTemplate = await createContract("Governor");
+        var govTemplate = await createContract("TestGovernor");
         var maker = await createContract(
             "PoolCreator",
             [
@@ -398,7 +398,7 @@ describe("integration", () => {
     //     var symbol = await createContract("SymbolService", [10000]);
     //     var ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
     //     var lpTokenTemplate = await createContract("ShareToken");
-    //     var govTemplate = await createContract("Governor");
+    //     var govTemplate = await createContract("TestGovernor");
     //     var maker = await createContract(
     //         "PoolCreator",
     //         [

@@ -3,47 +3,22 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./libraries/Constant.sol";
 import "./libraries/OrderData.sol";
-import "./libraries/SafeMathExt.sol";
 
-import "./module/AMMModule.sol";
-import "./module/MarginAccountModule.sol";
 import "./module/TradeModule.sol";
 import "./module/OrderModule.sol";
 import "./module/LiquidityPoolModule.sol";
-import "./module/PerpetualModule.sol";
-import "./module/CollateralModule.sol";
-import "./module/SignatureModule.sol";
 
 import "./Storage.sol";
 import "./Type.sol";
 
 contract Perpetual is Storage, ReentrancyGuardUpgradeable {
-    using SafeCastUpgradeable for int256;
-    using SafeCastUpgradeable for uint256;
-    using SafeMathUpgradeable for uint256;
-    using SafeMathExt for int256;
-    using SafeMathExt for uint256;
-    using SignedSafeMathUpgradeable for int256;
-    using AddressUpgradeable for address;
-    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using OrderData for bytes;
-
-    using PerpetualModule for PerpetualStorage;
-    using MarginAccountModule for PerpetualStorage;
-    using AMMModule for LiquidityPoolStorage;
-    using CollateralModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using OrderModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
-    using SignatureModule for bytes32;
 
     /**
      * @notice Donate collateral to the insurance fund of the perpetual, can only donate when the perpetual's

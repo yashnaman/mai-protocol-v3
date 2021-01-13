@@ -35,7 +35,7 @@ describe("PoolCreator", () => {
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var lpTokenTemplate = await createContract("ShareToken");
-        var govTemplate = await createContract("Governor");
+        var govTemplate = await createContract("TestGovernor");
         var creator = await createContract(
             "PoolCreator",
             [
@@ -75,7 +75,7 @@ describe("PoolCreator", () => {
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var lpTokenTemplate = await createContract("ShareToken");
-        var govTemplate = await createContract("Governor");
+        var govTemplate = await createContract("TestGovernor");
         var creator = await createContract(
             "PoolCreator",
             [
@@ -105,8 +105,8 @@ describe("PoolCreator", () => {
         expect(await creator.isVersionValid(perpTemplate1.address)).to.be.true;
         expect(await creator.isVersionValid(creator.address)).to.be.false;
 
-        expect(await creator.isVersionCompatibleWith(perpTemplate1.address, perpTemplate3.address)).to.be.true;
-        expect(await creator.isVersionCompatibleWith(perpTemplate3.address, perpTemplate1.address)).to.be.false;
+        expect(await creator.isVersionCompatible(perpTemplate3.address, perpTemplate1.address)).to.be.true;
+        expect(await creator.isVersionCompatible(perpTemplate1.address, perpTemplate3.address)).to.be.false;
 
         const perpAddr1 = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
         await creator.createLiquidityPool(ctk.address, 18, false, 998);

@@ -155,6 +155,9 @@ describe("Order", () => {
         expect(signature.slice(2, 66)).to.equal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); // r
         expect(signature.slice(66, 130)).to.equal("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"); // s
         expect(signature.slice(130, 134)).to.equal("1b01"); // v
+
+        // const data2 = "0x276eb779d7ca51a5f7fba02bf83d9739da11e3ba335780c0f1dc2537a3874176f7d7737b32c243b2d595f7c2c071d3fd8f5587931edf34e92f9ad39f301ec46606aa95da4b8b5b8c219044b797a21e050000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000056bc75e2d6310000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000539000000005fff32cf000000000000000100000000000000011c001548ffc535b274758042147da29f1e87a6046df6c947bcfe9f74c9e2c9de61cb797306681418cd08da81cfaa4dda043449e98f34ab345fb6ac3f2a6d230ca9a9";
+        // var { order, signature } = await testOrder.decompress(data2);
     })
 
     it("signer", async () => {
@@ -178,10 +181,9 @@ describe("Order", () => {
         var orderHash = await testOrder.orderHash(order);
         const user0 = accounts[0];
         const sig = await user0.signMessage(ethers.utils.arrayify(orderHash));
-        const addr = await testOrder.getSigner(order, sig, 0);
+        const addr = await testOrder.getSigner(order, sig);
         console.log("orderHash:", orderHash)
         console.log("signature:", sig)
         expect(user0.address).to.equal(addr);
-
     })
 });

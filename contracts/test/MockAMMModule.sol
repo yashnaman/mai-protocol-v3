@@ -29,9 +29,9 @@ contract MockAMMPriceEntries {
 library MockAMMModule {
     function queryTradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
+        uint256,
         int256 tradeAmount,
-        bool partialFill
+        bool
     ) public view returns (int256 deltaCash, int256 deltaPosition) {
         MockAMMPriceEntries priceHook = MockAMMPriceEntries(liquidityPool.governor);
         return priceHook.queryPrice(tradeAmount);

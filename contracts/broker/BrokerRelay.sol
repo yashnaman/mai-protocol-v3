@@ -120,6 +120,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         // _transfer(signer, msg.sender, gasReward);
     }
 
+    event DecodeOrder(Order order);
+
     /**
      * @notice Trade multiple orders, each order will be treated seperately
      * @param compressedOrders The compressed order objects to trade
@@ -134,6 +136,10 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         uint256 orderCount = compressedOrders.length;
         for (uint256 i = 0; i < orderCount; i++) {
             Order memory order = compressedOrders[i].decodeOrderData();
+
+            // temp
+            emit DecodeOrder(order);
+
             int256 amount = amounts[i];
             uint256 gasReward = gasRewards[i];
             bytes32 orderHash = order.getOrderHash();

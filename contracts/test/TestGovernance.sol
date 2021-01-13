@@ -106,7 +106,7 @@ contract TestGovernance is Governance {
         return _liquidityPool.perpetuals[perpetualIndex].state;
     }
 
-    function setState(uint256 perpetualIndex, PerpetualState state) public {
-        _liquidityPool.perpetuals[perpetualIndex].state = state;
+    function setState(uint256 perpetualIndex, PerpetualState _state) public {
+        _liquidityPool.perpetuals[perpetualIndex].state = _state;
     }
 }

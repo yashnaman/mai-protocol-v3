@@ -363,6 +363,7 @@ library LiquidityPoolModule {
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
         liquidityPool.operator = address(0);
+        IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), address(0));
         emit RevokeOperator();
     }
 
@@ -576,7 +577,7 @@ library LiquidityPoolModule {
         address account,
         int256 amount
     ) public {
-        require(amount > 0, "increase negative fee");
+        require(amount >= 0, "invalid fee amount");
         liquidityPool.claimableFees[account] = liquidityPool.claimableFees[account].add(amount);
         emit IncreaseFee(account, amount);
     }

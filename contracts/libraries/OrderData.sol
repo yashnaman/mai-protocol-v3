@@ -115,11 +115,8 @@ library OrderData {
      * @param data The data object to decode
      * @return signature The signature
      */
-    function decodeSignature(bytes memory data)
-        internal
-        pure
-        returns (bytes memory signature)
-    {
+    function decodeSignature(bytes memory data) internal pure returns (bytes memory signature) {
+        require(data.length >= 350, "broken data");
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -139,6 +136,7 @@ library OrderData {
      * @return order The order
      */
     function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {
+        require(data.length >= 292, "broken data");
         bytes32 tmp;
         assembly {
             // trader / 20

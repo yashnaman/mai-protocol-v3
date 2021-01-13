@@ -11,7 +11,7 @@ import {
 
 import "./helper";
 
-describe('TradeModule1', () => {
+describe('TradeModule3', () => {
     let accounts;
 
     before(async () => {
@@ -161,17 +161,30 @@ describe('TradeModule1', () => {
             expect(position).to.equal(toWei("1"))
 
             // close only + no margin
-            await testTrade.setMarginAccount(0, user1.address, toWei("-10000"), toWei("10")); // margin = 9000 900
+            await testTrade.setMarginAccount(0, user1.address, toWei("-9999"), toWei("10")); // margin = 9000 900
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("-9000")) // 1000 + fee = 0.001 //
+            expect(cash).to.equal(toWei("-8999")) // 1000 + fee = 0.001 //
             expect(position).to.equal(toWei("9"))
-            expect(await testTrade.getMargin(0, user1.address)).to.equal("0") // im unsafe/margin safe
+            expect(await testTrade.getMargin(0, user1.address)).to.equal(toWei("1")) // im unsafe/margin safe
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
             expect(cash).to.equal(toWei("9000")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("1"))
+
+            // no margin + close all
+            await testTrade.setMarginAccount(0, user1.address, toWei("-10000"), toWei("10")); // margin = 9000 900
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("0")) // 1000 + fee = 0.001 //
+            expect(position).to.equal(toWei("0"))
+            expect(await testTrade.getMargin(0, user1.address)).to.equal("0") // im unsafe/margin safe
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(cash).to.equal(toWei("0")) // 1000 + fee = 0.001
+            expect(position).to.equal(toWei("10"))
         })
 
         it("market", async () => {

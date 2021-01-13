@@ -33,16 +33,14 @@ export async function createContract(path, args = [], libraries = {}) {
     return deployed;
 }
 
-export async function createLiquidityPoolFactory() {
+export async function createLiquidityPoolFactory(name = "LiquidityPool") {
     const AMMModule = await createContract("AMMModule");
     const CollateralModule = await createContract("CollateralModule")
     const OrderModule = await createContract("OrderModule");
     const PerpetualModule = await createContract("PerpetualModule");
-
     const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
     const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule });
-
-    return await createFactory("LiquidityPool", {
+    return await createFactory(name, {
         AMMModule,
         LiquidityPoolModule,
         OrderModule,

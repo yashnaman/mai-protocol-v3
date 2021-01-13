@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../libraries/OrderData.sol";
+import "../libraries/Signature.sol";
 
 import "../module/OrderModule.sol";
 
@@ -51,9 +52,9 @@ contract TestOrder is Storage {
         return order.salt;
     }
 
-    // function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
-    //     return order.getSigner(signature);
-    // }
+    function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
+        return Signature.getSigner(order.getOrderHash(), signature);
+    }
 
     function validateSignature(Order memory order, bytes memory signature) public view {
         _liquidityPool.validateSignature(order, signature);

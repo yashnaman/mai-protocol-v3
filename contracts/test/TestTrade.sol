@@ -83,7 +83,7 @@ contract TestTrade is TestLiquidityPool {
         bool isLong,
         int256 price,
         int256 limitPrice
-    ) public view {
+    ) public pure {
         TradeModule.validatePrice(isLong, price, limitPrice);
     }
 

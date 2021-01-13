@@ -174,7 +174,7 @@ contract Getter is Storage {
      * @return settleableMargin The settleable margin of the account
      * @return isInitialMarginSafe If the account is initial margin safe
      * @return isMaintenanceMarginSafe If the account is maintenance margin safe
-     * @return isBankrupt If the account is bankrupt
+     * @return isMarginSafe True if the total value of margin account is beyond 0
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
@@ -188,7 +188,7 @@ contract Getter is Storage {
             int256 settleableMargin,
             bool isInitialMarginSafe,
             bool isMaintenanceMarginSafe,
-            bool isBankrupt
+            bool isMarginSafe
         )
     {
         if (trader == address(this)) {
@@ -204,7 +204,7 @@ contract Getter is Storage {
         settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
         isInitialMarginSafe = perpetual.isInitialMarginSafe(trader, markPrice);
         isMaintenanceMarginSafe = perpetual.isMaintenanceMarginSafe(trader, markPrice);
-        isBankrupt = !perpetual.isMarginSafe(trader, markPrice);
+        isMarginSafe = perpetual.isMarginSafe(trader, markPrice);
     }
 
     /**

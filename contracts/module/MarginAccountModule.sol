@@ -193,7 +193,8 @@ library MarginAccountModule {
         address trader,
         int256 price
     ) internal view returns (bool isSafe) {
-        isSafe = getMargin(perpetual, trader, price) >= 0;
+        int256 threshold = getPosition(perpetual, trader) == 0 ? 0 : perpetual.keeperGasReward;
+        isSafe = getMargin(perpetual, trader, price) >= threshold;
     }
 
     /**

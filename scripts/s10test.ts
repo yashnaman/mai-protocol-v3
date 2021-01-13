@@ -40,7 +40,7 @@ async function main(accounts: any[]) {
 
     var weth = await createContract("WETH9");
     var shareTokenTmpl = await createContract("ShareToken");
-    var governorTmpl = await createContract("Governor");
+    var governorTmpl = await createContract("TestGovernor");
     var poolCreator = await createContract(
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]

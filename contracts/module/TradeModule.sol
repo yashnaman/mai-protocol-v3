@@ -128,6 +128,7 @@ library TradeModule {
             int256 referralRebate
         )
     {
+        require(tradeValue >= 0, "trade value is negative");
         vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
         lpFee = tradeValue.wmul(perpetual.lpFeeRate);
         if (liquidityPool.operator != address(0)) {
@@ -136,6 +137,7 @@ library TradeModule {
 
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+
         require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
 
         if (availableMargin <= 0) {
@@ -389,6 +391,9 @@ library TradeModule {
      * @param delta The update position amount of the trader after the trade
      */
     function hasOpenedPosition(int256 amount, int256 delta) internal pure returns (bool) {
+        if (amount == 0) {
+            return false;
+        }
         return Utils.hasTheSameSign(amount, delta);
     }
 }
