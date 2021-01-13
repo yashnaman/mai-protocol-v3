@@ -131,7 +131,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade with AMM in the perpetual, require msg.sender is granted the trade privilege by the trader.
+     * @notice Trade with AMM in the perpetual, require sender is granted the trade privilege by the trader.
      *         The trading price is determined by the AMM based on the index price of the perpetual
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of trader
@@ -237,7 +237,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. msg.sender takes the position.
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. Sender takes the position.
      *         Need to update the funding state and the oracle price of each perpetual before and
      *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
      *         is "normal"

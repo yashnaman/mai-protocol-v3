@@ -29,7 +29,7 @@ contract Implementation is Ownable {
     constructor() Ownable() {}
 
     /**
-     * @notice Create the implementation by msg.sender, the implementation should not be created before
+     * @notice Create the implementation by sender, the implementation should not be created before
      * @param implementation The address of the implementation
      * @param compatibility The compatibility of the implementation
      * @param note The note of the implementation

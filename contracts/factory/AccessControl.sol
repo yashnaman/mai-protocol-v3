@@ -16,7 +16,7 @@ contract AccessControl {
     event RevokePrivilege(address indexed grantor, address indexed grantee, uint256 privilege);
 
     /**
-     * @notice Grant the grantee the privilege by msg.sender
+     * @notice Grant the grantee the privilege by sender
      * @param grantee The address of the grantee
      * @param privilege The privilege to grant.
      *                  There are three kinds of valid privilege: deposit, withdraw, trade
@@ -52,8 +52,8 @@ contract AccessControl {
      * @notice Check if the grantee is granted the privilege by the grantor
      * @param grantor The address of the grantor
      * @param grantee The address of the grantee
-     * @param privilege The privilege
-     * @return bool If the grantee is granted the privilege by the grantor
+     * @param privilege The privilege, there are three kinds of valid privilege: deposit, withdraw, trade
+     * @return bool True if the grantee is granted the privilege by the grantor
      */
     function isGranted(
         address grantor,

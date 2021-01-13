@@ -47,7 +47,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Sending eth to this contract is equivalent to depositing eth to the account of msg.sender
+     * @notice Sending eth to this contract is equivalent to depositing eth to the account of sender
      */
     receive() external payable {
         deposit();
@@ -63,7 +63,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Deposit eth to the account of msg.sender as gas reward of the broker
+     * @notice Deposit eth to the account of sender as gas reward of the broker
      */
     function deposit() public payable nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].add(msg.value);
@@ -71,7 +71,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw eth from the account of msg.sender
+     * @notice Withdraw eth from the account of sender
      * @param amount The amount of eth to withdraw
      */
     function withdraw(uint256 amount) public nonReentrant {
@@ -106,7 +106,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
      * @notice Execute the transaction of the liquidity pool's method
      * @param liquidityPool The address of the liquidity pool
      * @param callData The call data of the transaction
-     * @param gasReward The gas reward given to msg.sender
+     * @param gasReward The gas reward given to sender
      */
     function execute(
         address liquidityPool,
@@ -121,8 +121,8 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade the multiple orders
-     * @param compressedOrders The order objects to trade
+     * @notice Trade multiple orders, each order will be treated seperately
+     * @param compressedOrders The compressed order objects to trade
      * @param amounts The trading amounts of position
      * @param gasRewards The gas rewards of eth given to their brokers
      */

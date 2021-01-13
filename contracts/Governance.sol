@@ -47,8 +47,8 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Claim the ownership of the liquidity pool to msg.sender,
-     *         msg.sender must be transferred the ownership before
+     * @notice Claim the ownership of the liquidity pool to sender.
+     *         Sender must be transferred the ownership before
      */
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;

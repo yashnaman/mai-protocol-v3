@@ -496,7 +496,7 @@ library LiquidityPoolModule {
 
     /**
      * @notice Clear the next active account of the perpetual which state is "emergency" and send
-     *         gas reward of collateral to msg.sender. If all active accounts are cleared,
+     *         gas reward of collateral to sender. If all active accounts are cleared,
      *         the perpetual's state will change to "cleared"
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool

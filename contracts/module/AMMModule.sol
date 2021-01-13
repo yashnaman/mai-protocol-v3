@@ -115,7 +115,7 @@ library AMMModule {
         require(shareTotalSupply > 0, "the supply of share token is zero when removing liquidity");
         Context memory context = prepareContext(liquidityPool);
         require(isAMMSafe(context, 0), "amm is unsafe before removing liquidity");
-        int256 poolMargin = calculatePoolMargin(context, 0);
+        int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
         if (poolMargin == 0) {
             return 0;
         }
@@ -150,17 +150,17 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the pool margin of AMM when AMM is safe. The context don't include the current
-     *      perpetual, the status of the current perpetual should be added
+     * @dev Calculate the pool margin of AMM when AMM is safe
      * @param context The status of AMM
      * @param slippageFactor The slippage factor of the current perpetual
      * @return poolMargin The pool margin of AMM
      */
-    function calculatePoolMargin(Context memory context, int256 slippageFactor)
+    function calculatePoolMarginWhenSafe(Context memory context, int256 slippageFactor)
         internal
         pure
         returns (int256 poolMargin)
     {
+        // The context doesn't include the current perpetual, add them.
         int256 positionValue = context.indexPrice.wmul(context.position);
         int256 margin = positionValue.add(context.positionValue).add(context.availableCash);
         int256 tmp = positionValue.wmul(positionValue).mul(slippageFactor).add(context.squareValue);
@@ -217,7 +217,7 @@ library AMMModule {
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
         if (isAMMSafe(context, slippageFactor)) {
-            int256 poolMargin = calculatePoolMargin(context, slippageFactor);
+            int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
             bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
                 halfSpread.add(Constant.SIGNED_ONE)
@@ -286,7 +286,7 @@ library AMMModule {
             require(partialFill, "amm is unsafe when open");
             return (0, 0, 0);
         }
-        int256 poolMargin = calculatePoolMargin(context, slippageFactor);
+        int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
         require(poolMargin > 0, "pool margin must be positive");
         int256 indexPrice = context.indexPrice;
         int256 positionBefore = context.position;
@@ -303,6 +303,10 @@ library AMMModule {
             require(partialFill, "trade amount exceeds max amount");
             // trade to max position if partialFill
             deltaPosition = maxPosition.sub(positionBefore);
+            // current position already exeeds max leverage, can't open
+            if (Utils.hasTheSameSign(deltaPosition, tradeAmount.neg())) {
+                return (0, 0, 0);
+            }
             positionAfter = maxPosition;
         } else {
             deltaPosition = tradeAmount;
@@ -483,10 +487,11 @@ library AMMModule {
         int256 beforeSqrt =
             poolMargin.mul(poolMargin).mul(2).sub(context.squareValue).wdiv(slippageFactor);
         if (beforeSqrt <= 0) {
-            // already unsafe, can't open position
+            // 1. already unsafe, can't open position
+            // 2. initial amm is also this case, position = 0, available cash = 0, pool margin = 0
             return 0;
         }
-        int256 maxPosition1 = beforeSqrt.sqrt().wdiv(indexPrice);
+        int256 maxPosition3 = beforeSqrt.sqrt().wdiv(indexPrice);
         int256 maxPosition2;
         beforeSqrt = poolMargin.sub(context.positionMargin).add(
             context.squareValue.div(poolMargin).div(2)
@@ -500,25 +505,25 @@ library AMMModule {
             maxPosition2 = poolMargin.sub(beforeSqrt.mul(poolMargin).sqrt());
             maxPosition2 = maxPosition2.wdiv(ammMaxLeverage).wdiv(slippageFactor).wdiv(indexPrice);
         }
-        maxPosition = maxPosition1.min(maxPosition2);
+        maxPosition = maxPosition3.min(maxPosition2);
         if (isLongSide) {
             // long side has one more restriction than short side
-            int256 maxPosition3 = poolMargin.wdiv(slippageFactor).wdiv(indexPrice);
-            maxPosition = maxPosition.min(maxPosition3);
+            int256 maxPosition1 = poolMargin.wdiv(slippageFactor).wdiv(indexPrice);
+            maxPosition = maxPosition.min(maxPosition1);
         } else {
             maxPosition = maxPosition.neg();
         }
     }
 
     /**
-     * @dev Get pool margin of AMM, equal to 1/2 margin balance of AMM when AMM is unsafe
+     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe
      * @param context The status of AMM
      * @return int256 The pool margin of AMM
      * @return bool If AMM is safe
      */
     function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
         if (isAMMSafe(context, 0)) {
-            return (calculatePoolMargin(context, 0), true);
+            return (calculatePoolMarginWhenSafe(context, 0), true);
         } else {
             return (context.availableCash.add(context.positionValue).div(2), false);
         }
