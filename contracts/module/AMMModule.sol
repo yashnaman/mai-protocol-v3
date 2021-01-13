@@ -303,7 +303,7 @@ library AMMModule {
             require(partialFill, "trade amount exceeds max amount");
             // trade to max position if partialFill
             deltaPosition = maxPosition.sub(positionBefore);
-            // current position already exeeds max leverage, can't open
+            // current position already exeeds max position, can't open
             if (Utils.hasTheSameSign(deltaPosition, tradeAmount.neg())) {
                 return (0, 0, 0);
             }
