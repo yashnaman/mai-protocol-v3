@@ -77,7 +77,7 @@ contract Reader {
         ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
         // perpetual
         address creator = pool.addresses[0];
-        address symbolService = IPoolCreator(creator).symbolService();
+        address symbolService = IPoolCreator(creator).getSymbolService();
         pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
         for (uint256 i = 0; i < perpetualCount; i++) {
             getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);

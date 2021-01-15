@@ -34,7 +34,7 @@ library SignatureModule {
     bytes32 internal constant EIP712_TYPED_WITHDRAW =
         keccak256(
             abi.encodePacked(
-                "Deposit(address broker,address relayer,address liquidityPool,uint32 brokerFeeLimit,uint64 expiredAt,uint256 chainID,uint32 salt,",
+                "Deposiaasdasdast(address broker,address relayer,address liquidityPool,uint32 brokerFeeLimit,uint64 expiredAt,uint256 chainID,uint32 salt,",
                 "uint32 perpetualIndex,address trader,int256 amount)"
             )
         );

@@ -43,12 +43,12 @@ export async function createContract(path, args = [], libraries = {}) {
 }
 
 export async function createLiquidityPoolFactory(name = "LiquidityPool") {
-    const AMMModule = await createContract("AMMModule");
-    const CollateralModule = await createContract("CollateralModule")
-    const OrderModule = await createContract("OrderModule");
-    const PerpetualModule = await createContract("PerpetualModule");
-    const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule });
+    const AMMModule = await createContract("AMMModule"); // 0x7360a5370d5654dc9d2d9e365578c1332b9a82b5
+    const CollateralModule = await createContract("CollateralModule") // 0xdea04ead9bce0ba129120c137117504f6dfaf78f
+    const OrderModule = await createContract("OrderModule"); // 0xf8781589ae61610af442ffee69d310a092a8d41a
+    const PerpetualModule = await createContract("PerpetualModule"); // 0x07315f8eca5c349716a868150f5d1951d310c53e
+    const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule }); // 0xbd7bfceb24108a9adbbcd4c57bacdd5194f3be68
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, CollateralModule, PerpetualModule }); // 0xbe884fecccbed59a32c7185a171223d1c07c446b
     return await createFactory(name, {
         AMMModule,
         LiquidityPoolModule,

@@ -7,21 +7,30 @@ contract Variables {
     address internal _vault;
     int256 internal _vaultFeeRate;
 
-    constructor(address wethToken, address symbolService, address globalVault, int256 globalVaultFeeRate) {
-        require(wethToken != address(0), "invalid weth address");
-        require(symbolService != address(0), "invalid weth address");
-        require(globalVault != address(0), "invalid vault address");
-        _weth = wethToken;
-        _symbolService = symbolService;
-        _vault = globalVault;
-        _vaultFeeRate = globalVaultFeeRate;
+    event SetVaultFeeRate(int256 prevFeeRate, int256 newFeeRate);
+
+    constructor(
+        address wethToken_,
+        address symbolService_,
+        address vault_,
+        int256 vaultFeeRate_
+    ) {
+        require(wethToken_ != address(0), "invalid weth address");
+        require(symbolService_ != address(0), "invalid weth address");
+        require(vault_ != address(0), "invalid vault address");
+        require(vaultFeeRate_ >= 0, "negative vault fee rate");
+
+        _weth = wethToken_;
+        _symbolService = symbolService_;
+        _vault = vault_;
+        _vaultFeeRate = vaultFeeRate_;
     }
 
     /**
      * @notice Get the address of the vault
      * @return address The address of the vault
      */
-    function vault() public view returns (address) {
+    function getVault() public view returns (address) {
         return _vault;
     }
 
@@ -29,15 +38,24 @@ contract Variables {
      * @notice Get the vault fee rate
      * @return int256 The vault fee rate
      */
-    function vaultFeeRate() public view returns (int256) {
+    function getVaultFeeRate() public view returns (int256) {
         return _vaultFeeRate;
+    }
+
+    function setVaultFeeRate(int256 newVaultFeeRate) public {
+        require(msg.sender == _vault, "caller must be vault");
+        require(newVaultFeeRate >= 0, "negative vault fee rate");
+        require(newVaultFeeRate != _vaultFeeRate, "unchanged vault fee rate");
+
+        emit SetVaultFeeRate(_vaultFeeRate, newVaultFeeRate);
+        _vaultFeeRate = newVaultFeeRate;
     }
 
     /**
      * @notice Get the address of weth
      * @return address The address of weth
      */
-    function weth() public view returns (address) {
+    function getWeth() public view returns (address) {
         return _weth;
     }
 
@@ -45,7 +63,7 @@ contract Variables {
      * @notice Get the address of the access controller, it's always itself
      * @return address The address of the access controller
      */
-    function accessController() public view returns (address) {
+    function getAccessController() public view returns (address) {
         return address(this);
     }
 
@@ -53,7 +71,7 @@ contract Variables {
      * @notice Get the address of the symbol service
      * @return address The address of the symbol service
      */
-    function symbolService() public view returns (address) {
+    function getSymbolService() public view returns (address) {
         return _symbolService;
     }
 }

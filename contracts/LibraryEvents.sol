@@ -25,8 +25,10 @@ contract LibraryEvents {
         address indexed liquidator,
         address indexed trader,
         int256 amount,
-        int256 price
+        int256 price,
+        int256 penalty
     );
+
     event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,

@@ -117,7 +117,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         int256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
-        // WARN: only for test purpose
+        // ALPHA_TEST_ONLY
         address governor = _governorTemplate;
         // address governor = _createClone(_governorTemplate);
         address shareToken = _createClone(_shareTokenTemplate);

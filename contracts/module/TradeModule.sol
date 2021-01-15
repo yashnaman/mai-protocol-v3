@@ -129,7 +129,7 @@ library TradeModule {
         )
     {
         require(tradeValue >= 0, "trade value is negative");
-        vaultFee = tradeValue.wmul(liquidityPool.vaultFeeRate);
+        vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
         lpFee = tradeValue.wmul(perpetual.lpFeeRate);
         if (liquidityPool.operator != address(0)) {
             operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
@@ -192,7 +192,7 @@ library TradeModule {
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
         liquidityPool.transferToUser(payable(referrer), referralRebate);
-        liquidityPool.transferToUser(payable(liquidityPool.vault), vaultFee);
+        liquidityPool.transferToUser(payable(liquidityPool.getVault()), vaultFee);
         liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
         perpetual.decreaseTotalCollateral(totalFee);
         // safety

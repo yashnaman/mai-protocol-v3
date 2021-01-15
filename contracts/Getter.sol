@@ -69,9 +69,9 @@ contract Getter is Storage {
             _liquidityPool.governor,
             _liquidityPool.shareToken,
             _liquidityPool.collateralToken,
-            _liquidityPool.vault
+            _liquidityPool.getVault()
         ];
-        vaultFeeRate = _liquidityPool.vaultFeeRate;
+        vaultFeeRate = _liquidityPool.getVaultFeeRate();
         poolCash = _liquidityPool.poolCash;
         collateralDecimals = _liquidityPool.collateralDecimals;
         perpetualCount = _liquidityPool.perpetuals.length;

@@ -75,7 +75,7 @@ library CollateralModule {
         }
         if (liquidityPool.isWrapped && msg.value > 0) {
             int256 internalAmount = _toInternalAmount(liquidityPool, msg.value);
-            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).weth());
+            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
             uint256 currentBalance = weth.balanceOf(address(this));
             weth.deposit{ value: msg.value }();
             require(
@@ -112,7 +112,7 @@ library CollateralModule {
         }
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
         if (liquidityPool.isWrapped) {
-            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).weth());
+            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
             weth.withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);
         } else {

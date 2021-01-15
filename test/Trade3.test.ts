@@ -47,7 +47,9 @@ describe('TradeModule3', () => {
             const PerpetualModule = await createContract("PerpetualModule");
             const OrderModule = await createContract("OrderModule");
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+
+            const MockAMMModule = await createContract("MockAMMModule");
+            const TradeModule = await createContract("TradeModule", [], { AMMModule: MockAMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
@@ -86,6 +88,7 @@ describe('TradeModule3', () => {
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            8988.99
             expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("1"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);

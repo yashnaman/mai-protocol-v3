@@ -21,9 +21,21 @@ contract TestTrade is TestLiquidityPool {
     using TradeModule for PerpetualStorage;
     using OrderModule for LiquidityPoolStorage;
 
+    address internal _vault;
+    int256 internal _vaultFeeRate;
+
+    function getVault() public view returns (address) {
+        return _vault;
+    }
+
+    function getVaultFeeRate() public view returns (int256) {
+        return _vaultFeeRate;
+    }
+
     function setVault(address vault, int256 vaultFeeRate) public {
-        _liquidityPool.vault = vault;
-        _liquidityPool.vaultFeeRate = vaultFeeRate;
+        _liquidityPool.creator = address(this);
+        _vault = vault;
+        _vaultFeeRate = vaultFeeRate;
     }
 
     function trade(

@@ -91,7 +91,7 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
             (, , address[7] memory addresses, , , , , ) =
                 ILiquidityPool(order.liquidityPool).getLiquidityPoolInfo();
             IAccessControll accessControl =
-                IAccessControll(IPoolCreator(addresses[0]).accessController());
+                IAccessControll(IPoolCreator(addresses[0]).getAccessController());
             bool isGranted =
                 accessControl.isGranted(order.trader, msg.sender, Constant.PRIVILEGE_TRADE);
             require(isGranted, "sender must be trader or relayer or authorized");

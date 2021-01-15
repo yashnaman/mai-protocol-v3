@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IUpgradeableProxy {
@@ -10,6 +11,8 @@ interface IUpgradeableProxy {
 }
 
 contract TestGovernor is Ownable {
+    using Address for address;
+
     address[] public history;
 
     constructor() Ownable() {}
@@ -18,7 +21,7 @@ contract TestGovernor is Ownable {
         history.push(target);
     }
 
-    function getHistoryLength() public view returns (uint256) {
+    function getHistoryLength() public view onlyOwner returns (uint256) {
         return history.length;
     }
 
@@ -31,7 +34,15 @@ contract TestGovernor is Ownable {
         implementation = IUpgradeableProxy(liquidityPool).implementation();
     }
 
-    function upgradeTo(address liquidityPool, address newImplementation) external onlyOwner {
-        IUpgradeableProxy(liquidityPool).upgradeTo(newImplementation);
+    // function upgradeTo(address liquidityPool, address newImplementation) external onlyOwner {
+    //     IUpgradeableProxy(liquidityPool).upgradeTo(newImplementation);
+    // }
+
+    function functionCall(
+        address liquidityPool,
+        bytes calldata data,
+        uint256 value
+    ) external payable onlyOwner returns (bytes memory result) {
+        result = liquidityPool.functionCallWithValue(data, value);
     }
 }

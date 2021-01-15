@@ -51,8 +51,8 @@ struct LiquidityPoolStorage {
     address shareToken;
     address accessController;
     // vault
-    address vault;
-    int256 vaultFeeRate;
+    // address vault;
+    // int256 vaultFeeRate;
     // collateral
     bool isWrapped;
     uint256 scaler;

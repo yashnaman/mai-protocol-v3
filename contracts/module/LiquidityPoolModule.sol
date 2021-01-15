@@ -59,6 +59,22 @@ library LiquidityPoolModule {
     );
     event RunLiquidityPool();
 
+    function getVault(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (address vault)
+    {
+        vault = IPoolCreator(liquidityPool.creator).getVault();
+    }
+
+    function getVaultFeeRate(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (int256 vaultFeeRate)
+    {
+        vaultFeeRate = IPoolCreator(liquidityPool.creator).getVaultFeeRate();
+    }
+
     /**
      * @notice Get the available pool cash(collateral) of the liquidity pool excluding the specific perpetual
      * @param liquidityPool The liquidity pool object
@@ -143,11 +159,9 @@ library LiquidityPoolModule {
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = msg.sender;
-        IPoolCreator creator = IPoolCreator(liquidityPool.creator);
-        liquidityPool.isWrapped = (collateral == creator.weth());
-        liquidityPool.vault = creator.vault();
-        liquidityPool.vaultFeeRate = creator.vaultFeeRate();
-        liquidityPool.accessController = creator.accessController();
+        IPoolCreator creator = IPoolCreator(msg.sender);
+        liquidityPool.isWrapped = (collateral == creator.getWeth());
+        liquidityPool.accessController = creator.getAccessController();
 
         liquidityPool.operator = operator;
         liquidityPool.shareToken = shareToken;
@@ -182,7 +196,7 @@ library LiquidityPoolModule {
             maxRiskParamValues
         );
         ISymbolService service =
-            ISymbolService(IPoolCreator(liquidityPool.creator).symbolService());
+            ISymbolService(IPoolCreator(liquidityPool.creator).getSymbolService());
         service.allocateSymbol(address(this), perpetualIndex);
         if (liquidityPool.isRunning) {
             perpetual.setNormalState();
@@ -644,7 +658,7 @@ library LiquidityPoolModule {
      * @param amount The amount of cash(collateral) to increase
      */
     function increasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
-        require(amount > 0, "increase negative pool cash");
+        require(amount >= 0, "increase negative pool cash");
         liquidityPool.poolCash = liquidityPool.poolCash.add(amount);
     }
 
@@ -654,7 +668,7 @@ library LiquidityPoolModule {
      * @param amount The amount of cash(collateral) to decrease
      */
     function decreasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
-        require(amount > 0, "decrease negative pool cash");
+        require(amount >= 0, "decrease negative pool cash");
         liquidityPool.poolCash = liquidityPool.poolCash.sub(amount);
     }
 

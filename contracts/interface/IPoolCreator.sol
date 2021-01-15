@@ -2,19 +2,19 @@
 pragma solidity 0.7.4;
 
 interface IPoolCreator {
-    function vault() external view returns (address);
-
-    function vaultFeeRate() external view returns (int256);
-
     function activatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
     function deactivatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
     function setLiquidityPoolOwnership(address liquidityPool, address operator) external;
 
-    function weth() external view returns (address);
+    function getVault() external view returns (address);
 
-    function accessController() external view returns (address);
+    function getVaultFeeRate() external view returns (int256);
 
-    function symbolService() external view returns (address);
+    function getWeth() external view returns (address);
+
+    function getAccessController() external view returns (address);
+
+    function getSymbolService() external view returns (address);
 }
