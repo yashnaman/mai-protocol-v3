@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+// import "@openzeppelin/contracts/access/Ownable.sol";
+
 contract OracleWrapper {
     bool internal _isMarketClosed;
+    bool internal _isTerminated;
     string internal _collateral;
     string internal _underlyingAsset;
     int256 internal _indexPrice;
@@ -29,6 +32,10 @@ contract OracleWrapper {
         _isMarketClosed = isClosed;
     }
 
+    function setTerminated(bool isTerminated) external {
+        _isTerminated = isTerminated;
+    }
+
     function collateral() external view returns (string memory) {
         return _collateral;
     }
@@ -47,5 +54,9 @@ contract OracleWrapper {
 
     function isMarketClosed() external returns (bool) {
         return _isMarketClosed;
+    }
+
+    function isTerminated() external returns (bool) {
+        return _isTerminated;
     }
 }

@@ -44,12 +44,14 @@ describe('TradeModule1', () => {
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");
+            const OrderModule = await createContract("OrderModule");
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
             const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
                 LiquidityPoolModule,
+                OrderModule,
                 TradeModule,
             });
             await testTrade.createPerpetual(
@@ -262,11 +264,13 @@ describe('TradeModule1', () => {
                 const AMMModule = await createContract("AMMModule");
                 const CollateralModule = await createContract("CollateralModule")
                 const PerpetualModule = await createContract("PerpetualModule");
+                const OrderModule = await createContract("OrderModule");
                 const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
                 const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
                 testTrade = await createContract("TestTrade", [], {
                     PerpetualModule,
                     CollateralModule,
+                    OrderModule,
                     LiquidityPoolModule,
                     TradeModule,
                 });

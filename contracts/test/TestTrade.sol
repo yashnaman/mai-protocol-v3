@@ -5,15 +5,21 @@ pragma experimental ABIEncoderV2;
 import "../module/MarginAccountModule.sol";
 import "../module/PerpetualModule.sol";
 import "../module/TradeModule.sol";
+import "../module/OrderModule.sol";
+
+import "../libraries/OrderData.sol";
 
 import "../Type.sol";
+
 import "./TestLiquidityPool.sol";
 
 contract TestTrade is TestLiquidityPool {
+    using OrderData for bytes;
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
     using TradeModule for LiquidityPoolStorage;
     using TradeModule for PerpetualStorage;
+    using OrderModule for LiquidityPoolStorage;
 
     function setVault(address vault, int256 vaultFeeRate) public {
         _liquidityPool.vault = vault;
@@ -31,15 +37,21 @@ contract TestTrade is TestLiquidityPool {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
-    function brokerTrade(
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount,
-        int256 limitPrice,
-        address referrer,
-        uint32 flags
-    ) public syncState {
-        _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+    function brokerTrade(bytes memory orderData, int256 amount) public syncState returns (int256) {
+        Order memory order = orderData.decodeOrderData();
+        bytes memory signature = orderData.decodeSignature();
+        _liquidityPool.validateSignature(order, signature);
+        _liquidityPool.validateOrder(order, amount);
+        _liquidityPool.validateTriggerPrice(order);
+        return
+            _liquidityPool.trade(
+                order.perpetualIndex,
+                order.trader,
+                amount,
+                order.limitPrice,
+                order.referrer,
+                order.flags
+            );
     }
 
     function getFees(

@@ -19,6 +19,7 @@ contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
+    using SafeMathExt for uint256;
     using CollateralModule for address;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
@@ -205,6 +206,34 @@ contract Getter is Storage {
         isInitialMarginSafe = perpetual.isInitialMarginSafe(trader, markPrice);
         isMaintenanceMarginSafe = perpetual.isMaintenanceMarginSafe(trader, markPrice);
         isMarginSafe = perpetual.isMarginSafe(trader, markPrice);
+    }
+
+    function getActiveAccountCount(uint256 perpetualIndex)
+        public
+        view
+        onlyExistedPerpetual(perpetualIndex)
+        returns (uint256 activeAccountCount)
+    {
+        activeAccountCount = _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
+    }
+
+    function listActiveAccounts(
+        uint256 perpetualIndex,
+        uint256 begin,
+        uint256 end
+    ) public view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
+        require(end > begin, "begin should be lower than end");
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        uint256 length = perpetual.activeAccounts.length();
+        if (begin >= length) {
+            return result;
+        }
+        uint256 safeEnd = begin.add(end).min(length);
+        result = new address[](safeEnd.sub(begin));
+        for (uint256 i = begin; i < end; i++) {
+            result[i.sub(begin)] = perpetual.activeAccounts.at(i);
+        }
+        return result;
     }
 
     /**

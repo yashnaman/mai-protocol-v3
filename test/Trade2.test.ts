@@ -12,7 +12,7 @@ import { BrokerRelay } from "../typechain/BrokerRelay";
 
 import "./helper";
 
-describe('TradeModule1', () => {
+describe('TradeModule2', () => {
     let accounts;
 
     before(async () => {
@@ -57,6 +57,7 @@ describe('TradeModule1', () => {
                 CollateralModule,
                 PerpetualModule,
                 LiquidityPoolModule,
+                OrderModule,
                 TradeModule,
             });
             await testTrade.createPerpetual(
@@ -66,7 +67,7 @@ describe('TradeModule1', () => {
                 [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05")],
             )
             await testTrade.setOperator(user0.address)
-            await testTrade.setVault(user4.address, toWei("0.0002"))
+            await testTrade.setVault(user4.address, toWei("0.0001"))
             await testTrade.setCollateralToken(ctk.address, 18);
             await ctk.mint(testTrade.address, toWei("10000000000"));
         })
@@ -81,6 +82,7 @@ describe('TradeModule1', () => {
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(toWei("6965"), now);
             await oracle.setIndexPrice(toWei("7000"), now);
+            await testTrade.updatePrice(0);
 
             await testTrade.setMarginAccount(0, user1.address, toWei('7698.86'), toWei('2.3'));
             await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
@@ -114,6 +116,29 @@ describe('TradeModule1', () => {
 
             var { cash } = await testTrade.callStatic.getMarginAccount(0, user1.address);
             expect(cash).approximateBigNumber(toWei("11178.8766232"));
+        })
+
+
+
+        it('broker', async () => {
+            await testTrade.setState(0, 2);
+            await testTrade.setTotalCollateral(0, toWei("10000000000"));
+            await testTrade.setUnitAccumulativeFunding(0, toWei("9.9059375"))
+
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("6965"), now);
+            await oracle.setIndexPrice(toWei("7000"), now);
+            await testTrade.updatePrice(0);
+
+            await testTrade.setMarginAccount(0, user1.address, toWei('7698.86'), toWei('2.3'));
+            await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
+
+            var compressed = "0x276eb779d7ca51a5f7fba02bf83d9739da11e3ba335780c0f1dc2537a3874176f7d7737b32c243b2d595f7c2c071d3fd8f5587931edf34e92f9ad39f0000000000000000000000000000000000000000301ec46606aa95da4b8b5b8c219044b797a21e050000000000000000000000000000000000000000000000000de0b6b3a7640000fffffffffffffffffffffffffffffffffffffffffffffffffde0b6b3a7640000000000000000000000000000000000000000000000000031d1afdeede7fc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000053900000000600114da000000000000006400000000000000011c0032b8dfefb207e8d6bc22c3edbc339dbc78f473f18c2799a5d0c0ad8893f3deaf4d94d96dcef4d1aef19553780bf1ca94765c50cd98e07237995398669cfc41fd";
+            await testRelay.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
+            // await testTrade.brokerTrade(compressed, toWei("-0.5"));
+
+            var { cash, position } = await testTrade.callStatic.getMarginAccount(0, user1.address);
+            console.log(fromWei(cash), fromWei(position))
         })
     })
 })

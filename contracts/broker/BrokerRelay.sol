@@ -120,8 +120,6 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         // _transfer(signer, msg.sender, gasReward);
     }
 
-    event DecodeOrder(Order order);
-
     /**
      * @notice Trade multiple orders, each order will be treated seperately
      * @param compressedOrders The compressed order objects to trade
@@ -136,19 +134,21 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
         uint256 orderCount = compressedOrders.length;
         for (uint256 i = 0; i < orderCount; i++) {
             Order memory order = compressedOrders[i].decodeOrderData();
-
-            // temp
-            emit DecodeOrder(order);
-
             int256 amount = amounts[i];
             uint256 gasReward = gasRewards[i];
             bytes32 orderHash = order.getOrderHash();
-            require(order.chainID == _chainID, "chain id mismatch");
-            require(!_orderCanceled[orderHash], "order is canceled");
-            require(
-                _orderFilled[orderHash].add(amount).abs() <= order.amount.abs(),
-                "no enough amount to fill"
-            );
+            if (order.chainID != _chainID) {
+                emit TradeFailed(orderHash, order, amount, "chain id mismatch");
+                return;
+            }
+            if (_orderCanceled[orderHash]) {
+                emit TradeFailed(orderHash, order, amount, "order is canceled");
+                return;
+            }
+            if (_orderFilled[orderHash].add(amount).abs() > order.amount.abs()) {
+                emit TradeFailed(orderHash, order, amount, "no enough amount to fill");
+                return;
+            }
             if (gasReward > balanceOf(order.trader)) {
                 emit TradeFailed(orderHash, order, amount, "insufficient fee");
                 return;
@@ -168,11 +168,9 @@ contract BrokerRelay is ReentrancyGuardUpgradeable {
                 _transfer(order.trader, order.broker, gasReward);
                 emit TradeSuccess(orderHash, order, filledAmount, gasReward);
             } catch Error(string memory reason) {
-                console.log("FAILED", reason);
                 emit TradeFailed(orderHash, order, amount, reason);
                 return;
             } catch {
-                console.log("FAILED transaction failed");
                 emit TradeFailed(orderHash, order, amount, "transaction failed");
                 return;
             }
