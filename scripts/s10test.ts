@@ -33,15 +33,17 @@ async function main(accounts: any[]) {
     const provider = new ethers.providers.JsonRpcProvider("https://kovan.infura.io/v3/3582010d3cc14ab183653e5861d0c118");
     setDefaultSigner(new ethers.Wallet(deployer.private, provider))
 
-    await deployOracle();
+    // await deployOracle();
 
-    return;
+    // return;
 
     // common
 
     var symbol = await createContract("SymbolService", [10000]);
 
-    var weth = await createContract("WETH9");
+    var wethFactory = await createFactory("WETH9");
+    var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
+
     var shareTokenTmpl = await createContract("ShareToken");
     var governorTmpl = await createContract("TestGovernor");
     var poolCreator = await createContract(
@@ -64,7 +66,7 @@ async function main(accounts: any[]) {
     const pool1 = await set1(accounts, poolCreator, weth);
     const pool2 = await set2(accounts, poolCreator, weth);
 
-    await reader(accounts, { pool1, pool2 });
+    //await reader(accounts, { pool1, pool2 });
 }
 
 async function set1(accounts: any[], poolCreator, weth) {
@@ -111,7 +113,7 @@ async function set2(accounts: any[], poolCreator, weth) {
     // │    2    │  'ETH - USD'   │ '0x6B61774d291AC46444c2a32D91621532b22A301C' │
     // │    3    │  'BTC - USD'   │ '0xa920a1d31aa3cE77C557a9106a056fE8d99bB75c' │
     // │    4    │  'DPI - USD'   │ '0x406e84F1ad2e0806A6cbbf0178beFF9C6Cb8fDA3' │
-    // │    5    │  'SP500 - USD' │ '0x37398F5C3D11c11386294Dd3e7464717a10Ffb15' │
+    // │    5    │  'SP500 - USD' │ '0x4327b88af616B31E48c745613f1BACa347f7630a' │
     var usd = await (await createFactory("CustomERC20")).attach('0x8B2c4Fa78FBA24e4cbB4B0cA7b06A29130317093');
 
     const tx = await poolCreator.createLiquidityPool(usd.address, 6 /* decimals */, false /* isFastCreationEnabled */, 998 /* nonce */);
