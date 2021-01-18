@@ -28,7 +28,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     receive() external payable {}
 
     /**
-     * @notice Initialize the liquidity pool 
+     * @notice Initialize the liquidity pool
      * @param operator The operator's address of the liquidity pool
      * @param collateral The collateral's address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
@@ -109,6 +109,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      * @param cashToAdd The amount of cash(collateral) to add
      */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
+        require(_liquidityPool.isRunning, "pool is not running");
         require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.addLiquidity(msg.sender, cashToAdd);
     }
@@ -119,6 +120,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      * @param shareToRemove The amount of share token to remove
      */
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
+        require(_liquidityPool.isRunning, "pool is not running");
         require(shareToRemove > 0, "invalid share");
         _liquidityPool.removeLiquidity(msg.sender, shareToRemove);
     }

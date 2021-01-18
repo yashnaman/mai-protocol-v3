@@ -164,6 +164,7 @@ library LiquidityPoolModule {
         liquidityPool.accessController = creator.getAccessController();
 
         liquidityPool.operator = operator;
+        liquidityPool.governor = governor;
         liquidityPool.shareToken = shareToken;
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
     }

@@ -6,12 +6,14 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/SafeMathExt.sol";
+import "../libraries/Utils.sol";
 
 import "hardhat/console.sol";
 
 contract Tracer {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
+    using Utils for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -64,7 +66,7 @@ contract Tracer {
         view
         returns (address[] memory result)
     {
-        return _addressSetToList(_liquidityPoolSet, begin, end);
+        result = _liquidityPoolSet.toArray(begin, end);
     }
 
     /**
@@ -88,7 +90,7 @@ contract Tracer {
         uint256 begin,
         uint256 end
     ) public view returns (address[] memory result) {
-        return _addressSetToList(_operatorOwnedLiquidityPools[operator], begin, end);
+        return _operatorOwnedLiquidityPools[operator].toArray(begin, end);
     }
 
     /**
@@ -168,9 +170,9 @@ contract Tracer {
         if (begin >= length) {
             return result;
         }
-        uint256 safeEnd = begin.add(end).min(length);
+        uint256 safeEnd = end.min(length);
         result = new PerpetualUID[](safeEnd.sub(begin));
-        for (uint256 i = begin; i < end; i++) {
+        for (uint256 i = begin; i < safeEnd; i++) {
             result[i.sub(begin)] = _perpetualUIDs[_traderActiveLiquidityPools[trader].at(i)];
         }
         return result;
@@ -215,31 +217,6 @@ contract Tracer {
     }
 
     // =========================== Active Liquidity Pool of Trader ===========================
-    /**
-     * @dev Get the addresses in set whose index between begin and end
-     * @param set The address set
-     * @param begin The begin index
-     * @param end The end index
-     * @return result The addresses in set whose index between begin and end
-     */
-    function _addressSetToList(
-        EnumerableSet.AddressSet storage set,
-        uint256 begin,
-        uint256 end
-    ) internal view returns (address[] memory result) {
-        require(end > begin, "begin should be lower than end");
-        uint256 length = set.length();
-        if (begin >= length) {
-            return result;
-        }
-        uint256 safeEnd = begin.add(end).min(length);
-        result = new address[](safeEnd.sub(begin));
-        for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = set.at(i);
-        }
-        return result;
-    }
-
     /**
      * @dev Get the key of the perpetual
      * @param liquidityPool The address of the liquidity pool which the perpetual belongs to

@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./SafeMathExt.sol";
 
 library Utils {
     using SafeMathExt for int256;
+    using SafeMathExt for uint256;
+    using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     /*
      * @dev Check if two numbers have the same sign. Zero has the same sign with any number
@@ -57,5 +64,41 @@ library Utils {
         assembly {
             id := chainid()
         }
+    }
+
+    function toArray(
+        EnumerableSet.AddressSet storage set,
+        uint256 begin,
+        uint256 end
+    ) internal view returns (address[] memory result) {
+        require(end > begin, "begin should be lower than end");
+        uint256 length = set.length();
+        if (begin >= length) {
+            return result;
+        }
+        uint256 safeEnd = end.min(length);
+        result = new address[](safeEnd.sub(begin));
+        for (uint256 i = begin; i < safeEnd; i++) {
+            result[i.sub(begin)] = set.at(i);
+        }
+        return result;
+    }
+
+    function toArray(
+        EnumerableSetUpgradeable.AddressSet storage set,
+        uint256 begin,
+        uint256 end
+    ) internal view returns (address[] memory result) {
+        require(end > begin, "begin should be lower than end");
+        uint256 length = set.length();
+        if (begin >= length) {
+            return result;
+        }
+        uint256 safeEnd = end.min(length);
+        result = new address[](safeEnd.sub(begin));
+        for (uint256 i = begin; i < safeEnd; i++) {
+            result[i.sub(begin)] = set.at(i);
+        }
+        return result;
     }
 }

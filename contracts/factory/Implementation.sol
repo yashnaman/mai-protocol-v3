@@ -118,7 +118,7 @@ contract Implementation is Ownable {
      * @return result The addresses of implementations to get
      */
     function listAvailableVersions(uint256 start, uint256 count)
-        internal
+        public
         view
         returns (address[] memory result)
     {

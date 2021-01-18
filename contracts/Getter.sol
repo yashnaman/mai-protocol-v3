@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "./libraries/SafeMathExt.sol";
+import "./libraries/Utils.sol";
 
 import "./module/MarginAccountModule.sol";
 import "./module/PerpetualModule.sol";
@@ -21,6 +22,7 @@ contract Getter is Storage {
     using SafeMathExt for int256;
     using SafeMathExt for uint256;
     using CollateralModule for address;
+    using Utils for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
@@ -222,18 +224,8 @@ contract Getter is Storage {
         uint256 begin,
         uint256 end
     ) public view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
-        require(end > begin, "begin should be lower than end");
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        uint256 length = perpetual.activeAccounts.length();
-        if (begin >= length) {
-            return result;
-        }
-        uint256 safeEnd = begin.add(end).min(length);
-        result = new address[](safeEnd.sub(begin));
-        for (uint256 i = begin; i < end; i++) {
-            result[i.sub(begin)] = perpetual.activeAccounts.at(i);
-        }
-        return result;
+        result = perpetual.activeAccounts.toArray(begin, end);
     }
 
     /**
