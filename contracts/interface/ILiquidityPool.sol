@@ -28,6 +28,7 @@ interface ILiquidityPool {
 
     function getPerpetualInfo(uint256 perpetualIndex)
         external
+        view
         returns (
             PerpetualState state,
             address oracle,
@@ -58,6 +59,7 @@ interface ILiquidityPool {
 
     function getMarginAccount(uint256 perpetualIndex, address trader)
         external
+        view
         returns (
             int256 cash,
             int256 position,
@@ -97,4 +99,6 @@ interface ILiquidityPool {
         uint256 start,
         uint256 count
     ) external view returns (address[] memory result);
+
+    function forceToSyncState() external;
 }

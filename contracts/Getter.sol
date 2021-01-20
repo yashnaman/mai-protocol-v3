@@ -90,7 +90,7 @@ contract Getter is Storage {
      */
     function getPerpetualInfo(uint256 perpetualIndex)
         public
-        syncState
+        view
         onlyExistedPerpetual(perpetualIndex)
         returns (
             PerpetualState state,
@@ -181,7 +181,6 @@ contract Getter is Storage {
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
-        syncState
         onlyExistedPerpetual(perpetualIndex)
         returns (
             int256 cash,
@@ -311,6 +310,12 @@ contract Getter is Storage {
      */
     function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];
+    }
+
+    /**
+     * @notice If you want to get the real-time data, call this function first
+     */
+    function forceToSyncState() syncState public {
     }
 
     bytes[50] private __gap;

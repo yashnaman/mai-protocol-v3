@@ -50,6 +50,7 @@ contract Reader {
         uint256 perpetualIndex,
         address account
     ) public returns (MarginAccount memory marginAccount) {
+        ILiquidityPool(liquidityPool).forceToSyncState();
         (marginAccount.cash, marginAccount.position, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, account);
     }
@@ -63,6 +64,7 @@ contract Reader {
         public
         returns (LiquidityPoolReaderResult memory pool)
     {
+        ILiquidityPool(liquidityPool).forceToSyncState();
         // pool
         uint256 perpetualCount;
         (
