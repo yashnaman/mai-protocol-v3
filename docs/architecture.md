@@ -6,7 +6,7 @@ The Mai Protocol V3 is mainly composed of five parts: Pool Creator, Liquidity Po
 
 ## Pool Creator
 
-Pool Creator manages the liquidity pools. It stores the different versions of the liquidity pool implementation. The operator can create new liquidity pool of the specific version through it. Trader can grant or revoke the other trader privilege(deposit / withdraw / trade) through Pool Creator.
+Pool Creator manages the liquidity pools. It stores the different versions of the liquidity pool implementations. The operator can create new liquidity pool of the specific version through it. Trader can grant or revoke the other trader privilege(deposit / withdraw / trade) through Pool Creator.
 
 ## Liquidity Pool
 
@@ -14,7 +14,7 @@ The Liquidity Pool holds the liquidity. The traders can add or remove liquidity 
 
 ## Perpetual
 
-The Perpetual stores the data of margin accounts of the traders. The trader can deposit / withdraw / trade in the perpetual. The multiple perpetuals in the same liquidity pool can have different oracles and underlying assets, but they must have the same collateral.
+The Perpetual stores the data of margin accounts of the traders. The trader can deposit / withdraw / trade in the perpetual. The multiple perpetuals in the same liquidity pool can have different underlying assets and oracles, but they must have the same collateral.
 
 ## AMM
 

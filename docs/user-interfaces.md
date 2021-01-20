@@ -12,7 +12,10 @@ Initialize the liquidity pool and set up its configuration.
 createPerpetual(address oracle, int256[9] calldata coreParams, int256[6] calldata riskParams, int256[6] calldata minRiskParamValues, int256[6] calldata maxRiskParamValues)
 ```
 
-Create a new perpetual of the liquidity pool. The perpetual's collateral must be the same with the liquidity pool's collateral. If the isFastCreationEnabled is set to true, the operator can create new perpetual at any time. Otherwise he can only create when the liquidity pool is not running. The liquidity providers can vote and create new perpetual (if passed) when the liquidity pool is running and isFastCreationEnabled is set to false.
+Create a new perpetual of the liquidity pool. The perpetual's collateral must be the same with the liquidity pool's collateral.
+
+- If the isFastCreationEnabled is set to true, the operator can create new perpetual at any time.
+- If the isFastCreationEnabled is set to false, the operator can only create when the liquidity pool is not running. The liquidity providers can vote and create new perpetual (if passed) when the liquidity pool is running.
 
 ```solidity
 runLiquidityPool()
@@ -30,7 +33,7 @@ Get the information of the liquidity pool.
 getPoolMargin()
 ```
 
-Get the pool margin of the liquidity pool. Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals.
+Get the pool margin of the liquidity pool. Pool margin is how much collateral of the liquidity pool considering AMM's positions of perpetuals.
 
 ```solidity
 addLiquidity(int256 cashToAdd)
@@ -60,7 +63,7 @@ Claimer claim his claimable fee(collateral) of in the liquidity pool.
 getClaimableOperatorFee()
 ```
 
-Query how much claimable fee of the operator in the liquidity pool.
+Get claimable fee of the operator in the liquidity pool.
 
 ```solidity
 claimOperatorFee()
@@ -72,7 +75,7 @@ Claim the claimable fee of the operator. Can only called by the operator of the 
 transferOperator(address newOperator)
 ```
 
-Transfer the ownership of the liquidity pool to the new operator, call claimOperator() function next to complete the transfer. Only the operator can transfer. If no operator exisit, the liquidity provider can transfer after proposing a proposal, voting and passing it.
+Transfer the ownership of the liquidity pool to the new operator, call `claimOperator()` next to complete the transfer. Only the operator can transfer. If no operator exisit, the liquidity provider can transfer after proposing a proposal, voting and passing it.
 
 ```solidity
 claimOperator()
@@ -111,11 +114,8 @@ withdraw(uint256 perpetualIndex, address trader, int256 amount)
 ```
 
 Withdraw collateral from the account in the perpetual. Trader's cash will decrease after withdrawing. Trader can withdraw at any time and must be initial margin safe after withdrawing. Initial margin safe means:
-
-```solidity
-if position is not zero: cash + index price * position >= max(index price * abs(position) * initial margin rate, keeper gas reward);
-if position is zero: cash + index price * position >= 0
-```
+- If position is not zero: `cash + index price * position >= max(index price * abs(position) * initial margin rate, keeper gas reward)`
+- If position is zero: `cash + index price * position >= 0`
 
 ```solidity
 trade(uint256 perpetualIndex, address trader, int256 amount, int256 limitPrice, uint256 deadline, address referrer, uint32 flags)
@@ -123,10 +123,8 @@ trade(uint256 perpetualIndex, address trader, int256 amount, int256 limitPrice, 
 
 Trade in the perpetual. Trader can long or short in the perpetual. Trader must be initial margin safe if opening position and margin safe if closing position. Margin safe means:
 
-```solidity
-if position is not zero: cash + index price * position >= keeper gas reward;
-if position is zero: cash + index price * position >= 0
-```
+- If position is not zero: `cash + index price * position >= keeper gas reward`
+- If position is zero: `cash + index price * position >= 0`
 
 ```solidity
 brokerTrade(bytes memory orderData, int256 amount)
@@ -138,18 +136,22 @@ Trade in the perpetual by a order, initiated by the broker. The broker gets the 
 liquidateByAMM(uint256 perpetualIndex, address trader)
 ```
 
-When a trader is not maintenance margin safe in the perpetual, he needs to be liquidated. This method will liquidate the account and AMM takes the position. A part of the penalty belongs to AMM and sender gets the gas reward. The liquidate price is determined by AMM based on the index price, the same as trading with AMM. Maintenance margin safe means:
+When a trader is not maintenance margin safe in the perpetual, he needs to be liquidated.
 
-```solidity
-if position is not zero: cash + index price * position >= max(index price * abs(position) * maintenance margin rate, keeper gas reward);
-if position is zero: cash + index price * position >= 0
-```
+This method will liquidate the account and AMM takes the position. A part of the penalty belongs to AMM and sender gets the gas reward.
+
+The liquidate price is determined by AMM based on the index price, the same as trading with AMM. Maintenance margin safe means:
+
+- If position is not zero: `cash + index price * position >= max(index price * abs(position) * maintenance margin rate, keeper gas reward)`
+- If position is zero: `cash + index price * position >= 0`
 
 ```solidity
 liquidateByTrader(uint256 perpetualIndex, address trader, int256 amount, int256 limitPrice, uint256 deadline)
 ```
 
-When a trader is not maintenance margin safe in the perpetual, he needs to be liquidated. This method will liquidate the account and sender takes the position. A part of the penalty belongs to sender. The liquidate price is the mark price.
+When a trader is not maintenance margin safe in the perpetual, he needs to be liquidated.
+
+This method will liquidate the account and sender takes the position. A part of the penalty belongs to sender. The liquidate price is the mark price.
 
 ```solidity
 queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
@@ -167,19 +169,29 @@ Get cash amount and position amount of trader in the perpetual.
 setEmergencyState(uint256 perpetualIndex)
 ```
 
-If account of AMM in the perpetual is not maintenance margin safe. Anyone can set the state of the perpetual to "EMERGENCY". After that the perpetual is not allowed to trade, deposit and withdraw. The price of the perpetual is freezed to the settlement price.
+If account of AMM in the perpetual is not maintenance margin safe. Anyone can set the state of the perpetual to "EMERGENCY".
+
+After that the perpetual is not allowed to trade, deposit and withdraw. The price of the perpetual is freezed to the settlement price.
 
 ```solidity
 forceToSetEmergencyState(uint256 perpetualIndex)
 ```
 
-Force to set the state of the perpetual to "EMERGENCY". After that the perpetual is not allowed to trade and the price of the perpetual is freezed to the settlement price. This can be done only after the liquidity providers propose a proposal, vote and pass it.
+Force to set the state of the perpetual to "EMERGENCY".
+
+After that the perpetual is not allowed to trade and the price of the perpetual is freezed to the settlement price.
+
+This can be done only after the liquidity providers propose a proposal, vote and pass it.
 
 ```solidity
 clear(uint256 perpetualIndex)
 ```
 
-After the state of the perpetual is set to "EMERGENCY". Anyone can clear an active account in the perpetual and get the gas reward. If all active accounts are cleared, the clear progress is done and the state of the perpetual is set to "CLEARED". Active means the trader's account is not empty in the perpetual. Empty means cash and position are zero.
+After the state of the perpetual is set to "EMERGENCY". Anyone can clear an active account in the perpetual and get the gas reward.
+
+If all active accounts are cleared, the clear progress is done and the state of the perpetual is set to "CLEARED".
+
+Active means the trader's account is not empty in the perpetual. Empty means cash and position are zero.
 
 ```solidity
 getClearProgress(uint256 perpetualIndex)
@@ -191,7 +203,9 @@ Get the number of all active accounts and the number of active accounts not clea
 settle(uint256 perpetualIndex, address trader)
 ```
 
-If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle trader's account in the perpetual. Which means to calculate how much the collateral should be returned to the trader, return it to trader's wallet and clear the trader's position in the perpetual.
+If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle trader's account in the perpetual.
+
+Which means to calculate how much the collateral should be returned to the trader, return it to trader's wallet and clear the trader's position in the perpetual.
 
 ```solidity
 donateInsuranceFund(uint256 perpetualIndex, int256 amount)

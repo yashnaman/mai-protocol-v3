@@ -2,7 +2,7 @@
 
 ## Trade
 
-| Fee          | Belong to          | how to calculate               | note                          |
+| Fee          | Belong to          | How to calculate               | Note                          |
 |--------------|--------------------|--------------------------------|-------------------------------|
 | lp fee       | liquidity provider | tradeValue * lp fee rate       | may rebate a part to referral |
 | operator fee | operator           | tradeValue * operator fee rate | may rebate a part to referral |
@@ -14,19 +14,19 @@ Trader is not allowed to open position in this case.
 
 If trader is closing position:
 
-    1. available margin ≤ 0, all three fees are zero.
-    2. 0 < available margin < lp fee + operator fee + vault fee, three fees split the available margin proportionally.
+- If `available margin ≤ 0`, all three fees are zero.
+- If `0 < available margin < lp fee + operator fee + vault fee`, three fees split available margin proportionally.
 
 ### What if there is a referrer in trade
 
 Lp fee and operator fee will rebate a part to referrer.
 
-referral rebate = (lp fee + operator fee) * referral rebate rate
+`referral rebate = (lp fee + operator fee) * referral rebate rate`
 
-lp fee = lp fee * (1 - referral rebate rate)
+`lp fee = lp fee * (1 - referral rebate rate)`
 
-operator fee = operator fee * (1 - referral rebate rate)
+`operator fee = operator fee * (1 - referral rebate rate)`
 
-## liquidate
+## Liquidate
 
 There is no fee in both two types of liquidation.
