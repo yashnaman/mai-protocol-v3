@@ -6,7 +6,7 @@ library BitwiseMath {
      * @dev Check if the value is 1 at the bit position
      * @param value The value
      * @param bit The bit, should be 2^n
-     * @return bool If the value is 1 at the bit position
+     * @return bool True if the value is 1 at the bit position
      */
     function test(uint256 value, uint256 bit) internal pure returns (bool) {
         return value & bit > 0;

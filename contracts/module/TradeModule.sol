@@ -46,7 +46,8 @@ library TradeModule {
 
     /**
      * @notice Trade the position in the perpetual between the trader (taker) and AMM (maker).
-     *         The trading price is determined by AMM based on current index price of the perpetual
+     *         The trading price is determined by AMM based on current index price of the perpetual.
+     *         Trader must be initial margin safe if opening position and margin safe if closing position.
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -97,8 +98,9 @@ library TradeModule {
     }
 
     /**
-     * @notice Get the fees of the trade.
-     *         For the trader who tries to close position, the fee will be decreasing in proportion according to
+     * @notice Get the fees of the trade. If the margin of the trader is not enough for fee:
+     *         1. If trader open position, the trade will be reverted.
+     *         2. If trader close position, the fee will be decreasing in proportion according to
      *         the margin left in the trader's account
      * @param liquidityPool The liquidity pool object
      * @param perpetual The perpetual object
@@ -205,10 +207,11 @@ library TradeModule {
     }
 
     /**
-     * @notice Liquidate by AMM, which means AMM takes the position. The liquidate price is determied by AMM. The liquidator gets
-     *         the keeper gas reward. If there is penalty, AMM and the insurance fund will taker it. If there is loss,
-     *         the insurance fund will cover it. If the insurance fund including the donated part is negative, the perpetual's
-     *         state should enter "emergency"
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. AMM takes the position.
+     *         The liquidate price is determied by AMM. The liquidator gets the keeper gas reward.
+     *         If there is penalty, AMM and the insurance fund will taker it. If there is loss,
+     *         the insurance fund will cover it. If the insurance fund including the donated part is negative,
+     *         the perpetual's state should enter "EMERGENCY"
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param liquidator The address of the account who initiates the liquidation
@@ -274,10 +277,10 @@ library TradeModule {
     }
 
     /**
-     * @notice Liquidate by trader, which means the liquidator takes the position. The liquidate price is mark price.
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. The liquidate price is mark price.
      *         If there is penalty, The liquidator and the insurance fund will taker it. If there is loss, the
      *         insurance fund will cover it. If the insurance fund including the donated part is negative, the perpetual's
-     *         state should enter "emergency". The liquidator should be initial margin safe after the liquidation if
+     *         state should enter "EMERGENCY". The liquidator should be initial margin safe after the liquidation if
      *         he has opened position. If not, he should be maintenance margin safe
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
@@ -353,10 +356,10 @@ library TradeModule {
     }
 
     /**
-     * @dev Get the max amount of position will be closed in the trade
-     * @param position The current position
+     * @dev Get the max position amount of trader will be closed in the trade
+     * @param position The current position of trader
      * @param amount The trading amount of position
-     * @return maxPositionToClose The max amount of position will be closed in the trade
+     * @return maxPositionToClose The max position amount of trader will be closed in the trade
      */
     function getMaxPositionToClose(int256 position, int256 amount)
         internal
@@ -370,7 +373,7 @@ library TradeModule {
 
     /**
      * @dev Check if the price is better than the limit price
-     * @param isLong If the side is long
+     * @param isLong True if the side is long
      * @param price The price
      * @param priceLimit The limit price
      */
@@ -389,6 +392,7 @@ library TradeModule {
      *      Example: 2, 1 => true; 2, -1 => false; -2, -3 => true
      * @param amount The position of the trader after the trade
      * @param delta The update position amount of the trader after the trade
+     * @return bool True if the trader has opened position in the trade
      */
     function hasOpenedPosition(int256 amount, int256 delta) internal pure returns (bool) {
         if (amount == 0) {

@@ -34,7 +34,7 @@ library CollateralModule {
     uint256 internal constant SYSTEM_DECIMALS = 18;
 
     /**
-     * @notice Initialize the collateral of the liquidity pool
+     * @notice Initialize the collateral of the liquidity pool. Set up address, scaler and decimals of collateral
      * @param liquidityPool The liquidity pool object
      * @param collateral The address of the collateral
      * @param collateralDecimals The decimals of the collateral, must less than SYSTEM_DECIMALS,

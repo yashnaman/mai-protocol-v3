@@ -27,7 +27,7 @@ library Utils {
     }
 
     /*
-     * @dev Get the sign of the number
+     * @dev Get the sign of the number. 1 means the number is positive. -1 means the number is negative
      */
     function extractSign(int256 x) internal pure returns (int256) {
         return x >= 0 ? int256(1) : int256(-1);

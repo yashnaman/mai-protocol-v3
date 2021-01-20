@@ -44,7 +44,7 @@ library PerpetualModule {
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
 
     /**
-     * @dev Get the mark price of the perpetual. If the state of the perpetual is not "normal",
+     * @dev Get the mark price of the perpetual. If the state of the perpetual is not "NORMAL",
      *      return the settlement price
      * @param perpetual The perpetual object
      * @return int256 The mark price of the perpetual
@@ -57,7 +57,7 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Get the index price of the perpetual. If the state of the perpetual is not "normal",
+     * @dev Get the index price of the perpetual. If the state of the perpetual is not "NORMAL",
      *      return the settlement price
      * @param perpetual The perpetual object
      * @return int256 The index price of the perpetual
@@ -70,7 +70,8 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Margin to rebalance = margin - initial margin
+     * @notice Get the margin to rebalance in the perpetual.
+     *         Margin to rebalance = margin - initial margin
      * @param perpetual The perpetual object
      * @return marginToRebalance The margin to rebalance in the perpetual
      */
@@ -86,7 +87,8 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Initialize the perpetual
+     * @notice Initialize the perpetual. Set up its configuration and validate parameters.
+     *         If the validation passed, set the state of perpetual to "INITIALIZING"
      * @param perpetual The perpetual object
      * @param id The id of the perpetual
      * @param oracle The oracle's address of the perpetual
@@ -158,7 +160,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set the base parameter of the perpetual
+     * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param perpetual The perpetual object
      * @param key The key of the base parameter
      * @param newValue The new value of the base parameter
@@ -201,7 +203,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set the risk parameter of the perpetual
+     * @notice Set the risk parameter of the perpetual. Can only called by the governor
      * @param perpetual The perpetual object
      * @param key The key of the risk parameter
      * @param newValue The new value of the risk parameter, must between minimum value and maximum value
@@ -234,7 +236,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update the risk parameter of the perpetual
+     * @notice Update the risk parameter of the perpetual. Can only called by the operator
      * @param perpetual The perpetual object
      * @param key The key of the risk parameter
      * @param newValue The new value of the risk parameter, must between minimum value and maximum value
@@ -263,8 +265,9 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update the funding state of the perpetual, which means updating the unitAccumulativeFunding variable of the perpetual,
-     *         unitAccumulativeFunding <- unitAccumulativeFunding + index * funding rate * elapsed time / FUNDING_INTERVAL
+     * @notice Update the funding state of the perpetual, which means updating the unitAccumulativeFunding variable of the perpetual.
+     *         After that, funding payment of every account in the perpetual is updated,
+     *         UnitAccumulativeFunding <- unitAccumulativeFunding + index * funding rate * elapsed time / FUNDING_INTERVAL
      * @param perpetual The perpetual object
      * @param timeElapsed The elapsed time since the last update
      */
@@ -312,7 +315,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "normal", the state must be "initializing" before
+     * @notice Set the state of the perpetual to "NORMAL". The state must be "INITIALIZING" before
      * @param perpetual The perpetual object
      */
     function setNormalState(PerpetualStorage storage perpetual) public {
@@ -325,7 +328,8 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "emergency", the state must be "normal" before
+     * @notice Set the state of the perpetual to "EMERGENCY". The state must be "NORMAL" before.
+     *         The settlement price is the mark price at this time
      * @param perpetual The perpetual object
      */
     function setEmergencyState(PerpetualStorage storage perpetual) public {
@@ -342,8 +346,9 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "cleared" and settle the collateral of the perpetual,
-     *         the state must be "emergency" before
+     * @notice Set the state of the perpetual to "CLEARED". The state must be "EMERGENCY" before.
+     *         And settle the collateral of the perpetual, which means
+     *         determining how much collateral should returned to every account. 
      * @param perpetual The perpetual object
      */
     function setClearedState(PerpetualStorage storage perpetual) public {
@@ -359,7 +364,7 @@ library PerpetualModule {
     /**
      * @notice Donate collateral to the insurance fund of the perpetual. All the donated collateral counts towards
      *         the total collateral of perpetual, which means these collateral will be settled when settling the
-     *         collateral of the perpetual
+     *         collateral of the perpetual. Will improve the security of the perpetual.
      * @param perpetual The perpetual object
      * @param amount The amount of collateral to donate
      */
@@ -371,12 +376,14 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Deposit collateral to the trader's account of the perpetual
+     * @notice Deposit collateral to the trader's account of the perpetual. The trader's cash will increase.
+     *         Activate the perpetual for the trader if the account in the perpetual is empty before depositing.
+     *         Empty means cash and position are zero
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param amount The amount of collateral to deposit
-     * @return isInitialDeposit If the trader's account is empty before depositing. If it's true, register the
-     *                          trader's account to the active accounts of the perpetual
+     * @return isInitialDeposit True if the trader's account is empty before depositing. If it's true, register
+     *                          the trader's account to the active accounts of the perpetual
      */
     function deposit(
         PerpetualStorage storage perpetual,
@@ -394,11 +401,14 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Withdraw collateral from the trader's account of the perpetual
+     * @notice Withdraw collateral from the trader's account of the perpetual. The trader's cash will decrease.
+     *         Trader must be initial margin safe in the perpetual after withdrawing.
+     *         Deactivate the perpetual for the trader if the account in the perpetual is empty after withdrawing.
+     *         Empty means cash and position are zero
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param amount The amount of collateral to withdraw
-     * @return isLastWithdrawal If the trader's account is empty after withdrawing. If it's true, deregister
+     * @return isLastWithdrawal True if the trader's account is empty after withdrawing. If it's true, deregister
      *                          the trader's account from the active accounts of the perpetual
      */
     function withdraw(
@@ -422,7 +432,10 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Clear the trader's account of the perpetual. Need to clear all the active accounts to complete the settlement
+     * @notice Clear the active account of the perpetual which state is "EMERGENCY" and send gas reward of collateral
+     *         to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
+     *         change to "CLEARED". Active means the trader's account is not empty in the perpetual.
+     *         Empty means cash and position are zero
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @return isAllCleared If all the active accounts are cleared in the perpetual
@@ -443,7 +456,7 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Check the trader's account to update total margin with position or without position of the perpetual.
+     * @notice Check the trader's account to update total margin with position and total margin without position of the perpetual.
      *         If the margin of the trader's account is not positive, skip updating
      * @param perpetual The perpetual object
      * @param trader The address of the trader
@@ -475,7 +488,9 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Settle the trader's account of the perpetual and return the collateral, the perpetual's state must be "cleared"
+     * @notice If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
+     *         trader's account in the perpetual. Which means to calculate how much the collateral should be returned
+     *         to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
      * @param perpetual The perpetual object
      * @param trader The adddress of the trader
      * @param marginToReturn The collateral to return to the trader after the settlement
@@ -492,11 +507,11 @@ library PerpetualModule {
     }
 
     /**
-     * @notice Update the insurance fund of the perpetual. If the insurance fund exceeds the cap,
-     *         the extra part of collateral belongs to LP
+     * @notice Update the collateral of the insurance fund in the perpetual. If the collateral of the insurance fund
+     *         exceeds the cap, the extra part of collateral belongs to LP
      * @param perpetual The perpetual object
      * @param deltaFund The update collateral amount of the insurance fund in the perpetual
-     * @return penaltyToLP The extra part of collateral if the insurance fund exceeds the cap
+     * @return penaltyToLP The extra part of collateral if the collateral of the insurance fund exceeds the cap
      */
     function updateInsuranceFund(PerpetualStorage storage perpetual, int256 deltaFund)
         public
@@ -552,7 +567,7 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Register the trader's account to the active accounts of the perpetual
+     * @dev Register the trader's account to the active accounts in the perpetual
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      */
@@ -561,7 +576,7 @@ library PerpetualModule {
     }
 
     /**
-     * @dev Deregister the trader's account from the active accounts of the perpetual
+     * @dev Deregister the trader's account from the active accounts in the perpetual
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      */

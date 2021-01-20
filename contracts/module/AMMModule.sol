@@ -33,7 +33,7 @@ library AMMModule {
 
     /**
      * @dev Get the trading result when trader trades with AMM, divided into two parts:
-     *      AMM closes position and AMM opens position
+     *      AMM closes its position and AMM opens its position
      * @param liquidityPool The liquidity pool object of AMM
      * @param perpetualIndex The index of the perpetual in the liquidity pool to trade
      * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
@@ -69,9 +69,9 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the amount of share token to mint when adding liquidity to the liquidity pool.
-     *      If adding liquidity at first time, the amount of share token to mint equals to the
-     *      amount of cash(collateral) to add
+     * @dev Calculate the amount of share token to mint when liquidity provider adds liquidity to
+     *      the liquidity pool. If adding liquidity at first time for the liquidity pool, the amount
+     *      of share token to mint equals to the amount of cash(collateral) to add
      * @param liquidityPool The liquidity pool object of AMM
      * @param shareTotalSupply The total supply of the share token before adding liquidity
      * @param cashToAdd The cash(collateral) added to the liquidity pool
@@ -96,15 +96,15 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the cash(collateral) to return when removing liquidity from the liquidity pool.
-     *      Removing liquidity is forbidden at several cases:
+     * @dev Calculate the cash(collateral) to return when liquidity provider removes liquidity from
+     *      the liquidity pool. Removing liquidity is forbidden at several cases:
      *      1. AMM is unsafe before removing liquidity
      *      2. AMM is unsafe after removing liquidity
      *      3. AMM will offer negative price at any perpetual after removing liquidity
-     *      3. AMM will exceed maximum leverage at any perpetual after removing liquidity
+     *      4. AMM will exceed maximum leverage at any perpetual after removing liquidity
      * @param liquidityPool The liquidity pool object of AMM
      * @param shareTotalSupply The total supply of the share token before removing liquidity
-     * @param shareToRemove The amount of share token to remove
+     * @param shareToRemove The amount of share token to redeem
      * @return cashToReturn The cash(collateral) to return
      */
     function getCashToReturn(
@@ -150,7 +150,8 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the pool margin of AMM when AMM is safe
+     * @dev Calculate the pool margin of AMM when AMM is safe. Pool margin is how much collateral of the pool
+     *      considering the AMM's positions of perpetuals
      * @param context The status of AMM
      * @param slippageFactor The slippage factor of the current perpetual
      * @return poolMargin The pool margin of AMM
@@ -174,7 +175,7 @@ library AMMModule {
      * @param context The status of AMM. The context don't include the current
      *                perpetual, the status of the current perpetual should be added
      * @param slippageFactor The slippage factor of the current perpetual
-     * @return bool If AMM is safe
+     * @return bool True if AMM is safe
      */
     function isAMMSafe(Context memory context, int256 slippageFactor)
         internal
@@ -190,8 +191,8 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when AMM closes position. If AMM is unsafe, the trading price is the best price.
-     *      If the trading price is too bad, it will limit to index price * (1 +/- maximum close price discount)
+     * @dev Get the trading result when AMM closes its position. If AMM is unsafe, the trading price is the best price.
+     *      If the trading price is too bad, it will be limited to index price * (1 +/- maximum close price discount)
      * @param context The status of AMM
      * @param perpetual The perpetual object to trade
      * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
@@ -252,7 +253,7 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when AMM opens position. AMM can't open position when unsafe
+     * @dev Get the trading result when AMM opens its position. AMM can't open position when unsafe
      *      and can't open position to exceed the maximum position
      * @param context The status of AMM
      * @param perpetual The perpetual object to trade
@@ -464,11 +465,11 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the max position of AMM in the perpetual, there are three restrictions to calculate it:
-     *      1. AMM must be safe.
-     *      2. AMM mustn't exceed maximum leverage in any perpetual.
-     *      3. AMM must offer positive price in any perpetual. It's easy to prove that, in the
-     *         perpetual, amm definitely offers positive price when AMM holds short position
+     * @dev Get the max position of AMM in the perpetual, calculated by three restrictions:
+     *      1. AMM must be safe after the trade.
+     *      2. AMM mustn't exceed maximum leverage in any perpetual after the trade.
+     *      3. AMM must offer positive price in any perpetual after the trade. It's easy to prove that, in the
+     *         perpetual, AMM definitely offers positive price when AMM holds short position
      * @param context The status of AMM
      * @param poolMargin The pool margin of AMM
      * @param ammMaxLeverage The max leverage of AMM in the perpetual
@@ -516,10 +517,11 @@ library AMMModule {
     }
 
     /**
-     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe
+     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe. Marin of AMM:
+     *      cash + index price1 * position1 + index price2 * position2 + ...
      * @param context The status of AMM
      * @return int256 The pool margin of AMM
-     * @return bool If AMM is safe
+     * @return bool True if AMM is safe
      */
     function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
         if (isAMMSafe(context, 0)) {

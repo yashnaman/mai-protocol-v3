@@ -26,39 +26,40 @@ library OrderData {
     uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
 
     /*
-     * @dev Check if the order is close-only order, close-only order means the order can only close position
+     * @dev Check if the order is close-only order. Close-only order means the order can only close position
      *      of the trader
      * @param order The order object
-     * @return bool If the order is close-only order
+     * @return bool True if the order is close-only order
      */
     function isCloseOnly(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_CLOSE_ONLY) > 0;
     }
 
     /*
-     * @dev Check if the order is market order, market order means the order which has no limit price
+     * @dev Check if the order is market order. Market order means the order which has no limit price, should be
+     *      executed immediately
      * @param order The order object
-     * @return bool If the order is market order
+     * @return bool True if the order is market order
      */
     function isMarketOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_MARKET_ORDER) > 0;
     }
 
     /*
-     * @dev Check if the order is stop-loss order, stop-loss order means the order will trigger when the
+     * @dev Check if the order is stop-loss order. Stop-loss order means the order will trigger when the
      *      price is worst than the trigger price
      * @param order The order object
-     * @return bool If the order is stop-loss order
+     * @return bool True if the order is stop-loss order
      */
     function isStopLossOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_STOP_LOSS_ORDER) > 0;
     }
 
     /*
-     * @dev Check if the order is take-profit order, take-profit order means the order will trigger when
+     * @dev Check if the order is take-profit order. Take-profit order means the order will trigger when
      *      the price is better than the trigger price
      * @param order The order object
-     * @return bool If the order is take-profit order
+     * @return bool True if the order is take-profit order
      */
     function isTakeProfitOrder(Order memory order) internal pure returns (bool) {
         return (order.flags & MASK_TAKE_PROFIT_ORDER) > 0;
@@ -67,7 +68,7 @@ library OrderData {
     /*
      * @dev Check if the flags contain close-only flag
      * @param flags The flags
-     * @return bool If the flags contain close-only flag
+     * @return bool True if the flags contain close-only flag
      */
     function isCloseOnly(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_CLOSE_ONLY) > 0;
@@ -76,7 +77,7 @@ library OrderData {
     /*
      * @dev Check if the flags contain market flag
      * @param flags The flags
-     * @return bool If the flags contain market flag
+     * @return bool True if the flags contain market flag
      */
     function isMarketOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_MARKET_ORDER) > 0;
@@ -85,7 +86,7 @@ library OrderData {
     /*
      * @dev Check if the flags contain stop-loss flag
      * @param flags The flags
-     * @return bool If the flags contain stop-loss flag
+     * @return bool True if the flags contain stop-loss flag
      */
     function isStopLossOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_STOP_LOSS_ORDER) > 0;
@@ -94,7 +95,7 @@ library OrderData {
     /*
      * @dev Check if the flags contain take-profit flag
      * @param flags The flags
-     * @return bool If the flags contain take-profit flag
+     * @return bool True if the flags contain take-profit flag
      */
     function isTakeProfitOrder(uint32 flags) internal pure returns (bool) {
         return (flags & MASK_TAKE_PROFIT_ORDER) > 0;

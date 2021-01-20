@@ -28,13 +28,13 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     receive() external payable {}
 
     /**
-     * @notice Initialize the liquidity pool
+     * @notice Initialize the liquidity pool and set up its configuration
      * @param operator The operator's address of the liquidity pool
      * @param collateral The collateral's address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
      * @param governor The governor's address of the liquidity pool
      * @param shareToken The share token's address of the liquidity pool
-     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     * @param isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
      *                              when the liquidity pool is running
      */
     function initialize(
@@ -87,7 +87,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Run the liquidity pool. Only operator can run
+     * @notice Run the liquidity pool. Can only called by operator.
+     *         The operator can create new perpetual before running or after running if isFastCreationEnabled is set to true
      */
     function runLiquidityPool() external onlyOperator {
         require(!_liquidityPool.isRunning, "pool is already running");
@@ -95,7 +96,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Claim fee(collateral) to the claimer
+     * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
      * @param claimer The address of the claimer
      * @param amount The amount of fee(collateral) to claim
      */
@@ -104,8 +105,10 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Add liquidity to the liquidity pool. Need to update the funding state and the oracle price
-     *         of each perpetual before and update the funding rate of each perpetual after
+     * @notice Add liquidity to the liquidity pool when the liquidity pool is running.
+     *         Liquidity provider adds collateral to the liquidity pool and gets the share tokens.
+     *         Need to update the funding state and the oracle price of each perpetual before
+     *         and update the funding rate of each perpetual after
      * @param cashToAdd The amount of cash(collateral) to add
      */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
@@ -115,8 +118,10 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Remove liquidity from the liquidity pool. Need to update the funding state and the oracle price
-     *         of each perpetual before and update the funding rate of each perpetual after
+     * @notice Remove liquidity from the liquidity pool when the liquidity pool is running.
+     *         Liquidity provider redeems his share tokens and gets the collateral back.
+     *         Need to update the funding state and the oracle price of each perpetual before
+     *         and update the funding rate of each perpetual after
      * @param shareToRemove The amount of share token to remove
      */
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {

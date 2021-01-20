@@ -21,8 +21,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
 
     /**
-     * @notice Donate collateral to the insurance fund of the perpetual, can only donate when the perpetual's
-     *         state is "normal"
+     * @notice Donate collateral to the insurance fund of the perpetual. Can only called when the perpetual's
+     *         state is "NORMAL". Can improve the security of the perpetual
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param amount The amount of collateral to donate
      */
@@ -36,8 +36,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Deposit collateral to the trader's account of the perpetual, can only deposit when the perpetual's
-     *         state is "normal"
+     * @notice Deposit collateral to the trader's account of the perpetual. Can only called when the perpetual's
+     *         state is "NORMAL". The trader's cash will increase in the perpetual
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
      * @param amount The amount of collatetal to deposit
@@ -53,8 +53,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw collateral from the trader's account of the perpetual, can only withdraw when the perpetual's
-     *         state is "normal". Need to update the funding state and the oracle price of each perpetual before
+     * @notice Withdraw collateral from the trader's account of the perpetual. Can only called when the perpetual's
+     *         state is "NORMAL". Trader must be initial margin safe in the perpetual after withdrawing.
+     *         The trader's cash will decrease in the perpetual.
+     *         Need to update the funding state and the oracle price of each perpetual before
      *         and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -77,8 +79,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Settle the trader's account of the perpetual, can only settle when the perpetual's
-     *         state is "cleared"
+     * @notice If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
+     *         trader's account in the perpetual. Which means to calculate how much the collateral should be returned
+     *         to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
      */
@@ -93,8 +96,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Clear the next active account of the perpetual, can only settle when the perpetual's
-     *         state is "emergency"
+     * @notice Clear the next active account of the perpetual which state is "EMERGENCY" and send gas reward of collateral
+     *         to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
+     *         change to "CLEARED". Active means the trader's account is not empty in the perpetual.
+     *         Empty means cash and position are zero
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function clear(uint256 perpetualIndex)
@@ -107,7 +112,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
 
     /**
      * @notice Trade with AMM in the perpetual, require sender is granted the trade privilege by the trader.
-     *         The trading price is determined by the AMM based on the index price of the perpetual
+     *         The trading price is determined by the AMM based on the index price of the perpetual.
+     *         Trader must be initial margin safe if opening position and margin safe if closing position
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of trader
      * @param amount The position amount of the trade
@@ -134,15 +140,15 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade with AMM by the order, initiated by the broker. Need to update the funding state and
-     *         the oracle price of each perpetual before and update the funding rate of each perpetual after
+     * @notice Trade with AMM by the order, initiated by the broker.
+     *         The trading price is determined by the AMM based on the index price of the perpetual.
+     *         Trader must be initial margin safe if opening position and margin safe if closing position
      * @param orderData The order data object
      * @param amount The position amount of the trade
      * @return int256 The update position amount of the trader after the trade
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
-        syncState
         returns (int256)
     {
         Order memory order = orderData.decodeOrderData();
@@ -163,8 +169,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
 
     /**
      * @dev Trade with AMM in the perpetual. Need to update the funding state and the oracle price of each perpetual
-     *      before and update the funding rate of each perpetual after. Can only trade when the perpetual's state
-     *      is "normal" and the perpetual is not paused
+     *      before and update the funding rate of each perpetual after. Can only called when the perpetual's state
+     *      is "NORMAL" and the perpetual is not paused
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
      * @param amount The position amount of the trade
@@ -192,9 +198,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
 
     /**
      * @notice Liquidate the trader if the trader is not maintenance margin safe. AMM takes the position.
+     *         The liquidate price is determied by AMM. The liquidator gets the keeper gas reward.
+     *         If there is penalty, AMM and the insurance fund will taker it. If there is loss,
+     *         the insurance fund will cover it. If the insurance fund including the donated part is negative,
+     *         the perpetual's state should enter "EMERGENCY".
      *         Need to update the funding state and the oracle price of each perpetual before and
      *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
-     *         is "normal"
+     *         is "NORMAL"
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the liquidated trader
      * @return int256 The update position amount of the liquidated trader after the liquidation
@@ -212,10 +222,14 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. Sender takes the position.
+     * @notice Liquidate the trader if the trader is not maintenance margin safe. The liquidate price is mark price.
+     *         If there is penalty, The liquidator and the insurance fund will taker it. If there is loss, the
+     *         insurance fund will cover it. If the insurance fund including the donated part is negative, the perpetual's
+     *         state should enter "EMERGENCY". The liquidator should be initial margin safe after the liquidation if
+     *         he has opened position. If not, he should be maintenance margin safe.
      *         Need to update the funding state and the oracle price of each perpetual before and
      *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
-     *         is "normal"
+     *         is "NORMAL"
      * @param perpetualIndex The index of perpetual
      * @param trader The address of liquidated trader
      * @param amount The amount of liquidation

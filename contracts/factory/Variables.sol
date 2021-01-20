@@ -42,6 +42,10 @@ contract Variables {
         return _vaultFeeRate;
     }
 
+    /**
+     * @notice Set the vault fee rate. Can only called by vault
+     * @param newVaultFeeRate The new value of the vault fee rate
+     */
     function setVaultFeeRate(int256 newVaultFeeRate) public {
         require(msg.sender == _vault, "caller must be vault");
         require(newVaultFeeRate >= 0, "negative vault fee rate");
@@ -60,7 +64,7 @@ contract Variables {
     }
 
     /**
-     * @notice Get the address of the access controller, it's always itself
+     * @notice Get the address of the access controller. It's always its own address
      * @return address The address of the access controller
      */
     function getAccessController() public view returns (address) {

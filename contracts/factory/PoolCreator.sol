@@ -48,7 +48,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     );
 
     /**
-     * @notice Create a liquidity pool with the latest implementation
+     * @notice Create a liquidity pool with the latest implementation. The operator is sender
      * @param collateral The collateral address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
      * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
@@ -73,7 +73,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @notice Create a liquidity pool with the specific implementation
+     * @notice Create a liquidity pool with the specific implementation. The operator is sender
      * @param implementation The address of the implementation
      * @param collateral The collateral address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
@@ -100,7 +100,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create a liquidity pool with the specific implementation
+     * @dev Create a liquidity pool with the specific implementation. The operator is sender
      * @param implementation The address of implementation
      * @param collateral The collateral address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
@@ -151,7 +151,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create a clone contract of the implementation
+     * @dev Create a clone contract of the implementation of liquidity pool
      * @param implementation The address of the implementation
      * @return address The address of the cloned contract
      */
@@ -161,7 +161,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create an upgradeable proxy contract of the implementation
+     * @dev Create an upgradeable proxy contract of the implementation of liquidity pool
      * @param implementation The address of the implementation
      * @param admin The admin address of the created contract
      * @param argsHash The hash of the arguments for the creation

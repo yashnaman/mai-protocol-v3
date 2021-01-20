@@ -29,7 +29,7 @@ contract Implementation is Ownable {
     constructor() Ownable() {}
 
     /**
-     * @notice Create the implementation by sender, the implementation should not be created before
+     * @notice Create the implementation of the liquidity pool by sender. The implementation should not be created before
      * @param implementation The address of the implementation
      * @param compatibility The compatibility of the implementation
      * @param note The note of the implementation
@@ -54,7 +54,7 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Get the latest implementation, revert if there is no implementation
+     * @notice Get the latest created implementation of liquidity pool, revert if there is no implementation
      * @return address The address of the latest implementation
      */
     function getLatestVersion() public view returns (address) {
@@ -63,8 +63,8 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Get the description of the implementation.
-     *         Description contains creator, create time, compatibility and note.
+     * @notice Get the description of the implementation of liquidity pool.
+     *         Description contains creator, create time, compatibility and note
      * @param implementation The address of the implementation
      * @return creator The creator of the implementation
      * @return creationTime The create time of the implementation
@@ -89,20 +89,20 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @notice Check if the implementation is created
+     * @notice Check if the implementation of liquidity pool is created
      * @param implementation The address of the implementation
-     * @return bool If the implementation is created
+     * @return bool True if the implementation is created
      */
     function isVersionValid(address implementation) public view returns (bool) {
         return _versions.contains(implementation);
     }
 
     /**
-     * @notice Check if the implementation target is compatible with the implementation base.
+     * @notice Check if the implementation of liquidity pool target is compatible with the implementation base.
      *         Being compatible means having larger compatibility
      * @param target The address of implementation target
      * @param base The address of implementation base
-     * @return bool If the implementation target is compatible with the implementation base
+     * @return bool True if the implementation target is compatible with the implementation base
      */
     function isVersionCompatible(address target, address base) public view returns (bool) {
         require(isVersionValid(target), "target version is invalid");
@@ -111,7 +111,7 @@ contract Implementation is Ownable {
     }
 
     /**
-     * @dev Get a certain number of implementations starting with the index
+     * @dev Get a certain number of implementations of liquidity pool starting with the index
      * @param start The index to start with
      * @param count The number of implementations to get.
      *              If there isn't the number of implementations left after the index, returning the rest of implementations

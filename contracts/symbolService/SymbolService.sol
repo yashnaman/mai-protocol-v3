@@ -35,14 +35,14 @@ contract SymbolService is Ownable {
     /**
      * @notice Check if the factory is whitelisted
      * @param factory The address of the factory
-     * @return bool If the factory is whitelisted
+     * @return bool True if the factory is whitelisted
      */
     function isWhitelistedFactory(address factory) public view returns (bool) {
         return _whitelistedFactories.contains(factory);
     }
 
     /**
-     * @notice Add the factory to the whitelist, only owner can add
+     * @notice Add the factory to the whitelist. Can only called by owner
      * @param factory The address of the factory
      */
     function addWhitelistedFactory(address factory) public onlyOwner {
@@ -52,7 +52,7 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Remove the factory from the whitelist, only owner can remove
+     * @notice Remove the factory from the whitelist. Can only called by owner
      * @param factory The address of the factory
      */
     function removeWhitelistedFactory(address factory) public onlyOwner {
@@ -109,8 +109,8 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Allocate the perpetual an unreserved symbol, the perpetual must have no symbol before.
-     *         Only whitelisted factory can allocate
+     * @notice Allocate the perpetual an unreserved symbol The perpetual must have no symbol before.
+     *         Can only called by whitelisted factory
      * @param liquidityPool The address of the liquidity pool
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @return symbol The symbol allocated
@@ -135,8 +135,8 @@ contract SymbolService is Ownable {
     }
 
     /**
-     * @notice Assign perpetual a reserved symbol, perpetual must have unreserved symbol
-     *         and not have reserved symbol before. Only owner can assign.
+     * @notice Assign perpetual a reserved symbol. The perpetual must have unreserved symbol
+     *         and not have reserved symbol before. Can only called by owner
      * @param liquidityPool The address of the liquidity pool
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param symbol The symbol assigned

@@ -33,7 +33,7 @@ contract AccessControl {
     }
 
     /**
-     * @notice Revoke the privilege of the grantee, only the grantor can revoke
+     * @notice Revoke the privilege of the grantee. Can only called by the grantor.
      * @param grantee The address of the grantee
      * @param privilege The privilege to revoke.
      *                  There are three kinds of valid privilege: deposit, withdraw, trade

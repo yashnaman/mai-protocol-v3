@@ -31,8 +31,8 @@ contract Getter is Storage {
 
     /**
      * @notice Get the info of the liquidity pool
-     * @return isRunning If the liquidity pool is running
-     * @return isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     * @return isRunning True if the liquidity pool is running
+     * @return isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
      *                               when the liquidity pool is running
      * @return addresses The related addresses of the liquidity pool
      * @return vaultFeeRate The vault fee rate of the liquidity pool
@@ -166,7 +166,7 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the account info of the trader. . Need to update the funding state and the oracle price
+     * @notice Get the account info of the trader. Need to update the funding state and the oracle price
      *         of each perpetual before and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -175,8 +175,8 @@ contract Getter is Storage {
      * @return availableCash The available cash of the account
      * @return margin The margin of the account
      * @return settleableMargin The settleable margin of the account
-     * @return isInitialMarginSafe If the account is initial margin safe
-     * @return isMaintenanceMarginSafe If the account is maintenance margin safe
+     * @return isInitialMarginSafe True if the account is initial margin safe
+     * @return isMaintenanceMarginSafe True if the account is maintenance margin safe
      * @return isMarginSafe True if the total value of margin account is beyond 0
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
@@ -210,6 +210,13 @@ contract Getter is Storage {
         isMarginSafe = perpetual.isMarginSafe(trader, markPrice);
     }
 
+    /**
+     * @notice Get the number of active accounts in the perpetual.
+     *         Active means the trader's account is not empty in the perpetual.
+     *         Empty means cash and position are zero
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @return activeAccountCount The number of active accounts in the perpetual
+     */
     function getActiveAccountCount(uint256 perpetualIndex)
         public
         view
@@ -219,6 +226,15 @@ contract Getter is Storage {
         activeAccountCount = _liquidityPool.perpetuals[perpetualIndex].activeAccounts.length();
     }
 
+    /**
+     * @notice Get the active accounts in the perpetual whose index between begin and end.
+     *         Active means the trader's account is not empty in the perpetual.
+     *         Empty means cash and position are zero
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param begin The begin index
+     * @param end The end index
+     * @return result The active accounts in the perpetual whose index between begin and end
+     */
     function listActiveAccounts(
         uint256 perpetualIndex,
         uint256 begin,
@@ -229,7 +245,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the progress of clearing active accounts
+     * @notice Get the progress of clearing active accounts.
+     *         Return the number of total active accounts and the number of active accounts not cleared
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @return left The left active accounts
      * @return total The total active accounts
@@ -248,7 +265,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the pool margin of the liquidity pool
+     * @notice Get the pool margin of the liquidity pool.
+     *         Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
      * @return poolMargin The pool margin of the liquidity pool
      */
     function getPoolMargin() public view returns (int256 poolMargin) {
@@ -257,7 +275,8 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the trading result when trader trades with AMM
+     * @notice Get the update cash amount and the update position amount of trader
+     *         if trader trades with AMM in the perpetual
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param amount The trading amount of position
      * @return deltaCash The update cash(collateral) of the trader after the trade
@@ -278,17 +297,17 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get claimable fee of the operator
-     * @return int256 The claimable fee of the operator
+     * @notice Get claimable fee of the operator in the liquidity pool
+     * @return int256 The claimable fee of the operator in the liquidity pool
      */
     function getClaimableOperatorFee() public view returns (int256) {
         return _liquidityPool.claimableFees[_liquidityPool.operator];
     }
 
     /**
-     * @notice Get claimable fee of the claimer
+     * @notice Get claimable fee of the claimer in the liquidity pool
      * @param claimer The address of the claimer
-     * @return int256 The claimable fee of the claimer
+     * @return int256 The claimable fee of the claimer in the liquidity pool
      */
     function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];

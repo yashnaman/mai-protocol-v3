@@ -32,9 +32,9 @@ contract Governance is Storage {
 
     /**
      * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator()
-     *         next to complete the action
-     *         Only operator can transfer if the operator exists.
-     *         Only governor can transfer if the operator doesn't exist
+     *         next to complete the transfer
+     *         Can only called by the operator if the operator exists.
+     *         Can only called by the governor if the operator doesn't exist
      * @param newOperator The address of the new operator
      */
     function transferOperator(address newOperator) external {
@@ -48,7 +48,8 @@ contract Governance is Storage {
 
     /**
      * @notice Claim the ownership of the liquidity pool to sender.
-     *         Sender must be transferred the ownership before
+     *         Sender must be transferred the ownership before.
+     *         Will claim all the claimable fee of previous operator
      */
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;
@@ -62,15 +63,14 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Revoke the operator of the liquidity pool.
-     *         Only operator can revoke
+     * @notice Revoke the operator of the liquidity pool. Can only called by the operator
      */
     function revokeOperator() external onlyOperator {
         _liquidityPool.revokeOperator();
     }
 
     /**
-     * @notice Claim the fee of the operator. Only operator can claim
+     * @notice Claim the claimable fee of the operator. Can only called by the operator
      */
     function claimOperatorFee() external onlyOperator {
         address operator = _liquidityPool.operator;
@@ -78,8 +78,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the parameter of the liquidity pool.
-     *         Only governor can set
+     * @notice Set the parameter of the liquidity pool. Can only called by the governor
      * @param key The key of the parameter
      * @param newValue The new value of the parameter
      */
@@ -88,8 +87,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the base parameter of the perpetual.
-     *         Only governor can set
+     * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param key The key of the base parameter
      * @param newValue The new value of the base parameter
@@ -103,8 +101,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the risk parameter of the perpetual.
-     *         Only governor can set
+     * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param key The key of the risk parameter
      * @param newValue The new value of the risk parameter, must between minimum value and maximum value
@@ -122,8 +119,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Update the risk parameter of the perpetual.
-     *         Only operator can update
+     * @notice Update the risk parameter of the perpetual. Can only called by the operator
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param key The key of the risk parameter
      * @param newValue The new value of the risk parameter, must between minimum value and maximum value
@@ -137,9 +133,12 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Force to set the state of the perpetual to "emergency". Need to update the funding state and
-     *         the oracle price of each perpetual before and update the funding rate of each perpetual after
-     *         Only governor can set
+     * @notice Force tp set the state of the perpetual to "EMERGENCY".
+     *         Can only called by the governor.
+     *         Must rebalance first. After that the perpetual is not allowed to trade, deposit and withdraw.
+     *         The price of the perpetual is freezed to the settlement price.
+     *         Need to update the funding state and the oracle price of each perpetual before
+     *         and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function forceToSetEmergencyState(uint256 perpetualIndex) external syncState onlyGovernor {
@@ -147,8 +146,12 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the state of the perpetual to "emergency" if AMM isn't maintenance margin safe. Need to update the funding
-     *         state and the oracle price of each perpetual before and update the funding rate of each perpetual after
+     * @notice Set the state of the perpetual to "EMERGENCY". Must rebalance first.
+     *         Can only called when AMM is not maintenance margin safe in the perpetual.
+     *         After that the perpetual is not allowed to trade, deposit and withdraw.
+     *         The price of the perpetual is freezed to the settlement price.
+     *         Need to update the funding state and the oracle price of each perpetual before
+     *         and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function setEmergencyState(uint256 perpetualIndex) external syncState {

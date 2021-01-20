@@ -59,6 +59,11 @@ library LiquidityPoolModule {
     );
     event RunLiquidityPool();
 
+     /**
+     * @dev Get the vault's address of the liquidity pool
+     * @param liquidityPool The liquidity pool object
+     * @return vault The vault's address of the liquidity pool
+     */
     function getVault(LiquidityPoolStorage storage liquidityPool)
         internal
         view
@@ -67,6 +72,11 @@ library LiquidityPoolModule {
         vault = IPoolCreator(liquidityPool.creator).getVault();
     }
 
+     /**
+     * @dev Get the vault fee rate of the liquidity pool
+     * @param liquidityPool The liquidity pool object
+     * @return vaultFeeRate The vault fee rate of the liquidity pool
+     */
     function getVaultFeeRate(LiquidityPoolStorage storage liquidityPool)
         internal
         view
@@ -76,7 +86,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Get the available pool cash(collateral) of the liquidity pool excluding the specific perpetual
+     * @notice Get the available pool cash(collateral) of the liquidity pool excluding the specific perpetual. Available cash
+     *         in a perpetual means: margin - initial margin
      * @param liquidityPool The liquidity pool object
      * @param exclusiveIndex The index of perpetual in the liquidity pool to exclude,
      *                       set to liquidityPool.perpetuals.length to skip excluding.
@@ -103,7 +114,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Get the available pool cash(collateral) of the liquidity pool
+     * @notice Get the available pool cash(collateral) of the liquidity pool. Sum of available cash of AMM in every perpetual
+     *         in the liquidity pool, and add the pool cash
      * @param liquidityPool The liquidity pool object
      * @return availablePoolCash The available pool cash(collateral) of the liquidity pool
      */
@@ -119,7 +131,7 @@ library LiquidityPoolModule {
      * @notice Check if AMM is maintenance margin safe in the perpetual, need to rebalance before checking
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return isSafe If AMM is maintenance margin safe in the perpetual
+     * @return isSafe True if AMM is maintenance margin safe in the perpetual
      */
     function isAMMMaintenanceMarginSafe(
         LiquidityPoolStorage storage liquidityPool,
@@ -134,14 +146,14 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Initialize the liquidity pool
+     * @notice Initialize the liquidity pool and set up its configuration
      * @param liquidityPool The liquidity pool object
      * @param collateral The collateral's address of the liquidity pool
      * @param collateralDecimals The collateral's decimals of the liquidity pool
      * @param operator The operator's address of the liquidity pool
      * @param governor The governor's address of the liquidity pool
      * @param shareToken The share token's address of the liquidity pool
-     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
+     * @param isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
      *                              when the liquidity pool is running
      */
     function initialize(
@@ -170,7 +182,9 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Create and initialize new perpetual in the liquidity pool
+     * @notice Create and initialize new perpetual in the liquidity pool. Can only called by the operator
+     *         if the liquidity pool is running or isFastCreationEnabled is set to true.
+     *         Otherwise can only called by the governor
      * @param liquidityPool The liquidity pool object
      * @param oracle The oracle's address of the perpetual
      * @param coreParams The core parameters of the perpetual
@@ -215,7 +229,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Run the liquidity pool, the operator can create new perpetual before running
+     * @notice Run the liquidity pool. Can only called by the operator. The operator can create new perpetual before running
      *         or after running if isFastCreationEnabled is set to true
      * @param liquidityPool The liquidity pool object
      */
@@ -230,7 +244,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the parameter of the liquidity pool
+     * @notice Set the parameter of the liquidity pool. Can only called by the governor
      * @param liquidityPool The liquidity pool object
      * @param key The key of the parameter
      * @param newValue The new value of the parameter
@@ -249,7 +263,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the base parameter of the perpetual
+     * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of perpetual in the liquidity pool
      * @param key The key of the base parameter
@@ -268,7 +282,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the risk parameter of the perpetual
+     * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param key The key of the risk parameter
@@ -291,7 +305,10 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "emergency", must rebalance first
+     * @notice Set the state of the perpetual to "EMERGENCY". Must rebalance first.
+     *         Can only called when AMM is not maintenance margin safe in the perpetual.
+     *         After that the perpetual is not allowed to trade, deposit and withdraw.
+     *         The price of the perpetual is freezed to the settlement price
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
@@ -304,8 +321,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "cleared",
-     *         call this method only when all the active accounts is cleared
+     * @notice Set the state of the perpetual to "CLEARED". Add the collateral of AMM in the perpetual to the pool cash.
+     *         Can only called when all the active accounts in the perpetual are cleared
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
@@ -321,7 +338,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Update the risk parameter of the perpetual
+     * @notice Update the risk parameter of the perpetual. Can only called by the operator
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param key The key of the risk parameter
@@ -340,8 +357,9 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator()
-     *         next to complete the action
+     * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator() function
+     *         next to complete the transfer. Can only called by the operator. If no operator exists, can only
+     *         called by the governor
      * @param liquidityPool The liquidity pool object
      * @param newOperator The address of the new operator
      */
@@ -355,8 +373,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Claim the ownership of the liquidity pool to the claimer,
-     *         the claimer must be transferred the ownership before
+     * @notice Claim the ownership of the liquidity pool to the claimer.
+     *         The claimer must be transferred the ownership before
      * @param liquidityPool The liquidity pool object
      * @param claimer The address of claimer
      */
@@ -373,7 +391,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Revoke the operator of the liquidity pool, only the operator can revoke
+     * @notice Revoke the operator of the liquidity pool. Can only called by the operator
      * @param liquidityPool The liquidity pool object
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
@@ -383,7 +401,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Update the funding state of each perpetual of the liquidity pool
+     * @notice Update the funding state of each perpetual of the liquidity pool. Funding payment of every account in the
+     *         liquidity pool is updated
      * @param liquidityPool The liquidity pool object
      * @param currentTime The current timestamp
      */
@@ -436,7 +455,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Donate collateral to the insurance fund of the perpetual
+     * @notice Donate collateral to the insurance fund of the perpetual. Can improve the security of the perpetual.
+     *         Can only called when the state of the perpetual is "NORMAL"
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param amount The amount of collateral to donate
@@ -452,8 +472,9 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Deposit collateral to the trader's account of the perpetual. Activate the perpetual for
-     *         the trader if the account is empty before depositing
+     * @notice Deposit collateral to the trader's account of the perpetual. The trader's cash will increase.
+     *         Activate the perpetual for the trader if the account in the perpetual is empty before depositing.
+     *         Empty means cash and position are zero
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -473,8 +494,10 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Withdraw collateral from the trader's account of the perpetual. Deactivate the perpetual
-     *         for the trader if the account is empty after withdrawing
+     * @notice Withdraw collateral from the trader's account of the perpetual. The trader's cash will decrease.
+     *         Trader must be initial margin safe in the perpetual after withdrawing.
+     *         Deactivate the perpetual for the trader if the account in the perpetual is empty after withdrawing.
+     *         Empty means cash and position are zero
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -495,7 +518,9 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Settle the trader's account of the perpetual and send the trader the left collateral
+     * @notice If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
+     *         trader's account in the perpetual. Which means to calculate how much the collateral should be returned
+     *         to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
@@ -511,9 +536,10 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Clear the next active account of the perpetual which state is "emergency" and send
-     *         gas reward of collateral to sender. If all active accounts are cleared,
-     *         the perpetual's state will change to "cleared"
+     * @notice Clear the next active account of the perpetual which state is "EMERGENCY" and send gas reward of collateral
+     *         to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
+     *         change to "CLEARED". Active means the trader's account is not empty in the perpetual.
+     *         Empty means cash and position are zero
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
@@ -531,7 +557,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Add collateral to the liquidity pool and get the minted share token
+     * @notice Add collateral to the liquidity pool and get the minted share tokens.
+     *         The share token is the credential and use to get the collateral back when removing liquidity.
      * @param liquidityPool The liquidity pool object
      * @param trader The address of the trader that adding liquidity
      * @param cashToAdd The cash(collateral) to add
@@ -554,7 +581,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Remove collateral from the liquidity pool and redeem the share token
+     * @notice Remove collateral from the liquidity pool and redeem the share tokens when the liquidity pool is running
      * @param liquidityPool The liquidity pool object
      * @param trader The address of the trader that removing liquidity
      * @param shareToRemove The amount of the share token to redeem
@@ -598,7 +625,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Claim claimable fee(collateral) of the claimer
+     * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
      * @param liquidityPool The liquidity pool object
      * @param claimer The address of the claimer
      * @param amount The amount of fee(collateral) to claim, must less than claimable amount
@@ -616,8 +643,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice To keep the AMM's margin equal to initial margin in the perpetual as posiible,
-     *         transfer collateral between the perpetual and the liquidity pool's cash, then
+     * @notice To keep the AMM's margin equal to initial margin in the perpetual as posiible.
+     *         Transfer collateral between the perpetual and the liquidity pool's cash, then
      *         update the AMM's cash in perpetual. The liquidity pool's cash can be negative,
      *         but the available cash can't. If AMM need to transfer and the available cash
      *         is not enough, transfer all the rest available cash of collateral
@@ -674,12 +701,12 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Check if the trader is authorized by the grantor. Any trader is authorized by himself
+     * @notice Check if the trader is authorized the privilege by the grantor. Any trader is authorized by himself
      * @param liquidityPool The liquidity pool object
      * @param trader The address of the trader
      * @param grantor The address of the grantor
      * @param privilege The privilege
-     * @return isGranted If the trader is authorized
+     * @return isGranted True if the trader is authorized
      */
     function isAuthorized(
         LiquidityPoolStorage storage liquidityPool,
