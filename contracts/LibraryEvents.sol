@@ -18,7 +18,8 @@ contract LibraryEvents {
         address indexed trader,
         int256 position,
         int256 price,
-        int256 fee
+        int256 fee,
+        int256 lpFee
     );
     event Liquidate(
         uint256 perpetualIndex,
