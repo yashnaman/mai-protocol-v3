@@ -40,7 +40,7 @@ contract LibraryEvents {
         int256 maxValue
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event InsuranceFundToLP(uint256 perpetualIndex, int256 amount);
+    event transferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
 
     // pool
     event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);

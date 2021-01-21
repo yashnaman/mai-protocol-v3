@@ -42,7 +42,7 @@ library PerpetualModule {
         int256 maxValue
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event InsuranceFundToLP(uint256 perpetualIndex, int256 amount);
+    event transferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
 
     /**
      * @dev Get the mark price of the perpetual. If the state of the perpetual is not "NORMAL",
@@ -525,6 +525,7 @@ library PerpetualModule {
                 if (newInsuranceFund > perpetual.insuranceFundCap) {
                     penaltyToLP = newInsuranceFund.sub(perpetual.insuranceFundCap);
                     newInsuranceFund = perpetual.insuranceFundCap;
+                    emit transferExcessInsuranceFundToLP(perpetual.id, penaltyToLP);
                 }
             } else {
                 if (newInsuranceFund < 0) {
@@ -536,7 +537,6 @@ library PerpetualModule {
             }
             perpetual.insuranceFund = newInsuranceFund;
         }
-        emit InsuranceFundToLP(perpetual.id, penaltyToLP);
     }
 
     /**
