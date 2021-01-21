@@ -96,6 +96,11 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
+     * @notice If you want to get the real-time data, call this function first
+     */
+    function forceToSyncState() public syncState {}
+
+    /**
      * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
      * @param claimer The address of the claimer
      * @param amount The amount of fee(collateral) to claim

@@ -510,8 +510,13 @@ library LiquidityPoolModule {
         int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(
+            perpetual.getPosition(trader) == 0 || !IOracle(perpetual.oracle).isMarketClosed(),
+            "market is closed now"
+        );
         rebalance(liquidityPool, perpetualIndex);
-        if (liquidityPool.perpetuals[perpetualIndex].withdraw(trader, amount)) {
+        if (perpetual.withdraw(trader, amount)) {
             IPoolCreator(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
         }
         liquidityPool.transferToUser(payable(trader), amount);

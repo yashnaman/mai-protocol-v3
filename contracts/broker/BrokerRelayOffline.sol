@@ -152,7 +152,7 @@ contract BrokerRelayOffline is ReentrancyGuardUpgradeable {
                 ILiquidityPool(order.liquidityPool).brokerTrade(compressedOrders[i], amount)
             returns (int256 filledAmount) {
                 _fillOrder(orderHash, filledAmount);
-                _transfer(order.trader, order.broker, gasReward);
+                _transfer(order.trader, order.relayer, gasReward);
                 emit TradeSuccess(orderHash, order, filledAmount, gasReward);
             } catch Error(string memory reason) {
                 revert(reason);

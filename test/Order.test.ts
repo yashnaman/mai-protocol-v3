@@ -152,6 +152,8 @@ describe("Order", () => {
         expect(order.flags).to.equal(0xffffffff);
         expect(order.salt).to.equal(14);
 
+        console.log(await testOrder.orderHash(order));
+
         expect(signature.slice(2, 66)).to.equal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); // r
         expect(signature.slice(66, 130)).to.equal("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"); // s
         expect(signature.slice(130, 134)).to.equal("1b01"); // v

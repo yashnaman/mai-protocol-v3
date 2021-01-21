@@ -24,6 +24,31 @@ contract TestTrade is TestLiquidityPool {
     address internal _vault;
     int256 internal _vaultFeeRate;
 
+    constructor() {
+        _liquidityPool.creator = address(this);
+        _liquidityPool.accessController = address(this);
+    }
+
+    function getAccessController() public view returns (address) {
+        return address(this);
+    }
+
+    function isGranted(
+        address grantor,
+        address grantee,
+        uint256 privilege
+    ) public view returns (bool) {
+        return false;
+    }
+
+    function _isValid(uint256 privilege) private pure returns (bool) {
+        return privilege > 0 && privilege <= Constant.PRIVILEGE_GUARD;
+    }
+
+    function getWeth() public view returns (address) {
+        return address(this);
+    }
+
     function getVault() public view returns (address) {
         return _vault;
     }
@@ -33,7 +58,6 @@ contract TestTrade is TestLiquidityPool {
     }
 
     function setVault(address vault, int256 vaultFeeRate) public {
-        _liquidityPool.creator = address(this);
         _vault = vault;
         _vaultFeeRate = vaultFeeRate;
     }
@@ -98,9 +122,15 @@ contract TestTrade is TestLiquidityPool {
         address referrer,
         int256 deltaCash,
         int256 deltaPosition
-    ) public returns (int256 totalFee) {
+    ) public returns (int256 lpFee, int256 totalFee) {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        totalFee = _liquidityPool.postTrade(perpetual, trader, referrer, deltaCash, deltaPosition);
+        (lpFee, totalFee) = _liquidityPool.postTrade(
+            perpetual,
+            trader,
+            referrer,
+            deltaCash,
+            deltaPosition
+        );
     }
 
     function validatePrice(

@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
+import "../interface/IOracle.sol";
+
 import "../libraries/OrderData.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
@@ -33,7 +35,8 @@ library TradeModule {
         address indexed trader,
         int256 position,
         int256 price,
-        int256 fee
+        int256 fee,
+        int256 lpFee
     );
     event Liquidate(
         uint256 perpetualIndex,
@@ -67,6 +70,7 @@ library TradeModule {
         uint32 flags
     ) public returns (int256 tradeAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
         // close only
         if (flags.isCloseOnly() || flags.isStopLossOrder() || flags.isTakeProfitOrder()) {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
@@ -85,14 +89,15 @@ library TradeModule {
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
 
-        int256 totalFee =
+        (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
         emit Trade(
             perpetualIndex,
             trader,
             deltaPosition.neg(),
             deltaCash.wdiv(deltaPosition).abs(),
-            totalFee
+            totalFee,
+            lpFee
         );
         tradeAmount = deltaPosition.neg();
     }
@@ -139,7 +144,6 @@ library TradeModule {
 
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-
         require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
 
         if (availableMargin <= 0) {
@@ -176,6 +180,7 @@ library TradeModule {
      * @param referrer The address of the referrer
      * @param deltaCash The update cash(collateral) amount of the trader after the trade
      * @param deltaPosition The update position amount of the trader after the trade
+     * @return lpFee Amount of fee for lp provider
      * @return totalFee The total fee collected from the trader after the trade
      */
     function postTrade(
@@ -185,11 +190,20 @@ library TradeModule {
         address referrer,
         int256 deltaCash,
         int256 deltaPosition
-    ) internal returns (int256 totalFee) {
+    ) internal returns (int256 lpFee, int256 totalFee) {
         // fees
         bool hasOpened = hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
-        (int256 lpFee, int256 operatorFee, int256 vaultFee, int256 referralRebate) =
-            getFees(liquidityPool, perpetual, trader, referrer, deltaCash.abs(), hasOpened);
+        int256 operatorFee;
+        int256 vaultFee;
+        int256 referralRebate;
+        (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
+            liquidityPool,
+            perpetual,
+            trader,
+            referrer,
+            deltaCash.abs(),
+            hasOpened
+        );
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
@@ -225,12 +239,12 @@ library TradeModule {
         address trader
     ) public returns (int256) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 amount = perpetual.getPosition(trader);
+        int256 position = perpetual.getPosition(trader);
         int256 markPrice = perpetual.getMarkPrice();
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
-            liquidityPool.queryTradeWithAMM(perpetualIndex, amount, true);
+            liquidityPool.queryTradeWithAMM(perpetualIndex, position, true);
         require(deltaPosition != 0, "insufficient liquidity");
         // 2. trade
         int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
@@ -240,11 +254,12 @@ library TradeModule {
             deltaPosition.neg(),
             deltaCash.add(perpetual.keeperGasReward).neg()
         );
-        // 3. penalty
+        // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
-            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice)
-            );
+            markPrice
+                .wmul(perpetual.liquidationPenaltyRate)
+                .min(perpetual.getMargin(trader, markPrice).wdiv(position.abs()))
+                .wmul(deltaPosition.abs());
         {
             int256 penaltyToFund;
             int256 penaltyToTaker;
@@ -303,18 +318,18 @@ library TradeModule {
         amount = getMaxPositionToClose(position, amount);
         int256 markPrice = perpetual.getMarkPrice();
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
-        // 0. price / amountyo
-        int256 liquidatePrice = markPrice;
-        validatePrice(amount >= 0, liquidatePrice, limitPrice);
-        (int256 deltaCash, int256 deltaPosition) = (liquidatePrice.wmul(amount), amount.neg());
+        // 0. price / amount
+        validatePrice(amount >= 0, markPrice, limitPrice);
+        (int256 deltaCash, int256 deltaPosition) = (markPrice.wmul(amount), amount.neg());
         // 1. execute
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
-        // 2. penalty
+        // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
-            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice)
-            );
+            markPrice
+                .wmul(perpetual.liquidationPenaltyRate)
+                .min(perpetual.getMargin(trader, markPrice).wdiv(position.abs()))
+                .wmul(deltaPosition.abs());
         {
             int256 penaltyToFund;
             int256 penaltyToTaker;
@@ -340,14 +355,7 @@ library TradeModule {
                 "trader maintenance margin unsafe"
             );
         }
-        emit Liquidate(
-            perpetualIndex,
-            liquidator,
-            trader,
-            deltaPosition.neg(),
-            liquidatePrice,
-            penalty
-        );
+        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), markPrice, penalty);
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);

@@ -14,7 +14,7 @@ contract TestGovernance is Governance {
         _governor = governor;
     }
 
-    function setOperator(address operator) public {
+    function setOperatorNoAuth(address operator) public {
         _liquidityPool.operator = operator;
     }
 

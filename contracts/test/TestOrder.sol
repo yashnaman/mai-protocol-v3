@@ -52,7 +52,7 @@ contract TestOrder is Storage {
         return order.salt;
     }
 
-    function getSigner(Order memory order, bytes memory signature) public pure returns (address) {
+    function getSigner(Order memory order, bytes memory signature) public view returns (address) {
         return Signature.getSigner(order.getOrderHash(), signature);
     }
 

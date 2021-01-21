@@ -30,6 +30,11 @@ contract Governance is Storage {
         _;
     }
 
+    function setOperator(address newOperator) external onlyGovernor {
+        require(_liquidityPool.operator == address(0), "can only be called when no operator");
+        _liquidityPool.transferOperator(newOperator);
+    }
+
     /**
      * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator()
      *         next to complete the transfer

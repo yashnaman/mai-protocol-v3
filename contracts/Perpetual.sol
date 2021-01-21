@@ -66,13 +66,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    )
-        external
-        syncState
-        onlyNotPaused(perpetualIndex)
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        nonReentrant
-    {
+    ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
+        require(
+            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isMarketClosed(),
+            "market is closed now"
+        );
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
         _liquidityPool.withdraw(perpetualIndex, trader, amount);
@@ -147,10 +145,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param amount The position amount of the trade
      * @return int256 The update position amount of the trader after the trade
      */
-    function brokerTrade(bytes memory orderData, int256 amount)
-        external
-        returns (int256)
-    {
+    function brokerTrade(bytes memory orderData, int256 amount) external returns (int256) {
         Order memory order = orderData.decodeOrderData();
         bytes memory signature = orderData.decodeSignature();
         _liquidityPool.validateSignature(order, signature);
@@ -186,13 +181,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    )
-        internal
-        syncState
-        onlyNotPaused(perpetualIndex)
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        returns (int256)
-    {
+    ) internal syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) returns (int256) {
         return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 

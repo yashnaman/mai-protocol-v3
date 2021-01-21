@@ -120,6 +120,11 @@ contract Getter is Storage {
             int256[34] memory nums
         )
     {
+        uint256 currentTime = block.timestamp;
+        _liquidityPool.updateFundingState(currentTime);
+        _liquidityPool.updatePrice(currentTime);
+        _liquidityPool.updateFundingRate();
+
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         state = perpetual.state;
         oracle = perpetual.oracle;
@@ -310,12 +315,6 @@ contract Getter is Storage {
      */
     function getClaimableFee(address claimer) public view returns (int256) {
         return _liquidityPool.claimableFees[claimer];
-    }
-
-    /**
-     * @notice If you want to get the real-time data, call this function first
-     */
-    function forceToSyncState() syncState public {
     }
 
     bytes[50] private __gap;

@@ -20,7 +20,7 @@ library Signature {
      */
     function getSigner(bytes32 signedHash, bytes memory signature)
         internal
-        pure
+        view
         returns (address signer)
     {
         bytes32 r;
@@ -38,6 +38,11 @@ library Signature {
         } else if (signType != SIGN_TYPE_EIP712) {
             revert("unsupported sign type");
         }
+        require(
+            uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+            "ECDSA: invalid signature 's' value"
+        );
+        require(v == 27 || v == 28, "ECDSA: invalid signature 'v' value");
         signer = ecrecover(signedHash, v, r, s);
         require(signer != address(0), "invalid signature");
     }
