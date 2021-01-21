@@ -27,7 +27,8 @@ contract LibraryEvents {
         address indexed trader,
         int256 amount,
         int256 price,
-        int256 penalty
+        int256 penalty,
+        int256 penaltyToLP
     );
 
     event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
@@ -39,6 +40,7 @@ contract LibraryEvents {
         int256 maxValue
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event InsuranceFundToLP(uint256 perpetualIndex, int256 amount);
 
     // pool
     event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);

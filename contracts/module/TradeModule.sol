@@ -44,7 +44,8 @@ library TradeModule {
         address indexed trader,
         int256 amount,
         int256 price,
-        int256 penalty
+        int256 penalty,
+        int256 penaltyToLP
     );
 
     /**
@@ -260,9 +261,9 @@ library TradeModule {
                 .wmul(perpetual.liquidationPenaltyRate)
                 .min(perpetual.getMargin(trader, markPrice).wdiv(position.abs()))
                 .wmul(deltaPosition.abs());
+        int256 penaltyToTaker;
         {
             int256 penaltyToFund;
-            int256 penaltyToTaker;
             if (penalty > 0) {
                 penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
                 penaltyToTaker = penalty.sub(penaltyToFund);
@@ -282,7 +283,8 @@ library TradeModule {
             trader,
             deltaPosition.neg(),
             liquidatePrice,
-            penalty
+            penalty,
+            penaltyToTaker
         );
         // 4. emergency
         if (perpetual.donatedInsuranceFund < 0) {
@@ -355,7 +357,7 @@ library TradeModule {
                 "trader maintenance margin unsafe"
             );
         }
-        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), markPrice, penalty);
+        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), markPrice, penalty, 0);
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);
