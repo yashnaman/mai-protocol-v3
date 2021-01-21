@@ -121,9 +121,6 @@ contract Getter is Storage {
         )
     {
         uint256 currentTime = block.timestamp;
-        _liquidityPool.updateFundingState(currentTime);
-        _liquidityPool.updatePrice(currentTime);
-        _liquidityPool.updateFundingRate();
 
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         state = perpetual.state;
