@@ -120,8 +120,6 @@ contract Getter is Storage {
             int256[34] memory nums
         )
     {
-        uint256 currentTime = block.timestamp;
-
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         state = perpetual.state;
         oracle = perpetual.oracle;
