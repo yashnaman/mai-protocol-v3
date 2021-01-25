@@ -772,4 +772,85 @@ describe('AMM', () => {
         })
     })
 
+    describe('best price', function () {
+
+        const successCases = [
+            {
+                name: 'open 0 -> -x',
+                amm: amm0,
+                amount: toWad('-10'),
+                price: toWad('100.1') // trader buy, (1 + α)
+            },
+            {
+                name: 'open -10',
+                amm: amm1,
+                amount: toWad('-10'),
+                price: toWad('110.11') // trader buy, (1 + α)
+            },
+            {
+                name: 'open 0 -> +x',
+                amm: amm0,
+                amount: toWad('10'),
+                price: toWad('99.9') // trader sell, (1 - α)
+            },
+            {
+                name: 'open 10',
+                amm: amm4,
+                amount: toWad('10'),
+                price: toWad('89.91') // trader sell, (1 - α)
+            },
+            {
+                name: 'close -10',
+                amm: amm1,
+                amount: toWad('10'),
+                price: toWad('108.88646369499801395463383186703') // trader sell, (1 - α)
+            },
+            {
+                name: 'close 10',
+                amm: amm4,
+                amount: toWad('-10'),
+                price: toWad('91.09554538669368171312465896007') // trader buy, (1 + α)
+            },
+            {
+                name: 'close unsafe -10',
+                amm: amm3,
+                amount: toWad('10'),
+                price: toWad('100')
+            },
+            {
+                name: 'close unsafe 10',
+                amm: amm6,
+                amount: toWad('-10'),
+                price: toWad('80')
+            },
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+                expect(await amm.getBestPrice(element.amount)).approximateBigNumber(element.price);
+            })
+        })
+
+        const failCases = [
+            {
+                name: 'open unsafe -10',
+                amm: amm3,
+                amount: toWad('-10')
+            },
+            {
+                name: 'close unsafe 10',
+                amm: amm6,
+                amount: toWad('10')
+            },
+        ]
+
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+                await expect(amm.getBestPrice(element.amount)).to.be.revertedWith('AMM is unsafe when open');
+            })
+        })
+    })
+
 });

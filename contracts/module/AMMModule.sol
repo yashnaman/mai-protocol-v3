@@ -162,7 +162,7 @@ library AMMModule {
         (int256 closePosition,) = Utils.splitAmount(position, tradeAmount);
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
-        if (closePosition > 0) {
+        if (closePosition != 0) {
             // AMM closes position
             int256 slippageFactor = perpetual.closeSlippageFactor.value;
             if (isAMMSafe(context, slippageFactor)) {

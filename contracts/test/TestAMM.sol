@@ -129,4 +129,13 @@ contract TestAMM {
     {
         return AMMModule.getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
     }
+
+    function getBestPrice(int256 tradeAmount)
+        public
+        view
+        returns (int256)
+    {
+        return AMMModule.getBestPrice(liquidityPool, 0, tradeAmount);
+    }
+
 }
