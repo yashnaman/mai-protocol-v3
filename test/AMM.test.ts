@@ -839,7 +839,7 @@ describe('AMM', () => {
                 amount: toWad('-10')
             },
             {
-                name: 'close unsafe 10',
+                name: 'open unsafe 10',
                 amm: amm6,
                 amount: toWad('10')
             },
