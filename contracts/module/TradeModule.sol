@@ -73,7 +73,7 @@ library TradeModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
         // close only
-        if (flags.isCloseOnly() || flags.isStopLossOrder() || flags.isTakeProfitOrder()) {
+        if (flags.isCloseOnly()) {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
             require(amount != 0, "no amount to close");
         }
@@ -357,7 +357,15 @@ library TradeModule {
                 "trader maintenance margin unsafe"
             );
         }
-        emit Liquidate(perpetualIndex, liquidator, trader, deltaPosition.neg(), markPrice, penalty, 0);
+        emit Liquidate(
+            perpetualIndex,
+            liquidator,
+            trader,
+            deltaPosition.neg(),
+            markPrice,
+            penalty,
+            0
+        );
         // 5. emergency
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);

@@ -2,7 +2,9 @@
 pragma solidity 0.7.4;
 
 interface IOracle {
-    function isMarketClosed() external returns (bool);
+    function isMarketClosed() external view returns (bool);
+
+    function isTerminated() external view returns (bool);
 
     function collateral() external view returns (string memory);
 

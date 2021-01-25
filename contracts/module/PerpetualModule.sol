@@ -347,9 +347,30 @@ library PerpetualModule {
     }
 
     /**
+     * @notice Set the state of the perpetual to "EMERGENCY". The state must be "NORMAL" before.
+     *         The settlement price is the mark price at this time
+     * @param perpetual The perpetual object
+     */
+    function setEmergencyState(PerpetualStorage storage perpetual, int256 settlementPrice) public {
+        require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
+        // use mark price as final price when emergency
+        perpetual.settlementPriceData = OraclePriceData({
+            price: settlementPrice,
+            time: block.timestamp
+        });
+        perpetual.totalAccount = perpetual.activeAccounts.length();
+        perpetual.state = PerpetualState.EMERGENCY;
+        emit SetEmergencyState(
+            perpetual.id,
+            perpetual.settlementPriceData.price,
+            perpetual.settlementPriceData.time
+        );
+    }
+
+    /**
      * @notice Set the state of the perpetual to "CLEARED". The state must be "EMERGENCY" before.
      *         And settle the collateral of the perpetual, which means
-     *         determining how much collateral should returned to every account. 
+     *         determining how much collateral should returned to every account.
      * @param perpetual The perpetual object
      */
     function setClearedState(PerpetualStorage storage perpetual) public {
@@ -591,8 +612,9 @@ library PerpetualModule {
      * @param perpetual The perpetual object
      */
     function updatePrice(PerpetualStorage storage perpetual) internal {
-        updatePriceData(perpetual.markPriceData, IOracle(perpetual.oracle).priceTWAPLong);
-        updatePriceData(perpetual.indexPriceData, IOracle(perpetual.oracle).priceTWAPShort);
+        IOracle oracle = IOracle(perpetual.oracle);
+        updatePriceData(perpetual.markPriceData, oracle.priceTWAPLong);
+        updatePriceData(perpetual.indexPriceData, oracle.priceTWAPShort);
     }
 
     /**
@@ -605,6 +627,7 @@ library PerpetualModule {
         function() external returns (int256, uint256) priceGetter
     ) internal {
         (int256 price, uint256 time) = priceGetter();
+        require(price != 0 && time != 0, "invalid price data");
         if (time != priceData.time) {
             priceData.price = price;
             priceData.time = time;

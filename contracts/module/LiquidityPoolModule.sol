@@ -59,7 +59,7 @@ library LiquidityPoolModule {
     );
     event RunLiquidityPool();
 
-     /**
+    /**
      * @dev Get the vault's address of the liquidity pool
      * @param liquidityPool The liquidity pool object
      * @return vault The vault's address of the liquidity pool
@@ -72,7 +72,7 @@ library LiquidityPoolModule {
         vault = IPoolCreator(liquidityPool.creator).getVault();
     }
 
-     /**
+    /**
      * @dev Get the vault fee rate of the liquidity pool
      * @param liquidityPool The liquidity pool object
      * @return vaultFeeRate The vault fee rate of the liquidity pool
@@ -318,6 +318,25 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+    }
+
+    /**
+     * @notice Set the state of the perpetual to "EMERGENCY". Must rebalance first.
+     *         Can only called when AMM is not maintenance margin safe in the perpetual.
+     *         After that the perpetual is not allowed to trade, deposit and withdraw.
+     *         The price of the perpetual is freezed to the settlement price
+     * @param liquidityPool The liquidity pool object
+     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     */
+    function setEmergencyState(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256 settlementPrice
+    ) public {
+        require(settlementPrice >= 0, "negative settlement price");
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        rebalance(liquidityPool, perpetualIndex);
+        liquidityPool.perpetuals[perpetualIndex].setEmergencyState(settlementPrice);
     }
 
     /**

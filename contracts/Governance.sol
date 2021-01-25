@@ -146,8 +146,12 @@ contract Governance is Storage {
      *         and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
-    function forceToSetEmergencyState(uint256 perpetualIndex) external syncState onlyGovernor {
-        _liquidityPool.setEmergencyState(perpetualIndex);
+    function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
+        external
+        syncState
+        onlyGovernor
+    {
+        _liquidityPool.setEmergencyState(perpetualIndex, settlementPrice);
     }
 
     /**
@@ -160,7 +164,12 @@ contract Governance is Storage {
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
     function setEmergencyState(uint256 perpetualIndex) external syncState {
-        require(!_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex), "amm is safe");
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        require(
+            IOracle(perpetual.oracle).isTerminated() ||
+                !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
+            "prerequisite not met"
+        );
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 

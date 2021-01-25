@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract OracleWrapper is Ownable {
+contract OracleWrapper {
     bool internal _isMarketClosed;
     bool internal _isTerminated;
     string internal _collateral;
@@ -13,26 +13,26 @@ contract OracleWrapper is Ownable {
     int256 internal _markPrice;
     uint256 internal _markPriceTimestamp;
 
-    constructor(string memory collateral_, string memory underlyingAsset_) Ownable() {
+    constructor(string memory collateral_, string memory underlyingAsset_) {
         _collateral = collateral_;
         _underlyingAsset = underlyingAsset_;
     }
 
-    function setIndexPrice(int256 price, uint256 timestamp) external onlyOwner {
+    function setIndexPrice(int256 price, uint256 timestamp) external {
         _indexPrice = price;
         _indexPriceTimestamp = timestamp;
     }
 
-    function setMarkPrice(int256 price, uint256 timestamp) external onlyOwner {
+    function setMarkPrice(int256 price, uint256 timestamp) external {
         _markPrice = price;
         _markPriceTimestamp = timestamp;
     }
 
-    function setMarketClosed(bool isClosed) external onlyOwner {
+    function setMarketClosed(bool isClosed) external {
         _isMarketClosed = isClosed;
     }
 
-    function setTerminated(bool isTerminated) external onlyOwner {
+    function setTerminated(bool isTerminated) external {
         _isTerminated = isTerminated;
     }
 
