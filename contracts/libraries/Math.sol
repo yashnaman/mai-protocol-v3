@@ -72,21 +72,23 @@ library Math {
         }
 
         // binary estimate
-        // https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
-        int256 next;
-        {
-            uint8 n = mostSignificantBit(uint256(x));
-            n = (n + 1) / 2;
-            next = int256((1 << (n - 1)) + (uint256(x) >> (n + 1)));
-        }
+        // expire by https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
+        uint8 n = mostSignificantBit(uint256(x));
+        // make sure initial estimate > sqrt(x)
+        // 2^ceil((n + 1) / 2) as initial estimate
+        // 2^(n + 1) > x
+        // => 2^ceil((n + 1) / 2) > 2^((n + 1) / 2) > sqrt(x)
+        n = (n + 1) / 2 + 1;
 
         // modified babylonian method
         // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
-        int256 y = x;
-        while (next < y) {
+        int next = int256(1 << n);
+        int256 y;
+        do {
             y = next;
             next = (next + x / next) >> 1;
         }
+        while (next < y);
         return y;
     }
 }
