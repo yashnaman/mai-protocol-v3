@@ -216,7 +216,7 @@ describe('AMM', () => {
         failCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                await expect(amm.getPoolMargin()).to.be.revertedWith('amm is unsafe when getting pool margin')
+                await expect(amm.getPoolMargin()).to.be.revertedWith('AMM is unsafe when getting pool margin')
             })
         })
     })
@@ -515,7 +515,7 @@ describe('AMM', () => {
                 amm: ammEmergency,
                 amount: toWad('1'),
                 partialFill: false,
-                errorMsg: 'amm is emergency'
+                errorMsg: 'AMM is emergency'
             },
             {
                 name: 'zero trade amount',
@@ -550,7 +550,7 @@ describe('AMM', () => {
                 amm: amm3,
                 amount: toWad('-0.01'),
                 partialFill: false,
-                errorMsg: 'amm is unsafe when open'
+                errorMsg: 'AMM is unsafe when open'
             },
             {
                 name: 'open 0 -> 100.001',
@@ -571,7 +571,7 @@ describe('AMM', () => {
                 amm: amm6,
                 amount: toWad('0.01'),
                 partialFill: false,
-                errorMsg: 'amm is unsafe when open'
+                errorMsg: 'AMM is unsafe when open'
             }
         ]
 
@@ -712,7 +712,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 ammMaxLeverage: params.ammMaxLeverage,
-                errorMsg: 'amm is unsafe before removing liquidity',
+                errorMsg: 'AMM is unsafe before removing liquidity',
             },
             {
                 name: 'long, before unsafe',
@@ -720,7 +720,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 ammMaxLeverage: params.ammMaxLeverage,
-                errorMsg: 'amm is unsafe before removing liquidity',
+                errorMsg: 'AMM is unsafe before removing liquidity',
             },
             {
                 name: 'short, after unsafe',
@@ -728,7 +728,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('90.001'),
                 ammMaxLeverage: params.ammMaxLeverage,
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after unsafe',
@@ -736,7 +736,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('90.001'),
                 ammMaxLeverage: params.ammMaxLeverage,
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after negative price',
@@ -744,7 +744,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('0.001'),
                 ammMaxLeverage: params.ammMaxLeverage,
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after exceed leverage',
@@ -752,7 +752,7 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('0.001'),
                 ammMaxLeverage: toWad('0.1'),
-                errorMsg: 'amm exceeds max leverage after removing liquidity',
+                errorMsg: 'AMM exceeds max leverage after removing liquidity',
             }
         ]
 

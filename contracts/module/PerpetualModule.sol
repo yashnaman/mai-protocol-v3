@@ -727,7 +727,7 @@ library PerpetualModule {
      *         2. open slippage factor > 0
      *         3. 0 < close slippage factor <= open slippage factor
      *         4. funding rate limit >= 0
-     *         5. amm max leverage > 0
+     *         5. AMM max leverage > 0
      *         6. 0 <= max close price discount < 1
      * @param perpetual The perpetual
      */

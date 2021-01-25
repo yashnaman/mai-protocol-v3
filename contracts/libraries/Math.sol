@@ -72,7 +72,7 @@ library Math {
         }
 
         // binary estimate
-        // expire by https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
+        // inspired by https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Binary_estimates
         uint8 n = mostSignificantBit(uint256(x));
         // make sure initial estimate > sqrt(x)
         // 2^ceil((n + 1) / 2) as initial estimate

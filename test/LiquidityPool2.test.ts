@@ -345,7 +345,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('10'),
                 shareToRemove: toWei('10'),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'amm is unsafe before removing liquidity',
+                errorMsg: 'AMM is unsafe before removing liquidity',
             },
             {
                 name: 'long, before unsafe',
@@ -358,7 +358,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('10'),
                 shareToRemove: toWei('10'),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'amm is unsafe before removing liquidity',
+                errorMsg: 'AMM is unsafe before removing liquidity',
             },
             {
                 name: 'short, after unsafe',
@@ -371,7 +371,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('90.001'),
                 shareToRemove: toWei('90.001'),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after unsafe',
@@ -384,7 +384,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('90.001'),
                 shareToRemove: toWei('90.001'),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after negative price',
@@ -397,7 +397,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('0.001'),
                 shareToRemove: toWei('0.001'),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'amm is unsafe after removing liquidity',
+                errorMsg: 'AMM is unsafe after removing liquidity',
             },
             {
                 name: 'long, after exceed leverage',
@@ -410,7 +410,7 @@ describe('LiquidityPool', () => {
                 shareBalance: toWei('0.001'),
                 shareToRemove: toWei('0.001'),
                 ammMaxLeverage: toWei('0.1'),
-                errorMsg: 'amm exceeds max leverage after removing liquidity',
+                errorMsg: 'AMM exceeds max leverage after removing liquidity',
             }
         ]
 

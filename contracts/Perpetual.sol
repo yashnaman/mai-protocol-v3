@@ -206,7 +206,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         returns (int256)
     {
         require(trader != address(0), "trader is invalid");
-        require(trader != address(this), "cannot liquidate amm");
+        require(trader != address(this), "cannot liquidate AMM");
         return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
     }
 
@@ -240,7 +240,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         returns (int256)
     {
         require(trader != address(0), "trader is invalid");
-        require(trader != address(this), "cannot liquidate amm");
+        require(trader != address(this), "cannot liquidate AMM");
         require(amount != 0, "amount is invalid");
         require(limitPrice >= 0, "price limit is invalid");
         require(deadline >= block.timestamp, "deadline exceeded");

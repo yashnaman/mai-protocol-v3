@@ -53,12 +53,12 @@ library AMMModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         (int256 closePosition, int256 openPosition) =
             Utils.splitAmount(context.position, tradeAmount);
-        // amm close position
+        // AMM close position
         int256 closeBestPrice;
         (deltaCash, closeBestPrice) = ammClosePosition(context, perpetual, closePosition);
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closePosition);
-        // amm open position
+        // AMM open position
         (int256 openDeltaMargin, int256 openDeltaPosition, int256 openBestPrice) =
             ammOpenPosition(context, perpetual, openPosition, partialFill);
         deltaCash = deltaCash.add(openDeltaMargin);
@@ -114,7 +114,7 @@ library AMMModule {
     ) public view returns (int256 cashToReturn) {
         require(shareTotalSupply > 0, "the supply of share token is zero when removing liquidity");
         Context memory context = prepareContext(liquidityPool);
-        require(isAMMSafe(context, 0), "amm is unsafe before removing liquidity");
+        require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
         int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
         if (poolMargin == 0) {
             return 0;
@@ -122,7 +122,7 @@ library AMMModule {
         poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
         {
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
-            require(poolMargin >= minPoolMargin, "amm is unsafe after removing liquidity");
+            require(poolMargin >= minPoolMargin, "AMM is unsafe after removing liquidity");
         }
         cashToReturn = calculateCashToReturn(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
@@ -134,19 +134,61 @@ library AMMModule {
             }
             int256 indexPrice = perpetual.getIndexPrice();
             require(indexPrice > 0, "index price must be positive");
-            // prevent amm offering negative price
+            // prevent AMM offering negative price
             require(
                 perpetual.getPosition(address(this)) <=
                     poolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(indexPrice),
-                "amm is unsafe after removing liquidity"
+                "AMM is unsafe after removing liquidity"
             );
         }
-        // prevent amm exceeding max leverage
+        // prevent AMM exceeding max leverage
         require(
             context.availableCash.add(context.positionValue).sub(cashToReturn) >=
                 context.positionMargin,
-            "amm exceeds max leverage after removing liquidity"
+            "AMM exceeds max leverage after removing liquidity"
         );
+    }
+
+    function getBestPrice(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256 tradeAmount
+    ) public view returns (int256 bestPrice) {
+        require(tradeAmount != 0, "trading amount is zero");
+        Context memory context = prepareContext(liquidityPool, perpetualIndex);
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 indexPrice = context.indexPrice;
+        int256 position = context.position;
+        (int256 closePosition,) = Utils.splitAmount(position, tradeAmount);
+        int256 halfSpread =
+            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
+        if (closePosition > 0) {
+            // AMM closes position
+            int256 slippageFactor = perpetual.closeSlippageFactor.value;
+            if (isAMMSafe(context, slippageFactor)) {
+                int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
+                require(poolMargin > 0, "pool margin must be positive");
+                bestPrice = _getMidPrice(poolMargin, indexPrice, position, slippageFactor).wmul(
+                    halfSpread.add(Constant.SIGNED_ONE)
+                );
+            } else {
+                if (position > 0 && slippageFactor > Constant.SIGNED_ONE.div(2)) {
+                    // special case
+                    bestPrice = indexPrice.wmul(Constant.SIGNED_ONE.sub(perpetual.maxClosePriceDiscount.value));
+                } else {
+                    bestPrice = indexPrice;
+                }
+            }
+        } else {
+            // AMM opens position
+            int256 slippageFactor = perpetual.openSlippageFactor.value;
+            require(isAMMSafe(context, slippageFactor), "AMM is unsafe when open");
+            int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
+            require(poolMargin > 0, "pool margin must be positive");
+            bestPrice = _getMidPrice(poolMargin, indexPrice, position, slippageFactor).wmul(
+                halfSpread.add(Constant.SIGNED_ONE)
+            );
+        }
     }
 
     /**
@@ -166,7 +208,7 @@ library AMMModule {
         int256 margin = positionValue.add(context.positionValue).add(context.availableCash);
         int256 tmp = positionValue.wmul(positionValue).mul(slippageFactor).add(context.squareValue);
         int256 beforeSqrt = margin.mul(margin).sub(tmp.mul(2));
-        require(beforeSqrt >= 0, "amm is unsafe when getting pool margin");
+        require(beforeSqrt >= 0, "AMM is unsafe when getting pool margin");
         poolMargin = beforeSqrt.sqrt().add(margin).div(2);
     }
 
@@ -248,7 +290,7 @@ library AMMModule {
         // prevent negative price
         require(
             !Utils.hasTheSameSign(deltaCash, tradeAmount),
-            "price is negative when amm closes position"
+            "price is negative when AMM closes position"
         );
     }
 
@@ -257,7 +299,7 @@ library AMMModule {
      *      and can't open position to exceed the maximum position
      * @param context The status of AMM
      * @param perpetual The perpetual object to trade
-     * @param tradeAmount The trading amount of position, positive if amm longs, negative if amm shorts
+     * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
      * @param partialFill Whether to allow partially trading. Set to true when liquidation trading,
      *                    set to false when normal trading
      * @return deltaCash The update cash(collateral) of AMM after the trade
@@ -284,7 +326,7 @@ library AMMModule {
         }
         int256 slippageFactor = perpetual.openSlippageFactor.value;
         if (!isAMMSafe(context, slippageFactor)) {
-            require(partialFill, "amm is unsafe when open");
+            require(partialFill, "AMM is unsafe when open");
             return (0, 0, 0);
         }
         int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
@@ -322,7 +364,7 @@ library AMMModule {
         // prevent negative price
         require(
             !Utils.hasTheSameSign(deltaCash, deltaPosition),
-            "price is negative when amm opens position"
+            "price is negative when AMM opens position"
         );
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
@@ -392,7 +434,7 @@ library AMMModule {
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
             ) >= 0,
-            "amm is emergency"
+            "AMM is emergency"
         );
     }
 
@@ -489,7 +531,7 @@ library AMMModule {
             poolMargin.mul(poolMargin).mul(2).sub(context.squareValue).wdiv(slippageFactor);
         if (beforeSqrt <= 0) {
             // 1. already unsafe, can't open position
-            // 2. initial amm is also this case, position = 0, available cash = 0, pool margin = 0
+            // 2. initial AMM is also this case, position = 0, available cash = 0, pool margin = 0
             return 0;
         }
         int256 maxPosition3 = beforeSqrt.sqrt().wdiv(indexPrice);
