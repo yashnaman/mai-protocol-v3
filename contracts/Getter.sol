@@ -181,6 +181,7 @@ contract Getter is Storage {
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
+        view
         onlyExistedPerpetual(perpetualIndex)
         returns (
             int256 cash,
@@ -193,9 +194,6 @@ contract Getter is Storage {
             bool isMarginSafe
         )
     {
-        if (trader == address(this)) {
-            _liquidityPool.rebalance(perpetualIndex);
-        }
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         MarginAccount storage account = perpetual.marginAccounts[trader];
         int256 markPrice = perpetual.getMarkPrice();

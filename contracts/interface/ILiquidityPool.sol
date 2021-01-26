@@ -92,6 +92,7 @@ interface ILiquidityPool {
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         external
+        view
         returns (
             int256 cash,
             int256 position,
