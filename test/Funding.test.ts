@@ -106,6 +106,18 @@ describe('Funding', () => {
                 targetUnitAccumulativeFunding1: toWei('1.906944444444444444'),
                 targetUnitAccumulativeFunding2: toWei('1.913888888888888888'),
                 targetFundingTime: '2000'
+            },
+            {
+                name: 'normal',
+                state: params.state,
+                unitAccumulativeFunding: params.unitAccumulativeFunding,
+                indexPrice1: toWei('100'),
+                indexPrice2: toWei('200'),
+                fundingRate: toWei('0.002'),
+                timeElapsed: '100',
+                targetUnitAccumulativeFunding1: toWei('1.900694444444444444'),
+                targetUnitAccumulativeFunding2: toWei('1.901388888888888888'),
+                targetFundingTime: '2000'
             }
         ]
 
@@ -113,7 +125,9 @@ describe('Funding', () => {
             it(element.name, async () => {
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(element.indexPrice1, now);
+                await oracle1.setMarkPrice(element.indexPrice1, now);
                 await oracle2.setIndexPrice(element.indexPrice2, now);
+                await oracle2.setMarkPrice(element.indexPrice2, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 
@@ -189,7 +203,9 @@ describe('Funding', () => {
             it(element.name, async () => {
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle1.setMarkPrice(params.indexPrice, now);
                 await oracle2.setIndexPrice(params.indexPrice, now);
+                await oracle2.setMarkPrice(params.indexPrice, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 
@@ -225,7 +241,9 @@ describe('Funding', () => {
             it(element.name, async () => {
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle1.setMarkPrice(params.indexPrice, now);
                 await oracle2.setIndexPrice(params.indexPrice, now);
+                await oracle2.setMarkPrice(params.indexPrice, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 
