@@ -29,7 +29,7 @@ library OrderData {
         );
 
     // new domain, with version and chainId
-    string internal constant DOMAIN_NAME_V3 = "Mai Protocol Relayer Call";
+    string internal constant DOMAIN_NAME_V3 = "Mai L2 Call";
     string internal constant DOMAIN_VERSION_V3 = "v3.0";
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH_V3 =
         keccak256(abi.encodePacked("EIP712Domain(string name,string version,uint256 chainID)"));
