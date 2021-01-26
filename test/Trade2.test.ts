@@ -8,7 +8,7 @@ import {
     getAccounts,
     createContract,
 } from '../scripts/utils';
-import { BrokerRelay } from "../typechain/BrokerRelay";
+import { Broker } from "../typechain/Broker";
 
 import "./helper";
 
@@ -43,7 +43,7 @@ describe('TradeModule2', () => {
             user5 = accounts[5];
 
 
-            testRelay = await createContract("BrokerRelay");
+            testRelay = await createContract("Broker");
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const AMMModule = await createContract("AMMModule");

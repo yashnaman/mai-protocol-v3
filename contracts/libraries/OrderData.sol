@@ -2,11 +2,18 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "../libraries/Utils.sol";
 import "../Type.sol";
 
 import "hardhat/console.sol";
 
 library OrderData {
+    uint32 internal constant MASK_CLOSE_ONLY = 0x80000000;
+    uint32 internal constant MASK_MARKET_ORDER = 0x40000000;
+    uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
+    uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
+
+    // old domain, will be removed in future
     string internal constant DOMAIN_NAME = "Mai Protocol v3";
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
         keccak256(abi.encodePacked("EIP712Domain(string name)"));
@@ -20,10 +27,24 @@ library OrderData {
                 "uint64 expiredAt,uint32 perpetualIndex,uint32 brokerFeeLimit,uint32 flags,uint32 salt)"
             )
         );
-    uint32 internal constant MASK_CLOSE_ONLY = 0x80000000;
-    uint32 internal constant MASK_MARKET_ORDER = 0x40000000;
-    uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
-    uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
+
+    // new domain, with version and chainId
+    string internal constant DOMAIN_NAME_V3 = "Mai Protocol Relayer Call";
+    string internal constant DOMAIN_VERSION_V3 = "v3.0";
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH_V3 =
+        keccak256(abi.encodePacked("EIP712Domain(string name,string version,uint256 chainID)"));
+
+    function getDomainSeperator() internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    EIP712_DOMAIN_TYPEHASH_V3,
+                    keccak256(bytes(DOMAIN_NAME_V3)),
+                    keccak256(bytes(DOMAIN_VERSION_V3)),
+                    Utils.chainID()
+                )
+            );
+    }
 
     /*
      * @dev Check if the order is close-only order. Close-only order means the order can only close position

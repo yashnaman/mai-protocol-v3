@@ -193,7 +193,7 @@ describe("integration", () => {
         print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
 
         // broker
-        var broker = await createContract("BrokerRelay");
+        var broker = await createContract("Broker");
         const brokerUser1 = await BrokerRelayFactory.connect(broker.address, user1);
         await brokerUser1.deposit({ value: toWei("0.2") });
         console.log((await brokerUser1.balanceOf(user1.address)).toString());

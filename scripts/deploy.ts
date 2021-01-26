@@ -28,9 +28,9 @@ async function deployOracle(signer, addresses) {
 }
 
 async function deployBrokerRelay(signer, addresses) {
-    var brokerRelay = await createContract("BrokerRelay", signer = signer);
+    var brokerRelay = await createContract("Broker", signer = signer);
     addresses = addresses.concat([
-        ["BrokerRelay", brokerRelay.address],
+        ["Broker", brokerRelay.address],
     ])
     return { brokerRelay }
 }

@@ -142,7 +142,7 @@ async function main(accounts: any[]) {
     //     "PoolCreator",
     //     [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
     // );
-    // var brokerRelay = await createContract("BrokerRelay");
+    // var brokerRelay = await createContract("Broker");
 
     // await symbol.addWhitelistedFactory(poolCreator.address);
 
