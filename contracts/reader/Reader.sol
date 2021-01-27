@@ -21,7 +21,6 @@ contract Reader {
         int256 vaultFeeRate;
         int256 poolCash;
         uint256 collateralDecimals;
-        uint256 perpetualCount;
         uint256 fundingTime;
         PerpetualReaderResult[] perpetuals;
     }
@@ -43,14 +42,20 @@ contract Reader {
      * @param liquidityPool The address of the liquidity pool
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param account The address of the account
+     * @return isSynced True if the funding state is synced to real-time data. False if
+     *                  error happens (oracle error, zero price etc.)
      * @return marginAccount The status of the account in the perpetual
      */
     function getAccountStorage(
         address liquidityPool,
         uint256 perpetualIndex,
         address account
-    ) public returns (MarginAccount memory marginAccount) {
-        ILiquidityPool(liquidityPool).forceToSyncState();
+    ) public returns (bool isSynced, MarginAccount memory marginAccount) {
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
         (marginAccount.cash, marginAccount.position, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, account);
     }
@@ -58,13 +63,19 @@ contract Reader {
     /**
      * @notice Get the status of the liquidity pool
      * @param liquidityPool The address of the liquidity pool
+     * @return isSynced True if the funding state is synced to real-time data. False if
+     *                  error happens (oracle error, zero price etc.)
      * @return pool The status of the liquidity pool
      */
     function getLiquidityPoolStorage(address liquidityPool)
         public
-        returns (LiquidityPoolReaderResult memory pool)
+        returns (bool isSynced, LiquidityPoolReaderResult memory pool)
     {
-        ILiquidityPool(liquidityPool).forceToSyncState();
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
         // pool
         uint256 perpetualCount;
         (

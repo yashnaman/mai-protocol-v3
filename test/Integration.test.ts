@@ -530,6 +530,7 @@ describe("integration", () => {
         const user3 = accounts[3];
         const vault = accounts[9];
         const none = "0x0000000000000000000000000000000000000000";
+        const vaultFeeRate = toWei("0.001");
 
         // create components
         var weth = await createContract("WETH9");
@@ -545,7 +546,7 @@ describe("integration", () => {
                 weth.address,
                 symbol.address,
                 vault.address,
-                toWei("0.001")
+                vaultFeeRate,
             ]
         );
         await symbol.addWhitelistedFactory(maker.address);
