@@ -49,7 +49,7 @@ contract LibraryEvents {
     event ClaimFee(address indexed claimer, int256 amount);
     event UpdatePoolMargin(int256 poolMargin);
     event TransferOperatorTo(address indexed newOperator);
-    event ClaimOperatorTo(address indexed newOperator);
+    event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
     event SetLiquidityPoolParameter(bytes32 key, int256 value);
     event CreatePerpetual(

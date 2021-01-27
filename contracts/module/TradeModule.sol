@@ -14,9 +14,10 @@ import "./AMMModule.sol";
 import "./LiquidityPoolModule.sol";
 import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
-import "./CollateralModule.sol";
 
 import "../Type.sol";
+
+import "hardhat/console.sol";
 
 library TradeModule {
     using SafeMathExt for int256;
@@ -28,7 +29,6 @@ library TradeModule {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for MarginAccount;
-    using CollateralModule for LiquidityPoolStorage;
 
     event Trade(
         uint256 perpetualIndex,
@@ -77,6 +77,7 @@ library TradeModule {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
             require(amount != 0, "no amount to close");
         }
+
         // query price
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
@@ -142,11 +143,9 @@ library TradeModule {
         if (liquidityPool.operator != address(0)) {
             operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
         }
-
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
         require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
-
         if (availableMargin <= 0) {
             lpFee = 0;
             operatorFee = 0;
@@ -191,12 +190,13 @@ library TradeModule {
         address referrer,
         int256 deltaCash,
         int256 deltaPosition
-    ) internal returns (int256 lpFee, int256 totalFee) {
+    ) public returns (int256 lpFee, int256 totalFee) {
         // fees
         bool hasOpened = hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
         int256 operatorFee;
         int256 vaultFee;
         int256 referralRebate;
+
         (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
             liquidityPool,
             perpetual,
@@ -205,13 +205,28 @@ library TradeModule {
             deltaCash.abs(),
             hasOpened
         );
+
+        console.log("*** cash", uint256(perpetual.marginAccounts[trader].cash));
+
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
-        liquidityPool.transferToUser(payable(referrer), referralRebate);
-        liquidityPool.transferToUser(payable(liquidityPool.getVault()), vaultFee);
-        liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
-        perpetual.decreaseTotalCollateral(totalFee);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, liquidityPool.getVault(), vaultFee);
+        liquidityPool.transferFromPerpetualToUser(
+            perpetual.id,
+            liquidityPool.operator,
+            operatorFee
+        );
+
+        console.log("*** cash", uint256(perpetual.marginAccounts[trader].cash));
+
+        // liquidityPool.transferToUser(payable(referrer), referralRebate);
+        // liquidityPool.transferToUser(payable(liquidityPool.getVault()), vaultFee);
+        // liquidityPool.transferToUser(payable(liquidityPool.operator), operatorFee);
+        // liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
+        // perpetual.decreaseTotalCollateral(operatorFee.add(vaultFee).add(referralRebate));
+
         // safety
         int256 markPrice = perpetual.getMarkPrice();
         if (hasOpened) {
@@ -275,8 +290,16 @@ library TradeModule {
             perpetual.updateCash(address(this), penaltyToLP.add(penaltyToTaker));
             perpetual.updateCash(trader, penalty.neg());
         }
-        perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
-        liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+
+        liquidityPool.transferFromPerpetualToUser(
+            perpetual.id,
+            liquidator,
+            perpetual.keeperGasReward
+        );
+
+        // perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
+        // liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
+
         emit Liquidate(
             perpetualIndex,
             address(this),

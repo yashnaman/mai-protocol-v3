@@ -142,14 +142,14 @@ describe('Broker', () => {
                         { name: "version", type: "string" },
                     ],
                     Call: [
-                        { name: 'method', type: 'string' },
-                        { name: 'broker', type: 'address' },
+                        // { name: 'method', type: 'string' },
+                        // { name: 'broker', type: 'address' },
                         { name: 'from', type: 'address' },
-                        { name: 'to', type: 'address' },
-                        { name: 'callData', type: 'bytes' },
-                        { name: 'nonce', type: 'uint32' },
-                        { name: 'expiration', type: 'uint32' },
-                        { name: 'gasLimit', type: 'uint64' }
+                        // { name: 'to', type: 'address' },
+                        // { name: 'callData', type: 'bytes' },
+                        // { name: 'nonce', type: 'uint32' },
+                        // { name: 'expiration', type: 'uint32' },
+                        // { name: 'gasLimit', type: 'uint64' }
                     ]
                 },
                 primaryType: 'Call' as const,
@@ -159,14 +159,14 @@ describe('Broker', () => {
                     chainId: 1337
                 },
                 message: {
-                    // 'method': "deposit(uint256,address,int256)",
-                    // 'broker': "0xf57e9028ABCB70C7bA63782485eC1bDEF94F6975",
-                    'from': "0x6766f3cfd606e1e428747d3364bae65b6f914d56",
-                    // 'to': "0x86B34D166cb093bF65f9af94A1551279cd4777A6",
-                    // 'callData': "0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000913906f5751c5ef6dff11c21280f3cb4f78fc0c4000000000000000000000000000000000000000000000000000000000000007b",
-                    // 'nonce': 0,
-                    // 'expiration': 1611659521,
-                    // 'gasLimit': 0,
+                    // 'method': "1",
+                    // 'broker': "0x6766F3CFD606E1E428747D3364baE65B6f914D56",
+                    'from': "0x6766F3CFD606E1E428747D3364baE65B6f914D56",
+                    // 'to': "0x6766F3CFD606E1E428747D3364baE65B6f914D56",
+                    // 'callData': "0x",
+                    // 'nonce': 1,
+                    // 'expiration': 2,
+                    // 'gasLimit': 3,
                 }
             }
             const digest = TypedDataUtils.encodeDigest(typedData)

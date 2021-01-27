@@ -100,14 +100,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      */
     function forceToSyncState() public syncState {}
 
-    /**
-     * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
-     * @param claimer The address of the claimer
-     * @param amount The amount of fee(collateral) to claim
-     */
-    function claimFee(address claimer, int256 amount) external nonReentrant {
-        _liquidityPool.claimFee(claimer, amount);
-    }
+    // /**
+    //  * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
+    //  * @param claimer The address of the claimer
+    //  * @param amount The amount of fee(collateral) to claim
+    //  */
+    // function claimFee(address claimer, int256 amount) external nonReentrant {
+    //     _liquidityPool.claimFee(claimer, amount);
+    // }
 
     /**
      * @notice Add liquidity to the liquidity pool when the liquidity pool is running.

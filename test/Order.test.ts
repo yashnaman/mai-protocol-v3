@@ -14,10 +14,10 @@ describe("Order", () => {
 
     before(async () => {
         accounts = await getAccounts();
-        // const CollateralModule = await createContract("CollateralModule");
-        // const AMMModule = await createContract("AMMModule", [], { CollateralModule });
+        const CollateralModule = await createContract("CollateralModule");
+        const AMMModule = await createContract("AMMModule", [], { CollateralModule });
         // const FundingModule = await createContract("FundingModule", [], { AMMModule });
-        const OrderModule = await createContract("OrderModule");
+        const OrderModule = await createContract("OrderModule", [], { AMMModule });
         testOrder = await createContract("TestOrder", [], { OrderModule });
     })
 

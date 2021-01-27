@@ -171,10 +171,10 @@ describe('Governance', () => {
     })
 
     it('updatePerpetualRiskParameter', async () => {
-        await governance.setOperator(user1.address);
+        await governance.setOperatorNoAuth(user1.address);
         await expect(governance.updatePerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("0.05"))).to.be.revertedWith("only operator is allowed");
 
-        await governance.setOperator(user0.address);
+        await governance.setOperatorNoAuth(user0.address);
         await governance.updatePerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("0.05"));
         await governance.updatePerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("0"));
         await governance.updatePerpetualRiskParameter(0, toBytes32("halfSpread"), toWei("0.1"));

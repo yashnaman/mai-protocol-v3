@@ -3,9 +3,9 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../module/AMMModule.sol";
+import "../module/CollateralModule.sol";
 import "../module/PerpetualModule.sol";
 import "../module/LiquidityPoolModule.sol";
-import "../module/CollateralModule.sol";
 
 import "../Type.sol";
 import "./TestPerpetual.sol";
@@ -181,9 +181,9 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.increaseFee(account, amount);
     }
 
-    function claimFee(address account, int256 amount) public {
-        _liquidityPool.claimFee(account, amount);
-    }
+    // function claimFee(address account, int256 amount) public {
+    //     _liquidityPool.claimFee(account, amount);
+    // }
 
     function rebalance(uint256 perpetualIndex) public {
         _liquidityPool.rebalance(perpetualIndex);

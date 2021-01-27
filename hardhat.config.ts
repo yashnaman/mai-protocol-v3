@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
-import "hardhat-typechain";
+// import "hardhat-typechain";
 import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";
@@ -80,7 +80,7 @@ task("call", "Call contract function")
         var selector = args.sig.slice(0, args.sig.indexOf('('))
         console.log(args.sig, args.args, selector)
         var calldata = iface.encodeFunctionData(selector, args.args)
- //       console.log("encoded calldata", calldata)
+        //       console.log("encoded calldata", calldata)
         const signer = hre.ethers.provider.getSigner(0);
         const result = await signer.call({
             to: args.address,

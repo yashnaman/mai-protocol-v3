@@ -45,11 +45,11 @@ describe('TradeModule3', () => {
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");
-            const OrderModule = await createContract("OrderModule");
+            const OrderModule = await createContract("OrderModule", [], { AMMModule });
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
 
             const MockAMMModule = await createContract("MockAMMModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMModule: MockAMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule: MockAMMModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
@@ -61,7 +61,7 @@ describe('TradeModule3', () => {
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                 [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.2")],
             )
             await testTrade.setOperator(user0.address)
             await testTrade.setVault(user4.address, toWei("0.0002"))
@@ -88,7 +88,6 @@ describe('TradeModule3', () => {
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            8988.99
             expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("1"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
@@ -113,18 +112,18 @@ describe('TradeModule3', () => {
             await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0x80000000)).to.be.revertedWith("trader must be close only");
             await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("10999")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("10999"))
             expect(position).to.equal(toWei("9"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("9000.7")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("9000.7"))
             expect(position).to.equal(toWei("1"))
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("19990")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("19990"))
             expect(position).to.equal(toWei("0"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("7")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("7"))
             expect(position).to.equal(toWei("10"))
         })
 

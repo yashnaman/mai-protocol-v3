@@ -44,9 +44,9 @@ describe('TradeModule1', () => {
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");
-            const OrderModule = await createContract("OrderModule");
+            const OrderModule = await createContract("OrderModule", [], { AMMModule });
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, PerpetualModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
@@ -201,9 +201,9 @@ describe('TradeModule1', () => {
                 expect(cash).to.equal(toWei("0.035")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0.04")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.02")); // vault
-                expect(await testTrade.getClaimableFee(user1.address)).to.equal(toWei("0.005")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.9"));  //
-                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.94")); // op + lp
+                expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.005")); // operator
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.935"));  //
+                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.935")); // op + lp
             });
 
             it("postTrade - 2", async () => {
@@ -213,9 +213,9 @@ describe('TradeModule1', () => {
                 expect(cash).to.equal(toWei("0.07")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.02")); // vault
-                expect(await testTrade.getClaimableFee(user1.address)).to.equal(toWei("0.01")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.9"));  //
-                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.98")); // op + lp
+                expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.01")); // operator
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.97"));  //
+                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.97")); // op + lp
             });
 
             it("postTrade - 3", async () => {
@@ -225,9 +225,9 @@ describe('TradeModule1', () => {
                 expect(cash).to.equal(toWei("0.035")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.01")); // vault
-                expect(await testTrade.getClaimableFee(user1.address)).to.equal(toWei("0.005")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.95"));  //
-                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.99")); // op + lp
+                expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.005")); // operator
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.985"));  //
+                expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.985")); // op + lp
             });
         })
 
@@ -264,9 +264,9 @@ describe('TradeModule1', () => {
                 const AMMModule = await createContract("AMMModule");
                 const CollateralModule = await createContract("CollateralModule")
                 const PerpetualModule = await createContract("PerpetualModule");
-                const OrderModule = await createContract("OrderModule");
+                const OrderModule = await createContract("OrderModule", [], { AMMModule });
                 const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-                const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+                const TradeModule = await createContract("TradeModule", [], { AMMModule, PerpetualModule, LiquidityPoolModule });
                 testTrade = await createContract("TestTrade", [], {
                     PerpetualModule,
                     CollateralModule,
@@ -302,7 +302,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("11178.8766232"),
-                        operatorFee: toWei("0.348845805"),
                     }
                 },
                 {
@@ -317,7 +316,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("4204.068831565497225683"),
-                        operatorFee: toWei("0.349624788929520756"),
                     }
                 },
                 {
@@ -332,7 +330,6 @@ describe('TradeModule1', () => {
                     },
                     expectOutput: {
                         cash: toWei("-15378.373986752065535528"),
-                        operatorFee: toWei("2.308683674375830722"),
                     }
                 },
             ]
@@ -350,7 +347,6 @@ describe('TradeModule1', () => {
                     await testTrade.connect(user1).trade(0, user1.address, testCase.input.amount, testCase.input.limitPrice, user5.address, 0);
                     var { cash } = await testTrade.callStatic.getMarginAccount(0, user1.address);
                     expect(cash).approximateBigNumber(testCase.expectOutput.cash);
-                    expect(await testTrade.getClaimableFee(user3.address)).approximateBigNumber(testCase.expectOutput.operatorFee);
                 })
             })
         })

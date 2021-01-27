@@ -21,7 +21,6 @@ contract Getter is Storage {
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
     using SafeMathExt for uint256;
-    using CollateralModule for address;
     using Utils for EnumerableSetUpgradeable.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
@@ -293,22 +292,22 @@ contract Getter is Storage {
         deltaPosition = deltaPosition.neg();
     }
 
-    /**
-     * @notice Get claimable fee of the operator in the liquidity pool
-     * @return int256 The claimable fee of the operator in the liquidity pool
-     */
-    function getClaimableOperatorFee() public view returns (int256) {
-        return _liquidityPool.claimableFees[_liquidityPool.operator];
-    }
+    // /**
+    //  * @notice Get claimable fee of the operator in the liquidity pool
+    //  * @return int256 The claimable fee of the operator in the liquidity pool
+    //  */
+    // function getClaimableOperatorFee() public view returns (int256) {
+    //     return _liquidityPool.claimableFees[_liquidityPool.operator];
+    // }
 
-    /**
-     * @notice Get claimable fee of the claimer in the liquidity pool
-     * @param claimer The address of the claimer
-     * @return int256 The claimable fee of the claimer in the liquidity pool
-     */
-    function getClaimableFee(address claimer) public view returns (int256) {
-        return _liquidityPool.claimableFees[claimer];
-    }
+    // /**
+    //  * @notice Get claimable fee of the claimer in the liquidity pool
+    //  * @param claimer The address of the claimer
+    //  * @return int256 The claimable fee of the claimer in the liquidity pool
+    //  */
+    // function getClaimableFee(address claimer) public view returns (int256) {
+    //     return _liquidityPool.claimableFees[claimer];
+    // }
 
     bytes[50] private __gap;
 }

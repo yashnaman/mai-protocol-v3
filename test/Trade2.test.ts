@@ -48,10 +48,10 @@ describe('TradeModule2', () => {
             oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
-            const OrderModule = await createContract("OrderModule");
+            const OrderModule = await createContract("OrderModule", [], { AMMModule });
             const PerpetualModule = await createContract("PerpetualModule");
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, CollateralModule, PerpetualModule, LiquidityPoolModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, PerpetualModule, LiquidityPoolModule });
             testOrder = await createContract("TestOrder", [], { OrderModule });
             testTrade = await createContract("TestTrade", [], {
                 CollateralModule,
@@ -132,8 +132,8 @@ describe('TradeModule2', () => {
             await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
 
             var compressed = "0x276eb779d7ca51a5f7fba02bf83d9739da11e3baf39fd6e51aad88f6f4ce6ab8827279cfffb92266f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000000000000000000039b5b39de93e60081dcdc94a8b4180a8063959cc0000000000000000000000000000000000000000000000000de0b6b3a7640000fffffffffffffffffffffffffffffffffffffffffffffffff21f494c589c0000000000000000000000000000000000000000000000000031d1afdeede7fc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000539000000006006d7c200000000000186a000000000000000011b00f1d8654ec02fb8136a1c19c3d2c1cfc4d9d1861c832e8be053c7398e4e83ad8e46b420bfaf95ab5453c6280c5550ccf47cd503968ed8a932405ee29cedba5e6b";
-            // await testRelay.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
-            await testTrade.brokerTrade(compressed, toWei("-0.5"));
+            await testRelay.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
+            // await testTrade.brokerTrade(compressed, toWei("-0.5"));
 
             var { cash, position } = await testTrade.callStatic.getMarginAccount(0, user1.address);
             console.log(fromWei(cash), fromWei(position))

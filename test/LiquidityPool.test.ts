@@ -130,6 +130,8 @@ describe('LiquidityPool', () => {
             var now = 1000;
             await oracle0.setMarkPrice(toWei("100"), now);
             await oracle0.setIndexPrice(toWei("100"), now);
+            await oracle1.setMarkPrice(toWei("100"), now);
+            await oracle1.setIndexPrice(toWei("100"), now);
             await liquidityPool.updatePrice(1000);
 
             // no pos
@@ -257,6 +259,9 @@ describe('LiquidityPool', () => {
     describe("operator", async () => {
 
         it("transferOperator", async () => {
+            const blackHole = await createContract("BlackHole");
+
+            await liquidityPool.setFactory(blackHole.address);
             await liquidityPool.setOperator(user0.address);
             expect(await liquidityPool.getOperator()).to.equal(user0.address);
 
@@ -520,6 +525,8 @@ describe('LiquidityPool', () => {
             await liquidityPool.setMarginAccount(0, user2.address, toWei("-200"), toWei("1"));
             await liquidityPool.setMarginAccount(0, user3.address, toWei("0"), toWei("1"));
             await liquidityPool.setTotalCollateral(0, toWei("350"))
+            await ctk.mint(liquidityPool.address, toWei("350"));
+
 
             await liquidityPool.setEmergencyState(0);
             await liquidityPool.clearP(0);
@@ -539,29 +546,31 @@ describe('LiquidityPool', () => {
             expect(await liquidityPool.getSettleableMargin(0, user2.address)).to.equal(toWei("0"));
             expect(await liquidityPool.getSettleableMargin(0, user3.address)).to.equal(toWei("50"));
 
+
             expect(await liquidityPool.callStatic.settle(0, user0.address)).to.equal(toWei("100"));
-            await liquidityPool.settle(0, user0.address);
+            await liquidityPool.settleP(0, user0.address);
             var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user0.address);
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));
+
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("250"));
 
             expect(await liquidityPool.callStatic.settle(0, user1.address)).to.equal(toWei("200"));
-            await liquidityPool.settle(0, user1.address);
+            await liquidityPool.settleP(0, user1.address);
             var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user1.address);
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
 
             expect(await liquidityPool.callStatic.settle(0, user2.address)).to.equal(toWei("0"));
-            await liquidityPool.settle(0, user2.address);
+            await liquidityPool.settleP(0, user2.address);
             var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user2.address);
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
 
             expect(await liquidityPool.callStatic.settle(0, user3.address)).to.equal(toWei("50"));
-            await liquidityPool.settle(0, user3.address);
+            await liquidityPool.settleP(0, user3.address);
             var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user3.address);
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));

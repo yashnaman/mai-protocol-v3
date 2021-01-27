@@ -11,7 +11,6 @@ import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
 import "./MarginAccountModule.sol";
-import "./CollateralModule.sol";
 
 import "../Type.sol";
 
@@ -19,7 +18,6 @@ library PerpetualModule {
     using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
-    using CollateralModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
@@ -42,7 +40,7 @@ library PerpetualModule {
         int256 maxValue
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event transferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
+    event TransferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
 
     /**
      * @dev Get the mark price of the perpetual. If the state of the perpetual is not "NORMAL",
@@ -392,7 +390,6 @@ library PerpetualModule {
     function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {
         require(amount > 0, "amount should greater than 0");
         perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(amount);
-        increaseTotalCollateral(perpetual, amount);
         emit DonateInsuranceFund(perpetual.id, amount);
     }
 
@@ -414,7 +411,6 @@ library PerpetualModule {
         require(amount > 0, "amount should greater than 0");
         isInitialDeposit = perpetual.isEmptyAccount(trader);
         perpetual.updateCash(trader, amount);
-        increaseTotalCollateral(perpetual, amount);
         if (isInitialDeposit) {
             registerActiveAccount(perpetual, trader);
         }
@@ -443,7 +439,6 @@ library PerpetualModule {
         );
         require(amount > 0, "amount should greater than 0");
         perpetual.updateCash(trader, amount.neg());
-        decreaseTotalCollateral(perpetual, amount);
         int256 markPrice = getMarkPrice(perpetual);
         require(
             perpetual.isInitialMarginSafe(trader, markPrice),
@@ -526,7 +521,6 @@ library PerpetualModule {
     {
         int256 price = getMarkPrice(perpetual);
         marginToReturn = perpetual.getSettleableMargin(trader, price);
-        decreaseTotalCollateral(perpetual, marginToReturn);
         perpetual.resetAccount(trader);
         emit Settle(perpetual.id, trader, marginToReturn);
     }
@@ -549,7 +543,7 @@ library PerpetualModule {
                 if (newInsuranceFund > perpetual.insuranceFundCap) {
                     penaltyToLP = newInsuranceFund.sub(perpetual.insuranceFundCap);
                     newInsuranceFund = perpetual.insuranceFundCap;
-                    emit transferExcessInsuranceFundToLP(perpetual.id, penaltyToLP);
+                    emit TransferExcessInsuranceFundToLP(perpetual.id, penaltyToLP);
                 }
             } else {
                 if (newInsuranceFund < 0) {

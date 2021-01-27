@@ -32,9 +32,9 @@ library LiquidityPoolModule {
     using SignatureModule for bytes32;
 
     using AMMModule for LiquidityPoolStorage;
+    using CollateralModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
     using AMMModule for LiquidityPoolStorage;
-    using CollateralModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -44,7 +44,7 @@ library LiquidityPoolModule {
     event ClaimFee(address indexed claimer, int256 amount);
     event UpdatePoolMargin(int256 poolMargin);
     event TransferOperatorTo(address indexed newOperator);
-    event ClaimOperatorTo(address indexed newOperator);
+    event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
     event SetLiquidityPoolParameter(bytes32 key, int256 value);
     event CreatePerpetual(
@@ -65,7 +65,7 @@ library LiquidityPoolModule {
      * @return vault The vault's address of the liquidity pool
      */
     function getVault(LiquidityPoolStorage storage liquidityPool)
-        internal
+        public
         view
         returns (address vault)
     {
@@ -78,7 +78,7 @@ library LiquidityPoolModule {
      * @return vaultFeeRate The vault fee rate of the liquidity pool
      */
     function getVaultFeeRate(LiquidityPoolStorage storage liquidityPool)
-        internal
+        public
         view
         returns (int256 vaultFeeRate)
     {
@@ -353,7 +353,7 @@ library LiquidityPoolModule {
         perpetual.countMargin(address(this));
         perpetual.setClearedState();
         int256 marginToReturn = perpetual.settle(address(this));
-        increasePoolCash(liquidityPool, marginToReturn);
+        transferFromPerpetualToPool(liquidityPool, perpetualIndex, marginToReturn);
     }
 
     /**
@@ -406,7 +406,7 @@ library LiquidityPoolModule {
         liquidityPool.transferringOperator = address(0);
         // update record in Tracer.sol
         IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), claimer);
-        emit ClaimOperatorTo(claimer);
+        emit ClaimOperator(claimer);
     }
 
     /**
@@ -486,7 +486,8 @@ library LiquidityPoolModule {
         int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
-        int256 totalAmount = liquidityPool.transferFromUser(msg.sender, amount);
+        int256 totalAmount =
+            transferFromUserToPerpetual(liquidityPool, perpetualIndex, msg.sender, amount);
         liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
     }
 
@@ -506,7 +507,8 @@ library LiquidityPoolModule {
         int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
-        int256 totalAmount = liquidityPool.transferFromUser(trader, amount);
+        int256 totalAmount =
+            transferFromUserToPerpetual(liquidityPool, perpetualIndex, trader, amount);
         if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
             IPoolCreator(liquidityPool.creator).activatePerpetualFor(trader, perpetualIndex);
         }
@@ -538,7 +540,7 @@ library LiquidityPoolModule {
         if (perpetual.withdraw(trader, amount)) {
             IPoolCreator(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
         }
-        liquidityPool.transferToUser(payable(trader), amount);
+        transferFromPerpetualToUser(liquidityPool, perpetualIndex, payable(trader), amount);
     }
 
     /**
@@ -556,7 +558,7 @@ library LiquidityPoolModule {
     ) public {
         require(trader != address(0), "trader is invalid");
         int256 marginToReturn = liquidityPool.perpetuals[perpetualIndex].settle(trader);
-        liquidityPool.transferToUser(payable(trader), marginToReturn);
+        transferFromPerpetualToUser(liquidityPool, perpetualIndex, payable(trader), marginToReturn);
     }
 
     /**
@@ -572,8 +574,12 @@ library LiquidityPoolModule {
         if (
             perpetual.keeperGasReward > 0 && perpetual.totalCollateral >= perpetual.keeperGasReward
         ) {
-            perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
-            liquidityPool.transferToUser(payable(msg.sender), perpetual.keeperGasReward);
+            transferFromPerpetualToUser(
+                liquidityPool,
+                perpetualIndex,
+                payable(msg.sender),
+                perpetual.keeperGasReward
+            );
         }
         if (perpetual.clear(perpetual.getNextActiveAccount())) {
             setClearedState(liquidityPool, perpetualIndex);
@@ -599,7 +605,8 @@ library LiquidityPoolModule {
 
         int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
         require(shareToMint > 0, "received share must be positive");
-        liquidityPool.poolCash = liquidityPool.poolCash.add(totalCashToAdd);
+        // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
+        increasePoolCash(liquidityPool, totalCashToAdd);
         shareToken.mint(trader, shareToMint.toUint256());
         emit AddLiquidity(trader, totalCashToAdd, shareToMint);
     }
@@ -628,6 +635,7 @@ library LiquidityPoolModule {
 
         shareToken.burn(trader, shareToRemove.toUint256());
         liquidityPool.transferToUser(payable(trader), cashToReturn);
+        // pool cash cannot be added before calculation, DO NOT use transferFromPoolToUser
         decreasePoolCash(liquidityPool, cashToReturn);
         emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }
@@ -648,23 +656,23 @@ library LiquidityPoolModule {
         emit IncreaseFee(account, amount);
     }
 
-    /**
-     * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
-     * @param liquidityPool The liquidity pool object
-     * @param claimer The address of the claimer
-     * @param amount The amount of fee(collateral) to claim, must less than claimable amount
-     */
-    function claimFee(
-        LiquidityPoolStorage storage liquidityPool,
-        address claimer,
-        int256 amount
-    ) public {
-        require(amount > 0, "invalid amount");
-        require(amount <= liquidityPool.claimableFees[claimer], "insufficient fee");
-        liquidityPool.claimableFees[claimer] = liquidityPool.claimableFees[claimer].sub(amount);
-        liquidityPool.transferToUser(payable(claimer), amount);
-        emit ClaimFee(claimer, amount);
-    }
+    // /**
+    //  * @notice Claimer claim his claimable fee(collateral) in the liquidity pool
+    //  * @param liquidityPool The liquidity pool object
+    //  * @param claimer The address of the claimer
+    //  * @param amount The amount of fee(collateral) to claim, must less than claimable amount
+    //  */
+    // function claimFee(
+    //     LiquidityPoolStorage storage liquidityPool,
+    //     address claimer,
+    //     int256 amount
+    // ) public {
+    //     require(amount > 0, "invalid amount");
+    //     require(amount <= liquidityPool.claimableFees[claimer], "insufficient fee");
+    //     liquidityPool.claimableFees[claimer] = liquidityPool.claimableFees[claimer].sub(amount);
+    //     liquidityPool.transferToUser(payable(claimer), amount);
+    //     emit ClaimFee(claimer, amount);
+    // }
 
     /**
      * @notice To keep the AMM's margin equal to initial margin in the perpetual as posiible.
@@ -688,8 +696,7 @@ library LiquidityPoolModule {
         } else if (rebalanceMargin > 0) {
             // from perp to pool
             perpetual.updateCash(address(this), rebalanceMargin.neg());
-            perpetual.decreaseTotalCollateral(rebalanceMargin);
-            increasePoolCash(liquidityPool, rebalanceMargin);
+            transferFromPerpetualToPool(liquidityPool, perpetualIndex, rebalanceMargin);
         } else {
             // from pool to perp
             int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex);
@@ -699,8 +706,7 @@ library LiquidityPoolModule {
             }
             rebalanceMargin = rebalanceMargin.abs().min(availablePoolCash);
             perpetual.updateCash(address(this), rebalanceMargin);
-            perpetual.increaseTotalCollateral(rebalanceMargin);
-            decreasePoolCash(liquidityPool, rebalanceMargin);
+            transferFromPoolToPerpetual(liquidityPool, perpetualIndex, rebalanceMargin);
         }
     }
 
@@ -722,6 +728,77 @@ library LiquidityPoolModule {
     function decreasePoolCash(LiquidityPoolStorage storage liquidityPool, int256 amount) internal {
         require(amount >= 0, "decrease negative pool cash");
         liquidityPool.poolCash = liquidityPool.poolCash.sub(amount);
+    }
+
+    // user <=> pool (addLiquidity/removeLiquidity)
+    function transferFromUserToPool(
+        LiquidityPoolStorage storage liquidityPool,
+        address account,
+        int256 amount
+    ) public returns (int256 totalAmount) {
+        totalAmount = liquidityPool.transferFromUser(account, amount);
+        increasePoolCash(liquidityPool, totalAmount);
+    }
+
+    function transferFromPoolToUser(
+        LiquidityPoolStorage storage liquidityPool,
+        address account,
+        int256 amount
+    ) public {
+        if (amount == 0) {
+            return;
+        }
+        liquidityPool.transferToUser(payable(account), amount);
+        decreasePoolCash(liquidityPool, amount);
+    }
+
+    // user <=> perpetual (deposit/withdraw)
+    function transferFromUserToPerpetual(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address account,
+        int256 amount
+    ) public returns (int256 totalAmount) {
+        totalAmount = liquidityPool.transferFromUser(account, amount);
+        liquidityPool.perpetuals[perpetualIndex].increaseTotalCollateral(totalAmount);
+    }
+
+    function transferFromPerpetualToUser(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address account,
+        int256 amount
+    ) public {
+        if (amount == 0) {
+            return;
+        }
+        liquidityPool.transferToUser(payable(account), amount);
+        liquidityPool.perpetuals[perpetualIndex].decreaseTotalCollateral(amount);
+    }
+
+    // pool <=> perpetual (fee/rebalance)
+    function transferFromPerpetualToPool(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256 amount
+    ) public {
+        if (amount == 0) {
+            return;
+        }
+        liquidityPool.perpetuals[perpetualIndex].decreaseTotalCollateral(amount);
+        increasePoolCash(liquidityPool, amount);
+    }
+
+    function transferFromPoolToPerpetual(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256 amount
+    ) public {
+        if (amount == 0) {
+            return;
+        }
+        liquidityPool.perpetuals[perpetualIndex].increaseTotalCollateral(amount);
+        decreasePoolCash(liquidityPool, amount);
     }
 
     /**

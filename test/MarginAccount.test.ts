@@ -354,6 +354,7 @@ describe('MarginModule', () => {
             it(testCase["name"] || testCase.method, async () => {
                 var now = Math.floor(Date.now() / 1000);
                 await oracle.setMarkPrice(testCase.markPrice, now);
+                await oracle.setIndexPrice(testCase.markPrice, now);
                 await testMargin.updatePrice(0);
 
                 await testMargin.setMarginAccount(
@@ -401,6 +402,7 @@ describe('MarginModule', () => {
             let trader = accounts[0].address;
             var now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(toWei("500"), now);
+            await oracle.setIndexPrice(toWei("500"), now);
             await testMargin.updatePrice(0);
 
             await testMargin.setUnitAccumulativeFunding(0, toWei("-100"));

@@ -59,12 +59,12 @@ contract Governance is Storage {
     function claimOperator() external {
         address previousOperator = _liquidityPool.operator;
         _liquidityPool.claimOperator(msg.sender);
-        if (_liquidityPool.claimableFees[previousOperator] > 0) {
-            _liquidityPool.claimFee(
-                previousOperator,
-                _liquidityPool.claimableFees[previousOperator]
-            );
-        }
+        // if (_liquidityPool.claimableFees[previousOperator] > 0) {
+        //     _liquidityPool.claimFee(
+        //         previousOperator,
+        //         _liquidityPool.claimableFees[previousOperator]
+        //     );
+        // }
     }
 
     /**
@@ -74,13 +74,13 @@ contract Governance is Storage {
         _liquidityPool.revokeOperator();
     }
 
-    /**
-     * @notice Claim the claimable fee of the operator. Can only called by the operator
-     */
-    function claimOperatorFee() external onlyOperator {
-        address operator = _liquidityPool.operator;
-        _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
-    }
+    // /**
+    //  * @notice Claim the claimable fee of the operator. Can only called by the operator
+    //  */
+    // function claimOperatorFee() external onlyOperator {
+    //     address operator = _liquidityPool.operator;
+    //     _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
+    // }
 
     /**
      * @notice Set the parameter of the liquidity pool. Can only called by the governor
