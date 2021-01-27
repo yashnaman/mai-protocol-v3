@@ -210,6 +210,36 @@ describe('Perpetual', () => {
         await expect(perpetual.withdraw(0, user0.address, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
     })
 
+
+    it("withdraw - market closed", async () => {
+        await perpetual.setState(0, 2);
+
+        await perpetual.deposit(0, user0.address, toWei("100"));
+        expect(await perpetual.isTraderRegistered(0, user0.address)).to.be.true;
+
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("100"));
+        expect(position).to.equal(toWei("0"));
+
+        await oracle.setMarketClosed(true);
+
+        await perpetual.withdraw(0, user0.address, toWei("10"));
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("90"));
+        expect(position).to.equal(toWei("0"));
+
+        await perpetual.setMarginAccount(0, user0.address, toWei("90"), toWei("1")) // +1 position
+        await expect(perpetual.withdraw(0, user0.address, toWei("10"))).to.be.revertedWith("market is closed");
+
+        await perpetual.setMarginAccount(0, user0.address, toWei("90"), toWei("0")) // +1 position
+
+        await perpetual.withdraw(0, user0.address, toWei("90"));
+        var { cash, position } = await perpetual.callStatic.getMarginAccount(0, user0.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+    })
+
+
     it("clear", async () => {
         await perpetual.setState(0, 2);
 

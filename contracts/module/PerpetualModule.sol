@@ -437,6 +437,10 @@ library PerpetualModule {
         address trader,
         int256 amount
     ) public returns (bool isLastWithdrawal) {
+        require(
+            perpetual.getPosition(trader) == 0 || !IOracle(perpetual.oracle).isMarketClosed(),
+            "market is closed"
+        );
         require(amount > 0, "amount should greater than 0");
         perpetual.updateCash(trader, amount.neg());
         decreaseTotalCollateral(perpetual, amount);

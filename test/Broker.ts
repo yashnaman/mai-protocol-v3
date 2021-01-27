@@ -137,9 +137,9 @@ describe('Broker', () => {
             const typedData = {
                 types: {
                     EIP712Domain: [
+                        { name: "chainId", type: "uint256" },
                         { name: "name", type: "string" },
                         { name: "version", type: "string" },
-                        { name: "chainID", type: "uint256" }
                     ],
                     Call: [
                         { name: 'method', type: 'string' },
@@ -156,28 +156,34 @@ describe('Broker', () => {
                 domain: {
                     name: 'Mai L2 Call',
                     version: 'v3.0',
-                    chainID: 1337
+                    chainId: 1337
                 },
                 message: {
-                    'method': "deposit(uint256,address,int256)",
-                    'broker': "0xf57e9028ABCB70C7bA63782485eC1bDEF94F6975",
-                    'from': "0x9e7b8106c0a31ddf9fcb9c60af4c1163bba9526d",
-                    'to': "0x86B34D166cb093bF65f9af94A1551279cd4777A6",
-                    'callData': "0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000913906f5751c5ef6dff11c21280f3cb4f78fc0c4000000000000000000000000000000000000000000000000000000000000007b",
-                    'nonce': 0,
-                    'expiration': 1611656229,
-                    'gasLimit': 0,
+                    // 'method': "deposit(uint256,address,int256)",
+                    // 'broker': "0xf57e9028ABCB70C7bA63782485eC1bDEF94F6975",
+                    'from': "0x6766f3cfd606e1e428747d3364bae65b6f914d56",
+                    // 'to': "0x86B34D166cb093bF65f9af94A1551279cd4777A6",
+                    // 'callData': "0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000913906f5751c5ef6dff11c21280f3cb4f78fc0c4000000000000000000000000000000000000000000000000000000000000007b",
+                    // 'nonce': 0,
+                    // 'expiration': 1611659521,
+                    // 'gasLimit': 0,
                 }
             }
+            const digest = TypedDataUtils.encodeDigest(typedData)
 
             const provider = new ethers.providers.JsonRpcProvider("http://server10.jy.mcarlo.com:8747");
-            const signer = new ethers.Wallet("0x099bb08436e5f87d0a248179b654f46f0f89e814f1d0a46bc3ecce7611743d29", provider)
-
-            const digest = TypedDataUtils.encodeDigest(typedData)
+            const signer = new ethers.Wallet("0xdc1dfb1ba0850f1e808eb53e4c83f6a340cc7545e044f0a0f88c0e38dd3fa40d", provider)
             const signature = await signer.signMessage(digest)
+            console.log("personalSign       :", signature);
 
-
-            console.log(await provider.send("eth_sign", ["0x6766F3CFD606E1E428747D3364baE65B6f914D56", ethers.utils.hexlify(digest)]));
+            // const xxxx = await ethers.utils.keccak256(
+            //     ethers.utils.concat([
+            //         ethers.utils.toUtf8Bytes('\x19Ethereum Signed Message:\n32'),
+            //         digest
+            //     ])
+            // );
+            // console.log("**", "0x6766F3CFD606E1E428747D3364baE65B6f914D56", ethers.utils.hexlify(digest))
+            // console.log("jiade personaSign  :", await provider.send("eth_sign", ["0x6766F3CFD606E1E428747D3364baE65B6f914D56", ethers.utils.hexlify(digest)]));
 
 
             // let sig = ethers.utils.splitSignature(signature);

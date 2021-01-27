@@ -67,10 +67,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         address trader,
         int256 amount
     ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
-        require(
-            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isMarketClosed(),
-            "market is closed now"
-        );
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
         _liquidityPool.withdraw(perpetualIndex, trader, amount);

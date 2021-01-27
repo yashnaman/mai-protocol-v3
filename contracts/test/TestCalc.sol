@@ -17,12 +17,29 @@ contract TestCalc is Ownable {
 
     mapping(uint256 => mapping(address => int256)) internal _balances;
 
+    // new domain, with version and chainId
+    string internal constant DOMAIN_NAME_V3 = "Mai L2 Call";
+    string internal constant DOMAIN_VERSION_V3 = "v3.0";
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH_V3 =
+        keccak256(abi.encodePacked("EIP712Domain(string name,string version,uint256 chainID)"));
+
     bytes32 internal constant CALL_FUNCTION_TYPE =
         keccak256(
-            abi.encodePacked(
-                "Call(string method,address broker,address from,address to,bytes callData,uint32 nonce,uint32 expiration,uint64 gasLimit)"
-            )
+            "Call(string method,address broker,address from,address to,bytes callData,uint32 nonce,uint32 expiration,uint64 gasLimit)"
+            // "Call(address from)"
         );
+
+    function getDomainSeperator() internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    EIP712_DOMAIN_TYPEHASH_V3,
+                    keccak256(bytes(DOMAIN_NAME_V3)),
+                    keccak256(bytes(DOMAIN_VERSION_V3)),
+                    Utils.chainID()
+                )
+            );
+    }
 
     function add(uint256 value) public {
         require(count + value > count, "overflow");
@@ -122,6 +139,9 @@ contract TestCalc is Ownable {
     //     return keccak256(abi.encodePacked("\x19\x01", OrderData.getDomainSeperator(), result));
     // }
 
+    bytes32 internal constant EIP712_ORDER_TYPE =
+        keccak256(abi.encodePacked("Order(address trader)"));
+
     function callFunction(
         address from,
         string memory method,
@@ -131,25 +151,25 @@ contract TestCalc is Ownable {
         uint64 gasFeeLimit,
         bytes memory signature
     ) public {
-        require(expiration >= block.timestamp, "expired");
+        require(expiration >= block.timestamp, "expired 1111");
         bytes32 result =
             keccak256(
                 abi.encode(
-                    CALL_FUNCTION_TYPE,
-                    keccak256(bytes(method)),
-                    msg.sender,
-                    from,
-                    address(this),
-                    keccak256(callData),
-                    nonce,
-                    expiration,
-                    gasFeeLimit
+                    EIP712_ORDER_TYPE,
+                    // keccak256(bytes(method)),
+                    address(0x6766F3CFD606E1E428747D3364baE65B6f914D56)
+                    // from
+                    // address(this),
+                    // keccak256(callData),
+                    // nonce,
+                    // expiration,
+                    // gasFeeLimit
                 )
             );
         bytes32 signedHash =
-            keccak256(abi.encodePacked("\x19\x01", OrderData.getDomainSeperator(), result));
+            keccak256(abi.encodePacked("\x19\x01", OrderData.DOMAIN_SEPARATOR, result));
         address signer = _getEIP712Signer(signedHash, signature);
-        require(signer == from, "signer not match");
+        require(signer == from, "signer not match 1111");
         (bool success, ) =
             address(this).delegatecall(
                 abi.encodePacked(bytes4(keccak256(bytes(method))), callData)
@@ -175,7 +195,6 @@ contract TestCalc is Ownable {
             "ECDSA: invalid signature 's' value"
         );
         require(v == 27 || v == 28, "ECDSA: invalid signature 'v' value");
-        // signedHash = ECDSAUpgradeable.toEthSignedMessageHash(signedHash);
         signer = ecrecover(signedHash, v, r, s);
         require(signer != address(0), "invalid signature");
     }

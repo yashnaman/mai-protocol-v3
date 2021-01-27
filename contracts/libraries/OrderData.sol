@@ -28,24 +28,6 @@ library OrderData {
             )
         );
 
-    // new domain, with version and chainId
-    string internal constant DOMAIN_NAME_V3 = "Mai L2 Call";
-    string internal constant DOMAIN_VERSION_V3 = "v3.0";
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH_V3 =
-        keccak256(abi.encodePacked("EIP712Domain(string name,string version,uint256 chainID)"));
-
-    function getDomainSeperator() internal view returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    EIP712_DOMAIN_TYPEHASH_V3,
-                    keccak256(bytes(DOMAIN_NAME_V3)),
-                    keccak256(bytes(DOMAIN_VERSION_V3)),
-                    Utils.chainID()
-                )
-            );
-    }
-
     /*
      * @dev Check if the order is close-only order. Close-only order means the order can only close position
      *      of the trader
