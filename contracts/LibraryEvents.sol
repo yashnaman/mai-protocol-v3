@@ -30,7 +30,7 @@ contract LibraryEvents {
         int256 penalty,
         int256 penaltyToLP
     );
-
+    event TransferFeeToOperator(address indexed operator, int256 operatorFee);
     event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,

@@ -17,8 +17,6 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -47,6 +45,7 @@ library TradeModule {
         int256 penalty,
         int256 penaltyToLP
     );
+    event TransferFeeToOperator(address indexed operator, int256 operatorFee);
 
     /**
      * @notice Trade the position in the perpetual between the trader (taker) and AMM (maker).
@@ -206,8 +205,6 @@ library TradeModule {
             hasOpened
         );
 
-        console.log("*** cash", uint256(perpetual.marginAccounts[trader].cash));
-
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
@@ -219,14 +216,7 @@ library TradeModule {
             operatorFee
         );
 
-        console.log("*** cash", uint256(perpetual.marginAccounts[trader].cash));
-
-        // liquidityPool.transferToUser(payable(referrer), referralRebate);
-        // liquidityPool.transferToUser(payable(liquidityPool.getVault()), vaultFee);
-        // liquidityPool.transferToUser(payable(liquidityPool.operator), operatorFee);
-        // liquidityPool.increaseFee(liquidityPool.operator, operatorFee);
-        // perpetual.decreaseTotalCollateral(operatorFee.add(vaultFee).add(referralRebate));
-
+        emit TransferFeeToOperator(liquidityPool.operator, operatorFee);
         // safety
         int256 markPrice = perpetual.getMarkPrice();
         if (hasOpened) {
@@ -296,9 +286,6 @@ library TradeModule {
             liquidator,
             perpetual.keeperGasReward
         );
-
-        // perpetual.decreaseTotalCollateral(perpetual.keeperGasReward);
-        // liquidityPool.transferToUser(payable(liquidator), perpetual.keeperGasReward);
 
         emit Liquidate(
             perpetualIndex,
