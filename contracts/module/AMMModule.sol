@@ -159,7 +159,7 @@ library AMMModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 indexPrice = context.indexPrice;
         int256 position = context.position;
-        (int256 closePosition,) = Utils.splitAmount(position, tradeAmount);
+        (int256 closePosition, ) = Utils.splitAmount(position, tradeAmount);
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
         if (closePosition != 0) {
@@ -172,9 +172,18 @@ library AMMModule {
                     halfSpread.add(Constant.SIGNED_ONE)
                 );
             } else {
-                if (position > 0 && slippageFactor > Constant.SIGNED_ONE.div(2)) {
+                int256 value1 = context.availableCash.add(context.positionValue);
+                int256 value2 = slippageFactor.mul(2).sub(Constant.SIGNED_ONE);
+                if (
+                    position > 0 &&
+                    value2 > 0 &&
+                    slippageFactor.wmul(value1).mul(value1) > context.squareValue.wmul(value2) &&
+                    value2.wmul(indexPrice).wmul(position) > value1
+                ) {
                     // special case
-                    bestPrice = indexPrice.wmul(Constant.SIGNED_ONE.sub(perpetual.maxClosePriceDiscount.value));
+                    bestPrice = indexPrice.wmul(
+                        Constant.SIGNED_ONE.sub(perpetual.maxClosePriceDiscount.value)
+                    );
                 } else {
                     bestPrice = indexPrice;
                 }
@@ -219,11 +228,7 @@ library AMMModule {
      * @param slippageFactor The slippage factor of the current perpetual
      * @return bool True if AMM is safe
      */
-    function isAMMSafe(Context memory context, int256 slippageFactor)
-        internal
-        pure
-        returns (bool)
-    {
+    function isAMMSafe(Context memory context, int256 slippageFactor) internal pure returns (bool) {
         int256 positionValue = context.indexPrice.wmul(context.position);
         int256 minAvailableCash = positionValue.wmul(positionValue).mul(slippageFactor);
         minAvailableCash = minAvailableCash.add(context.squareValue).mul(2).sqrt().sub(
@@ -273,7 +278,14 @@ library AMMModule {
                 slippageFactor
             );
         } else {
-            if (positionBefore > 0 && slippageFactor > Constant.SIGNED_ONE.div(2)) {
+            int256 value1 = context.availableCash.add(context.positionValue);
+            int256 value2 = slippageFactor.mul(2).sub(Constant.SIGNED_ONE);
+            if (
+                positionBefore > 0 &&
+                value2 > 0 &&
+                slippageFactor.wmul(value1).mul(value1) > context.squareValue.wmul(value2) &&
+                value2.wmul(indexPrice).wmul(positionBefore) > value1
+            ) {
                 // special case
                 bestPrice = indexPrice.wmul(Constant.SIGNED_ONE.sub(maxClosePriceDiscount));
             } else {
