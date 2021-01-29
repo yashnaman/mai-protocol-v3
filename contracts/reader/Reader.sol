@@ -63,6 +63,27 @@ contract Reader {
     }
 
     /**
+     * @notice Get the pool margin of the liquidity pool
+     * @param liquidityPool The address of the liquidity pool
+     * @return isSynced True if the funding state is synced to real-time data. False if
+     *                  error happens (oracle error, zero price etc.). In this case,
+     *                  trading, withdraw (if position != 0), addLiquidity, removeLiquidity
+     *                  will fail
+     * @return poolMargin The pool margin of the liquidity pool
+     */
+    function getPoolMargin(address liquidityPool)
+        public
+        returns (bool isSynced, int256 poolMargin)
+    {
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
+        poolMargin = ILiquidityPool(liquidityPool).getPoolMargin();
+    }
+
+    /**
      * @notice Get the status of the liquidity pool
      * @param liquidityPool The address of the liquidity pool
      * @return isSynced True if the funding state is synced to real-time data. False if
