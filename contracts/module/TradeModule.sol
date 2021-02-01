@@ -17,6 +17,8 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -262,10 +264,9 @@ library TradeModule {
         );
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
-            markPrice
-                .wmul(perpetual.liquidationPenaltyRate)
-                .min(perpetual.getMargin(trader, markPrice).wdiv(position.abs()))
-                .wmul(deltaPosition.abs());
+            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
+                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
+            );
         int256 penaltyToTaker;
         {
             int256 penaltyToFund;
@@ -280,7 +281,6 @@ library TradeModule {
             perpetual.updateCash(address(this), penaltyToLP.add(penaltyToTaker));
             perpetual.updateCash(trader, penalty.neg());
         }
-
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidator,
@@ -338,10 +338,9 @@ library TradeModule {
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
-            markPrice
-                .wmul(perpetual.liquidationPenaltyRate)
-                .min(perpetual.getMargin(trader, markPrice).wdiv(position.abs()))
-                .wmul(deltaPosition.abs());
+            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
+                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
+            );
         {
             int256 penaltyToFund;
             int256 penaltyToTaker;

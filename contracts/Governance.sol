@@ -21,7 +21,7 @@ contract Governance is Storage {
     uint256 internal _transferExpiration;
 
     modifier onlyGovernor() {
-        require(msg.sender == _governor, "only governor is allowed");
+        require(_msgSender() == _governor, "only governor is allowed");
         _;
     }
 

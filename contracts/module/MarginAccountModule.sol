@@ -102,6 +102,11 @@ library MarginAccountModule {
         margin = perpetual.marginAccounts[trader].position.wmul(price).add(
             getAvailableCash(perpetual, trader)
         );
+        // MarginAccount storage account = perpetual.marginAccounts[trader];
+        // if (account.position == 0) {
+        //     return account.cash;
+        // }
+        // return account.position.wmul(price).add(getAvailableCash(perpetual, trader));
     }
 
     /**

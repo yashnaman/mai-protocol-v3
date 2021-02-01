@@ -139,8 +139,8 @@ contract Broker is ReentrancyGuard {
         (address to, uint32 gasFee) = _decodeUserData2(userData2);
         require(_getGasFee(gasFee) <= balanceOf(account), "insufficient gas fee");
         require(gasFee <= gasFeeLimit, "fee exceeds limit");
-        // require(expiration >= block.timestamp, "expired");
-        // require(nonce == _nonces[account], "non-continuous nonce");
+        require(expiration >= block.timestamp, "expired");
+        require(nonce == _nonces[account], "non-continuous nonce");
         ICallee(to).callFunction(
             account,
             method,
@@ -151,8 +151,6 @@ contract Broker is ReentrancyGuard {
             signature
         );
         _nonces[account]++;
-
-        console.log("SendValue", _getGasFee(gasFee));
         Address.sendValue(payable(msg.sender), _getGasFee(gasFee));
         emit CallFunction(userData1, userData2, method, callData, signature);
     }

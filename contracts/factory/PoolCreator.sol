@@ -127,7 +127,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         // initialize
         address operator = msg.sender;
         IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
-        IGovernor(governor).initialize(shareToken, liquidityPool);
+        // IGovernor(governor).initialize(shareToken, liquidityPool);
         ILiquidityPool(liquidityPool).initialize(
             operator,
             collateral,

@@ -76,6 +76,7 @@ interface ILiquidityPool {
             // [31-33] maxClosePriceDiscount value, min, max,
             int256[34] memory nums
         );
+
     /**
      * @notice Get the account info of the trader. Need to update the funding state and the oracle price
      *         of each perpetual before and update the funding rate of each perpetual after

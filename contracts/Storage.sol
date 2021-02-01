@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts-upgradeable/GSN/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
@@ -10,7 +11,7 @@ import "./module/LiquidityPoolModule.sol";
 
 import "./Type.sol";
 
-contract Storage {
+contract Storage is ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
