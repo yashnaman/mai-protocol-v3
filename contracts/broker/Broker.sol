@@ -244,7 +244,7 @@ contract Broker is ReentrancyGuard {
 
     function _decodeUserData1(bytes32 userData)
         internal
-        view
+        pure
         returns (
             address account,
             uint32 nonce,
@@ -258,12 +258,12 @@ contract Broker is ReentrancyGuard {
         gasFeeLimit = uint32(bytes4(userData << 224));
     }
 
-    function _decodeUserData2(bytes32 userData) internal view returns (address to, uint32 gasFee) {
+    function _decodeUserData2(bytes32 userData) internal pure returns (address to, uint32 gasFee) {
         to = address(bytes20(userData));
         gasFee = uint32(bytes4(userData << 160));
     }
 
-    function _getGasFee(uint32 gasFee) internal view returns (uint64) {
+    function _getGasFee(uint32 gasFee) internal pure returns (uint64) {
         return uint64(gasFee) * uint64(1e11);
     }
 }

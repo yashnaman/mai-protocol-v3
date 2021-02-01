@@ -16,6 +16,7 @@ contract TestPerpetual is Storage {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using AMMModule for LiquidityPoolStorage;
     using PerpetualModule for PerpetualStorage;
+    using PerpetualModule for Option;
     using MarginAccountModule for PerpetualStorage;
 
     // ================ debug ============================================
@@ -34,6 +35,92 @@ contract TestPerpetual is Storage {
             riskParams,
             riskParams
         );
+    }
+
+    function updatePerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+
+        if (key == "initialMarginRate") {
+            require(
+                newValue < perpetual.initialMarginRate,
+                "increasing initial margin rate is not allowed"
+            );
+            perpetual.initialMarginRate = newValue;
+        } else if (key == "maintenanceMarginRate") {
+            require(
+                newValue < perpetual.maintenanceMarginRate,
+                "increasing maintenance margin rate is not allowed"
+            );
+            perpetual.maintenanceMarginRate = newValue;
+        } else if (key == "operatorFeeRate") {
+            perpetual.operatorFeeRate = newValue;
+        } else if (key == "lpFeeRate") {
+            perpetual.lpFeeRate = newValue;
+        } else if (key == "liquidationPenaltyRate") {
+            perpetual.liquidationPenaltyRate = newValue;
+        } else if (key == "keeperGasReward") {
+            perpetual.keeperGasReward = newValue;
+        } else if (key == "referralRebateRate") {
+            perpetual.referralRebateRate = newValue;
+        } else if (key == "insuranceFundRate") {
+            perpetual.insuranceFundRate = newValue;
+        } else if (key == "insuranceFundCap") {
+            perpetual.insuranceFundCap = newValue;
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function setPerpetualRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue,
+        int256 newMinValue,
+        int256 newMaxValue
+    ) public {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        if (key == "halfSpread") {
+            perpetual.halfSpread.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "openSlippageFactor") {
+            perpetual.openSlippageFactor.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "closeSlippageFactor") {
+            perpetual.closeSlippageFactor.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "fundingRateLimit") {
+            perpetual.fundingRateLimit.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "ammMaxLeverage") {
+            perpetual.ammMaxLeverage.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "maxClosePriceDiscount") {
+            perpetual.maxClosePriceDiscount.setOption(newValue, newMinValue, newMaxValue);
+        } else {
+            revert("key not found");
+        }
+    }
+
+    function updateRiskParameter(
+        uint256 perpetualIndex,
+        bytes32 key,
+        int256 newValue
+    ) public {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        if (key == "halfSpread") {
+            perpetual.halfSpread.updateOption(newValue);
+        } else if (key == "openSlippageFactor") {
+            perpetual.openSlippageFactor.updateOption(newValue);
+        } else if (key == "closeSlippageFactor") {
+            perpetual.closeSlippageFactor.updateOption(newValue);
+        } else if (key == "fundingRateLimit") {
+            perpetual.fundingRateLimit.updateOption(newValue);
+        } else if (key == "ammMaxLeverage") {
+            perpetual.ammMaxLeverage.updateOption(newValue);
+        } else if (key == "maxClosePriceDiscount") {
+            perpetual.maxClosePriceDiscount.updateOption(newValue);
+        } else {
+            revert("key not found");
+        }
     }
 
     function setState(uint256 perpetualIndex, PerpetualState state) public {
@@ -154,37 +241,6 @@ contract TestPerpetual is Storage {
         returns (int256 marginToRebalance)
     {
         marginToRebalance = _liquidityPool.perpetuals[perpetualIndex].getRebalanceMargin();
-    }
-
-    function setBaseParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        _liquidityPool.perpetuals[perpetualIndex].setBaseParameter(key, newValue);
-    }
-
-    function setRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue,
-        int256 newMinValue,
-        int256 newMaxValue
-    ) public {
-        _liquidityPool.perpetuals[perpetualIndex].setRiskParameter(
-            key,
-            newValue,
-            newMinValue,
-            newMaxValue
-        );
-    }
-
-    function updateRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        _liquidityPool.perpetuals[perpetualIndex].updateRiskParameter(key, newValue);
     }
 
     function updateFundingState(uint256 perpetualIndex, int256 timeElapsed) public {

@@ -46,7 +46,7 @@ library LiquidityPoolModule {
     event TransferOperatorTo(address indexed newOperator);
     event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
-    event SetLiquidityPoolParameter(bytes32 key, int256 value);
+    event SetLiquidityPoolParameter(int256[1] value);
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -246,61 +246,68 @@ library LiquidityPoolModule {
     /**
      * @notice Set the parameter of the liquidity pool. Can only called by the governor
      * @param liquidityPool The liquidity pool object
-     * @param key The key of the parameter
-     * @param newValue The new value of the parameter
+     * @param params The new value of the parameter
      */
     function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
-        bytes32 key,
-        int256 newValue
+        int256[1] memory params
     ) public {
-        if (key == "isFastCreationEnabled") {
-            liquidityPool.isFastCreationEnabled = (newValue != 0);
-        } else {
-            revert("key not found");
-        }
-        emit SetLiquidityPoolParameter(key, newValue);
+        liquidityPool.isFastCreationEnabled = (params[0] != 0);
+        emit SetLiquidityPoolParameter(params);
     }
 
     /**
      * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of perpetual in the liquidity pool
-     * @param key The key of the base parameter
-     * @param newValue The new value of the base parameter
+     * @param baseParams The new value of the base parameter
      */
     function setPerpetualBaseParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
+        int256[9] memory baseParams
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        perpetual.setBaseParameter(key, newValue);
+        perpetual.setBaseParameter(baseParams);
         perpetual.validateBaseParameters();
     }
 
     /**
      * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
      * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
-     * @param minValue The minimum value of the risk parameter
-     * @param maxValue The maximum value of the risk parameter
+     * @param perpetualIndex The index of perpetual in the liquidity pool
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @param minRiskParamValues The minimum value of the risk parameter
+     * @param maxRiskParamValues The maximum value of the risk parameter
      */
     function setPerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue,
-        int256 minValue,
-        int256 maxValue
+        int256[6] memory riskParams,
+        int256[6] memory minRiskParamValues,
+        int256[6] memory maxRiskParamValues
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        perpetual.setRiskParameter(key, newValue, minValue, maxValue);
+        perpetual.setRiskParameter(riskParams, minRiskParamValues, maxRiskParamValues);
+        perpetual.validateRiskParameters();
+    }
+
+    /**
+     * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
+     * @param liquidityPool The liquidity pool object
+     * @param perpetualIndex The index of perpetual in the liquidity pool
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     */
+    function updatePerpetualRiskParameter(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        int256[6] memory riskParams
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.updateRiskParameter(riskParams);
         perpetual.validateRiskParameters();
     }
 
@@ -354,25 +361,6 @@ library LiquidityPoolModule {
         perpetual.setClearedState();
         int256 marginToReturn = perpetual.settle(address(this));
         transferFromPerpetualToPool(liquidityPool, perpetualIndex, marginToReturn);
-    }
-
-    /**
-     * @notice Update the risk parameter of the perpetual. Can only called by the operator
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must be valid and between minimum value and maximum value
-     */
-    function updatePerpetualRiskParameter(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        perpetual.updateRiskParameter(key, newValue);
-        perpetual.validateRiskParameters();
     }
 
     /**

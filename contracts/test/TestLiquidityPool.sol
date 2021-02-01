@@ -83,33 +83,11 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) public {
-        _liquidityPool.setLiquidityPoolParameter(key, newValue);
-    }
-
-    function setPerpetualBaseParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        _liquidityPool.setPerpetualBaseParameter(perpetualIndex, key, newValue);
-    }
-
-    function setPerpetualRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue,
-        int256 minValue,
-        int256 maxValue
-    ) public {
-        _liquidityPool.setPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
-    }
-
-    function updatePerpetualRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external {
-        _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, key, newValue);
+        if (key == "isFastCreationEnabled") {
+            _liquidityPool.isFastCreationEnabled = (newValue != 0);
+        } else {
+            revert("key not found");
+        }
     }
 
     function setEmergencyState(uint256 perpetualIndex) public virtual override {

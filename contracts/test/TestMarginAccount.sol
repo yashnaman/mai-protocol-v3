@@ -11,14 +11,6 @@ contract TestMarginAccount is TestPerpetual {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
-    function setPerpetualBaseParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external {
-        _liquidityPool.perpetuals[perpetualIndex].setBaseParameter(key, newValue);
-    }
-
     function getInitialMargin(uint256 perpetualIndex, address trader)
         external
         view

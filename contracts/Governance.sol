@@ -57,14 +57,7 @@ contract Governance is Storage {
      *         Will claim all the claimable fee of previous operator
      */
     function claimOperator() external {
-        address previousOperator = _liquidityPool.operator;
         _liquidityPool.claimOperator(msg.sender);
-        // if (_liquidityPool.claimableFees[previousOperator] > 0) {
-        //     _liquidityPool.claimFee(
-        //         previousOperator,
-        //         _liquidityPool.claimableFees[previousOperator]
-        //     );
-        // }
     }
 
     /**
@@ -84,57 +77,55 @@ contract Governance is Storage {
 
     /**
      * @notice Set the parameter of the liquidity pool. Can only called by the governor
-     * @param key The key of the parameter
-     * @param newValue The new value of the parameter
+     * @param params The new value of the parameter
      */
-    function setLiquidityPoolParameter(bytes32 key, int256 newValue) external onlyGovernor {
-        _liquidityPool.setLiquidityPoolParameter(key, newValue);
+    function setLiquidityPoolParameter(int256[1] calldata params) external onlyGovernor {
+        _liquidityPool.setLiquidityPoolParameter(params);
     }
 
     /**
      * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param key The key of the base parameter
-     * @param newValue The new value of the base parameter
+     * @param baseParams The new value of the base parameter
      */
-    function setPerpetualBaseParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external onlyGovernor {
-        _liquidityPool.setPerpetualBaseParameter(perpetualIndex, key, newValue);
+    function setPerpetualBaseParameter(uint256 perpetualIndex, int256[9] calldata baseParams)
+        external
+        onlyGovernor
+    {
+        _liquidityPool.setPerpetualBaseParameter(perpetualIndex, baseParams);
     }
 
     /**
      * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
      * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
-     * @param minValue The minimum value of the risk parameter
-     * @param maxValue The maximum value of the risk parameter
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @param minRiskParamValues The minimum value of the risk parameter
+     * @param maxRiskParamValues The maximum value of the risk parameter
      */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue,
-        int256 minValue,
-        int256 maxValue
+        int256[6] calldata riskParams,
+        int256[6] calldata minRiskParamValues,
+        int256[6] calldata maxRiskParamValues
     ) external onlyGovernor {
-        _liquidityPool.setPerpetualRiskParameter(perpetualIndex, key, newValue, minValue, maxValue);
+        _liquidityPool.setPerpetualRiskParameter(
+            perpetualIndex,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
     }
 
     /**
      * @notice Update the risk parameter of the perpetual. Can only called by the operator
      * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
      */
-    function updatePerpetualRiskParameter(
-        uint256 perpetualIndex,
-        bytes32 key,
-        int256 newValue
-    ) external onlyOperator {
-        _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, key, newValue);
+    function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[6] calldata riskParams)
+        external
+        onlyOperator
+    {
+        _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, riskParams);
     }
 
     /**

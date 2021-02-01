@@ -31,15 +31,14 @@ library PerpetualModule {
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[9] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 value,
-        int256 minValue,
-        int256 maxValue
+        int256[6] riskParams,
+        int256[6] minRiskParamValues,
+        int256[6] maxRiskParamValues
     );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[6] riskParams);
     event TransferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
 
     /**
@@ -91,7 +90,7 @@ library PerpetualModule {
      * @param perpetual The perpetual object
      * @param id The id of the perpetual
      * @param oracle The oracle's address of the perpetual
-     * @param coreParams The core parameters of the perpetual
+     * @param baseParams The core parameters of the perpetual
      * @param riskParams The risk parameters of the perpetual, must between minimum values and maximum values
      * @param minRiskParamValues The risk parameters' minimum values of the perpetual
      * @param maxRiskParamValues The risk parameters' maximum values of the perpetual
@@ -100,24 +99,55 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         uint256 id,
         address oracle,
-        int256[9] calldata coreParams,
+        int256[9] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
     ) public {
         perpetual.id = id;
         perpetual.oracle = oracle;
-        perpetual.initialMarginRate = coreParams[0];
-        perpetual.maintenanceMarginRate = coreParams[1];
-        perpetual.operatorFeeRate = coreParams[2];
-        perpetual.lpFeeRate = coreParams[3];
-        perpetual.referralRebateRate = coreParams[4];
-        perpetual.liquidationPenaltyRate = coreParams[5];
-        perpetual.keeperGasReward = coreParams[6];
-        perpetual.insuranceFundRate = coreParams[7];
-        perpetual.insuranceFundCap = coreParams[8];
+
+        setBaseParameter(perpetual, baseParams);
         validateBaseParameters(perpetual);
 
+        setRiskParameter(perpetual, riskParams, minRiskParamValues, maxRiskParamValues);
+        validateRiskParameters(perpetual);
+        perpetual.state = PerpetualState.INITIALIZING;
+    }
+
+    /**
+     * @notice Set the base parameter of the perpetual. Can only called by the governor
+     * @param perpetual The perpetual object
+     * @param baseParams The new value of the base parameter
+     */
+    function setBaseParameter(PerpetualStorage storage perpetual, int256[9] memory baseParams)
+        public
+    {
+        perpetual.initialMarginRate = baseParams[0];
+        perpetual.maintenanceMarginRate = baseParams[1];
+        perpetual.operatorFeeRate = baseParams[2];
+        perpetual.lpFeeRate = baseParams[3];
+        perpetual.referralRebateRate = baseParams[4];
+        perpetual.liquidationPenaltyRate = baseParams[5];
+        perpetual.keeperGasReward = baseParams[6];
+        perpetual.insuranceFundRate = baseParams[7];
+        perpetual.insuranceFundCap = baseParams[8];
+        emit SetPerpetualBaseParameter(perpetual.id, baseParams);
+    }
+
+    /**
+     * @notice Set the risk parameter of the perpetual. Can only called by the governor
+     * @param perpetual The perpetual object
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @param minRiskParamValues The new minimum value of the risk parameter
+     * @param maxRiskParamValues The new maximum value of the risk parameter
+     */
+    function setRiskParameter(
+        PerpetualStorage storage perpetual,
+        int256[6] memory riskParams,
+        int256[6] memory minRiskParamValues,
+        int256[6] memory maxRiskParamValues
+    ) public {
         setOption(
             perpetual.halfSpread,
             riskParams[0],
@@ -154,113 +184,29 @@ library PerpetualModule {
             minRiskParamValues[5],
             maxRiskParamValues[5]
         );
-        validateRiskParameters(perpetual);
-        perpetual.state = PerpetualState.INITIALIZING;
-    }
-
-    /**
-     * @notice Set the base parameter of the perpetual. Can only called by the governor
-     * @param perpetual The perpetual object
-     * @param key The key of the base parameter
-     * @param newValue The new value of the base parameter
-     */
-    function setBaseParameter(
-        PerpetualStorage storage perpetual,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        if (key == "initialMarginRate") {
-            require(
-                newValue < perpetual.initialMarginRate,
-                "increasing initial margin rate is not allowed"
-            );
-            perpetual.initialMarginRate = newValue;
-        } else if (key == "maintenanceMarginRate") {
-            require(
-                newValue < perpetual.maintenanceMarginRate,
-                "increasing maintenance margin rate is not allowed"
-            );
-            perpetual.maintenanceMarginRate = newValue;
-        } else if (key == "operatorFeeRate") {
-            perpetual.operatorFeeRate = newValue;
-        } else if (key == "lpFeeRate") {
-            perpetual.lpFeeRate = newValue;
-        } else if (key == "liquidationPenaltyRate") {
-            perpetual.liquidationPenaltyRate = newValue;
-        } else if (key == "keeperGasReward") {
-            perpetual.keeperGasReward = newValue;
-        } else if (key == "referralRebateRate") {
-            perpetual.referralRebateRate = newValue;
-        } else if (key == "insuranceFundRate") {
-            perpetual.insuranceFundRate = newValue;
-        } else if (key == "insuranceFundCap") {
-            perpetual.insuranceFundCap = newValue;
-        } else {
-            revert("key not found");
-        }
-        emit SetPerpetualBaseParameter(perpetual.id, key, newValue);
-    }
-
-    /**
-     * @notice Set the risk parameter of the perpetual. Can only called by the governor
-     * @param perpetual The perpetual object
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
-     * @param newMinValue The new minimum value of the risk parameter
-     * @param newMaxValue The new maximum value of the risk parameter
-     */
-    function setRiskParameter(
-        PerpetualStorage storage perpetual,
-        bytes32 key,
-        int256 newValue,
-        int256 newMinValue,
-        int256 newMaxValue
-    ) public {
-        if (key == "halfSpread") {
-            setOption(perpetual.halfSpread, newValue, newMinValue, newMaxValue);
-        } else if (key == "openSlippageFactor") {
-            setOption(perpetual.openSlippageFactor, newValue, newMinValue, newMaxValue);
-        } else if (key == "closeSlippageFactor") {
-            setOption(perpetual.closeSlippageFactor, newValue, newMinValue, newMaxValue);
-        } else if (key == "fundingRateLimit") {
-            setOption(perpetual.fundingRateLimit, newValue, newMinValue, newMaxValue);
-        } else if (key == "ammMaxLeverage") {
-            setOption(perpetual.ammMaxLeverage, newValue, newMinValue, newMaxValue);
-        } else if (key == "maxClosePriceDiscount") {
-            setOption(perpetual.maxClosePriceDiscount, newValue, newMinValue, newMaxValue);
-        } else {
-            revert("key not found");
-        }
-        emit SetPerpetualRiskParameter(perpetual.id, key, newValue, newMinValue, newMaxValue);
+        emit SetPerpetualRiskParameter(
+            perpetual.id,
+            riskParams,
+            minRiskParamValues,
+            maxRiskParamValues
+        );
     }
 
     /**
      * @notice Update the risk parameter of the perpetual. Can only called by the operator
      * @param perpetual The perpetual object
-     * @param key The key of the risk parameter
-     * @param newValue The new value of the risk parameter, must between minimum value and maximum value
+     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
      */
-    function updateRiskParameter(
-        PerpetualStorage storage perpetual,
-        bytes32 key,
-        int256 newValue
-    ) public {
-        if (key == "halfSpread") {
-            updateOption(perpetual.halfSpread, newValue);
-        } else if (key == "openSlippageFactor") {
-            updateOption(perpetual.openSlippageFactor, newValue);
-        } else if (key == "closeSlippageFactor") {
-            updateOption(perpetual.closeSlippageFactor, newValue);
-        } else if (key == "fundingRateLimit") {
-            updateOption(perpetual.fundingRateLimit, newValue);
-        } else if (key == "ammMaxLeverage") {
-            updateOption(perpetual.ammMaxLeverage, newValue);
-        } else if (key == "maxClosePriceDiscount") {
-            updateOption(perpetual.maxClosePriceDiscount, newValue);
-        } else {
-            revert("key not found");
-        }
-        emit UpdatePerpetualRiskParameter(perpetual.id, key, newValue);
+    function updateRiskParameter(PerpetualStorage storage perpetual, int256[6] memory riskParams)
+        public
+    {
+        updateOption(perpetual.halfSpread, riskParams[0]);
+        updateOption(perpetual.openSlippageFactor, riskParams[1]);
+        updateOption(perpetual.closeSlippageFactor, riskParams[2]);
+        updateOption(perpetual.fundingRateLimit, riskParams[3]);
+        updateOption(perpetual.ammMaxLeverage, riskParams[4]);
+        updateOption(perpetual.maxClosePriceDiscount, riskParams[5]);
+        emit UpdatePerpetualRiskParameter(perpetual.id, riskParams);
     }
 
     /**
