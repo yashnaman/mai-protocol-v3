@@ -124,11 +124,17 @@ describe("Reader", () => {
 
     it('getAccountStorage', async () => {
         const account = await reader.callStatic.getAccountStorage(
-            perp.address, 0, perp.address
+            perp.address, 0, user1.address
         );
         expect(account.isSynced).to.be.true;
-        expect(account.marginAccount.position).approximateBigNumber(toWei("-0.1"));
-        expect(account.marginAccount.cash.gt('0')).to.be.true;
+        expect(account.accountStorage.position).approximateBigNumber(toWei("0.1"));
+        expect(account.accountStorage.cash).approximateBigNumber(toWei("49.145894"));
+        expect(account.accountStorage.availableCash).approximateBigNumber(toWei("49.145894"));
+        expect(account.accountStorage.margin).approximateBigNumber(toWei("99.345894"));
+        expect(account.accountStorage.settleableMargin).approximateBigNumber(toWei("0"));
+        expect(account.accountStorage.isInitialMarginSafe).to.be.true;
+        expect(account.accountStorage.isMaintenanceMarginSafe).to.be.true;
+        expect(account.accountStorage.isMarginSafe).to.be.true;
     });
 
     it('getLiquidityPoolStorage', async () => {

@@ -37,8 +37,19 @@ contract Reader {
         int256 ammPositionAmount;
     }
 
+    struct AccountReaderResult {
+        int256 cash;
+        int256 position;
+        int256 availableCash;
+        int256 margin;
+        int256 settleableMargin;
+        bool isInitialMarginSafe;
+        bool isMaintenanceMarginSafe;
+        bool isMarginSafe;
+    }
+
     /**
-     * @notice Get the status of the account in the perpetual
+     * @notice Get the storage of the account in the perpetual
      * @param liquidityPool The address of the liquidity pool
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param account The address of the account
@@ -46,20 +57,28 @@ contract Reader {
      *                  error happens (oracle error, zero price etc.). In this case,
      *                  trading, withdraw (if position != 0), addLiquidity, removeLiquidity
      *                  will fail
-     * @return marginAccount The status of the account in the perpetual
+     * @return accountStorage The storage of the account in the perpetual
      */
     function getAccountStorage(
         address liquidityPool,
         uint256 perpetualIndex,
         address account
-    ) public returns (bool isSynced, MarginAccount memory marginAccount) {
+    ) public returns (bool isSynced, AccountReaderResult memory accountStorage) {
         try ILiquidityPool(liquidityPool).forceToSyncState() {
             isSynced = true;
         } catch {
             isSynced = false;
         }
-        (marginAccount.cash, marginAccount.position, , , , , , ) = ILiquidityPool(liquidityPool)
-            .getMarginAccount(perpetualIndex, account);
+        (
+            accountStorage.cash,
+            accountStorage.position,
+            accountStorage.availableCash,
+            accountStorage.margin,
+            accountStorage.settleableMargin,
+            accountStorage.isInitialMarginSafe,
+            accountStorage.isMaintenanceMarginSafe,
+            accountStorage.isMarginSafe
+        ) = ILiquidityPool(liquidityPool).getMarginAccount(perpetualIndex, account);
     }
 
     /**
