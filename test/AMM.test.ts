@@ -430,14 +430,14 @@ describe('AMM', () => {
                 name: 'close unsafe 10 -> 9, normal',
                 amm: amm6,
                 amount: toWad('-1'),
-                deltaCash: toWad('80'),
+                deltaCash: toWad('100'),
                 deltaPosition: toWad('-1')
             },
             {
                 name: 'close unsafe 10 -> 9, small',
                 amm: amm6,
                 amount: toWad('-0.1'),
-                deltaCash: toWad('8'),
+                deltaCash: toWad('10'),
                 deltaPosition: toWad('-0.1')
             },
             {
@@ -821,7 +821,7 @@ describe('AMM', () => {
                 name: 'close unsafe 10',
                 amm: amm6,
                 amount: toWad('-10'),
-                price: toWad('80')
+                price: toWad('100')
             },
         ]
 

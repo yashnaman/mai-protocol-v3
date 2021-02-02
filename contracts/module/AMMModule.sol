@@ -172,21 +172,7 @@ library AMMModule {
                     halfSpread.add(Constant.SIGNED_ONE)
                 );
             } else {
-                int256 value1 = context.availableCash.add(context.positionValue);
-                int256 value2 = slippageFactor.mul(2).sub(Constant.SIGNED_ONE);
-                if (
-                    position > 0 &&
-                    value2 > 0 &&
-                    slippageFactor.wmul(value1).mul(value1) > context.squareValue.wmul(value2) &&
-                    value2.wmul(indexPrice).wmul(position) > value1
-                ) {
-                    // special case
-                    bestPrice = indexPrice.wmul(
-                        Constant.SIGNED_ONE.sub(perpetual.maxClosePriceDiscount.value)
-                    );
-                } else {
-                    bestPrice = indexPrice;
-                }
+                bestPrice = indexPrice;
             }
         } else {
             // AMM opens position
@@ -246,9 +232,7 @@ library AMMModule {
      * @return deltaCash The update cash(collateral) of AMM after the trade
      * @return bestPrice The best price, is used for clipping to spread price if needed outside.
      *                   If AMM is safe, best price = middle price * (1 +/- half spread).
-     *                   If AMM is unsafe and normal case, best price = index price.
-     *                   If AMM is unsafe and special case(position > 0 and slippage factor > 0.5),
-     *                   best price = index price * (1 - maximum close price discount)
+     *                   If AMM is unsafe and normal case, best price = index price
      */
     function ammClosePosition(
         Context memory context,
@@ -278,19 +262,7 @@ library AMMModule {
                 slippageFactor
             );
         } else {
-            int256 value1 = context.availableCash.add(context.positionValue);
-            int256 value2 = slippageFactor.mul(2).sub(Constant.SIGNED_ONE);
-            if (
-                positionBefore > 0 &&
-                value2 > 0 &&
-                slippageFactor.wmul(value1).mul(value1) > context.squareValue.wmul(value2) &&
-                value2.wmul(indexPrice).wmul(positionBefore) > value1
-            ) {
-                // special case
-                bestPrice = indexPrice.wmul(Constant.SIGNED_ONE.sub(maxClosePriceDiscount));
-            } else {
-                bestPrice = indexPrice;
-            }
+            bestPrice = indexPrice;
             deltaCash = bestPrice.wmul(tradeAmount).neg();
         }
         int256 priceLimit =
