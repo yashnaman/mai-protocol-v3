@@ -35,11 +35,7 @@ library SafeMathExt {
         uint256 y,
         uint256 z
     ) internal pure returns (uint256 r) {
-        if (y == z) {
-            r = x;
-        } else {
-            r = x.mul(y).add(z / 2).div(z);
-        }
+        r = x.mul(y).add(z / 2).div(z);
     }
 
     /*

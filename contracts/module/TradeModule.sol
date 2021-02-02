@@ -265,7 +265,7 @@ library TradeModule {
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
             markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
+                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition, position).abs()
             );
         int256 penaltyToTaker;
         {
@@ -339,7 +339,7 @@ library TradeModule {
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
             markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
+                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition, position).abs()
             );
         {
             int256 penaltyToFund;
