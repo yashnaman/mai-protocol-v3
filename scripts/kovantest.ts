@@ -255,7 +255,7 @@ async function set1(deployer) {
 
     const mtx1 = await liquidityPool.createPerpetual(USD_ETH,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper           insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -265,7 +265,7 @@ async function set1(deployer) {
 
     const mtx2 = await liquidityPool.createPerpetual(BTC_ETH,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper           insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -328,7 +328,7 @@ async function set2(deployer) {
 
     const mtx1 = await liquidityPool.createPerpetual(ETH_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -336,7 +336,7 @@ async function set2(deployer) {
     )
     const mtx2 = await liquidityPool.createPerpetual(BTC_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -344,7 +344,7 @@ async function set2(deployer) {
     )
     const mtx3 = await liquidityPool.createPerpetual(DPI_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.003"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -352,7 +352,7 @@ async function set2(deployer) {
     )
     const mtx4 = await liquidityPool.createPerpetual(DOT_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.003"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -360,7 +360,7 @@ async function set2(deployer) {
     )
     const mtx5 = await liquidityPool.createPerpetual(SP500_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.003"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -368,7 +368,7 @@ async function set2(deployer) {
     )
     const mtx6 = await liquidityPool.createPerpetual(TSLA_USD,
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.003"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
