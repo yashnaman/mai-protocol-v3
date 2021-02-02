@@ -153,7 +153,7 @@ library OrderData {
             mstore(add(order, 96), mload(add(data, 80)))
             // liquidityPool / 20
             mstore(add(order, 128), mload(add(data, 100)))
-            // minTradeAmount / 20
+            // minTradeAmount / 32
             mstore(add(order, 160), mload(add(data, 132)))
             // amount / 32
             mstore(add(order, 192), mload(add(data, 164)))
