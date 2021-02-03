@@ -141,7 +141,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param amount The position amount of the trade
      * @return int256 The update position amount of the trader after the trade
      */
-    function brokerTrade(bytes memory orderData, int256 amount) external syncState returns (int256) {
+    function brokerTrade(bytes memory orderData, int256 amount)
+        external
+        syncState
+        returns (int256)
+    {
         Order memory order = orderData.decodeOrderData();
         bytes memory signature = orderData.decodeSignature();
         _liquidityPool.validateSignature(order, signature);
@@ -250,5 +254,5 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             );
     }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

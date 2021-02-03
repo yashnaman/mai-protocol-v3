@@ -77,5 +77,5 @@ contract LiquidityPoolRelayable is LiquidityPool {
         require(success, "call function failed");
     }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

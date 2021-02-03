@@ -135,5 +135,5 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         _liquidityPool.removeLiquidity(msg.sender, shareToRemove);
     }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

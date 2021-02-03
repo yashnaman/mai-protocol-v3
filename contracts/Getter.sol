@@ -312,5 +312,5 @@ contract Getter is Storage {
     //     return _liquidityPool.claimableFees[claimer];
     // }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

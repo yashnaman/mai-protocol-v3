@@ -163,5 +163,5 @@ contract Governance is Storage {
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

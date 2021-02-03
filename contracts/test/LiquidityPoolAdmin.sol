@@ -12,5 +12,5 @@ contract LiquidityPoolAdmin is LiquidityPool {
         _liquidityPool.governor = governor;
     }
 
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }

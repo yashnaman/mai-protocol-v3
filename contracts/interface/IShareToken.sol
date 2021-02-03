@@ -8,7 +8,10 @@ interface IShareToken {
     function initialize(
         string memory name,
         string memory symbol,
-        address admin
+        address minter,
+        address target,
+        address rewardToken,
+        address distributor
     ) external;
 
     function totalSupply() external view returns (uint256);

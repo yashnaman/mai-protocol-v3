@@ -117,16 +117,22 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         int256 nonce
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
-        // ALPHA_TEST_ONLY
-        address governor = _governorTemplate;
-        // address governor = _createClone(_governorTemplate);
-        address shareToken = _createClone(_shareTokenTemplate);
+        address governor = _createClone(_shareTokenTemplate);
+        // address shareToken = _createClone(_shareTokenTemplate);
+        address shareToken = governor;
         bytes32 argsHash =
             keccak256(abi.encode(collateral, collateralDecimals, isFastCreationEnabled));
         address liquidityPool = _createUpgradeableProxy(implementation, governor, argsHash, nonce);
         // initialize
         address operator = msg.sender;
-        IShareToken(shareToken).initialize("MCDEX Share Token", "STK", liquidityPool);
+        IShareToken(governor).initialize(
+            "MCDEX Share Token",
+            "STK",
+            liquidityPool,
+            liquidityPool,
+            getMCBToken(),
+            getVault()
+        );
         // IGovernor(governor).initialize(shareToken, liquidityPool);
         ILiquidityPool(liquidityPool).initialize(
             operator,

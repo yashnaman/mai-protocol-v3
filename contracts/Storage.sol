@@ -71,5 +71,5 @@ contract Storage is ContextUpgradeable {
     }
 
     // TODO: bytes => bytes32
-    bytes[50] private __gap;
+    bytes32[50] private __gap;
 }
