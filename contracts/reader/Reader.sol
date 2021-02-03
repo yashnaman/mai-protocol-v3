@@ -53,6 +53,9 @@ contract Reader {
      * @param liquidityPool The address of the liquidity pool
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param account The address of the account
+     *                Note: When account == liquidityPool, is*Safe are meanless. Do not forget to sum
+     *                      poolCash and availableCash of all perpetuals in a liquidityPool when
+     *                      calculating AMM margin
      * @return isSynced True if the funding state is synced to real-time data. False if
      *                  error happens (oracle error, zero price etc.). In this case,
      *                  trading, withdraw (if position != 0), addLiquidity, removeLiquidity

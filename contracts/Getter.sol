@@ -169,6 +169,9 @@ contract Getter is Storage {
      *         of each perpetual before and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      * @param trader The address of the trader
+     *               Note: When trader == liquidityPool, is*Safe are meanless. Do not forget to sum
+     *                     poolCash and availableCash of all perpetuals in a liquidityPool when
+     *                     calculating AMM margin
      * @return cash The cash(collateral) of the account
      * @return position The position of the account
      * @return availableCash The available cash of the account
