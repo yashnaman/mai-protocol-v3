@@ -11,7 +11,7 @@ contract TestGovernance is Governance {
     using PerpetualModule for PerpetualStorage;
 
     function setGovernor(address governor) public {
-        _governor = governor;
+        _liquidityPool.governor = governor;
     }
 
     function setOperatorNoAuth(address operator) public {

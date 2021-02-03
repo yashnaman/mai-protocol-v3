@@ -16,8 +16,9 @@ contract Storage is ContextUpgradeable {
     using LiquidityPoolModule for LiquidityPoolStorage;
 
     LiquidityPoolStorage internal _liquidityPool;
-    address internal _governor;
-    address internal _shareToken;
+    // TODO: to be remove
+    address internal __dummy1;
+    address internal __dummy2;
 
     modifier onlyNotPaused(uint256 perpetualIndex) {
         require(
@@ -69,5 +70,6 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
+    // TODO: bytes => bytes32
     bytes[50] private __gap;
 }

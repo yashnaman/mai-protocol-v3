@@ -157,7 +157,8 @@ async function main(accounts: any[]) {
     // await deployOracle();
 
     // 2. libraries
-    // await deployLibraries()
+    await deployLibraries()
+
 
     // 3. factory
     // var symbol = await createContract("SymbolService", [10000]);
@@ -224,7 +225,7 @@ async function main(accounts: any[]) {
     // await set1(deployer);
     // await set2(deployer);
 
-    await deployReader(accounts, ["0x0323D333A8aAb656D79Ba1adDBC8e32D9f30c498", "0x043f3FB76d0bafF2F24B1E894210177fF51B98cC"]);
+    // await deployReader(accounts, ["0x0323D333A8aAb656D79Ba1adDBC8e32D9f30c498", "0x043f3FB76d0bafF2F24B1E894210177fF51B98cC"]);
 }
 
 async function set1(deployer) {

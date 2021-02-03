@@ -33,6 +33,18 @@ async function deployLibraries() {
     // │    4    │ 'LiquidityPoolModule' │ '0xA1354F77921653eA2df36128bD66510ac7DFD52C' │
     // │    5    │     'TradeModule'     │ '0xe7DA14BE725b1f8331915bd355a308756220d829' │
     // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
+
+
+    // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
+    // │ (index) │           0           │                      1                       │
+    // ├─────────┼───────────────────────┼──────────────────────────────────────────────┤
+    // │    0    │      'AMMModule'      │ '0x18171CA15FfDa3bD536e31F2232d84Ce6d5fa59B' │
+    // │    1    │  'CollateralModule'   │ '0x0DCad31Ec25d08B20056f67499666Fa060e10752' │
+    // │    2    │     'OrderModule'     │ '0x935e86817A3bf81b182C688Ea36e808264142876' │
+    // │    3    │   'PerpetualModule'   │ '0xDf912757e96209A896F3F1Bc4C70fA7e945556be' │
+    // │    4    │ 'LiquidityPoolModule' │ '0xada4004290A2a460967D8b6fA01bD616688cE930' │
+    // │    5    │     'TradeModule'     │ '0x49Fb1146C06f96aAb7E6C3bE44981aE27d711F3d' │
+    // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
 }
 
 async function createLiquidityPoolFactory() {
@@ -40,28 +52,32 @@ async function createLiquidityPoolFactory() {
         "LiquidityPool",
         {
             libraries: {
-                AMMModule: "0x385E38B34Cdf2E8538Ea9b66E952C61f8784612b",
-                OrderModule: "0xDCBd383Bc97c0CE5fBC578Aeaaa9202A8C18d2Cc",
-                LiquidityPoolModule: "0xA1354F77921653eA2df36128bD66510ac7DFD52C",
-                TradeModule: "0xe7DA14BE725b1f8331915bd355a308756220d829",
+                AMMModule: "0x18171CA15FfDa3bD536e31F2232d84Ce6d5fa59B",
+                OrderModule: "0x935e86817A3bf81b182C688Ea36e808264142876",
+                LiquidityPoolModule: "0xada4004290A2a460967D8b6fA01bD616688cE930",
+                TradeModule: "0x49Fb1146C06f96aAb7E6C3bE44981aE27d711F3d",
             }
         }
     )
+
 }
 
 async function main() {
 
     // await deployLibraries();
 
-    var poolCreatorFactory = await createFactory("PoolCreator");
-    var poolCreator = await poolCreatorFactory.attach("0xfa81036567A378C44C5bC13323416aECfeD29D09")
+    // var poolCreatorFactory = await createFactory("PoolCreator");
+    // var poolCreator = await poolCreatorFactory.attach("0xfa81036567A378C44C5bC13323416aECfeD29D09")
 
-    // const LiquidityPool = await createLiquidityPoolFactory();
-    // var liquidityPoolTmpl = await LiquidityPool.deploy();
+    const LiquidityPool = await createLiquidityPoolFactory();
+    var liquidityPoolTmpl = await LiquidityPool.deploy();
+    console.log(liquidityPoolTmpl.address);
+
+
     // await poolCreator.addVersion(liquidityPoolTmpl.address, 1, "2021/1/18");
 
     // console.log(await poolCreator.listAvailableVersions(0, 100));
-    console.log(await poolCreator.getLatestVersion());
+    // console.log(await poolCreator.getLatestVersion());
 
 
     // var poolCnt = (await poolCreator.getLiquidityPoolCount()).toString();

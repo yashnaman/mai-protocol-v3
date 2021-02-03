@@ -21,7 +21,7 @@ contract Governance is Storage {
     uint256 internal _transferExpiration;
 
     modifier onlyGovernor() {
-        require(_msgSender() == _governor, "only governor is allowed");
+        require(_msgSender() == _liquidityPool.governor, "only governor is allowed");
         _;
     }
 
@@ -139,7 +139,6 @@ contract Governance is Storage {
      */
     function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
         external
-        syncState
         onlyGovernor
     {
         _liquidityPool.setEmergencyState(perpetualIndex, settlementPrice);

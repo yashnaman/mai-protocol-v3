@@ -140,7 +140,7 @@ library OrderData {
      * @return order The order
      */
     function decodeOrderData(bytes memory data) internal pure returns (Order memory order) {
-        require(data.length >= 292, "broken data");
+        require(data.length >= 256, "broken data");
         bytes32 tmp;
         assembly {
             // trader / 20
