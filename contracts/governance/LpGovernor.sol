@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "./GovernorAlpha.sol";
 import "./RewardDistribution.sol";
 
-contract GovernanceToken is
+contract LpGovernor is
     Initializable,
     ContextUpgradeable,
     ERC20Upgradeable,

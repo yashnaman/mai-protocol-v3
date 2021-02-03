@@ -255,76 +255,6 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         }
     }
 
-    function castVote(uint256 proposalId, bool support) public virtual {
-        address voter = _msgSender();
-        require(state(proposalId) == ProposalState.Active, "voting is closed");
-        Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
-        require(receipt.hasVoted == false, "voter already voted");
-        uint256 votes = balanceOf(voter);
-
-        if (support) {
-            proposal.forVotes = proposal.forVotes.add(votes);
-        } else {
-            proposal.againstVotes = proposal.againstVotes.add(votes);
-        }
-
-        receipt.hasVoted = true;
-        receipt.support = support;
-        receipt.votes = votes;
-
-        _setVoteLock(voter, proposal.startBlock.add(votingPeriod()));
-        if (support) {
-            _supportedProposals[voter].add(proposalId);
-        }
-
-        emit VoteCast(voter, proposalId, support, votes);
-    }
-
-    function isLockedByVoting(address account) public virtual returns (bool) {
-        if (account == address(0)) {
-            return false;
-        }
-        _updateVoteLock(account);
-        return _getBlockNumber() <= _voteLocks[account];
-    }
-
-    function _setVoteLock(address account, uint256 blockNumber) internal {
-        if (blockNumber > _voteLocks[account]) {
-            _voteLocks[account] = blockNumber;
-        }
-    }
-
-    function _updateVoteLock(address account) internal virtual {
-        EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
-        uint256 length = proposalIds.length();
-        for (uint256 i = 0; i < length; i++) {
-            uint256 proposalId = proposalIds.at(i);
-            ProposalState proposalState = state(proposalId);
-            if (proposalState == ProposalState.Pending || proposalState == ProposalState.Active) {
-                continue;
-            }
-            if (
-                proposalState == ProposalState.Succeeded ||
-                proposalState == ProposalState.Executed ||
-                proposalState == ProposalState.Queued
-            ) {
-                uint256 unlockBlock =
-                    proposals[proposalId].endBlock.add(executionDelay().add(unlockPeriod()));
-                if (unlockBlock > _voteLocks[account]) {
-                    _voteLocks[account] = unlockBlock;
-                }
-            }
-            proposalIds.remove(proposalId);
-        }
-    }
-
-    function _getOperator() internal view returns (address) {
-        (, , address[7] memory addresses, , , , , ) =
-            ILiquidityPool(_target).getLiquidityPoolInfo();
-        return addresses[1];
-    }
-
     function propose(
         string[] memory signatures,
         bytes[] memory calldatas,
@@ -371,6 +301,101 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             description
         );
         return proposalId;
+    }
+
+    function castVote(uint256 proposalId, bool support) public virtual {
+        address voter = _msgSender();
+        require(state(proposalId) == ProposalState.Active, "voting is closed");
+        Proposal storage proposal = proposals[proposalId];
+        Receipt storage receipt = proposal.receipts[voter];
+        require(receipt.hasVoted == false, "voter already voted");
+        uint256 votes = balanceOf(voter);
+
+        if (support) {
+            proposal.forVotes = proposal.forVotes.add(votes);
+        } else {
+            proposal.againstVotes = proposal.againstVotes.add(votes);
+        }
+
+        receipt.hasVoted = true;
+        receipt.support = support;
+        receipt.votes = votes;
+
+        _setVoteLock(voter, proposal.startBlock.add(votingPeriod()));
+        if (support) {
+            _supportedProposals[voter].add(proposalId);
+        }
+
+        emit VoteCast(voter, proposalId, support, votes);
+    }
+
+    function isLockedByVoting(address account) public virtual returns (bool) {
+        if (account == address(0)) {
+            return false;
+        }
+        _updateVoteLock(account);
+        return _getBlockNumber() <= _voteLocks[account];
+    }
+
+    function getUnlockBlock(address account) public view virtual returns (uint256) {
+        uint256 unlockBlock = _voteLocks[account];
+        EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
+        uint256 length = proposalIds.length();
+        for (uint256 i = 0; i < length; i++) {
+            uint256 proposalId = proposalIds.at(i);
+            ProposalState proposalState = state(proposalId);
+            if (proposalState == ProposalState.Pending || proposalState == ProposalState.Active) {
+                continue;
+            }
+            if (
+                proposalState == ProposalState.Succeeded ||
+                proposalState == ProposalState.Executed ||
+                proposalState == ProposalState.Queued
+            ) {
+                uint256 unlockBlock =
+                    proposals[proposalId].endBlock.add(executionDelay().add(unlockPeriod()));
+                if (unlockBlock > unlockBlock) {
+                    unlockBlock = unlockBlock;
+                }
+            }
+        }
+        return unlockBlock;
+    }
+
+    function _setVoteLock(address account, uint256 blockNumber) internal {
+        if (blockNumber > _voteLocks[account]) {
+            _voteLocks[account] = blockNumber;
+        }
+    }
+
+    function _updateVoteLock(address account) internal virtual {
+        EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
+        uint256 length = proposalIds.length();
+        for (uint256 i = 0; i < length; i++) {
+            uint256 proposalId = proposalIds.at(i);
+            ProposalState proposalState = state(proposalId);
+            if (proposalState == ProposalState.Pending || proposalState == ProposalState.Active) {
+                continue;
+            }
+            if (
+                proposalState == ProposalState.Succeeded ||
+                proposalState == ProposalState.Executed ||
+                proposalState == ProposalState.Queued
+            ) {
+                uint256 unlockBlock =
+                    proposals[proposalId].endBlock.add(executionDelay().add(unlockPeriod()));
+                if (unlockBlock > _voteLocks[account]) {
+                    _voteLocks[account] = unlockBlock;
+                }
+            }
+            proposalIds.remove(proposalId);
+        }
+    }
+
+    function _getOperator() internal view returns (address) {
+        (, , address[7] memory addresses, , , , , ) =
+            ILiquidityPool(_target).getLiquidityPoolInfo();
+        return addresses[1];
     }
 
     function _executeTransaction(

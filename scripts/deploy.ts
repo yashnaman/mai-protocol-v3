@@ -46,8 +46,8 @@ async function deployInfrastructures(signer, addresses) {
 }
 
 async function deployPoolCreator(signer, weth, symbol, vault, vaultFeeRate, addresses) {
-    var shareTokenTmpl = await createContract("ShareToken");
-    var governorTmpl = await createContract("TestGovernor");
+    var shareTokenTmpl = await createContract("LpGovernor");
+    var governorTmpl = await createContract("LpGovernor");
     var poolCreator = await createContract(
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]

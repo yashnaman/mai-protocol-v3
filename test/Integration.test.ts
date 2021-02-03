@@ -64,7 +64,7 @@ describe("integration", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("GovernanceToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var maker = await createContract(
             "PoolCreator",
@@ -138,7 +138,7 @@ describe("integration", () => {
 
         // overview
         const info = await perp.getLiquidityPoolInfo();
-        const stk = await (await createFactory("GovernanceToken")).attach(info[2][4]);
+        const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
 
         print(info);
         print(await perp.callStatic.getPerpetualInfo(0));
@@ -251,7 +251,7 @@ describe("integration", () => {
         // create components
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
-        var lpTokenTemplate = await createContract("GovernanceToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var maker = await createContract(
             "PoolCreator",
@@ -325,7 +325,7 @@ describe("integration", () => {
         print(await perp.callStatic.getPerpetualInfo(0));
 
         const info = await perp.getLiquidityPoolInfo();
-        const stk = await (await createFactory("GovernanceToken")).attach(info[2][4]);
+        const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
 
         // deposit
         await gs.collect("deposit", perp.connect(user1).deposit(0, user1.address, toWei("0"), { value: toWei("10") }));
@@ -389,7 +389,7 @@ describe("integration", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
-        var lpTokenTemplate = await createContract("GovernanceToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var maker = await createContract(
             "PoolCreator",
@@ -464,7 +464,7 @@ describe("integration", () => {
 
         // overview
         const info = await perp.getLiquidityPoolInfo();
-        const stk = await (await createFactory("GovernanceToken")).attach(info[2][4]);
+        const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
 
         print(info);
         print(await perp.callStatic.getPerpetualInfo(0));
@@ -527,7 +527,7 @@ describe("integration", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("GovernanceToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var maker = await createContract(
             "PoolCreator",
@@ -599,7 +599,7 @@ describe("integration", () => {
 
         // overview
         const info = await perp.getLiquidityPoolInfo();
-        const stk = await (await createFactory("GovernanceToken")).attach(info[2][4]);
+        const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
 
         print(info);
         print(await perp.callStatic.getPerpetualInfo(0));

@@ -64,8 +64,8 @@ async function main(accounts: any[]) {
     var symbol = await createContract("SymbolService", [10000]);
     var wethFactory = await createFactory("WETH9");
     var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
-    var shareTokenTmpl = await createContract("ShareToken");
-    var governorTmpl = await createContract("TestGovernor");
+    var shareTokenTmpl = await createContract("LpGovernor");
+    var governorTmpl = await createContract("LpGovernor");
     var poolCreator = await createContract(
         "PoolCreator",
         [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
