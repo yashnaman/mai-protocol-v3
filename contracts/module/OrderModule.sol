@@ -14,7 +14,6 @@ import "../libraries/Signature.sol";
 
 import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
-import "./AMMModule.sol";
 
 import "../Type.sol";
 
@@ -25,7 +24,6 @@ library OrderModule {
     using OrderData for Order;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
-    using AMMModule for LiquidityPoolStorage;
 
     /**
      * @notice Validate that order's signer is granted the trade privilege by order's trader
@@ -111,19 +109,19 @@ library OrderModule {
         public
         view
     {
-        int256 marketPrice = liquidityPool.getBestPrice(order.perpetualIndex, order.amount.neg());
+        int256 indexPrice = liquidityPool.perpetuals[order.perpetualIndex].getIndexPrice();
         if (
             (order.isStopLossOrder() && order.amount > 0) ||
             (order.isTakeProfitOrder() && order.amount < 0)
         ) {
             // stop-loss + long / take-profit + short
-            require(marketPrice >= order.triggerPrice, "trigger price is not reached");
+            require(indexPrice >= order.triggerPrice, "trigger price is not reached");
         } else if (
             (order.isStopLossOrder() && order.amount < 0) ||
             (order.isTakeProfitOrder() && order.amount > 0)
         ) {
             // stop-loss + long / take-profit + short
-            require(marketPrice <= order.triggerPrice, "trigger price is not reached");
+            require(indexPrice <= order.triggerPrice, "trigger price is not reached");
         }
     }
 }
