@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
-import "hardhat-typechain";
+// import "./typechain-ethers-v5-mcdex"
 import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";
@@ -88,8 +88,6 @@ task("call", "Call contract function")
         })
         console.log("result", result);
     })
-
-
 
 module.exports = {
     defaultNetwork: "hardhat",
