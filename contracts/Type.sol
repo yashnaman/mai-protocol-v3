@@ -62,6 +62,7 @@ struct LiquidityPoolStorage {
     int256 poolCash;
     uint256 fundingTime;
     uint256 priceUpdateTime;
+    uint256 operatorExpiration;
     mapping(address => int256) claimableFees;
     // perpetuals
     PerpetualStorage[] perpetuals;

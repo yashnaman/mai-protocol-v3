@@ -30,9 +30,13 @@ contract Governance is Storage {
         _;
     }
 
-    function setOperator(address newOperator) external onlyGovernor {
+    function setOperator(address newOperator) public onlyGovernor {
         require(_liquidityPool.operator == address(0), "can only be called when no operator");
         _liquidityPool.transferOperator(newOperator);
+    }
+
+    function checkIn() public onlyOperator {
+        _liquidityPool.checkIn();
     }
 
     /**
@@ -42,7 +46,7 @@ contract Governance is Storage {
      *         Can only called by the governor if the operator doesn't exist
      * @param newOperator The address of the new operator
      */
-    function transferOperator(address newOperator) external {
+    function transferOperator(address newOperator) public {
         if (_liquidityPool.operator != address(0)) {
             require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
         } else {
@@ -56,14 +60,14 @@ contract Governance is Storage {
      *         Sender must be transferred the ownership before.
      *         Will claim all the claimable fee of previous operator
      */
-    function claimOperator() external {
+    function claimOperator() public {
         _liquidityPool.claimOperator(msg.sender);
     }
 
     /**
      * @notice Revoke the operator of the liquidity pool. Can only called by the operator
      */
-    function revokeOperator() external onlyOperator {
+    function revokeOperator() public onlyOperator {
         _liquidityPool.revokeOperator();
     }
 
@@ -79,8 +83,12 @@ contract Governance is Storage {
      * @notice Set the parameter of the liquidity pool. Can only called by the governor
      * @param params The new value of the parameter
      */
-    function setLiquidityPoolParameter(int256[1] calldata params) external onlyGovernor {
+    function setLiquidityPoolParameter(int256[1] calldata params) public onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(params);
+    }
+
+    function setOracle(uint256 perpetualIndex, address oracle) public onlyGovernor {
+        _liquidityPool.setPerpetualOracle(perpetualIndex, oracle);
     }
 
     /**
@@ -89,7 +97,7 @@ contract Governance is Storage {
      * @param baseParams The new value of the base parameter
      */
     function setPerpetualBaseParameter(uint256 perpetualIndex, int256[9] calldata baseParams)
-        external
+        public
         onlyGovernor
     {
         _liquidityPool.setPerpetualBaseParameter(perpetualIndex, baseParams);
@@ -153,7 +161,7 @@ contract Governance is Storage {
      *         and update the funding rate of each perpetual after
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
-    function setEmergencyState(uint256 perpetualIndex) external syncState {
+    function setEmergencyState(uint256 perpetualIndex) public syncState {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         require(
             IOracle(perpetual.oracle).isTerminated() ||

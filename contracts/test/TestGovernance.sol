@@ -41,11 +41,6 @@ contract TestGovernance is Governance {
         return perpetual.settlementPriceData.price;
     }
 
-    function setOracle(uint256 perpetualIndex, address oracle) public {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        perpetual.oracle = oracle;
-    }
-
     function isFastCreationEnabled() public view returns (bool) {
         return _liquidityPool.isFastCreationEnabled;
     }

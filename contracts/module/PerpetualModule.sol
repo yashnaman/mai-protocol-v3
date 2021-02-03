@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../interface/IOracle.sol";
@@ -15,8 +16,9 @@ import "./MarginAccountModule.sol";
 import "../Type.sol";
 
 library PerpetualModule {
-    using SignedSafeMathUpgradeable for int256;
     using SafeMathExt for int256;
+    using AddressUpgradeable for address;
+    using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
     using MarginAccountModule for PerpetualStorage;
 
@@ -40,6 +42,7 @@ library PerpetualModule {
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[6] riskParams);
     event TransferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
+    event SetOracle(address indexed oldOralce, address indexed newOracle);
 
     /**
      * @dev Get the mark price of the perpetual. If the state of the perpetual is not "NORMAL",
@@ -113,6 +116,15 @@ library PerpetualModule {
         setRiskParameter(perpetual, riskParams, minRiskParamValues, maxRiskParamValues);
         validateRiskParameters(perpetual);
         perpetual.state = PerpetualState.INITIALIZING;
+    }
+
+    function setOracle(PerpetualStorage storage perpetual, address newOracle) public {
+        require(newOracle != address(0), "invalid new oracle address");
+        require(newOracle.isContract(), "oracle must be contract");
+        require(!IOracle(newOracle).isTerminated(), "oracle is terminated");
+
+        emit SetOracle(perpetual.oracle, newOracle);
+        perpetual.oracle = newOracle;
     }
 
     /**

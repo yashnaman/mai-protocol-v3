@@ -65,7 +65,7 @@ contract Getter is Storage {
         isFastCreationEnabled = _liquidityPool.isFastCreationEnabled;
         addresses = [
             _liquidityPool.creator,
-            _liquidityPool.operator,
+            _liquidityPool.getOperator(),
             _liquidityPool.transferringOperator,
             _liquidityPool.governor,
             _liquidityPool.shareToken,

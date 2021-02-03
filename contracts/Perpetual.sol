@@ -31,7 +31,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         payable
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
     {
-        require(amount > 0, "amount is negative");
+        require(amount > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
     }
 

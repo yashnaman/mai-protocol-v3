@@ -63,4 +63,5 @@ contract LibraryEvents {
         int256[6] riskParams
     );
     event RunLiquidityPool();
+    event OperatorCheckIn();
 }

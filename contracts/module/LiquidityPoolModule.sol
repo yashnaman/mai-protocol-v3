@@ -38,6 +38,8 @@ library LiquidityPoolModule {
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
+    uint256 public constant OPERATOR_CHECK_IN_TIMEOUT = 10 days;
+
     event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address indexed trader, int256 returnedCash, int256 burnedShare);
     event IncreaseFee(address indexed recipient, int256 amount);
@@ -58,6 +60,7 @@ library LiquidityPoolModule {
         int256[6] riskParams
     );
     event RunLiquidityPool();
+    event OperatorCheckIn(address indexed operator);
 
     /**
      * @dev Get the vault's address of the liquidity pool
@@ -70,6 +73,17 @@ library LiquidityPoolModule {
         returns (address vault)
     {
         vault = IPoolCreator(liquidityPool.creator).getVault();
+    }
+
+    function getOperator(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (address operator)
+    {
+        return
+            block.timestamp <= liquidityPool.operatorExpiration
+                ? liquidityPool.operator
+                : address(0);
     }
 
     /**
@@ -256,6 +270,16 @@ library LiquidityPoolModule {
         emit SetLiquidityPoolParameter(params);
     }
 
+    function setPerpetualOracle(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address newOracle
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        perpetual.setOracle(newOracle);
+    }
+
     /**
      * @notice Set the base parameter of the perpetual. Can only called by the governor
      * @param liquidityPool The liquidity pool object
@@ -377,6 +401,11 @@ library LiquidityPoolModule {
         require(newOperator != liquidityPool.operator, "cannot transfer to current operator");
         liquidityPool.transferringOperator = newOperator;
         emit TransferOperatorTo(newOperator);
+    }
+
+    function checkIn(LiquidityPoolStorage storage liquidityPool) public {
+        liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
+        emit OperatorCheckIn(getOperator(liquidityPool));
     }
 
     /**
