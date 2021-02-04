@@ -8,8 +8,8 @@ import "./LiquidityPool.sol";
 
 contract LiquidityPoolRelayable is LiquidityPool {
     // new domain, with version and chainId
-    string public constant L2_DOMAIN_NAME = "Mai L2 Call";
-    string public constant L2_DOMAIN_VERSION = "v3.0";
+    string internal constant L2_DOMAIN_NAME = "Mai L2 Call";
+    string internal constant L2_DOMAIN_VERSION = "v3.0";
     bytes32 internal constant L2_EIP712_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version)");
     bytes32 internal constant L2_DOMAIN_SEPARATOR =
@@ -20,7 +20,6 @@ contract LiquidityPoolRelayable is LiquidityPool {
                 keccak256(bytes(L2_DOMAIN_VERSION))
             )
         );
-
     bytes32 internal constant CALL_FUNCTION_TYPEHASH =
         keccak256(
             "Call(uint256 chainId,string method,address broker,address from,address to,bytes callData,uint32 nonce,uint32 expiration,uint64 gasLimit)"
