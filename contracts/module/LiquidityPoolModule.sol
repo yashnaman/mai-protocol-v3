@@ -190,6 +190,7 @@ library LiquidityPoolModule {
         liquidityPool.accessController = creator.getAccessController();
 
         liquidityPool.operator = operator;
+        liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.governor = governor;
         liquidityPool.shareToken = shareToken;
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;

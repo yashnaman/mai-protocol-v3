@@ -23,6 +23,11 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     address internal _governorTemplate;
     address internal _shareTokenTemplate;
 
+    function debugSetTemplate(address governor, address share) public {
+        _governorTemplate = governor;
+        _shareTokenTemplate = share;
+    }
+
     constructor(
         address governorTemplate,
         address shareTokenTemplate,
@@ -118,7 +123,6 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     ) internal returns (address) {
         require(isVersionValid(implementation), "invalid implementation");
         address governor = _createClone(_shareTokenTemplate);
-        // address shareToken = _createClone(_shareTokenTemplate);
         address shareToken = governor;
         bytes32 argsHash =
             keccak256(abi.encode(collateral, collateralDecimals, isFastCreationEnabled));

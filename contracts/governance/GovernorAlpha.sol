@@ -50,6 +50,8 @@ struct Proposal {
     uint256 startBlock;
     // The block at which voting ends: votes must be cast prior to this block
     uint256 endBlock;
+    // Minimal votes for a proposal to succeed
+    uint256 quorumVotes;
     // Current number of votes in favor of this proposal
     uint256 forVotes;
     // Current number of votes in opposition to this proposal
@@ -62,13 +64,13 @@ struct Proposal {
     mapping(address => Receipt) receipts;
 }
 
-/// @notice Ballot receipt record for a voter
+/// @notice Ballot receipt record for a account
 struct Receipt {
     // Whether or not a vote has been cast
     bool hasVoted;
-    // Whether or not the voter supports the proposal
+    // Whether or not the account supports the proposal
     bool support;
-    // The number of votes the voter had, which were cast
+    // The number of votes the account had, which were cast
     uint256 votes;
 }
 
@@ -105,6 +107,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         bytes[] calldatas,
         uint256 startBlock,
         uint256 endBlock,
+        uint256 quorumVotes,
         string description
     );
     event ExecuteTransaction(
@@ -115,7 +118,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         uint256 eta
     );
     /// @notice An event emitted when a vote has been cast on a proposal
-    event VoteCast(address voter, uint256 proposalId, bool support, uint256 votes);
+    event VoteCast(address account, uint256 proposalId, bool support, uint256 votes);
 
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
@@ -141,7 +144,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         return 2e17;
     }
 
-    /// @notice The number of votes required in order for a voter to become a proposer
+    /// @notice The number of votes required in order for a account to become a proposer
     function proposalThresholdRate() public pure virtual returns (uint256) {
         return 1e16;
     }
@@ -177,15 +180,16 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             functionHash == SIGNATURE_PERPETUAL_SET_OPERATOR;
     }
 
-    function getProposalPriorThreshold() public view virtual returns (uint256) {
+    function getProposalThreshold() public view virtual returns (uint256) {
         uint256 totalVotes = totalSupply();
         return totalVotes.mul(proposalThresholdRate()).div(1e18);
     }
 
     function getQuorumVotes(uint256 proposalId) public view virtual returns (uint256) {
-        uint256 totalVotes = totalSupply();
         Proposal storage proposal = proposals[proposalId];
-        for (uint256 i = 0; i < proposal.signatures.length; i++) {
+        uint256 length = proposal.signatures.length;
+        uint256 totalVotes = totalSupply();
+        for (uint256 i = 0; i < length; i++) {
             if (isCriticalFunction(proposal.signatures[i])) {
                 return totalVotes.mul(criticalQuorumRate()).div(1e18);
             }
@@ -206,17 +210,6 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         emit ProposalExecuted(proposalId);
     }
 
-    function canPropose(address voter) public view virtual returns (bool) {
-        address operator = _getOperator();
-        if (operator == address(0)) {
-            // if pool has not a operator, then only any one with enough lp token is able to propose
-            return balanceOf(voter) >= getProposalPriorThreshold();
-        } else {
-            // or only operator is able to propose
-            return operator == voter;
-        }
-    }
-
     function getActions(uint256 proposalId)
         public
         view
@@ -226,8 +219,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         return (p.signatures, p.calldatas);
     }
 
-    function getReceipt(uint256 proposalId, address voter) public view returns (Receipt memory) {
-        return proposals[proposalId].receipts[voter];
+    function getReceipt(uint256 proposalId, address account) public view returns (Receipt memory) {
+        return proposals[proposalId].receipts[account];
     }
 
     function state(uint256 proposalId) public view returns (ProposalState) {
@@ -241,7 +234,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             return ProposalState.Active;
         } else if (
             proposal.forVotes <= proposal.againstVotes ||
-            proposal.forVotes < getQuorumVotes(proposalId)
+            proposal.forVotes.add(proposal.againstVotes) < proposal.quorumVotes
         ) {
             return ProposalState.Defeated;
         } else if (proposal.executed) {
@@ -260,36 +253,53 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         bytes[] memory calldatas,
         string memory description
     ) public virtual returns (uint256) {
-        address proposer = _msgSender();
         require(signatures.length == calldatas.length, "function information arity mismatch");
         require(signatures.length != 0, "must provide actions");
         require(signatures.length <= proposalMaxOperations(), "too many actions");
-        require(canPropose(proposer), "requirements not satisfied for proposer");
+
+        address proposer = _msgSender();
+        uint256 proposalId = _createProposal(proposer, signatures, calldatas, description);
+        latestProposalIds[proposer] = proposalId;
+        _castVote(proposer, proposalId, true);
+        return proposalId;
+    }
+
+    function _validateProposer(address proposer) internal view {
+        address operator = _getOperator();
+        if (operator != address(0)) {
+            require(proposer == operator, "proposer must be operator when operator exists");
+        } else {
+            require(balanceOf(proposer) >= getProposalThreshold(), "proposal threshold unmet");
+        }
         if (latestProposalIds[proposer] != 0) {
             ProposalState latestProposalState = state(latestProposalIds[proposer]);
             require(latestProposalState != ProposalState.Active, "last proposal is active");
             require(latestProposalState != ProposalState.Pending, "last proposal is pending");
         }
+    }
+
+    function _createProposal(
+        address proposer,
+        string[] memory signatures,
+        bytes[] memory calldatas,
+        string memory description
+    ) internal returns (uint256) {
+        _validateProposer(proposer);
+
         uint256 startBlock = _getBlockNumber().add(votingDelay());
         uint256 endBlock = startBlock.add(votingPeriod());
-        uint256 voteBalance = balanceOf(proposer);
-
         proposalCount++;
         uint256 proposalId = proposalCount;
-        proposals[proposalId].id = proposalId;
-        proposals[proposalId].proposer = proposer;
-        proposals[proposalId].signatures = signatures;
-        proposals[proposalId].calldatas = calldatas;
-        proposals[proposalId].startBlock = startBlock;
-        proposals[proposalId].endBlock = endBlock;
-        proposals[proposalId].forVotes = voteBalance;
-        proposals[proposalId].receipts[proposer] = Receipt({
-            hasVoted: true,
-            support: true,
-            votes: voteBalance
-        });
-        latestProposalIds[proposer] = proposalId;
-        emit VoteCast(proposer, proposalId, true, voteBalance);
+
+        Proposal storage proposal = proposals[proposalId];
+        proposal.id = proposalId;
+        proposal.proposer = proposer;
+        proposal.signatures = signatures;
+        proposal.calldatas = calldatas;
+        proposal.startBlock = startBlock;
+        proposal.endBlock = endBlock;
+        uint256 quorumVotes = getQuorumVotes(proposalId);
+        proposal.quorumVotes = quorumVotes;
 
         emit ProposalCreated(
             proposalId,
@@ -298,35 +308,15 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             calldatas,
             startBlock,
             endBlock,
+            quorumVotes,
             description
         );
         return proposalId;
     }
 
     function castVote(uint256 proposalId, bool support) public virtual {
-        address voter = _msgSender();
         require(state(proposalId) == ProposalState.Active, "voting is closed");
-        Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
-        require(receipt.hasVoted == false, "voter already voted");
-        uint256 votes = balanceOf(voter);
-
-        if (support) {
-            proposal.forVotes = proposal.forVotes.add(votes);
-        } else {
-            proposal.againstVotes = proposal.againstVotes.add(votes);
-        }
-
-        receipt.hasVoted = true;
-        receipt.support = support;
-        receipt.votes = votes;
-
-        _setVoteLock(voter, proposal.startBlock.add(votingPeriod()));
-        if (support) {
-            _supportedProposals[voter].add(proposalId);
-        }
-
-        emit VoteCast(voter, proposalId, support, votes);
+        _castVote(_msgSender(), proposalId, support);
     }
 
     function isLockedByVoting(address account) public virtual returns (bool) {
@@ -352,14 +342,39 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
                 proposalState == ProposalState.Executed ||
                 proposalState == ProposalState.Queued
             ) {
-                uint256 unlockBlock =
-                    proposals[proposalId].endBlock.add(executionDelay().add(unlockPeriod()));
+                unlockBlock = proposals[proposalId].endBlock.add(
+                    executionDelay().add(unlockPeriod())
+                );
                 if (unlockBlock > unlockBlock) {
                     unlockBlock = unlockBlock;
                 }
             }
         }
         return unlockBlock;
+    }
+
+    function _castVote(
+        address account,
+        uint256 proposalId,
+        bool support
+    ) internal {
+        Proposal storage proposal = proposals[proposalId];
+        Receipt storage receipt = proposal.receipts[account];
+        require(receipt.hasVoted == false, "account already voted");
+        uint256 votes = balanceOf(account);
+        if (support) {
+            proposal.forVotes = proposal.forVotes.add(votes);
+        } else {
+            proposal.againstVotes = proposal.againstVotes.add(votes);
+        }
+        receipt.hasVoted = true;
+        receipt.support = support;
+        receipt.votes = votes;
+        _setVoteLock(account, proposal.startBlock.add(votingPeriod()));
+        if (support) {
+            _supportedProposals[account].add(proposalId);
+        }
+        emit VoteCast(account, proposalId, support, votes);
     }
 
     function _setVoteLock(address account, uint256 blockNumber) internal {
