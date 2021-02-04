@@ -76,12 +76,9 @@ contract TestSymbolService {
             address[7] memory addresses,
             int256 vaultFeeRate,
             int256 poolCash,
-            uint256 collateralDecimals,
-            uint256 perpetualCount,
-            uint256 fundingTime
+            uint256[4] memory nums
         )
     {
         addresses[0] = factory;
-        return (false, false, addresses, 0, 0, 0, 0, 0);
     }
 }

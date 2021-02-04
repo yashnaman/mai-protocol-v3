@@ -20,8 +20,7 @@ contract Reader {
         address[7] addresses;
         int256 vaultFeeRate;
         int256 poolCash;
-        uint256 collateralDecimals;
-        uint256 fundingTime;
+        uint256[4] nums;
         PerpetualReaderResult[] perpetuals;
     }
 
@@ -124,18 +123,16 @@ contract Reader {
             isSynced = false;
         }
         // pool
-        uint256 perpetualCount;
         (
             pool.isRunning,
             pool.isFastCreationEnabled,
             pool.addresses,
             pool.vaultFeeRate,
             pool.poolCash,
-            pool.collateralDecimals,
-            perpetualCount,
-            pool.fundingTime
+            pool.nums
         ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
         // perpetual
+        uint256 perpetualCount = pool.nums[1];
         address creator = pool.addresses[0];
         address symbolService = IPoolCreator(creator).getSymbolService();
         pool.perpetuals = new PerpetualReaderResult[](perpetualCount);

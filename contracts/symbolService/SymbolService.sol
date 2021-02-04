@@ -63,7 +63,7 @@ contract SymbolService is Ownable {
 
     modifier onlyWhitelisted(address liquidityPool) {
         require(Address.isContract(liquidityPool), "must called by contract");
-        (, , address[7] memory addresses, , , , , ) =
+        (, , address[7] memory addresses, , , ) =
             ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
         require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
         _;

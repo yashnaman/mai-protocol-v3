@@ -7,30 +7,8 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
+import "../interface/ILiquidityPool.sol";
 // import "hardhat/console.sol";
-
-interface ILiquidityPool {
-    function getLiquidityPoolInfo()
-        external
-        view
-        returns (
-            bool isRunning,
-            bool isFastCreationEnabled,
-            // [0] creator,
-            // [1] operator,
-            // [2] transferringOperator,
-            // [3] governor,
-            // [4] shareToken,
-            // [5] collateralToken,
-            // [6] vault,
-            address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
-            uint256 collateralDecimals,
-            uint256 perpetualCount,
-            uint256 fundingTime
-        );
-}
 
 /// @notice Possible states that a proposal may be in
 enum ProposalState { Pending, Active, Canceled, Defeated, Succeeded, Queued, Expired, Executed }
@@ -110,6 +88,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         uint256 quorumVotes,
         string description
     );
+
     event ExecuteTransaction(
         bytes32 indexed txHash,
         address indexed target,
@@ -408,8 +387,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     function _getOperator() internal view returns (address) {
-        (, , address[7] memory addresses, , , , , ) =
-            ILiquidityPool(_target).getLiquidityPoolInfo();
+        (, , address[7] memory addresses, , , ) = ILiquidityPool(_target).getLiquidityPoolInfo();
         return addresses[1];
     }
 

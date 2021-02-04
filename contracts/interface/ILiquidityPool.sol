@@ -13,9 +13,7 @@ interface ILiquidityPool {
      * @return addresses The related addresses of the liquidity pool
      * @return vaultFeeRate The vault fee rate of the liquidity pool
      * @return poolCash The pool cash(collateral) of the liquidity pool
-     * @return collateralDecimals The collateral's decimals of the liquidity pool
-     * @return perpetualCount The count of all perpetuals of the liquidity pool
-     * @return fundingTime The last update time of funding state
+     * @return nums Uint type properties, see below for details.
      */
     function getLiquidityPoolInfo()
         external
@@ -33,9 +31,11 @@ interface ILiquidityPool {
             address[7] memory addresses,
             int256 vaultFeeRate,
             int256 poolCash,
-            uint256 collateralDecimals,
-            uint256 perpetualCount,
-            uint256 fundingTime
+            // [0] collateralDecimals,
+            // [1] perpetualCount
+            // [2] fundingTime,
+            // [3] operatorExpiration,
+            uint256[4] memory nums
         );
 
     /**
