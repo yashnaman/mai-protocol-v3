@@ -71,14 +71,6 @@ contract Governance is Storage {
         _liquidityPool.revokeOperator();
     }
 
-    // /**
-    //  * @notice Claim the claimable fee of the operator. Can only called by the operator
-    //  */
-    // function claimOperatorFee() external onlyOperator {
-    //     address operator = _liquidityPool.operator;
-    //     _liquidityPool.claimFee(operator, _liquidityPool.claimableFees[operator]);
-    // }
-
     /**
      * @notice Set the parameter of the liquidity pool. Can only called by the governor
      * @param params The new value of the parameter

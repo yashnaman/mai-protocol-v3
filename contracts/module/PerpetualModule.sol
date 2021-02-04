@@ -301,26 +301,26 @@ library PerpetualModule {
         );
     }
 
-    /**
-     * @notice Set the state of the perpetual to "EMERGENCY". The state must be "NORMAL" before.
-     *         The settlement price is the mark price at this time
-     * @param perpetual The perpetual object
-     */
-    function setEmergencyState(PerpetualStorage storage perpetual, int256 settlementPrice) public {
-        require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-        // use mark price as final price when emergency
-        perpetual.settlementPriceData = OraclePriceData({
-            price: settlementPrice,
-            time: block.timestamp
-        });
-        perpetual.totalAccount = perpetual.activeAccounts.length();
-        perpetual.state = PerpetualState.EMERGENCY;
-        emit SetEmergencyState(
-            perpetual.id,
-            perpetual.settlementPriceData.price,
-            perpetual.settlementPriceData.time
-        );
-    }
+    // /**
+    //  * @notice Set the state of the perpetual to "EMERGENCY". The state must be "NORMAL" before.
+    //  *         The settlement price is the mark price at this time
+    //  * @param perpetual The perpetual object
+    //  */
+    // function setEmergencyState(PerpetualStorage storage perpetual, int256 settlementPrice) public {
+    //     require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
+    //     // use mark price as final price when emergency
+    //     perpetual.settlementPriceData = OraclePriceData({
+    //         price: settlementPrice,
+    //         time: block.timestamp
+    //     });
+    //     perpetual.totalAccount = perpetual.activeAccounts.length();
+    //     perpetual.state = PerpetualState.EMERGENCY;
+    //     emit SetEmergencyState(
+    //         perpetual.id,
+    //         perpetual.settlementPriceData.price,
+    //         perpetual.settlementPriceData.time
+    //     );
+    // }
 
     /**
      * @notice Set the state of the perpetual to "CLEARED". The state must be "EMERGENCY" before.

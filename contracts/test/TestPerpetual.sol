@@ -37,7 +37,7 @@ contract TestPerpetual is Storage {
         );
     }
 
-    function updatePerpetualRiskParameter(
+    function setPerpetualBaseParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue
@@ -100,7 +100,7 @@ contract TestPerpetual is Storage {
         }
     }
 
-    function updateRiskParameter(
+    function updatePerpetualRiskParameter(
         uint256 perpetualIndex,
         bytes32 key,
         int256 newValue

@@ -419,7 +419,7 @@ describe('Perpetual', () => {
     it("updateInsuranceFund", async () => {
         await perpetual.setState(0, 2);
 
-        await perpetual.setBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
+        await perpetual.setPerpetualBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
 
         expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
         expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));

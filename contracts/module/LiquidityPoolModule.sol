@@ -365,10 +365,14 @@ library LiquidityPoolModule {
         uint256 perpetualIndex,
         int256 settlementPrice
     ) public {
-        require(settlementPrice >= 0, "negative settlement price");
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(settlementPrice >= 0, "negative settlement price");
+        liquidityPool.perpetuals[perpetualIndex].markPriceData = OraclePriceData({
+            price: settlementPrice,
+            time: block.timestamp
+        });
         rebalance(liquidityPool, perpetualIndex);
-        liquidityPool.perpetuals[perpetualIndex].setEmergencyState(settlementPrice);
+        liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
 
     /**
