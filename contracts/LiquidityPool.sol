@@ -9,7 +9,6 @@ import "./interface/IPoolCreator.sol";
 import "./module/AMMModule.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./module/PerpetualModule.sol";
-import "./module/SignatureModule.sol";
 
 import "./Getter.sol";
 import "./Governance.sol";
@@ -18,14 +17,11 @@ import "./Perpetual.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-import "hardhat/console.sol";
-
 contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
-    using SignatureModule for bytes32;
 
     receive() external payable {}
 

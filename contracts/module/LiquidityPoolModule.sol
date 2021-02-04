@@ -17,11 +17,8 @@ import "./AMMModule.sol";
 import "./CollateralModule.sol";
 import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
-import "./SignatureModule.sol";
 
 import "../Type.sol";
-
-import "hardhat/console.sol";
 
 library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
@@ -29,7 +26,6 @@ library LiquidityPoolModule {
     using SafeMathExt for int256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
-    using SignatureModule for bytes32;
 
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;

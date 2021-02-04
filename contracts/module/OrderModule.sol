@@ -38,7 +38,6 @@ library OrderModule {
     ) public view {
         bytes32 orderHash = order.getOrderHash();
         address signer = Signature.getSigner(orderHash, signature);
-        console.log("DEBUG", signer, order.trader);
         if (signer != order.trader) {
             bool isAuthorized =
                 IAccessControll(liquidityPool.accessController).isGranted(

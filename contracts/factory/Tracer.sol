@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
 
-import "hardhat/console.sol";
-
 contract Tracer {
     using SafeMath for uint256;
     using SafeMathExt for uint256;

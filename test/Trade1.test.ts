@@ -99,7 +99,7 @@ describe('TradeModule1', () => {
         })
 
         it('getFees - rebate', async () => {
-            await testTrade.setBaseParameter(0, toBytes32("referralRebateRate"), toWei("0"));
+            await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0"));
             await testTrade.setMarginAccount(0, user0.address, toWei("1000"), toWei("0"));
             var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
             expect(lpFee).to.equal(toWei("0.07"));
@@ -107,7 +107,7 @@ describe('TradeModule1', () => {
             expect(vaultFee).to.equal(toWei("0.02"));
             expect(referralRebate).to.equal(toWei("0"));
 
-            await testTrade.setBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
+            await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
             await testTrade.setMarginAccount(0, user0.address, toWei("1000"), toWei("0"));
             var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
             expect(lpFee).to.equal(toWei("0.035"));
@@ -152,7 +152,7 @@ describe('TradeModule1', () => {
             expect(vaultFee).to.equal(toWei("0.02"));
             expect(referralRebate).to.equal(toWei("0"));
 
-            await testTrade.setBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
+            await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
             await testTrade.setMarginAccount(0, user0.address, toWei("0.1"), toWei("0"));
             var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), true);
             expect(lpFee).to.equal(toWei("0.035"));
@@ -194,7 +194,7 @@ describe('TradeModule1', () => {
             })
 
             it("postTrade - 1", async () => {
-                await testTrade.setBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
+                await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.1"), toWei("1"));
                 await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1")) // close
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);

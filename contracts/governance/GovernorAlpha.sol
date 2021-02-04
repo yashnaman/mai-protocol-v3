@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "../interface/ILiquidityPool.sol";
-// import "hardhat/console.sol";
 
 /// @notice Possible states that a proposal may be in
 enum ProposalState { Pending, Active, Canceled, Defeated, Succeeded, Queued, Expired, Executed }

@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libraries/OrderData.sol";
 import "../libraries/Signature.sol";
 
-import "hardhat/console.sol";
-
 contract TestCalc is Ownable {
     using Address for address;
 
@@ -62,82 +60,6 @@ contract TestCalc is Ownable {
     ) external {
         _balances[perpetualIndex][account] = _balances[perpetualIndex][account] + amount;
     }
-
-    // function domainHash() public view returns (bytes32) {
-    //     return OrderData.getDomainSeperator();
-    // }
-
-    // function messageData(
-    //     address from,
-    //     string memory functionSignature,
-    //     bytes memory callData,
-    //     uint32 nonce,
-    //     uint32 expiration,
-    //     uint64 gasFeeLimit
-    // ) public view returns (bytes memory) {
-    //     return
-    //         abi.encode(
-    //             CALL_FUNCTION_TYPE,
-    //             keccak256(bytes(method)),
-    //             msg.sender,
-    //             from,
-    //             address(this),
-    //             keccak256(callData),
-    //             nonce,
-    //             expiration,
-    //             gasFeeLimit
-    //         );
-    // }
-
-    // function messageHash(
-    //     address from,
-    //     string memory functionSignature,
-    //     bytes memory callData,
-    //     uint32 nonce,
-    //     uint32 expiration,
-    //     uint64 gasFeeLimit
-    // ) public view returns (bytes32) {
-    //     return
-    //         keccak256(
-    //             abi.encode(
-    //                 CALL_FUNCTION_TYPE,
-    //                 keccak256(bytes(method)),
-    //                 msg.sender,
-    //                 from,
-    //                 address(this),
-    //                 keccak256(callData),
-    //                 nonce,
-    //                 expiration,
-    //                 gasFeeLimit
-    //             )
-    //         );
-    // }
-
-    // function signedHash(
-    //     address from,
-    //     string memory functionSignature,
-    //     bytes memory callData,
-    //     uint32 nonce,
-    //     uint32 expiration,
-    //     uint64 gasFeeLimit
-    // ) public view returns (bytes32) {
-    //     bytes32 result =
-    //         keccak256(
-    //             abi.encode(
-    //                 CALL_FUNCTION_TYPE,
-    //                 keccak256(bytes(method)),
-    //                 msg.sender,
-    //                 from,
-    //                 address(this),
-    //                 keccak256(callData),
-    //                 nonce,
-    //                 expiration,
-    //                 gasFeeLimit
-    //             )
-    //         );
-
-    //     return keccak256(abi.encodePacked("\x19\x01", OrderData.getDomainSeperator(), result));
-    // }
 
     bytes32 internal constant EIP712_ORDER_TYPE =
         keccak256(abi.encodePacked("Order(address trader)"));

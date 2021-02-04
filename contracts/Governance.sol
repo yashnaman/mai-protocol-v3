@@ -4,7 +4,6 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
 import "./module/PerpetualModule.sol";
-import "./module/SignatureModule.sol";
 
 import "./Type.sol";
 import "./Storage.sol";
@@ -15,7 +14,6 @@ contract Governance is Storage {
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
-    using SignatureModule for bytes32;
 
     address internal _unconfirmedOperator;
     uint256 internal _transferExpiration;

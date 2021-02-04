@@ -5,8 +5,6 @@ pragma experimental ABIEncoderV2;
 import "../libraries/Utils.sol";
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library OrderData {
     uint32 internal constant MASK_CLOSE_ONLY = 0x80000000;
     uint32 internal constant MASK_MARKET_ORDER = 0x40000000;

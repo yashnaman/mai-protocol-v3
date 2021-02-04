@@ -15,8 +15,6 @@ import "./Implementation.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
 
-import "hardhat/console.sol";
-
 contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneFactory {
     using Address for address;
 
