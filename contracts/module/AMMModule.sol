@@ -25,7 +25,7 @@ library AMMModule {
         int256 indexPrice;
         int256 position;
         int256 positionValue;
-        // this is 10^36, others are 10^18
+        // squareValue is 10^36, others are 10^18
         int256 squareValue;
         int256 positionMargin;
         int256 availableCash;
@@ -59,19 +59,19 @@ library AMMModule {
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closePosition);
         // AMM open position
-        (int256 openDeltaMargin, int256 openDeltaPosition, int256 openBestPrice) =
+        (int256 openDeltaCash, int256 openDeltaPosition, int256 openBestPrice) =
             ammOpenPosition(context, perpetual, openPosition, partialFill);
-        deltaCash = deltaCash.add(openDeltaMargin);
+        deltaCash = deltaCash.add(openDeltaCash);
         deltaPosition = closePosition.add(openDeltaPosition);
         int256 bestPrice = closePosition != 0 ? closeBestPrice : openBestPrice;
-        // if better than best price, clip to best price
+        // If price is better(for trader) than best price, change price to best price
         deltaCash = deltaCash.max(bestPrice.wmul(deltaPosition).neg());
     }
 
     /**
-     * @dev Calculate the amount of share token to mint when liquidity provider adds liquidity to
-     *      the liquidity pool. If adding liquidity at first time for the liquidity pool, the amount
-     *      of share token to mint equals to the amount of cash(collateral) to add
+     * @dev Calculate the amount of share token to mint when liquidity provider adds liquidity to the liquidity pool.
+     *      If adding liquidity at first time, which means total supply of share token is zero,
+     *      the amount of share token to mint equals to the amount of cash(collateral) to add
      * @param liquidityPool The liquidity pool object of AMM
      * @param shareTotalSupply The total supply of the share token before adding liquidity
      * @param cashToAdd The cash(collateral) added to the liquidity pool
@@ -87,6 +87,8 @@ library AMMModule {
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
         if (poolMargin == 0) {
+            // If share token's total supply is not zero, these share tokens have no value,
+            // this case should be avoided.
             require(shareTotalSupply == 0, "share token has no value");
             // first time
             shareToMint = newPoolMargin;
@@ -96,8 +98,8 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the cash(collateral) to return when liquidity provider removes liquidity from
-     *      the liquidity pool. Removing liquidity is forbidden at several cases:
+     * @dev Calculate the cash(collateral) to return when liquidity provider removes liquidity from the liquidity pool.
+     *      Removing liquidity is forbidden at several cases:
      *      1. AMM is unsafe before removing liquidity
      *      2. AMM is unsafe after removing liquidity
      *      3. AMM will offer negative price at any perpetual after removing liquidity
@@ -112,7 +114,7 @@ library AMMModule {
         int256 shareTotalSupply,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
-        require(shareTotalSupply > 0, "the supply of share token is zero when removing liquidity");
+        require(shareTotalSupply > 0, "total supply of share token is zero when removing liquidity");
         Context memory context = prepareContext(liquidityPool);
         require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
         int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
@@ -133,7 +135,6 @@ library AMMModule {
                 continue;
             }
             int256 indexPrice = perpetual.getIndexPrice();
-            require(indexPrice > 0, "index price must be positive");
             // prevent AMM offering negative price
             require(
                 perpetual.getPosition(address(this)) <=
@@ -149,46 +150,9 @@ library AMMModule {
         );
     }
 
-    function getBestPrice(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        int256 tradeAmount
-    ) public view returns (int256 bestPrice) {
-        require(tradeAmount != 0, "trading amount is zero");
-        Context memory context = prepareContext(liquidityPool, perpetualIndex);
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 indexPrice = context.indexPrice;
-        int256 position = context.position;
-        (int256 closePosition, ) = Utils.splitAmount(position, tradeAmount);
-        int256 halfSpread =
-            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
-        if (closePosition != 0) {
-            // AMM closes position
-            int256 slippageFactor = perpetual.closeSlippageFactor.value;
-            if (isAMMSafe(context, slippageFactor)) {
-                int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
-                require(poolMargin > 0, "pool margin must be positive");
-                bestPrice = _getMidPrice(poolMargin, indexPrice, position, slippageFactor).wmul(
-                    halfSpread.add(Constant.SIGNED_ONE)
-                );
-            } else {
-                bestPrice = indexPrice;
-            }
-        } else {
-            // AMM opens position
-            int256 slippageFactor = perpetual.openSlippageFactor.value;
-            require(isAMMSafe(context, slippageFactor), "AMM is unsafe when open");
-            int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
-            require(poolMargin > 0, "pool margin must be positive");
-            bestPrice = _getMidPrice(poolMargin, indexPrice, position, slippageFactor).wmul(
-                halfSpread.add(Constant.SIGNED_ONE)
-            );
-        }
-    }
-
     /**
-     * @dev Calculate the pool margin of AMM when AMM is safe. Pool margin is how much collateral of the pool
-     *      considering the AMM's positions of perpetuals
+     * @dev Calculate the pool margin of AMM when AMM is safe.
+     *      Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
      * @param context The status of AMM
      * @param slippageFactor The slippage factor of the current perpetual
      * @return poolMargin The pool margin of AMM
@@ -201,21 +165,24 @@ library AMMModule {
         // The context doesn't include the current perpetual, add them.
         int256 positionValue = context.indexPrice.wmul(context.position);
         int256 margin = positionValue.add(context.positionValue).add(context.availableCash);
+        // 10^36, the same as context.squareValue
         int256 tmp = positionValue.wmul(positionValue).mul(slippageFactor).add(context.squareValue);
         int256 beforeSqrt = margin.mul(margin).sub(tmp.mul(2));
-        require(beforeSqrt >= 0, "AMM is unsafe when getting pool margin");
+        require(beforeSqrt >= 0, "AMM is unsafe when calculating pool margin");
         poolMargin = beforeSqrt.sqrt().add(margin).div(2);
+        require(poolMargin >= 0, "pool margin is negative when calculating pool margin");
     }
 
     /**
      * @dev Check if AMM is safe
-     * @param context The status of AMM. The context don't include the current
-     *                perpetual, the status of the current perpetual should be added
+     * @param context The status of AMM. The context don't include the current perpetual,
+     *                the status of the current perpetual should be added
      * @param slippageFactor The slippage factor of the current perpetual
      * @return bool True if AMM is safe
      */
     function isAMMSafe(Context memory context, int256 slippageFactor) internal pure returns (bool) {
         int256 positionValue = context.indexPrice.wmul(context.position);
+        // 10^36, the same as context.squareValue
         int256 minAvailableCash = positionValue.wmul(positionValue).mul(slippageFactor);
         minAvailableCash = minAvailableCash.add(context.squareValue).mul(2).sqrt().sub(
             context.positionValue.add(positionValue)
@@ -225,7 +192,7 @@ library AMMModule {
 
     /**
      * @dev Get the trading result when AMM closes its position. If AMM is unsafe, the trading price is the best price.
-     *      If the trading price is too bad, it will be limited to index price * (1 +/- maximum close price discount)
+     *      If the trading price is too bad(for AMM), it will be limited to index price * (1 +/- maximum close price discount)
      * @param context The status of AMM
      * @param perpetual The perpetual object to trade
      * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
@@ -251,10 +218,10 @@ library AMMModule {
         if (isAMMSafe(context, slippageFactor)) {
             int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
-            bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
+            bestPrice = getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
                 halfSpread.add(Constant.SIGNED_ONE)
             );
-            deltaCash = _getDeltaCash(
+            deltaCash = getDeltaCash(
                 poolMargin,
                 positionBefore,
                 positionBefore.add(tradeAmount),
@@ -279,8 +246,8 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when AMM opens its position. AMM can't open position when unsafe
-     *      and can't open position to exceed the maximum position
+     * @dev Get the trading result when AMM opens its position.
+     *      AMM can't open position when unsafe and can't open position to exceed the maximum position
      * @param context The status of AMM
      * @param perpetual The perpetual object to trade
      * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
@@ -319,7 +286,7 @@ library AMMModule {
         int256 positionBefore = context.position;
         int256 positionAfter = positionBefore.add(tradeAmount);
         int256 maxPosition =
-            _getMaxPosition(
+            getMaxPosition(
                 context,
                 poolMargin,
                 perpetual.ammMaxLeverage.value,
@@ -330,7 +297,7 @@ library AMMModule {
             require(partialFill, "trade amount exceeds max amount");
             // trade to max position if partialFill
             deltaPosition = maxPosition.sub(positionBefore);
-            // current position already exeeds max position, can't open
+            // current position already exeeds max position before trade, can't open
             if (Utils.hasTheSameSign(deltaPosition, tradeAmount.neg())) {
                 return (0, 0, 0);
             }
@@ -338,7 +305,7 @@ library AMMModule {
         } else {
             deltaPosition = tradeAmount;
         }
-        deltaCash = _getDeltaCash(
+        deltaCash = getDeltaCash(
             poolMargin,
             positionBefore,
             positionAfter,
@@ -352,7 +319,7 @@ library AMMModule {
         );
         int256 halfSpread =
             tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
-        bestPrice = _getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
+        bestPrice = getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
             halfSpread.add(Constant.SIGNED_ONE)
         );
     }
@@ -384,11 +351,13 @@ library AMMModule {
     {
         for (uint256 i = 0; i < liquidityPool.perpetuals.length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            // only involve normal market
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
             int256 position = perpetual.getPosition(address(this));
             int256 indexPrice = perpetual.getIndexPrice();
+            require(indexPrice > 0, "index price must be positive");
             context.availableCash = context.availableCash.add(
                 perpetual.getAvailableCash(address(this))
             );
@@ -396,15 +365,17 @@ library AMMModule {
                 context.indexPrice = indexPrice;
                 context.position = position;
             } else {
-                // to make cashToReturn smaller, positionValue should be bigger, squareValue should be smaller
+                // To avoid returning more cash than pool has because of precision error,
+                // cashToReturn should be smaller, which means positionValue should be smaller, squareValue should be bigger
                 context.positionValue = context.positionValue.add(
-                    indexPrice.wmul(position, Round.UP)
+                    indexPrice.wmul(position, Round.FLOOR)
                 );
+                // 10^36
                 context.squareValue = context.squareValue.add(
                     indexPrice
-                        .wmul(indexPrice, Round.DOWN)
-                        .wmul(position, Round.DOWN)
-                        .wmul(position, Round.DOWN)
+                        .wmul(indexPrice, Round.CEIL)
+                        .wmul(position, Round.CEIL)
+                        .wmul(position, Round.CEIL)
                         .mul(perpetual.openSlippageFactor.value)
                 );
                 context.positionMargin = context.positionMargin.add(
@@ -418,7 +389,7 @@ library AMMModule {
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
             ) >= 0,
-            "AMM is emergency"
+            "AMM's margin must be positive"
         );
     }
 
@@ -438,6 +409,7 @@ library AMMModule {
             return context.availableCash;
         }
         require(poolMargin > 0, "pool margin must be positive when removing liquidity");
+        // context.squareValue is 10^36, so use div instead of wdiv
         cashToReturn = context.squareValue.div(poolMargin).div(2).add(poolMargin).sub(
             context.positionValue
         );
@@ -452,7 +424,7 @@ library AMMModule {
      * @param slippageFactor The slippage factor of AMM in the perpetual
      * @return int256 The middle price offered by AMM
      */
-    function _getMidPrice(
+    function getMidPrice(
         int256 poolMargin,
         int256 indexPrice,
         int256 position,
@@ -474,7 +446,7 @@ library AMMModule {
      * @param slippageFactor The slippage factor of AMM in the perpetual
      * @return deltaCash The update cash(collateral) of AMM after trading
      */
-    function _getDeltaCash(
+    function getDeltaCash(
         int256 poolMargin,
         int256 positionBefore,
         int256 positionAfter,
@@ -491,7 +463,7 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the max position of AMM in the perpetual, calculated by three restrictions:
+     * @dev Get the max position of AMM in the perpetual when AMM is opening position, calculated by three restrictions:
      *      1. AMM must be safe after the trade.
      *      2. AMM mustn't exceed maximum leverage in any perpetual after the trade.
      *      3. AMM must offer positive price in any perpetual after the trade. It's easy to prove that, in the
@@ -502,7 +474,7 @@ library AMMModule {
      * @param slippageFactor The slippage factor of AMM in the perpetual
      * @return maxPosition The max position of AMM in the perpetual
      */
-    function _getMaxPosition(
+    function getMaxPosition(
         Context memory context,
         int256 poolMargin,
         int256 ammMaxLeverage,
@@ -510,7 +482,6 @@ library AMMModule {
         bool isLongSide
     ) internal pure returns (int256 maxPosition) {
         int256 indexPrice = context.indexPrice;
-        require(indexPrice > 0, "index price must be positive");
         int256 beforeSqrt =
             poolMargin.mul(poolMargin).mul(2).sub(context.squareValue).wdiv(slippageFactor);
         if (beforeSqrt <= 0) {
@@ -520,6 +491,7 @@ library AMMModule {
         }
         int256 maxPosition3 = beforeSqrt.sqrt().wdiv(indexPrice);
         int256 maxPosition2;
+        // context.squareValue is 10^36, so use div instead of wdiv
         beforeSqrt = poolMargin.sub(context.positionMargin).add(
             context.squareValue.div(poolMargin).div(2)
         );
@@ -529,7 +501,8 @@ library AMMModule {
             // never exceed max leverage
             maxPosition2 = type(int256).max;
         } else {
-            maxPosition2 = poolMargin.sub(beforeSqrt.mul(poolMargin).sqrt());
+            // might be negative, clip to zero
+            maxPosition2 = poolMargin.sub(beforeSqrt.mul(poolMargin).sqrt()).max(0);
             maxPosition2 = maxPosition2.wdiv(ammMaxLeverage).wdiv(slippageFactor).wdiv(indexPrice);
         }
         maxPosition = maxPosition3.min(maxPosition2);
@@ -543,8 +516,8 @@ library AMMModule {
     }
 
     /**
-     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe. Marin of AMM:
-     *      cash + index price1 * position1 + index price2 * position2 + ...
+     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe.
+     *      Marin of AMM: cash + index price1 * position1 + index price2 * position2 + ...
      * @param context The status of AMM
      * @return int256 The pool margin of AMM
      * @return bool True if AMM is safe
@@ -553,7 +526,9 @@ library AMMModule {
         if (isAMMSafe(context, 0)) {
             return (calculatePoolMarginWhenSafe(context, 0), true);
         } else {
-            return (context.availableCash.add(context.positionValue).div(2), false);
+            int256 poolMargin = context.availableCash.add(context.positionValue).div(2);
+            require(poolMargin >= 0, "pool margin is negative when getting pool margin");
+            return (poolMargin, false);
         }
     }
 }

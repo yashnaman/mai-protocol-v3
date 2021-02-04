@@ -79,7 +79,7 @@ contract TestAMM {
         returns (int256 deltaCash)
     {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
-        deltaCash = AMMModule._getDeltaCash(
+        deltaCash = AMMModule.getDeltaCash(
             getPoolMargin(),
             perpetual.marginAccounts[address(this)].position,
             perpetual.marginAccounts[address(this)].position.add(amount),
@@ -92,7 +92,7 @@ contract TestAMM {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
         return
-            AMMModule._getMaxPosition(
+            AMMModule.getMaxPosition(
                 context,
                 getPoolMargin(),
                 perpetual.ammMaxLeverage.value,
@@ -128,14 +128,6 @@ contract TestAMM {
         returns (int256)
     {
         return AMMModule.getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
-    }
-
-    function getBestPrice(int256 tradeAmount)
-        public
-        view
-        returns (int256)
-    {
-        return AMMModule.getBestPrice(liquidityPool, 0, tradeAmount);
     }
 
 }

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "./Constant.sol";
 import "./Utils.sol";
 
-enum Round { UP, DOWN }
+enum Round { CEIL, FLOOR }
 
 library SafeMathExt {
     using SafeMathUpgradeable for uint256;
@@ -120,7 +120,7 @@ library SafeMathExt {
     }
 
     /*
-     * @dev Division, rounding up or rounding down
+     * @dev Division, rounding ceil or rounding floor
      */
     function div(
         int256 x,
@@ -129,17 +129,17 @@ library SafeMathExt {
     ) internal pure returns (int256) {
         require(y != 0, "division by zero");
         int256 divResult = x.div(y);
-        if (round == Round.UP) {
-            if (x % y == 0) {
-                return divResult;
-            } else if (Utils.hasTheSameSign(x, y)) {
-                return divResult.add(1);
-            } else {
-                return divResult.sub(1);
-            }
-        } else {
+        if (x % y == 0) {
             return divResult;
         }
+        bool isSameSign = Utils.hasTheSameSign(x, y);
+        if (round == Round.CEIL && isSameSign) {
+            return divResult.add(1);
+        }
+        if (round == Round.FLOOR && !isSameSign) {
+            return divResult.sub(1);
+        }
+        return divResult;
     }
 
     function max(int256 a, int256 b) internal pure returns (int256) {

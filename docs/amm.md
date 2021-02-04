@@ -35,7 +35,7 @@ getPoolMargin(Context memory context)
 The trade will be divided into two parts: AMM closes its position and AMM opens its position. If the trading price of the whole trade is better than speard price for trader, clip the trading price to spread price. **Spread price** is `middle price * (1 +/- half spread)`. The formula of **middle price** is formula (11) in amm.pdf. The implementation function of formula is:
 
 ```solidity
-_getMidPrice(int256 poolMargin, int256 indexPrice, int256 position, int256 slippageFactor)
+getMidPrice(int256 poolMargin, int256 indexPrice, int256 position, int256 slippageFactor)
 ```
 
 ### AMM closes position
@@ -47,7 +47,7 @@ If AMM is unsafe, trading price is index price in normal case or `(1 - max close
 If AMM is safe, the formula of trading price is formula (7) in amm.pdf. The implementation function of formula is:
 
 ```solidity
-_getDeltaCash(int256 poolMargin, int256 positionBefore, int256 positionAfter, int256 indexPrice, int256 slippageFactor)
+getDeltaCash(int256 poolMargin, int256 positionBefore, int256 positionAfter, int256 indexPrice, int256 slippageFactor)
 ```
 
 This function returns the update cash amount of AMM after the trade, divide by position amount to get the trading price. If the trading price is too bad for AMM, limit the trading price to `index price * (1 +/- max close price discount)`.
@@ -70,7 +70,7 @@ If AMM is safe, AMM can't trade to exceed its maximum position. **Maximum positi
 The formula of calculating maximum position of AMM is in appendix 3 in amm.pdf. The implementation function of formula is:
 
 ```solidity
-_getMaxPosition(Context memory context, int256 poolMargin, int256 ammMaxLeverage, int256 slippageFactor, bool isLongSide)
+getMaxPosition(Context memory context, int256 poolMargin, int256 ammMaxLeverage, int256 slippageFactor, bool isLongSide)
 ```
 
 If allowed **partial fill**(liquidate trade) and AMM will exceed its maximum position after trade, trade amount will be executed a part. AMM actually reaches its maximum position after the trade.

@@ -216,7 +216,7 @@ describe('AMM', () => {
         failCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                await expect(amm.getPoolMargin()).to.be.revertedWith('AMM is unsafe when getting pool margin')
+                await expect(amm.getPoolMargin()).to.be.revertedWith('AMM is unsafe when calculating pool margin')
             })
         })
     })
@@ -515,7 +515,7 @@ describe('AMM', () => {
                 amm: ammEmergency,
                 amount: toWad('1'),
                 partialFill: false,
-                errorMsg: 'AMM is emergency'
+                errorMsg: 'AMM\'s margin must be positive'
             },
             {
                 name: 'zero trade amount',
@@ -768,88 +768,7 @@ describe('AMM', () => {
         })
         it("zero supply of share token", async () => {
             await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-            await expect(amm.getCashToReturn(_0, _0)).to.be.revertedWith("the supply of share token is zero when removing liquidity");
-        })
-    })
-
-    describe('best price', function () {
-
-        const successCases = [
-            {
-                name: 'open 0 -> -x',
-                amm: amm0,
-                amount: toWad('-10'),
-                price: toWad('100.1') // trader buy, (1 + α)
-            },
-            {
-                name: 'open -10',
-                amm: amm1,
-                amount: toWad('-10'),
-                price: toWad('110.11') // trader buy, (1 + α)
-            },
-            {
-                name: 'open 0 -> +x',
-                amm: amm0,
-                amount: toWad('10'),
-                price: toWad('99.9') // trader sell, (1 - α)
-            },
-            {
-                name: 'open 10',
-                amm: amm4,
-                amount: toWad('10'),
-                price: toWad('89.91') // trader sell, (1 - α)
-            },
-            {
-                name: 'close -10',
-                amm: amm1,
-                amount: toWad('10'),
-                price: toWad('108.88646369499801395463383186703') // trader sell, (1 - α)
-            },
-            {
-                name: 'close 10',
-                amm: amm4,
-                amount: toWad('-10'),
-                price: toWad('91.09554538669368171312465896007') // trader buy, (1 + α)
-            },
-            {
-                name: 'close unsafe -10',
-                amm: amm3,
-                amount: toWad('10'),
-                price: toWad('100')
-            },
-            {
-                name: 'close unsafe 10',
-                amm: amm6,
-                amount: toWad('-10'),
-                price: toWad('100')
-            },
-        ]
-
-        successCases.forEach(element => {
-            it(element.name, async () => {
-                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                expect(await amm.getBestPrice(element.amount)).approximateBigNumber(element.price);
-            })
-        })
-
-        const failCases = [
-            {
-                name: 'open unsafe -10',
-                amm: amm3,
-                amount: toWad('-10')
-            },
-            {
-                name: 'open unsafe 10',
-                amm: amm6,
-                amount: toWad('10')
-            },
-        ]
-
-        failCases.forEach(element => {
-            it(element.name, async () => {
-                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
-                await expect(amm.getBestPrice(element.amount)).to.be.revertedWith('AMM is unsafe when open');
-            })
+            await expect(amm.getCashToReturn(_0, _0)).to.be.revertedWith("total supply of share token is zero when removing liquidity");
         })
     })
 

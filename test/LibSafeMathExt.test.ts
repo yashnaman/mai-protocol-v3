@@ -35,24 +35,24 @@ describe('LibSafeMathExt', () => {
             expect(await libSafeMathExt["wmul(int256,int256)"](toWad('-100'), toWad('0'))).to.equal(toWad('0'));
         });
 
-        it('int256 up', async () => {
+        it('int256 ceil', async () => {
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('0.000000000000000044'), toWad('0.1'), 0)).to.equal(toWad('0.000000000000000005'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('0.000000000000000045'), toWad('0.1'), 0)).to.equal(toWad('0.000000000000000005'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('1'), 0)).to.equal(toWad('100'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('0'), 0)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000044'), toWad('0.1'), 0)).to.equal(toWad('-0.000000000000000005'));
-            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000045'), toWad('0.1'), 0)).to.equal(toWad('-0.000000000000000005'));
+            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000044'), toWad('0.1'), 0)).to.equal(toWad('-0.000000000000000004'));
+            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000045'), toWad('0.1'), 0)).to.equal(toWad('-0.000000000000000004'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('-1'), 0)).to.equal(toWad('-100'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-100'), toWad('0'), 0)).to.equal(toWad('0'));
         });
 
-        it('int256 down', async () => {
+        it('int256 floor', async () => {
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('0.000000000000000044'), toWad('0.1'), 1)).to.equal(toWad('0.000000000000000004'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('0.000000000000000045'), toWad('0.1'), 1)).to.equal(toWad('0.000000000000000004'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('1'), 1)).to.equal(toWad('100'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('0'), 1)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000044'), toWad('0.1'), 1)).to.equal(toWad('-0.000000000000000004'));
-            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000045'), toWad('0.1'), 1)).to.equal(toWad('-0.000000000000000004'));
+            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000044'), toWad('0.1'), 1)).to.equal(toWad('-0.000000000000000005'));
+            expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-0.000000000000000045'), toWad('0.1'), 1)).to.equal(toWad('-0.000000000000000005'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('100'), toWad('-1'), 1)).to.equal(toWad('-100'));
             expect(await libSafeMathExt["wmul(int256,int256,uint8)"](toWad('-100'), toWad('0'), 1)).to.equal(toWad('0'));
         });
@@ -80,25 +80,25 @@ describe('LibSafeMathExt', () => {
             await expect(libSafeMathExt["wdiv(int256,int256)"](toWad('100'), toWad('0'))).to.be.revertedWith('roundHalfUp only supports y > 0');
         });
 
-        it('int256 up', async () => {
+        it('int256 ceil', async () => {
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0.000000000000000004'), toWad('10'), 0)).to.equal(toWad('0.000000000000000001'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0.000000000000000005'), toWad('10'), 0)).to.equal(toWad('0.000000000000000001'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('1'), 0)).to.equal(toWad('100'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0'), toWad('1'), 0)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000004'), toWad('10'), 0)).to.equal(toWad('-0.000000000000000001'));
-            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000005'), toWad('10'), 0)).to.equal(toWad('-0.000000000000000001'));
+            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000004'), toWad('10'), 0)).to.equal(toWad('0'));
+            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000005'), toWad('10'), 0)).to.equal(toWad('0'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('-1'), 0)).to.equal(toWad('-100'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0'), toWad('-1'), 0)).to.equal(toWad('0'));
             await expect(libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('0'), 0)).to.be.revertedWith('division by zero');
         });
 
-        it('int256 down', async () => {
+        it('int256 floor', async () => {
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0.000000000000000004'), toWad('10'), 1)).to.equal(toWad('0'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0.000000000000000005'), toWad('10'), 1)).to.equal(toWad('0'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('1'), 1)).to.equal(toWad('100'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0'), toWad('1'), 1)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000004'), toWad('10'), 1)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000005'), toWad('10'), 1)).to.equal(toWad('0'));
+            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000004'), toWad('10'), 1)).to.equal(toWad('-0.000000000000000001'));
+            expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('-0.000000000000000005'), toWad('10'), 1)).to.equal(toWad('-0.000000000000000001'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('-1'), 1)).to.equal(toWad('-100'));
             expect(await libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('0'), toWad('-1'), 1)).to.equal(toWad('0'));
             await expect(libSafeMathExt["wdiv(int256,int256,uint8)"](toWad('100'), toWad('0'), 1)).to.be.revertedWith('division by zero');
@@ -127,13 +127,13 @@ describe('LibSafeMathExt', () => {
             await expect(libSafeMathExt["wfrac(int256,int256,int256)"](toWad('-100'), toWad('1'), toWad('0'))).to.be.revertedWith('roundHalfUp only supports y > 0');
         });
 
-        it('int256 up', async () => {
+        it('int256 ceil', async () => {
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0.000000000000000002'), toWad('2'), toWad('10'), 0)).to.equal(toWad('0.000000000000000001'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0.000000000000000001'), toWad('5'), toWad('10'), 0)).to.equal(toWad('0.000000000000000001'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('20'), toWad('0.3'), toWad('1'), 0)).to.equal(toWad('6'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0'), toWad('20.1'), toWad('1'), 0)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000002'), toWad('2'), toWad('10'), 0)).to.equal(toWad('-0.000000000000000001'));
-            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000001'), toWad('5'), toWad('10'), 0)).to.equal(toWad('-0.000000000000000001'));
+            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000002'), toWad('2'), toWad('10'), 0)).to.equal(toWad('0'));
+            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000001'), toWad('5'), toWad('10'), 0)).to.equal(toWad('0'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('20'), toWad('-0.3'), toWad('1'), 0)).to.equal(toWad('-6'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0'), toWad('-20.1'), toWad('-1'), 0)).to.equal(toWad('0'));
             await expect(libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-100'), toWad('1'), toWad('0'), 0)).to.be.revertedWith('division by zero');
@@ -144,8 +144,8 @@ describe('LibSafeMathExt', () => {
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0.000000000000000001'), toWad('5'), toWad('10'), 1)).to.equal(toWad('0'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('20'), toWad('0.3'), toWad('1'), 1)).to.equal(toWad('6'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0'), toWad('20.1'), toWad('1'), 1)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000002'), toWad('2'), toWad('10'), 1)).to.equal(toWad('0'));
-            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000001'), toWad('5'), toWad('10'), 1)).to.equal(toWad('0'));
+            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000002'), toWad('2'), toWad('10'), 1)).to.equal(toWad('-0.000000000000000001'));
+            expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-0.000000000000000001'), toWad('5'), toWad('10'), 1)).to.equal(toWad('-0.000000000000000001'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('20'), toWad('-0.3'), toWad('1'), 1)).to.equal(toWad('-6'));
             expect(await libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('0'), toWad('-20.1'), toWad('-1'), 1)).to.equal(toWad('0'));
             await expect(libSafeMathExt["wfrac(int256,int256,int256,uint8)"](toWad('-100'), toWad('1'), toWad('0'), 1)).to.be.revertedWith('division by zero');
