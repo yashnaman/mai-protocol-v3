@@ -114,7 +114,10 @@ library AMMModule {
         int256 shareTotalSupply,
         int256 shareToRemove
     ) public view returns (int256 cashToReturn) {
-        require(shareTotalSupply > 0, "total supply of share token is zero when removing liquidity");
+        require(
+            shareTotalSupply > 0,
+            "total supply of share token is zero when removing liquidity"
+        );
         Context memory context = prepareContext(liquidityPool);
         require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
         int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
