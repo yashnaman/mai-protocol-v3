@@ -28,12 +28,12 @@ contract OracleWrapper is Ownable {
         _markPriceTimestamp = timestamp;
     }
 
-    function setMarketClosed(bool isClosed) external onlyOwner {
-        _isMarketClosed = isClosed;
+    function setMarketClosed(bool isClosed_) external onlyOwner {
+        _isMarketClosed = isClosed_;
     }
 
-    function setTerminated(bool isTerminated) external onlyOwner {
-        _isTerminated = isTerminated;
+    function setTerminated(bool isTerminated_) external onlyOwner {
+        _isTerminated = isTerminated_;
     }
 
     function collateral() external view returns (string memory) {
