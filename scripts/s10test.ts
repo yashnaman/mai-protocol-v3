@@ -16,33 +16,47 @@ function toMap(a) {
 };
 
 async function deployOracle() {
-    const oracle1 = await createContract("OracleWrapper", ["ETH", "USD"]);
-    const oracle2 = await createContract("OracleWrapper", ["ETH", "BTC"]);
-
     const oracle3 = await createContract("OracleWrapper", ["USD", "ETH"]);
     const oracle4 = await createContract("OracleWrapper", ["USD", "BTC"]);
     const oracle5 = await createContract("OracleWrapper", ["USD", "DPI"]);
     const oracle6 = await createContract("OracleWrapper", ["USD", "SP500"]);
+    const oracleRouterCreator = await createContract("OracleRouterCreator");
 
     // index printer
     const owner = "0x1a3F275b9Af71D597219899151140a0049DB557b";
-    await oracle1.transferOwnership(owner);
-    await oracle2.transferOwnership(owner);
     await oracle3.transferOwnership(owner);
     await oracle4.transferOwnership(owner);
     await oracle5.transferOwnership(owner);
     await oracle6.transferOwnership(owner);
 
+    // router: USD-ETH
+    let path = [
+        { oracle: oracle3.address, isInverse: true },
+    ];
+    let tx = await oracleRouterCreator.createOracleRouter(path);
+    await tx.wait();
+    const oracle1 = await oracleRouterCreator.routers(await oracleRouterCreator.getPathHash(path));
+
+    // router: BTC-ETH
+    path = [
+        { oracle: oracle3.address, isInverse: true },
+        { oracle: oracle4.address, isInverse: false },
+    ];
+    tx = await oracleRouterCreator.createOracleRouter(path);
+    await tx.wait();
+    const oracle2 = await oracleRouterCreator.routers(await oracleRouterCreator.getPathHash(path));
+
     const addresses = [
-        ["USD - ETH", oracle1.address],
-        ["BTC - ETH", oracle2.address],
+        ["oracleRouterCreator", oracleRouterCreator.address],
+        ["USD - ETH", oracle1],
+        ["BTC - ETH", oracle2],
         ["ETH - USD", oracle3.address],
         ["BTC - USD", oracle4.address],
         ["DPI - USD", oracle5.address],
         ["SP500 - USD", oracle6.address],
-    ]
-    console.table(addresses)
-    return toMap(addresses)
+    ];
+    console.table(addresses);
+    return toMap(addresses);
 }
 
 async function main(accounts: any[]) {
