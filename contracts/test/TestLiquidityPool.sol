@@ -30,6 +30,7 @@ contract TestLiquidityPool is TestPerpetual {
 
     function setOperator(address operator) public {
         _liquidityPool.operator = operator;
+        _liquidityPool.operatorExpiration = block.timestamp + 864000;
     }
 
     function setShareToken(address shareToken) public {
@@ -120,7 +121,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function donateInsuranceFundP(uint256 perpetualIndex, int256 amount) public payable {
-        _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
+        _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
     }
 
     function depositP(
@@ -140,7 +141,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function clearP(uint256 perpetualIndex) public {
-        _liquidityPool.clear(perpetualIndex);
+        _liquidityPool.clear(perpetualIndex, _msgSender());
     }
 
     function settleP(uint256 perpetualIndex, address trader) public {

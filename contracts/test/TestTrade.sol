@@ -94,8 +94,7 @@ contract TestTrade is TestLiquidityPool {
         uint256 perpetualIndex,
         address trader,
         address referrer,
-        int256 tradeValue,
-        bool hasOpened
+        int256 tradeValue
     )
         public
         view
@@ -111,8 +110,7 @@ contract TestTrade is TestLiquidityPool {
             perpetual,
             trader,
             referrer,
-            tradeValue,
-            hasOpened
+            tradeValue
         );
     }
 

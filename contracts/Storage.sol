@@ -16,17 +16,6 @@ contract Storage is ContextUpgradeable {
     using LiquidityPoolModule for LiquidityPoolStorage;
 
     LiquidityPoolStorage internal _liquidityPool;
-    // TODO: to be remove
-    address internal __dummy1;
-    address internal __dummy2;
-
-    modifier onlyNotPaused(uint256 perpetualIndex) {
-        require(
-            !IOracle(_liquidityPool.perpetuals[perpetualIndex].oracle).isMarketClosed(),
-            "market is closed now"
-        );
-        _;
-    }
 
     modifier onlyExistedPerpetual(uint256 perpetualIndex) {
         require(perpetualIndex < _liquidityPool.perpetuals.length, "perpetual not exist");
@@ -59,10 +48,10 @@ contract Storage is ContextUpgradeable {
 
     modifier onlyAuthorized(address trader, uint256 privilege) {
         require(
-            trader == msg.sender ||
+            trader == _msgSender() ||
                 IAccessControll(_liquidityPool.accessController).isGranted(
                     trader,
-                    msg.sender,
+                    _msgSender(),
                     privilege
                 ),
             "unauthorized operation"
@@ -70,6 +59,5 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
-    // TODO: bytes => bytes32
     bytes32[50] private __gap;
 }

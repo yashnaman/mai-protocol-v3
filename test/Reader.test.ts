@@ -55,7 +55,7 @@ describe("Reader", () => {
         weth = await createContract("WETH9");
         symbol = await createContract("SymbolService", [10000]);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
-        lpTokenTemplate = await createContract("ShareToken");
+        lpTokenTemplate = await createContract("LpGovernor");
         govTemplate = await createContract("TestGovernor");
         maker = await createContract(
             "PoolCreator",

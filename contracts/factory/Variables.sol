@@ -79,7 +79,7 @@ contract Variables {
         return _symbolService;
     }
 
-    function getMCBToken() public view returns (address) {
+    function getMCBToken() public pure returns (address) {
         // const MCB token
         // TODO: test only
         return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);

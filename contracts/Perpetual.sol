@@ -32,7 +32,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
     {
         require(amount > 0 || msg.value > 0, "amount is invalid");
-        _liquidityPool.donateInsuranceFund(perpetualIndex, amount);
+        _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
     }
 
     /**
@@ -101,7 +101,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
         nonReentrant
     {
-        _liquidityPool.clear(perpetualIndex);
+        _liquidityPool.clear(perpetualIndex, _msgSender());
     }
 
     /**
@@ -207,7 +207,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
-        return _liquidityPool.liquidateByAMM(perpetualIndex, msg.sender, trader);
+        return _liquidityPool.liquidateByAMM(perpetualIndex, _msgSender(), trader);
     }
 
     /**
@@ -247,7 +247,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         return
             _liquidityPool.liquidateByTrader(
                 perpetualIndex,
-                msg.sender,
+                _msgSender(),
                 trader,
                 amount,
                 limitPrice

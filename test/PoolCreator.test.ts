@@ -34,7 +34,7 @@ describe("PoolCreator", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("ShareToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var creator = await createContract(
             "PoolCreator",
@@ -74,7 +74,7 @@ describe("PoolCreator", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("ShareToken");
+        var lpTokenTemplate = await createContract("LpGovernor");
         var govTemplate = await createContract("TestGovernor");
         var creator = await createContract(
             "PoolCreator",

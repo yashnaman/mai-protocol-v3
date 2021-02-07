@@ -72,7 +72,7 @@ library LiquidityPoolModule {
     }
 
     function getOperator(LiquidityPoolStorage storage liquidityPool)
-        public
+        internal
         view
         returns (address operator)
     {
@@ -168,6 +168,7 @@ library LiquidityPoolModule {
      */
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
+        address creator,
         address collateral,
         uint256 collateralDecimals,
         address operator,
@@ -180,10 +181,10 @@ library LiquidityPoolModule {
         require(shareToken != address(0), "shareToken is invalid");
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
-        liquidityPool.creator = msg.sender;
-        IPoolCreator creator = IPoolCreator(msg.sender);
-        liquidityPool.isWrapped = (collateral == creator.getWeth());
-        liquidityPool.accessController = creator.getAccessController();
+        liquidityPool.creator = creator;
+        IPoolCreator poolCreator = IPoolCreator(creator);
+        liquidityPool.isWrapped = (collateral == poolCreator.getWeth());
+        liquidityPool.accessController = poolCreator.getAccessController();
 
         liquidityPool.operator = operator;
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
@@ -231,7 +232,7 @@ library LiquidityPoolModule {
             perpetualIndex,
             liquidityPool.governor,
             liquidityPool.shareToken,
-            liquidityPool.operator,
+            getOperator(liquidityPool),
             oracle,
             liquidityPool.collateralToken,
             coreParams,
@@ -291,7 +292,6 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setBaseParameter(baseParams);
-        perpetual.validateBaseParameters();
     }
 
     /**
@@ -312,7 +312,6 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setRiskParameter(riskParams, minRiskParamValues, maxRiskParamValues);
-        perpetual.validateRiskParameters();
     }
 
     /**
@@ -329,7 +328,6 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateRiskParameter(riskParams);
-        perpetual.validateRiskParameters();
     }
 
     /**
@@ -389,17 +387,15 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator() function
-     *         next to complete the transfer. Can only called by the operator. If no operator exists, can only
-     *         called by the governor
-     * @param liquidityPool The liquidity pool object
-     * @param newOperator The address of the new operator
+     * @notice Specify a new address to be operator. See transferOperator in Governance.sol.
+     * @param  liquidityPool    The liquidity pool storage.
+     * @param  newOperator      The address of new operator to transfer to
      */
     function transferOperator(LiquidityPoolStorage storage liquidityPool, address newOperator)
         public
     {
         require(newOperator != address(0), "new operator is invalid");
-        require(newOperator != liquidityPool.operator, "cannot transfer to current operator");
+        require(newOperator != getOperator(liquidityPool), "cannot transfer to current operator");
         liquidityPool.transferringOperator = newOperator;
         emit TransferOperatorTo(newOperator);
     }
@@ -410,26 +406,21 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Claim the ownership of the liquidity pool to the claimer.
-     *         The claimer must be transferred the ownership before
-     * @param liquidityPool The liquidity pool object
-     * @param claimer The address of claimer
+     * @notice  Claim the ownership of the liquidity pool to claimer. See `transferOperator` in Governance.sol.
+     * @param   liquidityPool   The liquidity pool storage.
+     * @param   claimer         The address of claimer
      */
     function claimOperator(LiquidityPoolStorage storage liquidityPool, address claimer) public {
-        require(
-            claimer == liquidityPool.transferringOperator,
-            "claimer must be specified by operator"
-        );
+        require(claimer == liquidityPool.transferringOperator, "caller is not qualified");
         liquidityPool.operator = claimer;
         liquidityPool.transferringOperator = address(0);
-        // update record in Tracer.sol
         IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), claimer);
         emit ClaimOperator(claimer);
     }
 
     /**
-     * @notice Revoke the operator of the liquidity pool. Can only called by the operator
-     * @param liquidityPool The liquidity pool object
+     * @notice  Revoke operatorship of the liquidity pool.
+     * @param   liquidityPool The liquidity pool object
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
         liquidityPool.operator = address(0);
@@ -501,11 +492,12 @@ library LiquidityPoolModule {
     function donateInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
+        address donator,
         int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         int256 totalAmount =
-            transferFromUserToPerpetual(liquidityPool, perpetualIndex, msg.sender, amount);
+            transferFromUserToPerpetual(liquidityPool, perpetualIndex, donator, amount);
         liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
     }
 
@@ -587,7 +579,11 @@ library LiquidityPoolModule {
      * @param liquidityPool The liquidity pool object
      * @param perpetualIndex The index of the perpetual in the liquidity pool
      */
-    function clear(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
+    function clear(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader
+    ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         if (
             perpetual.keeperGasReward > 0 && perpetual.totalCollateral >= perpetual.keeperGasReward
@@ -595,7 +591,7 @@ library LiquidityPoolModule {
             transferFromPerpetualToUser(
                 liquidityPool,
                 perpetualIndex,
-                payable(msg.sender),
+                payable(trader),
                 perpetual.keeperGasReward
             );
         }

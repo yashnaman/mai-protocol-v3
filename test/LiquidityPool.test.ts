@@ -270,7 +270,7 @@ describe('LiquidityPool', () => {
             await liquidityPool.transferOperator(user1.address);
             expect(await liquidityPool.getOperator()).to.equal(user0.address);
             expect(await liquidityPool.getTransferringOperator()).to.equal(user1.address);
-            await expect(liquidityPool.connect(user2).claimOperator()).to.be.revertedWith("claimer must be specified by operator");
+            await expect(liquidityPool.connect(user2).claimOperator()).to.be.revertedWith("caller is not qualified");
 
             await liquidityPool.transferOperator(user2.address);
             expect(await liquidityPool.getOperator()).to.equal(user0.address);

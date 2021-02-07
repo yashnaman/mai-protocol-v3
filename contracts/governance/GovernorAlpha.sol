@@ -10,15 +10,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import "../interface/ILiquidityPool.sol";
 
 /// @notice Possible states that a proposal may be in
-enum ProposalState { Pending, Active, Canceled, Defeated, Succeeded, Queued, Expired, Executed }
+enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Expired }
 
 struct Proposal {
     // Unique id for looking up a proposal
     uint256 id;
     // Creator of the proposal
     address proposer;
-    // The timestamp that the proposal will be available for execution, set once the vote succeeds
-    uint256 eta;
     // The ordered list of function signatures to be called
     string[] signatures;
     // The ordered list of calldata to be passed to each call
@@ -33,8 +31,6 @@ struct Proposal {
     uint256 forVotes;
     // Current number of votes in opposition to this proposal
     uint256 againstVotes;
-    // Flag marking whether the proposal has been canceled
-    bool canceled;
     // Flag marking whether the proposal has been executed
     bool executed;
     // Receipts of ballots for the entire set of voters
@@ -59,8 +55,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         keccak256(bytes("upgradeTo(address,address)"));
     bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
         keccak256(bytes("forceToSetEmergencyState(uint256)"));
-    bytes32 public constant SIGNATURE_PERPETUAL_SET_OPERATOR =
-        keccak256(bytes("setOperator(address)"));
+    bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
+        keccak256(bytes("transferOperator(address)"));
 
     address internal _target;
 
@@ -87,7 +83,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         uint256 quorumVotes,
         string description
     );
-
+    /// @notice An event emitted when a proposal is executed
     event ExecuteTransaction(
         bytes32 indexed txHash,
         address indexed target,
@@ -105,9 +101,10 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         _target = target;
     }
 
-    // virtual methods
+    /// @notice Balance of vote token which must be implemented through inheritance
     function balanceOf(address account) public view virtual returns (uint256);
 
+    /// @notice TotalSupply of vote token which must be implemented through inheritance
     function totalSupply() public view virtual returns (uint256);
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached
@@ -139,15 +136,20 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /// @notice The duration of voting on a proposal, in blocks
     function votingPeriod() public pure virtual returns (uint256) {
-        return 17280;
+        // TODO: 17280
+        return 10;
     }
 
+    /// @notice The delay before a succeeded proposal being executed (say, proposal in queued state)
     function executionDelay() public pure virtual returns (uint256) {
-        return 11520;
+        // TODO: 11520
+        return 10;
     }
 
-    function unlockPeriod() public pure virtual returns (uint256) {
-        return 17280;
+    /// @notice The duration of a
+    function unlockDelay() public pure virtual returns (uint256) {
+        // TODO: 17280
+        return 10;
     }
 
     function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
@@ -155,7 +157,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         return
             functionHash == SIGNATURE_PERPETUAL_UPGRADE ||
             functionHash == SIGNATURE_PERPETUAL_SETTLE ||
-            functionHash == SIGNATURE_PERPETUAL_SET_OPERATOR;
+            functionHash == SIGNATURE_PERPETUAL_TRANSFER_OPERATOR;
     }
 
     function getProposalThreshold() public view virtual returns (uint256) {
@@ -177,7 +179,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     function execute(uint256 proposalId) public payable {
         require(
-            state(proposalId) == ProposalState.Succeeded,
+            state(proposalId) == ProposalState.Queued,
             "proposal can only be executed if it is success and queued"
         );
         Proposal storage proposal = proposals[proposalId];
@@ -204,9 +206,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     function state(uint256 proposalId) public view returns (ProposalState) {
         require(proposalCount >= proposalId && proposalId > 0, "invalid proposal id");
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.canceled) {
-            return ProposalState.Canceled;
-        } else if (block.number <= proposal.startBlock) {
+        if (block.number <= proposal.startBlock) {
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
@@ -215,14 +215,14 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             proposal.forVotes.add(proposal.againstVotes) < proposal.quorumVotes
         ) {
             return ProposalState.Defeated;
+        } else if (block.number <= proposal.endBlock.add(executionDelay())) {
+            return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.number <= proposal.endBlock.add(executionDelay())) {
-            return ProposalState.Queued;
-        } else if (block.number > proposal.endBlock.add(executionDelay()).add(unlockPeriod())) {
+        } else if (block.number > proposal.endBlock.add(executionDelay()).add(unlockDelay())) {
             return ProposalState.Expired;
         } else {
-            return ProposalState.Succeeded;
+            return ProposalState.Queued;
         }
     }
 
@@ -251,8 +251,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         }
         if (latestProposalIds[proposer] != 0) {
             ProposalState latestProposalState = state(latestProposalIds[proposer]);
-            require(latestProposalState != ProposalState.Active, "last proposal is active");
             require(latestProposalState != ProposalState.Pending, "last proposal is pending");
+            require(latestProposalState != ProposalState.Active, "last proposal is active");
         }
     }
 
@@ -301,34 +301,67 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         if (account == address(0)) {
             return false;
         }
-        _updateVoteLock(account);
-        return _getBlockNumber() <= _voteLocks[account];
+        return _getBlockNumber() <= _updateVoteLock(account, 0);
     }
 
     function getUnlockBlock(address account) public view virtual returns (uint256) {
-        uint256 unlockBlock = _voteLocks[account];
+        (uint256 lastUnlockBlock, , ) = _getVoteLock(account);
+        return lastUnlockBlock;
+    }
+
+    function _getVoteLock(address account)
+        internal
+        view
+        virtual
+        returns (
+            uint256 lastUnlockBlock,
+            uint256 stableProposalCount,
+            uint256[] memory stableProposalIds
+        )
+    {
+        lastUnlockBlock = _voteLocks[account];
         EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
         uint256 length = proposalIds.length();
-        for (uint256 i = 0; i < length; i++) {
-            uint256 proposalId = proposalIds.at(i);
-            ProposalState proposalState = state(proposalId);
-            if (proposalState == ProposalState.Pending || proposalState == ProposalState.Active) {
-                continue;
-            }
-            if (
-                proposalState == ProposalState.Succeeded ||
-                proposalState == ProposalState.Executed ||
-                proposalState == ProposalState.Queued
-            ) {
-                unlockBlock = proposals[proposalId].endBlock.add(
-                    executionDelay().add(unlockPeriod())
-                );
-                if (unlockBlock > unlockBlock) {
-                    unlockBlock = unlockBlock;
+        if (length > 0) {
+            stableProposalIds = new uint256[](length);
+            for (uint256 i = 0; i < length; i++) {
+                uint256 proposalId = proposalIds.at(i);
+                ProposalState proposalState = state(proposalId);
+                if (
+                    proposalState == ProposalState.Pending || proposalState == ProposalState.Active
+                ) {
+                    continue;
                 }
+                if (
+                    proposalState == ProposalState.Succeeded ||
+                    proposalState == ProposalState.Executed ||
+                    proposalState == ProposalState.Queued ||
+                    proposalState == ProposalState.Expired
+                ) {
+                    uint256 unlockBlock =
+                        proposals[proposalId].endBlock.add(executionDelay().add(unlockDelay()));
+                    if (unlockBlock > lastUnlockBlock) {
+                        lastUnlockBlock = unlockBlock;
+                    }
+                }
+                stableProposalIds[stableProposalCount] = proposalId;
+                stableProposalCount++;
             }
         }
-        return unlockBlock;
+    }
+
+    function _updateVoteLock(address account, uint256 blockNumber) internal returns (uint256) {
+        EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
+        (uint256 lastUnlockBlock, uint256 stableProposalCount, uint256[] memory stableProposalIds) =
+            _getVoteLock(account);
+        for (uint256 i = 0; i < stableProposalCount; i++) {
+            uint256 proposalId = stableProposalIds[i];
+            if (proposalId != 0) {
+                proposalIds.remove(proposalId);
+            }
+        }
+        _voteLocks[account] = blockNumber > lastUnlockBlock ? blockNumber : lastUnlockBlock;
+        return _voteLocks[account];
     }
 
     function _castVote(
@@ -348,41 +381,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         receipt.hasVoted = true;
         receipt.support = support;
         receipt.votes = votes;
-        _setVoteLock(account, proposal.startBlock.add(votingPeriod()));
+
+        _updateVoteLock(account, proposal.endBlock.add(1));
         if (support) {
             _supportedProposals[account].add(proposalId);
         }
         emit VoteCast(account, proposalId, support, votes);
-    }
-
-    function _setVoteLock(address account, uint256 blockNumber) internal {
-        if (blockNumber > _voteLocks[account]) {
-            _voteLocks[account] = blockNumber;
-        }
-    }
-
-    function _updateVoteLock(address account) internal virtual {
-        EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
-        uint256 length = proposalIds.length();
-        for (uint256 i = 0; i < length; i++) {
-            uint256 proposalId = proposalIds.at(i);
-            ProposalState proposalState = state(proposalId);
-            if (proposalState == ProposalState.Pending || proposalState == ProposalState.Active) {
-                continue;
-            }
-            if (
-                proposalState == ProposalState.Succeeded ||
-                proposalState == ProposalState.Executed ||
-                proposalState == ProposalState.Queued
-            ) {
-                uint256 unlockBlock =
-                    proposals[proposalId].endBlock.add(executionDelay().add(unlockPeriod()));
-                if (unlockBlock > _voteLocks[account]) {
-                    _voteLocks[account] = unlockBlock;
-                }
-            }
-            proposalIds.remove(proposalId);
-        }
     }
 
     function _getOperator() internal view returns (address) {
@@ -402,7 +406,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             "Transaction hasn't surpassed time lock."
         );
         require(
-            blockNumber <= eta.add(executionDelay()).add(unlockPeriod()),
+            blockNumber <= eta.add(executionDelay()).add(unlockDelay()),
             "Transaction is stale."
         );
 

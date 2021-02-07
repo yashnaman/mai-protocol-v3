@@ -16,6 +16,7 @@ contract TestGovernance is Governance {
 
     function setOperatorNoAuth(address operator) public {
         _liquidityPool.operator = operator;
+        _liquidityPool.operatorExpiration = block.timestamp + 86400;
     }
 
     function initializeParameters(
@@ -71,6 +72,14 @@ contract TestGovernance is Governance {
 
     function keeperGasReward(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].keeperGasReward;
+    }
+
+    function insuranceFundRate(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].insuranceFundRate;
+    }
+
+    function insuranceFundCap(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].insuranceFundCap;
     }
 
     function halfSpread(uint256 perpetualIndex) public view returns (int256) {

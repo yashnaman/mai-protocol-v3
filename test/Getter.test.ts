@@ -25,8 +25,8 @@ describe("Getter", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("ShareToken");
-        var govTemplate = await createContract("TestGovernor");
+        var lpTokenTemplate = await createContract("LpGovernor");
+        var govTemplate = await createContract("LpGovernor");
         var maker = await createContract(
             "PoolCreator",
             [

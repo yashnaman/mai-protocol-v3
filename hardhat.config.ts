@@ -96,7 +96,7 @@ module.exports = {
         },
         s10: {
             url: "http://server10.jy.mcarlo.com:8747",
-            gasPrice: "auto",
+            gasPrice: 1,
             blockGasLimit: "8000000"
         },
         kovan: {

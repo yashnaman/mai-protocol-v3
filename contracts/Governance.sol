@@ -15,63 +15,63 @@ contract Governance is Storage {
     using MarginAccountModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
-    address internal _unconfirmedOperator;
-    uint256 internal _transferExpiration;
-
     modifier onlyGovernor() {
         require(_msgSender() == _liquidityPool.governor, "only governor is allowed");
         _;
     }
 
     modifier onlyOperator() {
-        require(msg.sender == _liquidityPool.operator, "only operator is allowed");
+        require(_msgSender() == _liquidityPool.getOperator(), "only operator is allowed");
         _;
     }
 
-    function setOperator(address newOperator) public onlyGovernor {
-        require(_liquidityPool.operator == address(0), "can only be called when no operator");
-        _liquidityPool.transferOperator(newOperator);
-    }
-
+    /**
+        @notice
+     */
     function checkIn() public onlyOperator {
         _liquidityPool.checkIn();
     }
 
     /**
-     * @notice Transfer the ownership of the liquidity pool to the new operator, call claimOperator()
-     *         next to complete the transfer
-     *         Can only called by the operator if the operator exists.
-     *         Can only called by the governor if the operator doesn't exist
-     * @param newOperator The address of the new operator
+     * @notice  Use in a two phase operator transfer design:
+     *            1. transfer operator to new operator;
+     *            2. new operator claim to finish transfer.
+     *          Before claimOperator is called, operator wil remain to be the previous address.
+     *
+     *          There are condition when calling transferring operator:
+     *            1. when operator exists, only operator is able to call transfer;
+     *            2. when operator not exists, call should be from a succeeded governor proposal.
+     * @param   newOperator The address of new operator to transfer to.
      */
     function transferOperator(address newOperator) public {
-        if (_liquidityPool.operator != address(0)) {
-            require(msg.sender == _liquidityPool.operator, "can only be initiated by operator");
+        address operator = _liquidityPool.getOperator();
+        if (operator != address(0)) {
+            // has operator
+            require(_msgSender() == operator, "can only be initiated by operator");
         } else {
-            require(msg.sender == _liquidityPool.governor, "can only be initiated by governor");
+            require(_msgSender() == _liquidityPool.governor, "can only be initiated by governor");
         }
         _liquidityPool.transferOperator(newOperator);
     }
 
     /**
-     * @notice Claim the ownership of the liquidity pool to sender.
-     *         Sender must be transferred the ownership before.
-     *         Will claim all the claimable fee of previous operator
+     * @notice  Claim the ownership of the liquidity pool to sender. See `transferOperator` for details.
+     *          The caller must be the one specified by `transferOperator` first.
      */
     function claimOperator() public {
-        _liquidityPool.claimOperator(msg.sender);
+        _liquidityPool.claimOperator(_msgSender());
     }
 
     /**
-     * @notice Revoke the operator of the liquidity pool. Can only called by the operator
+     * @notice  Revoke the operator of the liquidity pool. Can only called by the operator.
      */
     function revokeOperator() public onlyOperator {
         _liquidityPool.revokeOperator();
     }
 
     /**
-     * @notice Set the parameter of the liquidity pool. Can only called by the governor
-     * @param params The new value of the parameter
+     * @notice  Set the parameter of the liquidity pool. Can only called by the governor.
+     * @param   params  New values of parameter set.
      */
     function setLiquidityPoolParameter(int256[1] calldata params) public onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(params);
@@ -82,9 +82,9 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the base parameter of the perpetual. Can only called by the governor
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param baseParams The new value of the base parameter
+     * @notice  Set the base parameter of the perpetual. Can only called by the governor.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   baseParams      Values of new base parameter set
      */
     function setPerpetualBaseParameter(uint256 perpetualIndex, int256[9] calldata baseParams)
         public
@@ -94,11 +94,11 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
-     * @param minRiskParamValues The minimum value of the risk parameter
-     * @param maxRiskParamValues The maximum value of the risk parameter
+     * @notice  Set the risk parameter and adjust range of the perpetual. Can only called by the governor.
+     * @param   perpetualIndex      The index of the perpetual in liquidity pool.
+     * @param   riskParams          Values of new risk parameter set, each should be within range of related [min, max].
+     * @param   minRiskParamValues  Min values of new risk parameter.
+     * @param   maxRiskParamValues  Max values of new risk parameter.
      */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
@@ -115,9 +115,9 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Update the risk parameter of the perpetual. Can only called by the operator
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @notice  Update the risk parameter of the perpetual. Can only called by the operator
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   riskParams      The new value of the risk parameter, must between minimum value and maximum value
      */
     function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[6] calldata riskParams)
         external
@@ -127,13 +127,9 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Force tp set the state of the perpetual to "EMERGENCY".
-     *         Can only called by the governor.
-     *         Must rebalance first. After that the perpetual is not allowed to trade, deposit and withdraw.
-     *         The price of the perpetual is freezed to the settlement price.
-     *         Need to update the funding state and the oracle price of each perpetual before
-     *         and update the funding rate of each perpetual after
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @notice  Force tp set the state of the perpetual to "EMERGENCY" and set the settlement price.
+     *          Can only called by the governor.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
     function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
         external
@@ -143,13 +139,11 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice Set the state of the perpetual to "EMERGENCY". Must rebalance first.
-     *         Can only called when AMM is not maintenance margin safe in the perpetual.
-     *         After that the perpetual is not allowed to trade, deposit and withdraw.
-     *         The price of the perpetual is freezed to the settlement price.
-     *         Need to update the funding state and the oracle price of each perpetual before
-     *         and update the funding rate of each perpetual after
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @notice  Set the state of the perpetual to "EMERGENCY". Can be call by anyone when
+     *          following conditions are met:
+     *            1. the oralce contract declares itself as "termainated";
+     *            2. the AMM of perpetual's maintenance margin is unsafe;
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
     function setEmergencyState(uint256 perpetualIndex) public syncState {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];

@@ -18,7 +18,7 @@ library Signature {
      */
     function getSigner(bytes32 digest, bytes memory signature)
         internal
-        view
+        pure
         returns (address signer)
     {
         bytes32 r;

@@ -44,6 +44,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         bool isFastCreationEnabled
     ) external initializer {
         _liquidityPool.initialize(
+            _msgSender(),
             collateral,
             collateralDecimals,
             operator,
@@ -71,9 +72,12 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         int256[6] calldata maxRiskParamValues
     ) external {
         if (!_liquidityPool.isRunning || _liquidityPool.isFastCreationEnabled) {
-            require(msg.sender == _liquidityPool.operator, "only operator can create perpetual");
+            require(
+                _msgSender() == _liquidityPool.getOperator(),
+                "only operator can create perpetual"
+            );
         } else {
-            require(msg.sender == _liquidityPool.governor, "only governor can create perpetual");
+            require(_msgSender() == _liquidityPool.governor, "only governor can create perpetual");
         }
         _liquidityPool.createPerpetual(
             oracle,
@@ -108,7 +112,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
-        _liquidityPool.addLiquidity(msg.sender, cashToAdd);
+        _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
 
     /**
@@ -121,7 +125,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         require(shareToRemove > 0, "invalid share");
-        _liquidityPool.removeLiquidity(msg.sender, shareToRemove);
+        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove);
     }
 
     bytes32[50] private __gap;

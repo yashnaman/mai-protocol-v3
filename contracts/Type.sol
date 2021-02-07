@@ -89,6 +89,7 @@ struct PerpetualStorage {
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
     int256 insuranceFundRate;
+    int256 insuranceFundCap;
     // risk parameters
     Option halfSpread;
     Option openSlippageFactor;
@@ -105,7 +106,6 @@ struct PerpetualStorage {
     EnumerableSetUpgradeable.AddressSet activeAccounts;
     // insurance fund
     int256 insuranceFund;
-    int256 insuranceFundCap;
     int256 donatedInsuranceFund;
     // accounts
     mapping(address => MarginAccount) marginAccounts;

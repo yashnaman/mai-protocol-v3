@@ -113,7 +113,6 @@ library TradeModule {
      * @param trader The address of the trader
      * @param referrer The address of the referrer
      * @param tradeValue The collateral value of the trade
-     * @param hasOpened If the trader has opened position during the trade
      * @return lpFee The fee belongs to the LP
      * @return operatorFee The fee belongs to the operator
      * @return vaultFee The fee belongs to the vault
@@ -124,8 +123,7 @@ library TradeModule {
         PerpetualStorage storage perpetual,
         address trader,
         address referrer,
-        int256 tradeValue,
-        bool hasOpened
+        int256 tradeValue
     )
         public
         view
@@ -139,17 +137,16 @@ library TradeModule {
         require(tradeValue >= 0, "trade value is negative");
         vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
         lpFee = tradeValue.wmul(perpetual.lpFeeRate);
-        if (liquidityPool.operator != address(0)) {
+        if (liquidityPool.getOperator() != address(0)) {
             operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
         }
-        int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-        require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
         if (availableMargin <= 0) {
             lpFee = 0;
             operatorFee = 0;
             vaultFee = 0;
         } else {
+            int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
             if (totalFee > availableMargin) {
                 int256 rate = availableMargin.wdiv(totalFee);
                 lpFee = lpFee.wmul(rate);
@@ -191,39 +188,36 @@ library TradeModule {
         int256 deltaPosition
     ) public returns (int256 lpFee, int256 totalFee) {
         // fees
-        bool hasOpened = hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
         int256 operatorFee;
         int256 vaultFee;
         int256 referralRebate;
-
         (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
             liquidityPool,
             perpetual,
             trader,
             referrer,
-            deltaCash.abs(),
-            hasOpened
+            deltaCash.abs()
         );
-
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
+        // safety
+        if (hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg())) {
+            require(
+                perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
+                "initial margin unsafe"
+            );
+        } else {
+            require(perpetual.isMarginSafe(trader, perpetual.getMarkPrice()), "margin unsafe");
+        }
         liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate);
         liquidityPool.transferFromPerpetualToUser(perpetual.id, liquidityPool.getVault(), vaultFee);
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
-            liquidityPool.operator,
+            liquidityPool.getOperator(),
             operatorFee
         );
-
-        emit TransferFeeToOperator(liquidityPool.operator, operatorFee);
-        // safety
-        int256 markPrice = perpetual.getMarkPrice();
-        if (hasOpened) {
-            require(perpetual.isInitialMarginSafe(trader, markPrice), "initial margin unsafe");
-        } else {
-            require(perpetual.isMarginSafe(trader, markPrice), "margin unsafe");
-        }
+        emit TransferFeeToOperator(liquidityPool.getOperator(), operatorFee);
     }
 
     /**
@@ -353,7 +347,7 @@ library TradeModule {
             perpetual.updateCash(trader, penalty.neg());
         }
         // 3. safe
-        if (Utils.isOpen(perpetual.getPosition(liquidator), amount)) {
+        if (hasOpenedPosition(perpetual.getPosition(liquidator), deltaPosition.neg())) {
             require(
                 perpetual.isInitialMarginSafe(liquidator, markPrice),
                 "trader initial margin unsafe"

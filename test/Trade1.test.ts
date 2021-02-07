@@ -69,7 +69,7 @@ describe('TradeModule1', () => {
         it('getFees', async () => {
             // lp = 0.0007, op = 0.0001, vault = 0.0002
             await testTrade.setMarginAccount(0, user0.address, toWei("1000"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"));
             expect(lpFee).to.equal(toWei("0.07"));
             expect(operatorFee).to.equal(toWei("0.01"));
             expect(vaultFee).to.equal(toWei("0.02"));
@@ -77,21 +77,21 @@ describe('TradeModule1', () => {
             // total 0.1
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0.05"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"));
             expect(lpFee).to.equal(toWei("0.035"));
             expect(operatorFee).to.equal(toWei("0.005"));
             expect(vaultFee).to.equal(toWei("0.01"));
             expect(referralRebate).to.equal(toWei("0"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"));
             expect(lpFee).to.equal(toWei("0"));
             expect(operatorFee).to.equal(toWei("0"));
             expect(vaultFee).to.equal(toWei("0"));
             expect(referralRebate).to.equal(toWei("0"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("-1"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"));
             expect(lpFee).to.equal(toWei("0"));
             expect(operatorFee).to.equal(toWei("0"));
             expect(vaultFee).to.equal(toWei("0"));
@@ -101,7 +101,7 @@ describe('TradeModule1', () => {
         it('getFees - rebate', async () => {
             await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0"));
             await testTrade.setMarginAccount(0, user0.address, toWei("1000"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0.07"));
             expect(operatorFee).to.equal(toWei("0.01"));
             expect(vaultFee).to.equal(toWei("0.02"));
@@ -109,60 +109,39 @@ describe('TradeModule1', () => {
 
             await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
             await testTrade.setMarginAccount(0, user0.address, toWei("1000"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0.035"));
             expect(operatorFee).to.equal(toWei("0.005"));
             expect(vaultFee).to.equal(toWei("0.02"));
             expect(referralRebate).to.equal(toWei("0.04"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0.1"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0.035"));
             expect(operatorFee).to.equal(toWei("0.005"));
             expect(vaultFee).to.equal(toWei("0.02"));
             expect(referralRebate).to.equal(toWei("0.04"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0.05"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0.0175"));
             expect(operatorFee).to.equal(toWei("0.0025"));
             expect(vaultFee).to.equal(toWei("0.01"));
             expect(referralRebate).to.equal(toWei("0.02"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0"));
             expect(operatorFee).to.equal(toWei("0"));
             expect(vaultFee).to.equal(toWei("0"));
             expect(referralRebate).to.equal(toWei("0"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("-1"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), false);
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"));
             expect(lpFee).to.equal(toWei("0"));
             expect(operatorFee).to.equal(toWei("0"));
             expect(vaultFee).to.equal(toWei("0"));
             expect(referralRebate).to.equal(toWei("0"));
-        })
-
-        it('getFees - open', async () => {
-            await testTrade.setMarginAccount(0, user0.address, toWei("0.1"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), true);
-            expect(lpFee).to.equal(toWei("0.07"));
-            expect(operatorFee).to.equal(toWei("0.01"));
-            expect(vaultFee).to.equal(toWei("0.02"));
-            expect(referralRebate).to.equal(toWei("0"));
-
-            await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
-            await testTrade.setMarginAccount(0, user0.address, toWei("0.1"), toWei("0"));
-            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, user2.address, toWei("100"), true);
-            expect(lpFee).to.equal(toWei("0.035"));
-            expect(operatorFee).to.equal(toWei("0.005"));
-            expect(vaultFee).to.equal(toWei("0.02"));
-            expect(referralRebate).to.equal(toWei("0.04"));
-
-            await testTrade.setMarginAccount(0, user0.address, toWei("0.09"), toWei("0"));
-            await expect(testTrade.getFees(0, user0.address, none, toWei("100"), true)).to.be.revertedWith("insufficient margin for fee");
-            await expect(testTrade.getFees(0, user0.address, user2.address, toWei("100"), true)).to.be.revertedWith("insufficient margin for fee");
         })
 
         describe('postTrade', async () => {

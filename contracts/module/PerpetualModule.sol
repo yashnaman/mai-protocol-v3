@@ -24,6 +24,23 @@ library PerpetualModule {
 
     int256 constant FUNDING_INTERVAL = 3600 * 8;
 
+    uint256 internal constant INDEX_INITIAL_MARGIN_RATE = 0;
+    uint256 internal constant INDEX_MAINTENANCE_MARGIN_RATE = 1;
+    uint256 internal constant INDEX_OPERATOR_FEE_RATE = 2;
+    uint256 internal constant INDEX_LP_FEE_RATE = 3;
+    uint256 internal constant INDEX_REFERRAL_REBATE_RATE = 4;
+    uint256 internal constant INDEX_LIQUIDATION_PENALTY_RATE = 5;
+    uint256 internal constant INDEX_KEEPER_GAS_REWARD = 6;
+    uint256 internal constant INDEX_INSURANCE_FUND_RATE = 7;
+    uint256 internal constant INDEX_INSURANCE_FUND_CAP = 8;
+
+    uint256 internal constant INDEX_HARF_SPREAD = 0;
+    uint256 internal constant INDEX_OPEN_SLIPPAGE_FACTOR = 1;
+    uint256 internal constant INDEX_CLOSE_SLIPPAGE_FACTOR = 2;
+    uint256 internal constant INDEX_FUNDING_RATE_LIMIT = 3;
+    uint256 internal constant INDEX_AMM_MAX_LEVERAGE = 4;
+    uint256 internal constant INDEX_AMM_CLOSE_PRICE_DISCOUNT = 5;
+
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Clear(uint256 perpetualIndex, address indexed trader);
@@ -111,10 +128,7 @@ library PerpetualModule {
         perpetual.oracle = oracle;
 
         setBaseParameter(perpetual, baseParams);
-        validateBaseParameters(perpetual);
-
         setRiskParameter(perpetual, riskParams, minRiskParamValues, maxRiskParamValues);
-        validateRiskParameters(perpetual);
         perpetual.state = PerpetualState.INITIALIZING;
     }
 
@@ -135,15 +149,16 @@ library PerpetualModule {
     function setBaseParameter(PerpetualStorage storage perpetual, int256[9] memory baseParams)
         public
     {
-        perpetual.initialMarginRate = baseParams[0];
-        perpetual.maintenanceMarginRate = baseParams[1];
-        perpetual.operatorFeeRate = baseParams[2];
-        perpetual.lpFeeRate = baseParams[3];
-        perpetual.referralRebateRate = baseParams[4];
-        perpetual.liquidationPenaltyRate = baseParams[5];
-        perpetual.keeperGasReward = baseParams[6];
-        perpetual.insuranceFundRate = baseParams[7];
-        perpetual.insuranceFundCap = baseParams[8];
+        validateBaseParameters(perpetual, baseParams);
+        perpetual.initialMarginRate = baseParams[INDEX_INITIAL_MARGIN_RATE];
+        perpetual.maintenanceMarginRate = baseParams[INDEX_MAINTENANCE_MARGIN_RATE];
+        perpetual.operatorFeeRate = baseParams[INDEX_OPERATOR_FEE_RATE];
+        perpetual.lpFeeRate = baseParams[INDEX_LP_FEE_RATE];
+        perpetual.referralRebateRate = baseParams[INDEX_REFERRAL_REBATE_RATE];
+        perpetual.liquidationPenaltyRate = baseParams[INDEX_LIQUIDATION_PENALTY_RATE];
+        perpetual.keeperGasReward = baseParams[INDEX_KEEPER_GAS_REWARD];
+        perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
+        perpetual.insuranceFundCap = baseParams[INDEX_INSURANCE_FUND_CAP];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
 
@@ -160,41 +175,42 @@ library PerpetualModule {
         int256[6] memory minRiskParamValues,
         int256[6] memory maxRiskParamValues
     ) public {
+        validateRiskParameters(perpetual, riskParams);
         setOption(
             perpetual.halfSpread,
-            riskParams[0],
-            minRiskParamValues[0],
-            maxRiskParamValues[0]
+            riskParams[INDEX_HARF_SPREAD],
+            minRiskParamValues[INDEX_HARF_SPREAD],
+            maxRiskParamValues[INDEX_HARF_SPREAD]
         );
         setOption(
             perpetual.openSlippageFactor,
-            riskParams[1],
-            minRiskParamValues[1],
-            maxRiskParamValues[1]
+            riskParams[INDEX_OPEN_SLIPPAGE_FACTOR],
+            minRiskParamValues[INDEX_OPEN_SLIPPAGE_FACTOR],
+            maxRiskParamValues[INDEX_OPEN_SLIPPAGE_FACTOR]
         );
         setOption(
             perpetual.closeSlippageFactor,
-            riskParams[2],
-            minRiskParamValues[2],
-            maxRiskParamValues[2]
+            riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR],
+            minRiskParamValues[INDEX_CLOSE_SLIPPAGE_FACTOR],
+            maxRiskParamValues[INDEX_CLOSE_SLIPPAGE_FACTOR]
         );
         setOption(
             perpetual.fundingRateLimit,
-            riskParams[3],
-            minRiskParamValues[3],
-            maxRiskParamValues[3]
+            riskParams[INDEX_FUNDING_RATE_LIMIT],
+            minRiskParamValues[INDEX_FUNDING_RATE_LIMIT],
+            maxRiskParamValues[INDEX_FUNDING_RATE_LIMIT]
         );
         setOption(
             perpetual.ammMaxLeverage,
-            riskParams[4],
-            minRiskParamValues[4],
-            maxRiskParamValues[4]
+            riskParams[INDEX_AMM_MAX_LEVERAGE],
+            minRiskParamValues[INDEX_AMM_MAX_LEVERAGE],
+            maxRiskParamValues[INDEX_AMM_MAX_LEVERAGE]
         );
         setOption(
             perpetual.maxClosePriceDiscount,
-            riskParams[5],
-            minRiskParamValues[5],
-            maxRiskParamValues[5]
+            riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT],
+            minRiskParamValues[INDEX_AMM_CLOSE_PRICE_DISCOUNT],
+            maxRiskParamValues[INDEX_AMM_CLOSE_PRICE_DISCOUNT]
         );
         emit SetPerpetualRiskParameter(
             perpetual.id,
@@ -212,12 +228,13 @@ library PerpetualModule {
     function updateRiskParameter(PerpetualStorage storage perpetual, int256[6] memory riskParams)
         public
     {
-        updateOption(perpetual.halfSpread, riskParams[0]);
-        updateOption(perpetual.openSlippageFactor, riskParams[1]);
-        updateOption(perpetual.closeSlippageFactor, riskParams[2]);
-        updateOption(perpetual.fundingRateLimit, riskParams[3]);
-        updateOption(perpetual.ammMaxLeverage, riskParams[4]);
-        updateOption(perpetual.maxClosePriceDiscount, riskParams[5]);
+        validateRiskParameters(perpetual, riskParams);
+        updateOption(perpetual.halfSpread, riskParams[INDEX_HARF_SPREAD]);
+        updateOption(perpetual.openSlippageFactor, riskParams[INDEX_OPEN_SLIPPAGE_FACTOR]);
+        updateOption(perpetual.closeSlippageFactor, riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR]);
+        updateOption(perpetual.fundingRateLimit, riskParams[INDEX_FUNDING_RATE_LIMIT]);
+        updateOption(perpetual.ammMaxLeverage, riskParams[INDEX_AMM_MAX_LEVERAGE]);
+        updateOption(perpetual.maxClosePriceDiscount, riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT]);
         emit UpdatePerpetualRiskParameter(perpetual.id, riskParams);
     }
 
@@ -300,27 +317,6 @@ library PerpetualModule {
             perpetual.settlementPriceData.time
         );
     }
-
-    // /**
-    //  * @notice Set the state of the perpetual to "EMERGENCY". The state must be "NORMAL" before.
-    //  *         The settlement price is the mark price at this time
-    //  * @param perpetual The perpetual object
-    //  */
-    // function setEmergencyState(PerpetualStorage storage perpetual, int256 settlementPrice) public {
-    //     require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
-    //     // use mark price as final price when emergency
-    //     perpetual.settlementPriceData = OraclePriceData({
-    //         price: settlementPrice,
-    //         time: block.timestamp
-    //     });
-    //     perpetual.totalAccount = perpetual.activeAccounts.length();
-    //     perpetual.state = PerpetualState.EMERGENCY;
-    //     emit SetEmergencyState(
-    //         perpetual.id,
-    //         perpetual.settlementPriceData.price,
-    //         perpetual.settlementPriceData.time
-    //     );
-    // }
 
     /**
      * @notice Set the state of the perpetual to "CLEARED". The state must be "EMERGENCY" before.
@@ -616,10 +612,7 @@ library PerpetualModule {
      * @param newValue The new value of the option, must between the minimum value and the maximum value
      */
     function updateOption(Option storage option, int256 newValue) internal {
-        require(
-            newValue >= option.minValue && newValue <= option.maxValue,
-            "value is out of range"
-        );
+        require(newValue >= option.minValue && newValue <= option.maxValue, "value out fo range");
         option.value = newValue;
     }
 
@@ -636,7 +629,7 @@ library PerpetualModule {
         int256 newMinValue,
         int256 newMaxValue
     ) internal {
-        require(newValue >= newMinValue && newValue <= newMaxValue, "value is out of range");
+        require(newValue >= newMinValue && newValue <= newMaxValue, "value out fo range");
         option.value = newValue;
         option.minValue = newMinValue;
         option.maxValue = newMaxValue;
@@ -652,28 +645,48 @@ library PerpetualModule {
      *         6. keeper gas reward >= 0
      * @param perpetual The perpetual
      */
-    function validateBaseParameters(PerpetualStorage storage perpetual) public view {
-        require(perpetual.initialMarginRate > 0, "imr should be greater than 0");
-        require(perpetual.maintenanceMarginRate > 0, "mmr should be greater than 0");
+    function validateBaseParameters(PerpetualStorage storage perpetual, int256[9] memory baseParams)
+        public
+        view
+    {
         require(
-            perpetual.maintenanceMarginRate <= perpetual.initialMarginRate,
-            "mmr should be lower than imr"
+            perpetual.initialMarginRate == 0 ||
+                baseParams[INDEX_INITIAL_MARGIN_RATE] <= perpetual.initialMarginRate,
+            "cannot increase initialMarginRate"
         );
         require(
-            perpetual.operatorFeeRate >= 0 &&
-                perpetual.operatorFeeRate <= (Constant.SIGNED_ONE / 100),
-            "ofr should be within [0, 0.01]"
+            perpetual.maintenanceMarginRate == 0 ||
+                baseParams[INDEX_MAINTENANCE_MARGIN_RATE] <= perpetual.maintenanceMarginRate,
+            "cannot increase maintenanceMarginRate"
         );
+        require(baseParams[INDEX_INITIAL_MARGIN_RATE] > 0, "initialMarginRate <= 0");
+        require(baseParams[INDEX_MAINTENANCE_MARGIN_RATE] > 0, "maintenanceMarginRate <= 0");
         require(
-            perpetual.lpFeeRate >= 0 && perpetual.lpFeeRate <= (Constant.SIGNED_ONE / 100),
-            "lp should be within [0, 0.01]"
+            baseParams[INDEX_MAINTENANCE_MARGIN_RATE] <= baseParams[INDEX_INITIAL_MARGIN_RATE],
+            "maintenanceMarginRate > initialMarginRate"
         );
+        require(baseParams[INDEX_OPERATOR_FEE_RATE] >= 0, "operatorFeeRate < 0");
         require(
-            perpetual.liquidationPenaltyRate >= 0 &&
-                perpetual.liquidationPenaltyRate < perpetual.maintenanceMarginRate,
-            "lpr should be non-negative and lower than mmr"
+            baseParams[INDEX_OPERATOR_FEE_RATE] <= (Constant.SIGNED_ONE / 100),
+            "operatorFeeRate > 1%"
         );
-        require(perpetual.keeperGasReward >= 0, "kgr should be non-negative");
+        require(baseParams[INDEX_LP_FEE_RATE] >= 0, "lpFeeRate < 0");
+        require(baseParams[INDEX_LP_FEE_RATE] <= (Constant.SIGNED_ONE / 100), "lpFeeRate > 1%");
+
+        require(baseParams[INDEX_REFERRAL_REBATE_RATE] >= 0, "referralRebateRate < 0");
+        require(
+            baseParams[INDEX_REFERRAL_REBATE_RATE] <= Constant.SIGNED_ONE,
+            "referralRebateRate > 100%"
+        );
+
+        require(baseParams[INDEX_LIQUIDATION_PENALTY_RATE] >= 0, "liquidationPenaltyRate < 0");
+        require(
+            baseParams[INDEX_LIQUIDATION_PENALTY_RATE] <= baseParams[INDEX_OPEN_SLIPPAGE_FACTOR],
+            "liquidationPenaltyRate > maintenanceMarginRate"
+        );
+        require(baseParams[INDEX_KEEPER_GAS_REWARD] >= 0, "keeperGasReward < 0");
+        require(baseParams[INDEX_INSURANCE_FUND_RATE] >= 0, "insuranceFundRate < 0");
+        require(baseParams[INDEX_INSURANCE_FUND_CAP] >= 0, "insuranceFundCap < 0");
     }
 
     /**
@@ -686,23 +699,24 @@ library PerpetualModule {
      *         6. 0 <= max close price discount < 1
      * @param perpetual The perpetual
      */
-    function validateRiskParameters(PerpetualStorage storage perpetual) public view {
+    function validateRiskParameters(PerpetualStorage storage perpetual, int256[6] memory riskParams)
+        public
+        pure
+    {
+        require(riskParams[INDEX_HARF_SPREAD] >= 0, "halfSpread < 0");
+        require(riskParams[INDEX_HARF_SPREAD] < Constant.SIGNED_ONE, "halfSpread >= 100%");
+        require(riskParams[INDEX_OPEN_SLIPPAGE_FACTOR] > 0, "openSlippageFactor < 0");
+        require(riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR] > 0, "closeSlippageFactor < 0");
         require(
-            perpetual.halfSpread.value >= 0 && perpetual.halfSpread.value < Constant.SIGNED_ONE,
-            "hs shoud be greater than 0 and less than 1"
+            riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR] <= riskParams[INDEX_OPEN_SLIPPAGE_FACTOR],
+            "closeSlippageFactor > openSlippageFactor"
         );
-        require(perpetual.openSlippageFactor.value > 0, "osf shoud be greater than 0");
+        require(riskParams[INDEX_FUNDING_RATE_LIMIT] >= 0, "fundingRateLimit < 0");
+        require(riskParams[INDEX_AMM_MAX_LEVERAGE] >= 0, "ammMaxLeverage < 0");
+        require(riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT] >= 0, "maxClosePriceDiscount < 0");
         require(
-            perpetual.closeSlippageFactor.value > 0 &&
-                perpetual.closeSlippageFactor.value <= perpetual.openSlippageFactor.value,
-            "csf should be within (0, b1]"
-        );
-        require(perpetual.fundingRateLimit.value >= 0, "frl should be greater than 0");
-        require(perpetual.ammMaxLeverage.value > 0, "aml should be greater than 0");
-        require(
-            perpetual.maxClosePriceDiscount.value >= 0 &&
-                perpetual.maxClosePriceDiscount.value < Constant.SIGNED_ONE,
-            "mcpd shoud be greater than 0 and less than 1"
+            riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT] < Constant.SIGNED_ONE,
+            "maxClosePriceDiscount >= 100%"
         );
     }
 }
