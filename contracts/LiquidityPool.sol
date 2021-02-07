@@ -111,7 +111,6 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
-        require(cashToAdd > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
 

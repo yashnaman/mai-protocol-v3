@@ -524,17 +524,20 @@ library PerpetualModule {
         // 2. cover margin without position
         if (totalCollateral < perpetual.totalMarginWithoutPosition) {
             // margin without positions get balance / total margin
+            // smaller rate to make sure total redemption margin < total collateral of perpetual
             perpetual.redemptionRateWithoutPosition = perpetual.totalMarginWithoutPosition > 0
-                ? totalCollateral.wdiv(perpetual.totalMarginWithoutPosition)
+                ? totalCollateral.wdiv(perpetual.totalMarginWithoutPosition, Round.FLOOR)
                 : 0;
             // margin with positions will get nothing
             perpetual.redemptionRateWithPosition = 0;
         } else {
             // 3. covere margin with position
             perpetual.redemptionRateWithoutPosition = Constant.SIGNED_ONE;
+            // smaller rate to make sure total redemption margin < total collateral of perpetual
             perpetual.redemptionRateWithPosition = perpetual.totalMarginWithPosition > 0
                 ? totalCollateral.sub(perpetual.totalMarginWithoutPosition).wdiv(
-                    perpetual.totalMarginWithPosition
+                    perpetual.totalMarginWithPosition,
+                    Round.FLOOR
                 )
                 : 0;
         }

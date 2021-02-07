@@ -20,6 +20,15 @@ describe("integration", () => {
     let perp;
     let ctk;
     let stk;
+    let oracle1;
+    let oracle2;
+    let updatePrice = async (price1, price2) => {
+        let now = Math.floor(Date.now() / 1000);
+        await oracle1.setMarkPrice(price1, now);
+        await oracle1.setIndexPrice(price1, now);
+        await oracle2.setMarkPrice(price2, now);
+        await oracle2.setIndexPrice(price2, now);
+    }
 
     beforeEach(async () => {
         // users
@@ -55,18 +64,11 @@ describe("integration", () => {
         await maker.createLiquidityPool(ctk.address, 18, false, 998);
         perp = await LiquidityPoolFactory.attach(perpAddr);
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let updatePrice = async (price1, price2) => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle1.setMarkPrice(price1, now);
-            await oracle1.setIndexPrice(price1, now);
-            await oracle2.setMarkPrice(price2, now);
-            await oracle2.setIndexPrice(price2, now);
-        }
+        oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
         await updatePrice(toWei("1000"), toWei("1000"))
 
-        // run
+        // create perpetual
         await perp.createPerpetual(oracle1.address,
             [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("1000")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05")],
@@ -79,7 +81,6 @@ describe("integration", () => {
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99")],
         )
-        await perp.runLiquidityPool();
 
         // share token
         const info = await perp.getLiquidityPoolInfo();
@@ -93,7 +94,7 @@ describe("integration", () => {
     });
 
     it("normal case", async () => {
-
+        await perp.runLiquidityPool();
         // deposit
         await perp.connect(user1).deposit(0, user1.address, toWei("500"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9500"));
@@ -209,5 +210,85 @@ describe("integration", () => {
         expect(position).to.equal(0);
         // console.log("cash:", fromWei(availableCash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
         */
+    })
+
+    it("deposit more than balance", async () => {
+        await perp.runLiquidityPool();
+        await expect(perp.connect(user1).deposit(0, user1.address, toWei("10001"))).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    })
+
+    it("deposit when not NORMAL", async () => {
+        await expect(perp.connect(user1).deposit(0, user1.address, toWei("500"))).to.be.revertedWith("operation is disallowed now");
+    })
+
+    it("add liquidity more than balance", async () => {
+        await perp.runLiquidityPool();
+        await expect(perp.addLiquidity(toWei("100001"))).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    })
+
+    it("add liquidity when not running", async () => {
+        await expect(perp.addLiquidity(toWei("1000"))).to.be.revertedWith("pool is not running");
+    })
+
+    it("trade when not authorized", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        await expect(perp.connect(user2).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("unauthorized operation");
+    })
+
+    it("trade when market closed", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        oracle1.setMarketClosed(true);
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("market is closed now");
+    })
+
+    it("trade when market terminated", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        oracle1.setTerminated(true);
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("market is closed now");
+    })
+
+    it("trade when invalid close-only amount", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith("trader has no position to close");
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith("trader must be close only");
+    })
+
+    it("trade when invalid limit price", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1149"), now + 999999, none, 0)).to.be.revertedWith("price exceeds limit");
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith("price exceeds limit");
+    })
+
+    it("trade when trader unsafe", async () => {
+        await perp.runLiquidityPool();
+        await perp.connect(user1).deposit(0, user1.address, toWei("490"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        let now = Math.floor(Date.now() / 1000);
+        // open position, initial margin unsafe
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("insufficient margin for fee");
+        // close position, margin unsafe
+        await perp.connect(user1).deposit(0, user1.address, toWei("10"));
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
+        await updatePrice(toWei("939"), toWei("1000"));
+        //perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0);
+        //var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        //console.log(position.toString(), margin.toString());
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
     })
 })

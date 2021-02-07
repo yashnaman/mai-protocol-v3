@@ -127,7 +127,8 @@ library MarginAccountModule {
                 (getPosition(perpetual, trader) == 0)
                     ? perpetual.redemptionRateWithoutPosition
                     : perpetual.redemptionRateWithPosition;
-            margin = margin.wmul(rate);
+            // make sure total redemption margin < total collateral of perpetual
+            margin = margin.wmul(rate, Round.FLOOR);
         } else {
             margin = 0;
         }

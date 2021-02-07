@@ -148,10 +148,11 @@ library TradeModule {
         } else {
             int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
             if (totalFee > availableMargin) {
-                int256 rate = availableMargin.wdiv(totalFee);
-                lpFee = lpFee.wmul(rate);
-                operatorFee = operatorFee.wmul(rate);
-                vaultFee = vaultFee.wmul(rate);
+                // maker sure the sum of fees < available margin
+                int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
+                lpFee = lpFee.wmul(rate, Round.FLOOR);
+                operatorFee = operatorFee.wmul(rate, Round.FLOOR);
+                vaultFee = vaultFee.wmul(rate, Round.FLOOR);
             }
             if (
                 referrer != address(0) &&
