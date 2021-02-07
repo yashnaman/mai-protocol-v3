@@ -113,6 +113,7 @@ library TradeModule {
      * @param trader The address of the trader
      * @param referrer The address of the referrer
      * @param tradeValue The collateral value of the trade
+     * @param hasOpened If the trader has opened position during the trade
      * @return lpFee The fee belongs to the LP
      * @return operatorFee The fee belongs to the operator
      * @return vaultFee The fee belongs to the vault
@@ -123,7 +124,8 @@ library TradeModule {
         PerpetualStorage storage perpetual,
         address trader,
         address referrer,
-        int256 tradeValue
+        int256 tradeValue,
+        bool hasOpened
     )
         public
         view
@@ -140,7 +142,9 @@ library TradeModule {
         if (liquidityPool.getOperator() != address(0)) {
             operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
         }
+        int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+        require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
         if (availableMargin <= 0) {
             lpFee = 0;
             operatorFee = 0;
@@ -192,33 +196,25 @@ library TradeModule {
         int256 operatorFee;
         int256 vaultFee;
         int256 referralRebate;
+        bool hasOpened = hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
         (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
             liquidityPool,
             perpetual,
             trader,
             referrer,
-            deltaCash.abs()
+            deltaCash.abs(),
+            hasOpened
         );
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
         // safety
-        if (hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg())) {
-            require(
-                perpetual.isInitialMarginSafe(trader, perpetual.getMarkPrice()),
-                "initial margin unsafe"
-            );
-        } else {
-            require(perpetual.isMarginSafe(trader, perpetual.getMarkPrice()), "margin unsafe");
-        }
+        require(perpetual.isMarginSafe(trader, perpetual.getMarkPrice()), "margin unsafe");
         liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate);
         liquidityPool.transferFromPerpetualToUser(perpetual.id, liquidityPool.getVault(), vaultFee);
-        liquidityPool.transferFromPerpetualToUser(
-            perpetual.id,
-            liquidityPool.getOperator(),
-            operatorFee
-        );
-        emit TransferFeeToOperator(liquidityPool.getOperator(), operatorFee);
+        address operator = liquidityPool.getOperator();
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee);
+        emit TransferFeeToOperator(operator, operatorFee);
     }
 
     /**
