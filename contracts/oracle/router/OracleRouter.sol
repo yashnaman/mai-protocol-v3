@@ -29,8 +29,6 @@ contract OracleRouter {
     using SafeMathExt for int256;
     using SafeMathExt for uint256;
 
-    event NewOracleRouter(string collateral, string underlyingAsset, OracleRouter.Route[] path);
-
     struct Route {
       address oracle;
       bool isInverse;
@@ -40,14 +38,22 @@ contract OracleRouter {
     constructor(Route[] memory path_) {
         require(path_.length > 0, "empty path");
         for (uint i = 0; i < path_.length; i++) {
+            require(path_[i].oracle != address(0), "empty oracle");
             _path.push(Route({
               oracle: path_[i].oracle,
               isInverse: path_[i].isInverse
             }));
         }
-        emit NewOracleRouter(collateral(), underlyingAsset(), path_);
     }
 
+    /**
+     * @dev Get collateral symbol.
+     *
+     *      The OracleRouter never verifies whether the path is reasonable.
+     *      collateral() and underlyingAsset() only shows correct value if the collateral token is in
+     *      the 1st item and the underlying asset is always in the last item.
+     * @return symbol string
+     */
     function collateral() public view returns (string memory) {
         if (_path[0].isInverse) {
             return IOracle(_path[0].oracle).underlyingAsset();
@@ -56,6 +62,14 @@ contract OracleRouter {
         }
     }
 
+    /**
+     * @dev Get underlying asset symbol.
+     *
+     *      The OracleRouter never verifies whether the path is reasonable.
+     *      collateral() and underlyingAsset() only shows correct value if the collateral token is in
+     *      the 1st item and the underlying asset is always in the last item.
+     * @return symbol string
+     */
     function underlyingAsset() public view returns (string memory) {
         uint i = _path.length - 1;
         if (_path[i].isInverse) {
@@ -65,6 +79,9 @@ contract OracleRouter {
         }
     }
 
+    /**
+     * @dev Mark price.
+     */
     function priceTWAPLong() external returns (int256 newPrice, uint256 newTimestamp) {
         newPrice = Constant.SIGNED_ONE;
         for (uint i = 0; i < _path.length; i++) {
@@ -77,6 +94,9 @@ contract OracleRouter {
         }
     }
 
+    /**
+     * @dev Index price.
+     */
     function priceTWAPShort() external returns (int256 newPrice, uint256 newTimestamp) {
         newPrice = Constant.SIGNED_ONE;
         for (uint i = 0; i < _path.length; i++) {
@@ -89,6 +109,9 @@ contract OracleRouter {
         }
     }
 
+    /**
+     * @dev The market is closed if the market is not in its regular trading period.
+     */
     function isMarketClosed() external returns (bool) {
         for (uint i = 0; i < _path.length; i++) {
             if (IOracle(_path[i].oracle).isMarketClosed()) {
@@ -98,6 +121,9 @@ contract OracleRouter {
         return false;
     }
 
+    /**
+     * @dev The oracle service was shutdown and never online again.
+     */
     function isTerminated() external returns (bool) {
         for (uint i = 0; i < _path.length; i++) {
             if (IOracle(_path[i].oracle).isTerminated()) {
