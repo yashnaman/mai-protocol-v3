@@ -22,7 +22,6 @@ import "../Type.sol";
  *          In this file, parameter named with:
  *              - [amount] means internal amount
  *              - [rawAmount] means amount in decimals of underlying collateral
- *
  */
 library CollateralModule {
     using SafeMathUpgradeable for uint256;
@@ -34,11 +33,11 @@ library CollateralModule {
     uint256 internal constant SYSTEM_DECIMALS = 18;
 
     /**
-     * @notice Initialize the collateral of the liquidity pool. Set up address, scaler and decimals of collateral
-     * @param liquidityPool The liquidity pool object
-     * @param collateral The address of the collateral
-     * @param collateralDecimals The decimals of the collateral, must less than SYSTEM_DECIMALS,
-     *                           must equal to decimals() if the function exists
+     * @notice  Initialize the collateral of the liquidity pool. Set up address, scaler and decimals of collateral
+     * @param   liquidityPool       The liquidity pool object
+     * @param   collateral          The address of the collateral
+     * @param   collateralDecimals  The decimals of the collateral, must less than SYSTEM_DECIMALS,
+     *                              must equal to decimals() if the function exists
      */
     function initializeCollateral(
         LiquidityPoolStorage storage liquidityPool,
@@ -56,14 +55,14 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer collateral from the account to the liquidity pool. If the liquidity pool
-     *         is wrapped, eth will be automatically wrapped to weth and it's allowed to send
-     *         eth and weth at the same time
-     * @param liquidityPool The liquidity pool object
-     * @param account The address of the account
-     * @param amount The amount of erc20 token to transfer, the amount of eth is msg.value
-     * @return totalAmount The total amount of collateral to transfer, eth amount + weth amount if the
-     *                     liquidity pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
+     * @notice  Transfer collateral from the account to the liquidity pool. If the liquidity pool
+     *          is wrapped, eth will be automatically wrapped to weth and it's allowed to send
+     *          eth and weth at the same time
+     * @param   liquidityPool   The liquidity pool object
+     * @param   account         The address of the account
+     * @param   amount          The amount of erc20 token to transfer, the amount of eth is msg.value
+     * @return  totalAmount     The total amount of collateral to transfer, eth amount + weth amount if the
+     *                          liquidity pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,

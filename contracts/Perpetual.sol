@@ -151,7 +151,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param   amount          The amount of position to trader, positive for buying and negative for selling.
      * @param   limitPrice      The worst price the trader accepts.
      * @param   deadline        The dealine of trade transaction.
-     * @param   referrer        The address of referrer who will get rebate in the deal.
+     * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   flags           The flags of the trade.
      * @return  tradeAmount     The amount of positions actually traded in the transaction.
      */
@@ -205,18 +205,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
     }
 
-    /**
-     * @dev Trade with AMM in the perpetual. Need to update the funding state and the oracle price of each perpetual
-     *      before and update the funding rate of each perpetual after. Can only called when the perpetual's state
-     *      is "NORMAL" and the perpetual is not paused
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The position amount of the trade
-     * @param limitPrice The worst price the trader accepts
-     * @param referrer The referrer's address of trade
-     * @param flags The flags of the trade
-     * @return int256 The update position amount of the trader after the trade
-     */
     function _trade(
         uint256 perpetualIndex,
         address trader,
@@ -233,23 +221,30 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. AMM takes the position.
-     *         The liquidate price is determied by AMM. The liquidator gets the keeper gas reward.
-     *         If there is penalty, AMM and the insurance fund will taker it. If there is loss,
-     *         the insurance fund will cover it. If the insurance fund including the donated part is negative,
-     *         the perpetual's state should enter "EMERGENCY".
-     *         Need to update the funding state and the oracle price of each perpetual before and
-     *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
-     *         is "NORMAL"
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the liquidated trader
-     * @return int256 The update position amount of the liquidated trader after the liquidation
+     * @notice  Liquidate the trader if the trader's margin balance is lower than maintenance margin (unsafe).
+     *          Liquidate can be considered as a forced trading between AMM and unsafe margin account;
+     *          Based on current liquidity of AMM, it may take positions up to an amount equal to all the position
+     *          of the unsafe account. Besides the position, trader need to pay an extra penalty to AMM
+     *          for taking the unsafe assets. See TradeModule.sol for ehe stategy of penalty.
+     *
+     *          The liquidate price will be determied by AMM.
+     *          Caller of this method can be anyone, then get a reward to make up for transaction gas fee.
+     *
+     *          If a trader's margin balance is lower than 0 (bankrupt), insurance fund will be use to fill the loss
+     *          to make the total profit and loss balanced. (first the `insuranceFund` then the `donatedInsuranceFund`)
+     *
+     *          If insurance funds are drained, the state of perpetual will turn to enter "EMERGENCY" than shutdown.
+     *          Can only liquidate when the perpetual's state is "NORMAL".
+     *
+     * @param   perpetualIndex      The index of the perpetual in liquidity pool
+     * @param   trader              The address of trader to be liquidated.
+     * @return  liquidationAmount   The amount of positions actually liquidated in the transaction.
      */
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
         syncState
         nonReentrant
-        returns (int256)
+        returns (int256 liquidationAmount)
     {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
@@ -257,24 +252,20 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
-        return _liquidityPool.liquidateByAMM(perpetualIndex, _msgSender(), trader);
+        liquidationAmount = _liquidityPool.liquidateByAMM(perpetualIndex, _msgSender(), trader);
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. The liquidate price is mark price.
-     *         If there is penalty, The liquidator and the insurance fund will taker it. If there is loss, the
-     *         insurance fund will cover it. If the insurance fund including the donated part is negative, the perpetual's
-     *         state should enter "EMERGENCY". The liquidator should be initial margin safe after the liquidation if
-     *         he has opened position. If not, he should be maintenance margin safe.
-     *         Need to update the funding state and the oracle price of each perpetual before and
-     *         update the funding rate of each perpetual after. Can only liquidate when the perpetual's state
-     *         is "NORMAL"
-     * @param perpetualIndex The index of perpetual
-     * @param trader The address of liquidated trader
-     * @param amount The amount of liquidation
-     * @param limitPrice The worst price liquidator accepts
-     * @param deadline The deadline of liquidation
-     * @return int256 The delta position of liquidated trader
+     * @notice  This method is generally consistent with `liquidateByAMM` function, but there some difference:
+     *           - The liquidation price is no longer determined by AMM, but the mark price;
+     *           - The penalty is taken by trader who takes position but AMM;
+     *
+     * @param   perpetualIndex      The index of the perpetual in liquidity pool.
+     * @param   trader              The address of trader to be liquidated.
+     * @param   amount              The amount of position to be taken from liquidated trader.
+     * @param   limitPrice          The worst price liquidator accepts.
+     * @param   deadline            The deadline of transaction.
+     * @return  liquidationAmount   The amount of positions actually liquidated in the transaction.
      */
     function liquidateByTrader(
         uint256 perpetualIndex,
@@ -282,7 +273,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 limitPrice,
         uint256 deadline
-    ) external syncState nonReentrant returns (int256) {
+    ) external syncState nonReentrant returns (int256 liquidationAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -292,14 +283,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         require(amount != 0, "invalid amount");
         require(limitPrice >= 0, "invalid limit price");
         require(deadline >= block.timestamp, "deadline exceeded");
-        return
-            _liquidityPool.liquidateByTrader(
-                perpetualIndex,
-                _msgSender(),
-                trader,
-                amount,
-                limitPrice
-            );
+        liquidationAmount = _liquidityPool.liquidateByTrader(
+            perpetualIndex,
+            _msgSender(),
+            trader,
+            amount,
+            limitPrice
+        );
     }
 
     bytes32[50] private __gap;

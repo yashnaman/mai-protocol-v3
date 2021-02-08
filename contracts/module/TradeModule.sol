@@ -48,47 +48,48 @@ library TradeModule {
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
 
     /**
-     * @notice Trade the position in the perpetual between the trader (taker) and AMM (maker).
-     *         The trading price is determined by AMM based on current index price of the perpetual.
-     *         Trader must be initial margin safe if opening position and margin safe if closing position.
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The position amount of the trade
-     * @param priceLimit The worst price the trader accepts
-     * @param referrer The address of the referrer
-     * @param flags The flags of the trade
-     * @return tradeAmount The update position amount of the trader after trade
+     * @dev     See `trade` in Perpetual.sol for details.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   trader          The address of trader.
+     * @param   amount          The amount of position to trader, positive for buying and negative for selling.
+     * @param   limitPrice      The worst price the trader accepts.
+     * @param   referrer        The address of referrer who will get rebate in the deal.
+     * @param   flags           The flags of the trade.
+     * @return  tradeAmount     The amount of positions actually traded in the transaction.
      */
     function trade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 priceLimit,
+        int256 limitPrice,
         address referrer,
         uint32 flags
     ) public returns (int256 tradeAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
-        // close only
+        require(
+            !IOracle(perpetual.oracle).isMarketClosed() &&
+                !IOracle(perpetual.oracle).isTerminated(),
+            "market is closed now"
+        );
+        // handle close only flag
         if (flags.isCloseOnly()) {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
             require(amount != 0, "no amount to close");
         }
-        // query price
+        // query price from AMM
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
         // check price
         if (!flags.isMarketOrder()) {
             int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
-            validatePrice(amount >= 0, tradePrice, priceLimit);
+            validatePrice(amount >= 0, tradePrice, limitPrice);
         }
-        // (int256 deltaCash, int256 deltaPosition) =
-        //     preTrade(perpetual, trader, amount, priceLimit, flags);
         perpetual.updateMargin(address(this), deltaPosition, deltaCash);
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
-
+        // handle trading fee
         (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
         emit Trade(
@@ -103,20 +104,23 @@ library TradeModule {
     }
 
     /**
-     * @notice Get the fees of the trade. If the margin of the trader is not enough for fee:
-     *         1. If trader open position, the trade will be reverted.
-     *         2. If trader close position, the fee will be decreasing in proportion according to
-     *         the margin left in the trader's account
-     * @param liquidityPool The liquidity pool object
-     * @param perpetual The perpetual object
-     * @param trader The address of the trader
-     * @param referrer The address of the referrer
-     * @param tradeValue The collateral value of the trade
-     * @param hasOpened If the trader has opened position during the trade
-     * @return lpFee The fee belongs to the LP
-     * @return operatorFee The fee belongs to the operator
-     * @return vaultFee The fee belongs to the vault
-     * @return referralRebate The rebate of the refferral
+     * @dev     Get the fees of the trade. If the margin of the trader is not enough for fee:
+     *            1. If trader open position, the trade will be reverted.
+     *            2. If trader close position, the fee will be decreasing in proportion according to
+     *               the margin left in the trader's account
+     *          The rebate of referral will only calculate the lpFee and operatorFee.
+     *          The vault fee will not be counted in.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetual       The reference of pereptual storage.
+     * @param   trader          The address of trader.
+     * @param   referrer        The address of referrer who will get rebate from the deal.
+     * @param   tradeValue      The amount of trading value, measured by collateral, abs of deltaCash.
+     * @param   hasOpened       True if the trader has opened position during trading.
+     * @return  lpFee           The amount of fee to the Liquidity provider.
+     * @return  operatorFee     The amount of fee to the operator.
+     * @return  vaultFee        The amount of fee to the vault.
+     * @return  referralRebate  The amount of rebate of the refferral.
      */
     function getFees(
         LiquidityPoolStorage storage liquidityPool,
@@ -173,15 +177,16 @@ library TradeModule {
 
     /**
      * @dev Execute the trade. If the trader has opened position in the trade, his account should be
-     *      initial margin safe after the trade. If not, his account should be margin safe
-     * @param liquidityPool The liquidity pool object
-     * @param perpetual The perpetual object
-     * @param trader The address of the trader
-     * @param referrer The address of the referrer
-     * @param deltaCash The update cash(collateral) amount of the trader after the trade
-     * @param deltaPosition The update position amount of the trader after the trade
-     * @return lpFee Amount of fee for lp provider
-     * @return totalFee The total fee collected from the trader after the trade
+     *          initial margin safe after the trade. If not, his account should be margin safe
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetual       The reference of pereptual storage.
+     * @param   trader          The address of trader.
+     * @param   referrer        The address of referrer who will get rebate from the deal.
+     * @param   deltaCash       The amount of cash changes in a trade.
+     * @param   deltaPosition   The amount of position changes in a trade.
+     * @return  lpFee           The amount of fee for lp provider
+     * @return  totalFee        The total fee collected from the trader after the trade
      */
     function postTrade(
         LiquidityPoolStorage storage liquidityPool,
@@ -217,23 +222,20 @@ library TradeModule {
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. AMM takes the position.
-     *         The liquidate price is determied by AMM. The liquidator gets the keeper gas reward.
-     *         If there is penalty, AMM and the insurance fund will taker it. If there is loss,
-     *         the insurance fund will cover it. If the insurance fund including the donated part is negative,
-     *         the perpetual's state should enter "EMERGENCY"
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param liquidator The address of the account who initiates the liquidation
-     * @param trader The address of the liquidated account
-     * @return int256 The update position amount of the liquidated account
+     * @dev     See `liquidateByAMM` in Perpetual.sol for details.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   liquidator          The address of the account calling the liquidation method.
+     * @param   trader              The address of the liquidated account.
+     * @return  liquidatedAmount    The amount of positions actually liquidated in the transaction.
      */
     function liquidateByAMM(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address liquidator,
         address trader
-    ) public returns (int256) {
+    ) public returns (int256 liquidatedAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 position = perpetual.getPosition(trader);
         int256 markPrice = perpetual.getMarkPrice();
@@ -288,22 +290,19 @@ library TradeModule {
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);
         }
-        return deltaPosition.neg();
+        liquidatedAmount = deltaPosition.neg();
     }
 
     /**
-     * @notice Liquidate the trader if the trader is not maintenance margin safe. The liquidate price is mark price.
-     *         If there is penalty, The liquidator and the insurance fund will taker it. If there is loss, the
-     *         insurance fund will cover it. If the insurance fund including the donated part is negative, the perpetual's
-     *         state should enter "EMERGENCY". The liquidator should be initial margin safe after the liquidation if
-     *         he has opened position. If not, he should be maintenance margin safe
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param liquidator The address of the account who initiates the liquidation
-     * @param trader The address of the liquidated account
-     * @param amount The liquidated amount of position
-     * @param limitPrice The worst price which the liquidator accepts
-     * @return int256 The update position amount of the liquidated account
+     * @dev     See `liquidateByTrader` in Perpetual.sol for details.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   liquidator          The address of the account calling the liquidation method.
+     * @param   trader              The address of the liquidated account.
+     * @param   amount              The amount of position to be taken from liquidated trader.
+     * @param   limitPrice          The worst price liquidator accepts.
+     * @return  liquidatedAmount    The amount of positions actually liquidated in the transaction.
      */
     function liquidateByTrader(
         LiquidityPoolStorage storage liquidityPool,
@@ -312,7 +311,7 @@ library TradeModule {
         address trader,
         int256 amount,
         int256 limitPrice
-    ) public returns (int256) {
+    ) public returns (int256 liquidatedAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 position = perpetual.getPosition(trader);
         amount = getMaxPositionToClose(position, amount);
@@ -367,7 +366,7 @@ library TradeModule {
         if (perpetual.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetualIndex);
         }
-        return deltaPosition.neg();
+        liquidatedAmount = deltaPosition.neg();
     }
 
     /**
