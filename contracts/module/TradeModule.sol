@@ -69,11 +69,7 @@ library TradeModule {
         uint32 flags
     ) public returns (int256 tradeAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        require(
-            !IOracle(perpetual.oracle).isMarketClosed() &&
-                !IOracle(perpetual.oracle).isTerminated(),
-            "market is closed now"
-        );
+        require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
         // handle close only flag
         if (flags.isCloseOnly()) {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
