@@ -3,25 +3,45 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
+/**
+ * @notice  Perpetual state:
+ *          - INVALID:      Uninitialized or not non-existent perpetual;
+ *          - INITIALIZING: Only when LiquidityPoolStorage.isRunning == false. Traders cannot perform operations;
+ *          - NORMAL:       Full functional state. Traders is able to perform all operations;
+ *          - EMERGENCY:    Perpetual is unsafe and only clear is available;
+ *          - CLEARED:      All margin account is cleared. Trade could withdraw remaining margin balance.
+ */
+enum PerpetualState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
+enum OrderType { LIMIT, MARKET, STOP }
+
+/**
+ * @notice  Data structure to store risk parameter value.
+ */
 struct Option {
     int256 value;
     int256 minValue;
     int256 maxValue;
 }
 
+/**
+ * @notice  Data structure to store oracle price data.
+ */
 struct OraclePriceData {
     int256 price;
     uint256 time;
 }
 
+/**
+ * @notice  Data structure to store user margin infomation. See MarginAccountModule.sol for details.
+ */
 struct MarginAccount {
     int256 cash;
     int256 position;
 }
 
-enum PerpetualState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
-enum OrderType { LIMIT, MARKET, STOP }
-
+/**
+ * @notice  Data structure of an order object.
+ */
 struct Order {
     address trader;
     address broker;
@@ -40,6 +60,9 @@ struct Order {
     uint32 salt;
 }
 
+/**
+ * @notice  Core data structure, a core .
+ */
 struct LiquidityPoolStorage {
     bool isRunning;
     bool isFastCreationEnabled;
@@ -50,10 +73,6 @@ struct LiquidityPoolStorage {
     address governor;
     address shareToken;
     address accessController;
-    // vault
-    // address vault;
-    // int256 vaultFeeRate;
-    // collateral
     bool isWrapped;
     uint256 scaler;
     uint256 collateralDecimals;
@@ -68,6 +87,9 @@ struct LiquidityPoolStorage {
     PerpetualStorage[] perpetuals;
 }
 
+/**
+ * @notice  Core data structure, storing perpetual informations.
+ */
 struct PerpetualStorage {
     uint256 id;
     PerpetualState state;

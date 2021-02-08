@@ -23,17 +23,21 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
+    /**
+     * @dev To receive eth from WETH contract.
+     */
     receive() external payable {}
 
     /**
-     * @notice Initialize the liquidity pool and set up its configuration
-     * @param operator The operator's address of the liquidity pool
-     * @param collateral The collateral's address of the liquidity pool
-     * @param collateralDecimals The collateral's decimals of the liquidity pool
-     * @param governor The governor's address of the liquidity pool
-     * @param shareToken The share token's address of the liquidity pool
-     * @param isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
-     *                              when the liquidity pool is running
+     * @notice  Initialize the liquidity pool and set up its configuration
+     *
+     * @param   operator                The address of operator which should be pool creater currently.
+     * @param   collateral              The address of collateral token.
+     * @param   collateralDecimals      The decimals of collateral token, to support token without decimals interface.
+     * @param   governor                The address of governor, who is able to call governance methods.
+     * @param   shareToken              The address of share token, which is the token for liquidity providers.
+     * @param   isFastCreationEnabled   True if the operator is able to create new perpetual without governor
+     *                                  when the liquidity pool is running.
      */
     function initialize(
         address operator,
@@ -55,14 +59,16 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Create new perpetual of the liquidity pool. The operator can create only when the liquidity
-     *         pool is not running or isFastCreationEnabled is set to true. In other cases, only the
-     *         governor can create
-     * @param oracle The oracle's address of the perpetual
-     * @param coreParams The core parameters of the perpetual
-     * @param riskParams The risk parameters of the perpetual, must between minimum values and maximum values
-     * @param minRiskParamValues The risk parameters' minimum values of the perpetual
-     * @param maxRiskParamValues The risk parameters' maximum values of the perpetual
+     * @notice  Create new perpetual of the liquidity pool.
+     *          The operator can create perpetual only when the pool is not running or isFastCreationEnabled is true.
+     *          Otherwise a perpetual can only be create by governor (say, through voting).
+     *
+     * @param   oracle              The oracle's address of the perpetual.
+     * @param   coreParams          The core parameters of the perpetual, see TODO for details.
+     * @param   riskParams          The risk parameters of the perpetual,
+     *                              Must be within range [minRiskParamValues, maxRiskParamValues].
+     * @param   minRiskParamValues  The minimum values of risk parameters.
+     * @param   maxRiskParamValues  The maximum values of risk parameters.
      */
     function createPerpetual(
         address oracle,
@@ -89,25 +95,24 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Run the liquidity pool. Can only called by operator.
-     *         The operator can create new perpetual before running or after running if isFastCreationEnabled is set to true
+     * @notice  Set the liquidity pool to running state. Can be call only once by operater.m n
      */
     function runLiquidityPool() external onlyOperator {
-        require(!_liquidityPool.isRunning, "pool is already running");
+        require(!_liquidityPool.isRunning, "already running");
         _liquidityPool.runLiquidityPool();
     }
 
     /**
-     * @notice If you want to get the real-time data, call this function first
+     * @notice  If you want to get the real-time data, call this function first
      */
     function forceToSyncState() public syncState {}
 
     /**
-     * @notice Add liquidity to the liquidity pool when the liquidity pool is running.
-     *         Liquidity provider adds collateral to the liquidity pool and gets the share tokens.
-     *         Need to update the funding state and the oracle price of each perpetual before
-     *         and update the funding rate of each perpetual after
-     * @param cashToAdd The amount of cash(collateral) to add
+     * @notice  Add liquidity to the liquidity pool.
+     *          Liquidity provider deposits collaterals then gets share tokens back.
+     *          The ratio of added cash to share token is determined by current liquidity.
+     *
+     * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
     function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
@@ -115,11 +120,12 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     }
 
     /**
-     * @notice Remove liquidity from the liquidity pool when the liquidity pool is running.
-     *         Liquidity provider redeems his share tokens and gets the collateral back.
-     *         Need to update the funding state and the oracle price of each perpetual before
-     *         and update the funding rate of each perpetual after
-     * @param shareToRemove The amount of share token to remove
+     * @notice  Remove liquidity from the liquidity pool.
+     *          Liquidity providers redeems share token then gets collateral back.
+     *          The amount of collateral retrieved may differ from the amount when adding liquidity,
+     *          The index price, trading fee and positions holding by amm will affect the profitability of providers.
+     *
+     * @param   shareToRemove   The amount of share token to remove
      */
     function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");

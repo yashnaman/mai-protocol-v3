@@ -76,7 +76,6 @@ library TradeModule {
             amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
             require(amount != 0, "no amount to close");
         }
-
         // query price
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);

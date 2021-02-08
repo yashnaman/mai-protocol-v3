@@ -21,26 +21,32 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
 
     /**
-     * @notice Donate collateral to the insurance fund of the perpetual. Can only called when the perpetual's
-     *         state is "NORMAL". Can improve the security of the perpetual
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param amount The amount of collateral to donate
+     * @notice  Donate collateral to the insurance fund of the perpetual.
+     *          Can only called when the perpetual's state is "NORMAL".
+     *          Donated collateral is not withdrawable but can be used to improve security.
+     *          Unexpected loss (backrupt) will be deducted from insurance fund then donated insurance fund.
+     *          Until donated insurance fund is drained, the perpetual will not enter emergency state and shutdown.
+     *
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   amount          The amount of collateral to donate.
      */
     function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
         external
         payable
         onlyWhen(perpetualIndex, PerpetualState.NORMAL)
     {
-        require(amount > 0 || msg.value > 0, "amount is invalid");
+        require(amount > 0 || msg.value > 0, "invalid amount");
         _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
     }
 
     /**
-     * @notice Deposit collateral to the trader's account of the perpetual. Can only called when the perpetual's
-     *         state is "NORMAL". The trader's cash will increase in the perpetual
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The amount of collatetal to deposit
+     * @notice  Deposit collateral to the perpetual.
+     *          Can only called when the perpetual's state is "NORMAL".
+     *          This method will always increase `cash` amount in trader's margin account.
+     *
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @param   trader          The address of the trader
+     * @param   amount          The amount of collatetal to deposit
      */
     function deposit(
         uint256 perpetualIndex,
@@ -57,14 +63,17 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Withdraw collateral from the trader's account of the perpetual. Can only called when the perpetual's
-     *         state is "NORMAL". Trader must be initial margin safe in the perpetual after withdrawing.
-     *         The trader's cash will decrease in the perpetual.
-     *         Need to update the funding state and the oracle price of each perpetual before
-     *         and update the funding rate of each perpetual after
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The amount of collatetal to withdraw
+     * @notice  Withdraw collateral from the trader's account of the perpetual.
+     *          After withdrawn, trader shall at least has maintenance margin left in account.
+     *          Can only called when the perpetual's state is "NORMAL".
+     *          Margin account must at least keep
+     *          The trader's cash will decrease in the perpetual.
+     *          Need to update the funding state and the oracle price of each perpetual before
+     *          and update the funding rate of each perpetual after
+     *
+     * @param   perpetualIndex The index of the perpetual in the liquidity pool
+     * @param   trader The address of the trader
+     * @param   amount The amount of collatetal to withdraw
      */
     function withdraw(
         uint256 perpetualIndex,
@@ -81,11 +90,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
-     *         trader's account in the perpetual. Which means to calculate how much the collateral should be returned
-     *         to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
+     * @notice  If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
+     *          trader's account in the perpetual. Which means to calculate how much the collateral should be returned
+     *           to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @param   trader          The address of the trader.
      */
     function settle(uint256 perpetualIndex, address trader)
         public
@@ -93,16 +102,16 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         onlyWhen(perpetualIndex, PerpetualState.CLEARED)
         nonReentrant
     {
-        require(trader != address(0), "trader is invalid");
+        require(trader != address(0), "invalid trader");
         _liquidityPool.settle(perpetualIndex, trader);
     }
 
     /**
-     * @notice Clear the next active account of the perpetual which state is "EMERGENCY" and send gas reward of collateral
-     *         to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
-     *         change to "CLEARED". Active means the trader's account is not empty in the perpetual.
-     *         Empty means cash and position are zero
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @notice  Clear the next active account of the perpetual which state is "EMERGENCY" and send gas reward of collateral
+     *          to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
+     *          change to "CLEARED". Active means the trader's account is not empty in the perpetual.
+     *          Empty means cash and position are zero
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      */
     function clear(uint256 perpetualIndex)
         public
@@ -113,17 +122,35 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Trade with AMM in the perpetual, require sender is granted the trade privilege by the trader.
-     *         The trading price is determined by the AMM based on the index price of the perpetual.
-     *         Trader must be initial margin safe if opening position and margin safe if closing position
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of trader
-     * @param amount The position amount of the trade
-     * @param limitPrice The worst price the trader accepts
-     * @param deadline The deadline of the trade
-     * @param referrer The referrer's address of the trade
-     * @param flags The flags of the trade
-     * @return int256 The update position amount of the trader after the trade
+     * @notice  Trade with AMM in the perpetual, require sender is granted the trade privilege by the trader.
+     *          The trading price is determined by the AMM based on the index price of the perpetual.
+     *          A successful trade should:
+     *            - The trade transaction not exceeds deadline;
+     *            - Current liquidity of amm is enough to make the deal;
+     *            - to open position:
+     *              - Trader's margin balance must be greater then or equal to initial margin after trading;
+     *              - Full trading fee will be charged if trader is opening position.
+     *            - to close position:
+     *              - Trader's margin balance must be greater then or equal to 0 after trading;
+     *              - Trader need to pay the trading fee as much as possible before all the margin balance drained.
+     *          If one trade transaction does close and open at same time (Open positions in the opposite direction)
+     *          It will be treat as opening position.
+     *
+     *          Flags is a 32 bit uint value which indicates: (from highest bit)
+     *            - close only      only close positon during trading;
+     *            - market order    do not check limit price during trading;
+     *            - stop loss       only availble in brokerTrade mode;
+     *            - take profit     only availble in brokerTrade mode;
+                For stop loss and take profit, see `validateTriggerPrice` in OrderModule.sol for details.
+     *
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   trader          The address of trader.
+     * @param   amount          The amount of position to trader, positive for buying and negative for selling.
+     * @param   limitPrice      The worst price the trader accepts.
+     * @param   deadline        The dealine of trade transaction.
+     * @param   referrer        The address of referrer who will get rebate in the deal.
+     * @param   flags           The flags of the trade.
+     * @return  tradeAmount     The amount of positions actually traded in the transaction.
      */
     function trade(
         uint256 perpetualIndex,
@@ -133,41 +160,46 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 deadline,
         address referrer,
         uint32 flags
-    ) external syncState onlyAuthorized(trader, Constant.PRIVILEGE_TRADE) returns (int256) {
-        require(trader != address(0), "trader is invalid");
-        require(amount != 0, "amount is invalid");
-        require(limitPrice >= 0, "price limit is invalid");
+    )
+        external
+        syncState
+        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
+        returns (int256 tradeAmount)
+    {
+        require(trader != address(0), "invalid trader");
+        require(amount != 0, "invalid amount");
+        require(limitPrice >= 0, "invalid limit price");
         require(deadline >= block.timestamp, "deadline exceeded");
-        return _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+        tradeAmount = _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
     /**
-     * @notice Trade with AMM by the order, initiated by the broker.
-     *         The trading price is determined by the AMM based on the index price of the perpetual.
-     *         Trader must be initial margin safe if opening position and margin safe if closing position
-     * @param orderData The order data object
-     * @param amount The position amount of the trade
-     * @return int256 The update position amount of the trader after the trade
+     * @notice  Trade with AMM by the order, initiated by the broker. order is passed in through packed data structure.
+     *          All the fields of order are verified by signature.
+     *          See `trade` for details.
+     * @param   orderData   The order data object
+     * @param   amount      The amount of position to trader, positive for buying and negative for selling.
+     *                      This amount should be lower then or equal to amount in `orderData`.
+     * @return  tradeAmount The amount of positions actually traded in the transaction.
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
         syncState
-        returns (int256)
+        returns (int256 tradeAmount)
     {
         Order memory order = orderData.decodeOrderData();
         bytes memory signature = orderData.decodeSignature();
         _liquidityPool.validateSignature(order, signature);
         _liquidityPool.validateOrder(order, amount);
         _liquidityPool.validateTriggerPrice(order);
-        return
-            _trade(
-                order.perpetualIndex,
-                order.trader,
-                amount,
-                order.limitPrice,
-                order.referrer,
-                order.flags
-            );
+        tradeAmount = _trade(
+            order.perpetualIndex,
+            order.trader,
+            amount,
+            order.limitPrice,
+            order.referrer,
+            order.flags
+        );
     }
 
     /**
@@ -250,8 +282,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
-        require(amount != 0, "amount is invalid");
-        require(limitPrice >= 0, "price limit is invalid");
+        require(amount != 0, "invalid amount");
+        require(limitPrice >= 0, "invalid limit price");
         require(deadline >= block.timestamp, "deadline exceeded");
         return
             _liquidityPool.liquidateByTrader(

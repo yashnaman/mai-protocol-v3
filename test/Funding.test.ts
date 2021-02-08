@@ -142,7 +142,6 @@ describe('Funding', () => {
                 await liquidityPool.setState(1, element.state);
 
                 await liquidityPool.updateFundingStateP(element.timeElapsed);
-
                 expect(await liquidityPool.getUnitAccumulativeFunding(0)).approximateBigNumber(element.targetUnitAccumulativeFunding1)
                 expect(await liquidityPool.getUnitAccumulativeFunding(1)).approximateBigNumber(element.targetUnitAccumulativeFunding2)
             })

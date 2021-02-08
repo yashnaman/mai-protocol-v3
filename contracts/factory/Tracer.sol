@@ -31,7 +31,7 @@ contract Tracer {
     mapping(address => address) internal _liquidityPoolOwners;
 
     modifier onlyLiquidityPool() {
-        require(isLiquidityPool(msg.sender), "call is not liquidity pool instance");
+        require(isLiquidityPool(msg.sender), "caller is not liquidity pool instance");
         _;
     }
 

@@ -133,8 +133,10 @@ library PerpetualModule {
     }
 
     function setOracle(PerpetualStorage storage perpetual, address newOracle) public {
-        require(newOracle != address(0), "invalid new oracle address");
+        require(newOracle != address(0), "invalid oracle address");
+        require(newOracle != perpetual.oracle, "oracle not changed");
         require(newOracle.isContract(), "oracle must be contract");
+
         require(!IOracle(newOracle).isTerminated(), "oracle is terminated");
 
         emit SetOracle(perpetual.oracle, newOracle);
@@ -615,7 +617,7 @@ library PerpetualModule {
      * @param newValue The new value of the option, must between the minimum value and the maximum value
      */
     function updateOption(Option storage option, int256 newValue) internal {
-        require(newValue >= option.minValue && newValue <= option.maxValue, "value out fo range");
+        require(newValue >= option.minValue && newValue <= option.maxValue, "value out of range");
         option.value = newValue;
     }
 
@@ -632,7 +634,7 @@ library PerpetualModule {
         int256 newMinValue,
         int256 newMaxValue
     ) internal {
-        require(newValue >= newMinValue && newValue <= newMaxValue, "value out fo range");
+        require(newValue >= newMinValue && newValue <= newMaxValue, "value out of range");
         option.value = newValue;
         option.minValue = newMinValue;
         option.maxValue = newMaxValue;

@@ -2,9 +2,7 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
-
 import "./module/PerpetualModule.sol";
-
 import "./Type.sol";
 import "./Storage.sol";
 

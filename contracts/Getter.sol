@@ -16,6 +16,9 @@ import "./module/AMMModule.sol";
 import "./Type.sol";
 import "./Storage.sol";
 
+/**
+ * @notice  Getter is a helper to help getting status of liquidity from external.
+ */
 contract Getter is Storage {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
@@ -29,14 +32,17 @@ contract Getter is Storage {
     using AMMModule for LiquidityPoolStorage;
 
     /**
-     * @notice Get the info of the liquidity pool
-     * @return isRunning True if the liquidity pool is running
-     * @return isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
-     *                               when the liquidity pool is running
-     * @return addresses The related addresses of the liquidity pool
-     * @return vaultFeeRate The vault fee rate of the liquidity pool
-     * @return poolCash The pool cash(collateral) of the liquidity pool
-     * @return nums Uint type properties, see below for details.
+     * @notice  Get the info of the liquidity pool.
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     *
+     * @return  isRunning               True if the liquidity pool is running.
+     * @return  isFastCreationEnabled   True if the operator of the liquidity pool is allowed to create new perpetual
+     *                                  when the liquidity pool is running.
+     * @return  addresses               The related addresses of the liquidity pool.
+     * @return  vaultFeeRate            The vault fee rate of the liquidity pool.
+     * @return  poolCash                The pool cash of the liquidity pool.
+     * @return  nums                    An fixed length array of uint type properties, see comments for details.
      */
     function getLiquidityPoolInfo()
         public
@@ -81,12 +87,15 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the info of the perpetual. Need to update the funding state and the oracle price
-     *         of each perpetual before and update the funding rate of each perpetual after
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return state The state of the perpetual
-     * @return oracle The oracle's address of the perpetual
-     * @return nums The related numbers of the perpetual
+     * @notice  Get the info of the perpetual. Need to update the funding state and the oracle price
+     *          of each perpetual before and update the funding rate of each perpetual after.
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     *
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  state           The state of the perpetual.
+     * @return  oracle          The address of the current oracle in perpetual.
+     * @return  nums            An fixed length array of uint type properties, see comments for details.
      */
     function getPerpetualInfo(uint256 perpetualIndex)
         public
@@ -166,21 +175,24 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the account info of the trader. Need to update the funding state and the oracle price
-     *         of each perpetual before and update the funding rate of each perpetual after
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     *               Note: When trader == liquidityPool, is*Safe are meanless. Do not forget to sum
-     *                     poolCash and availableCash of all perpetuals in a liquidityPool when
-     *                     calculating AMM margin
-     * @return cash The cash(collateral) of the account
-     * @return position The position of the account
-     * @return availableCash The available cash of the account
-     * @return margin The margin of the account
-     * @return settleableMargin The settleable margin of the account
-     * @return isInitialMarginSafe True if the account is initial margin safe
-     * @return isMaintenanceMarginSafe True if the account is maintenance margin safe
-     * @return isMarginSafe True if the total value of margin account is beyond 0
+     * @notice  Get the account info of the trader. Need to update the funding state and the oracle price
+     *          of each perpetual before and update the funding rate of each perpetual after
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     *
+     * @param perpetualIndex    The index of the perpetual in the liquidity pool.
+     * @param trader            The address of the trader.
+     *                          When trader == liquidityPool, isSafe are meanless. Do not forget to sum
+     *                          poolCash and availableCash of all perpetuals in a liquidityPool when
+     *                          calculating AMM margin
+     * @return cash                     The cash of the account.
+     * @return position                 The position of the account.
+     * @return availableCash            The available cash of the account.
+     * @return margin                   The margin of the account.
+     * @return settleableMargin         The settleable margin of the account.
+     * @return isInitialMarginSafe      True if the account is initial margin safe.
+     * @return isMaintenanceMarginSafe  True if the account is maintenance margin safe.
+     * @return isMarginSafe             True if the total value of margin account is beyond 0.
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
@@ -211,11 +223,10 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the number of active accounts in the perpetual.
-     *         Active means the trader's account is not empty in the perpetual.
-     *         Empty means cash and position are zero
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return activeAccountCount The number of active accounts in the perpetual
+     * @notice  Get the number of active accounts in the given perpetual.
+     *          Active means the trader has margin (margin != 0) in the margin account.
+     * @param   perpetualIndex      The index of the perpetual in liquidity pool.
+     * @return  activeAccountCount  The number of active accounts in the perpetual.
      */
     function getActiveAccountCount(uint256 perpetualIndex)
         public
@@ -227,13 +238,11 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the active accounts in the perpetual whose index between begin and end.
-     *         Active means the trader's account is not empty in the perpetual.
-     *         Empty means cash and position are zero
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param begin The begin index
-     * @param end The end index
-     * @return result The active accounts in the perpetual whose index between begin and end
+     * @notice  Get the active accounts in the perpetual whose index with range [begin, end).
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   begin           The begin index of account to retrieve.
+     * @param   end             The end index of account, exclusive.
+     * @return  result          An array of active addresses.
      */
     function listActiveAccounts(
         uint256 perpetualIndex,
@@ -245,11 +254,10 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the progress of clearing active accounts.
-     *         Return the number of total active accounts and the number of active accounts not cleared
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return left The left active accounts
-     * @return total The total active accounts
+     * @notice  Get the progress of clearing active accounts.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @return  left            Number of left active accounts.
+     * @return  total           Number of total active accounts.
      */
     function getClearProgress(uint256 perpetualIndex)
         public
@@ -265,9 +273,11 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the pool margin of the liquidity pool.
-     *         Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
-     * @return poolMargin The pool margin of the liquidity pool
+     * @notice  Get the pool margin of the liquidity pool.
+     *          Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     * @return  poolMargin  The pool margin of the liquidity pool
      */
     function getPoolMargin() public view returns (int256 poolMargin) {
         AMMModule.Context memory context = _liquidityPool.prepareContext();
@@ -275,12 +285,15 @@ contract Getter is Storage {
     }
 
     /**
-     * @notice Get the update cash amount and the update position amount of trader
-     *         if trader trades with AMM in the perpetual
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param amount The trading amount of position
-     * @return deltaCash The update cash(collateral) of the trader after the trade
-     * @return deltaPosition The update position of the trader after the trade
+     * @notice  Query the cost and position amount that amm could afford based on current liquidity.
+     *          This method should returns the same result as a 'read' trade, and trading fee is not included.
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     *
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   amount          The expected(max) amoun of position to trade.
+     * @return  deltaCash       The cost of cash of trade.
+     * @return  deltaPosition   The update position of the trader after the trade
      */
     function queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
         public

@@ -4,14 +4,28 @@ pragma solidity >=0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../module/PerpetualModule.sol";
+import "../module/LiquidityPoolModule.sol";
 
 import "../Governance.sol";
 
 contract TestGovernance is Governance {
     using PerpetualModule for PerpetualStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
+
+    function setCreator(address creator) public {
+        _liquidityPool.creator = creator;
+    }
 
     function setGovernor(address governor) public {
         _liquidityPool.governor = governor;
+    }
+
+    // function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {
+    //     _liquidityPool.initializeCollateral(collateralToken, collateralDecimals);
+    // }
+
+    function setTotalCollateral(uint256 perpetualIndex, int256 amount) public {
+        _liquidityPool.perpetuals[0].totalCollateral = amount;
     }
 
     function setOperatorNoAuth(address operator) public {
@@ -35,11 +49,7 @@ contract TestGovernance is Governance {
             minRiskParamValues,
             maxRiskParamValues
         );
-    }
-
-    function settlementPrice(uint256 perpetualIndex) public view returns (int256) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        return perpetual.settlementPriceData.price;
+        _liquidityPool.perpetuals[0].state = PerpetualState.NORMAL;
     }
 
     function isFastCreationEnabled() public view returns (bool) {
@@ -112,5 +122,38 @@ contract TestGovernance is Governance {
 
     function setState(uint256 perpetualIndex, PerpetualState _state) public {
         _liquidityPool.perpetuals[perpetualIndex].state = _state;
+    }
+
+    function operatorExpiration() public view returns (uint256) {
+        return _liquidityPool.operatorExpiration;
+    }
+
+    function setOperatorExpiration(uint256 timestamp) public {
+        _liquidityPool.operatorExpiration = timestamp;
+    }
+
+    function getOperator() public view returns (address) {
+        return _liquidityPool.getOperator();
+    }
+
+    function settlementPrice(uint256 perpetualIndex) public view returns (int256, uint256) {
+        OraclePriceData storage priceData =
+            _liquidityPool.perpetuals[perpetualIndex].settlementPriceData;
+        return (priceData.price, priceData.time);
+    }
+
+    function setMarginAccount(
+        uint256 perpetualIndex,
+        address trader,
+        int256 cash,
+        int256 position
+    ) external {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        perpetual.marginAccounts[trader].cash = cash;
+        perpetual.marginAccounts[trader].position = position;
+    }
+
+    function oracle(uint256 perpetualIndex) public view returns (address) {
+        return _liquidityPool.perpetuals[perpetualIndex].oracle;
     }
 }

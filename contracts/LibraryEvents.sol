@@ -2,6 +2,10 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+/**
+ * @notice  The libraryEvents defines events that will be raised from modules (contract/modules).
+ * @dev     DO REMEMBER to add new events in modules here.
+ */
 contract LibraryEvents {
     // perpetual
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
