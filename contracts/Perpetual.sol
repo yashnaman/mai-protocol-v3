@@ -52,7 +52,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external payable syncState nonReentrant {
+    ) external payable syncState(false) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -79,7 +79,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external syncState nonReentrant {
+    ) external syncState(false) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -165,7 +165,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint32 flags
     )
         external
-        syncState
+        syncState(false)
         onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
         returns (int256 tradeAmount)
     {
@@ -187,7 +187,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
-        syncState
+        syncState(false)
         returns (int256 tradeAmount)
     {
         Order memory order = orderData.decodeOrderData();
@@ -242,7 +242,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
-        syncState
+        syncState(false)
         nonReentrant
         returns (int256 liquidationAmount)
     {
@@ -273,7 +273,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 limitPrice,
         uint256 deadline
-    ) external syncState nonReentrant returns (int256 liquidationAmount) {
+    ) external syncState(false) nonReentrant returns (int256 liquidationAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"

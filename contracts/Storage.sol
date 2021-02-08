@@ -20,10 +20,10 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
-    modifier syncState() {
+    modifier syncState(bool ignoreTerminated) {
         uint256 currentTime = block.timestamp;
         _liquidityPool.updateFundingState(currentTime);
-        _liquidityPool.updatePrice(currentTime);
+        _liquidityPool.updatePrice(currentTime, ignoreTerminated);
         _;
         _liquidityPool.updateFundingRate();
     }

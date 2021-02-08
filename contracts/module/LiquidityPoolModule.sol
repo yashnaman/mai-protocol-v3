@@ -444,51 +444,39 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Update the oracle price of each perpetual of the liquidity pool.
-     *         If oracle is terminated, set market to EMERGENCY
-     * @param liquidityPool The liquidity pool object
-     * @param currentTime The current timestamp
+     * @notice  Update the oracle price of each perpetual of the liquidity pool.
+     *          If oracle is terminated, set market to EMERGENCY
+     * @param   liquidityPool   The liquidity pool object
+     * @param   currentTime     The current timestamp
      */
-    function updatePrice(LiquidityPoolStorage storage liquidityPool, uint256 currentTime) public {
-        if (liquidityPool.priceUpdateTime >= currentTime) {
-            return;
-        }
-        uint256 length = liquidityPool.perpetuals.length;
-        for (uint256 i = 0; i < length; i++) {
-            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
-            if (IOracle(perpetual.oracle).isTerminated()) {
-                setEmergencyState(liquidityPool, i);
-            }
-            perpetual.updatePrice();
-        }
-        liquidityPool.priceUpdateTime = currentTime;
-    }
-
-    /**
-     * @notice Update the oracle price of each perpetual of the liquidity pool
-     * @param liquidityPool The liquidity pool object
-     * @param currentTime The current timestamp
-     */
-    function updatePriceIgnoreTerminated(
+    function updatePrice(
         LiquidityPoolStorage storage liquidityPool,
-        uint256 currentTime
+        uint256 currentTime,
+        bool ignoreTerminated
     ) public {
         if (liquidityPool.priceUpdateTime >= currentTime) {
             return;
         }
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            liquidityPool.perpetuals[i].updatePrice();
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            perpetual.updatePrice();
+            if (IOracle(perpetual.oracle).isTerminated() && !ignoreTerminated) {
+                setEmergencyState(liquidityPool, perpetual.id);
+            }
         }
         liquidityPool.priceUpdateTime = currentTime;
     }
 
     /**
-     * @notice Donate collateral to the insurance fund of the perpetual. Can improve the security of the perpetual.
-     *         Can only called when the state of the perpetual is "NORMAL"
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param amount The amount of collateral to donate
+     * @notice  Donate collateral to the insurance fund of the perpetual. Can improve the security of the perpetual.
+     *          Can only called when the state of the perpetual is "NORMAL"
+     * @param   liquidityPool   The liquidity pool object
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @param   amount          The amount of collateral to donate
      */
     function donateInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
@@ -503,13 +491,13 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Deposit collateral to the trader's account of the perpetual. The trader's cash will increase.
-     *         Activate the perpetual for the trader if the account in the perpetual is empty before depositing.
-     *         Empty means cash and position are zero
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The amount of collateral to deposit
+     * @notice  Deposit collateral to the trader's account of the perpetual. The trader's cash will increase.
+     *          Activate the perpetual for the trader if the account in the perpetual is empty before depositing.
+     *          Empty means cash and position are zero
+     * @param   liquidityPool   The liquidity pool object
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @param   trader          The address of the trader
+     * @param   amount          The amount of collateral to deposit
      */
     function deposit(
         LiquidityPoolStorage storage liquidityPool,
@@ -526,14 +514,14 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Withdraw collateral from the trader's account of the perpetual. The trader's cash will decrease.
-     *         Trader must be initial margin safe in the perpetual after withdrawing.
-     *         Deactivate the perpetual for the trader if the account in the perpetual is empty after withdrawing.
-     *         Empty means cash and position are zero
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @param trader The address of the trader
-     * @param amount The amount of collateral to withdraw
+     * @notice  Withdraw collateral from the trader's account of the perpetual. The trader's cash will decrease.
+     *          Trader must be initial margin safe in the perpetual after withdrawing.
+     *          Deactivate the perpetual for the trader if the account in the perpetual is empty after withdrawing.
+     *          Empty means cash and position are zero
+     * @param   liquidityPool   The liquidity pool object
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @param   trader          The address of the trader
+     * @param   amount          The amount of collateral to withdraw
      */
     function withdraw(
         LiquidityPoolStorage storage liquidityPool,

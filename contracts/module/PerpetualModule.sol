@@ -290,6 +290,16 @@ library PerpetualModule {
     }
 
     /**
+     * @dev Update the oracle price of the perpetual, including the index price and the mark price
+     * @param perpetual The perpetual object
+     */
+    function updatePrice(PerpetualStorage storage perpetual) internal {
+        IOracle oracle = IOracle(perpetual.oracle);
+        updatePriceData(perpetual.markPriceData, oracle.priceTWAPLong);
+        updatePriceData(perpetual.indexPriceData, oracle.priceTWAPShort);
+    }
+
+    /**
      * @notice Set the state of the perpetual to "NORMAL". The state must be "INITIALIZING" before
      * @param perpetual The perpetual object
      */
@@ -561,16 +571,6 @@ library PerpetualModule {
      */
     function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
         perpetual.activeAccounts.remove(trader);
-    }
-
-    /**
-     * @dev Update the oracle price of the perpetual, including the index price and the mark price
-     * @param perpetual The perpetual object
-     */
-    function updatePrice(PerpetualStorage storage perpetual) internal {
-        IOracle oracle = IOracle(perpetual.oracle);
-        updatePriceData(perpetual.markPriceData, oracle.priceTWAPLong);
-        updatePriceData(perpetual.indexPriceData, oracle.priceTWAPShort);
     }
 
     /**

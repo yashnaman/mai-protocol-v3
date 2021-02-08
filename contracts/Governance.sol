@@ -131,21 +131,15 @@ contract Governance is Storage {
      */
     function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
         external
+        syncState(true)
         onlyGovernor
     {
         require(settlementPrice >= 0, "negative settlement price");
-        uint256 currentTime = block.timestamp;
-        _liquidityPool.updateFundingState(currentTime);
-        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
-        _liquidityPool.perpetuals[perpetualIndex].markPriceData = OraclePriceData({
-            price: settlementPrice,
-            time: currentTime
-        });
-        _liquidityPool.perpetuals[perpetualIndex].indexPriceData = OraclePriceData({
-            price: settlementPrice,
-            time: currentTime
-        });
-        _liquidityPool.updateFundingRate();
+        OraclePriceData memory settlementPriceData =
+            OraclePriceData({ price: settlementPrice, time: currentTime });
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        perpetual.markPriceData = settlementPriceData;
+        perpetual.indexPriceData = settlementPriceData;
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
@@ -156,17 +150,13 @@ contract Governance is Storage {
      *            2. the AMM of perpetual's maintenance margin is unsafe;
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
-    function setEmergencyState(uint256 perpetualIndex) public {
+    function setEmergencyState(uint256 perpetualIndex) public syncState(true) {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        uint256 currentTime = block.timestamp;
-        _liquidityPool.updateFundingState(currentTime);
-        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
         require(
             IOracle(perpetual.oracle).isTerminated() ||
                 !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
             "prerequisite not met"
         );
-        _liquidityPool.updateFundingRate();
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
 

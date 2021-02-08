@@ -105,7 +105,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     /**
      * @notice  If you want to get the real-time data, call this function first
      */
-    function forceToSyncState() public syncState {}
+    function forceToSyncState() public syncState(false) {}
 
     /**
      * @notice  Add liquidity to the liquidity pool.
@@ -114,7 +114,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
-    function addLiquidity(int256 cashToAdd) external payable syncState nonReentrant {
+    function addLiquidity(int256 cashToAdd) external payable syncState(false) nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
@@ -127,7 +127,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   shareToRemove   The amount of share token to remove
      */
-    function removeLiquidity(int256 shareToRemove) external syncState nonReentrant {
+    function removeLiquidity(int256 shareToRemove) external syncState(false) nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         require(shareToRemove > 0, "invalid share");
         _liquidityPool.removeLiquidity(_msgSender(), shareToRemove);
