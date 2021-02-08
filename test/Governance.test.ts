@@ -111,21 +111,14 @@ describe('Governance', () => {
     });
 
     it('forceToSetEmergencyState', async () => {
-        await expect(governance.forceToSetEmergencyState(0, toWei("771"))).to.be.revertedWith("only governor is allowed")
+        const oracle = await createContract("OracleWrapper", ["A", "B"])
+        var now = Math.floor(Date.now() / 1000);
+        await oracle.setIndexPrice(toWei("1000"), now)
+        await oracle.setMarkPrice(toWei("1000"), now)
         await governance.setGovernor(user0.address);
+        await governance.setOracle(0, oracle.address);
 
-        const tx = await governance.forceToSetEmergencyState(0, toWei("771"));
-        const block = await ethers.provider.getBlock(tx.blockNumber)
-
-        const result = await governance.settlementPrice(0)
-        expect(result[0]).to.equal(toWei("771"));
-        expect(result[1]).to.equal(block.timestamp);
-        expect(await governance.state(0)).to.equal(3)
-    })
-
-    it('forceToSetEmergencyState', async () => {
-        await expect(governance.forceToSetEmergencyState(0, toWei("771"))).to.be.revertedWith("only governor is allowed")
-        await governance.setGovernor(user0.address);
+        await expect(governance.connect(user1).forceToSetEmergencyState(0, toWei("771"))).to.be.revertedWith("only governor is allowed")
 
         const tx = await governance.forceToSetEmergencyState(0, toWei("771"));
         const block = await ethers.provider.getBlock(tx.blockNumber)
