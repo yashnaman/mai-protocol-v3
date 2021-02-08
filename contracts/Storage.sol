@@ -28,14 +28,6 @@ contract Storage is ContextUpgradeable {
         _liquidityPool.updateFundingRate();
     }
 
-    modifier onlyWhen(uint256 perpetualIndex, PerpetualState allowedState) {
-        require(
-            _liquidityPool.perpetuals[perpetualIndex].state == allowedState,
-            "operation is disallowed now"
-        );
-        _;
-    }
-
     modifier onlyNotWhen(uint256 perpetualIndex, PerpetualState disallowedState) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state != disallowedState,

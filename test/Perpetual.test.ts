@@ -113,13 +113,13 @@ describe('Perpetual', () => {
         expect(await perpetual.getState(0)).to.equal(3);
 
         await perpetual.setState(0, 0);
-        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in NORMAL state");
         await perpetual.setState(0, 1);
-        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in NORMAL state");
         await perpetual.setState(0, 3);
-        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in NORMAL state");
         await perpetual.setState(0, 4);
-        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in normal state");
+        await expect(perpetual.setEmergencyState(0)).to.be.revertedWith("perpetual should be in NORMAL state");
     });
 
     it("setClearedState", async () => {

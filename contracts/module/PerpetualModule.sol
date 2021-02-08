@@ -308,7 +308,7 @@ library PerpetualModule {
      * @param perpetual The perpetual object
      */
     function setEmergencyState(PerpetualStorage storage perpetual) public {
-        require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in normal state");
+        require(perpetual.state == PerpetualState.NORMAL, "perpetual should be in NORMAL state");
         // use mark price as final price when emergency
         perpetual.settlementPriceData = perpetual.markPriceData;
         perpetual.totalAccount = perpetual.activeAccounts.length();

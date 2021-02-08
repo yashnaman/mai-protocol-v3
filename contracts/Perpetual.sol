@@ -30,12 +30,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   amount          The amount of collateral to donate.
      */
-    function donateInsuranceFund(uint256 perpetualIndex, int256 amount)
-        external
-        payable
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-    {
+    function donateInsuranceFund(uint256 perpetualIndex, int256 amount) external payable {
         require(amount > 0 || msg.value > 0, "invalid amount");
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual should be in NORMAL state"
+        );
         _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
     }
 
@@ -55,7 +55,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     ) external payable syncState nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual is not NORMAL"
+            "perpetual should be in NORMAL state"
         );
         require(trader != address(0), "trader is invalid");
         require(amount > 0 || msg.value > 0, "amount is invalid");
@@ -82,7 +82,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     ) external syncState nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual is not NORMAL"
+            "perpetual should be in NORMAL state"
         );
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
@@ -99,10 +99,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     function settle(uint256 perpetualIndex, address trader)
         public
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        onlyWhen(perpetualIndex, PerpetualState.CLEARED)
         nonReentrant
     {
         require(trader != address(0), "invalid trader");
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.CLEARED,
+            "perpetual should be in CLEARED state"
+        );
         _liquidityPool.settle(perpetualIndex, trader);
     }
 
@@ -113,11 +116,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *          Empty means cash and position are zero
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      */
-    function clear(uint256 perpetualIndex)
-        public
-        onlyWhen(perpetualIndex, PerpetualState.EMERGENCY)
-        nonReentrant
-    {
+    function clear(uint256 perpetualIndex) public nonReentrant {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.EMERGENCY,
+            "perpetual should be in EMERGENCY state"
+        );
         _liquidityPool.clear(perpetualIndex, _msgSender());
     }
 
@@ -221,7 +224,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    ) internal onlyWhen(perpetualIndex, PerpetualState.NORMAL) returns (int256) {
+    ) internal returns (int256) {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual should be in NORMAL state"
+        );
         return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
@@ -246,7 +253,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual is not NORMAL"
+            "perpetual should be in NORMAL state"
         );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
@@ -278,7 +285,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     ) external syncState nonReentrant returns (int256) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual is not NORMAL"
+            "perpetual should be in NORMAL state"
         );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");

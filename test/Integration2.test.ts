@@ -218,7 +218,7 @@ describe("integration", () => {
     })
 
     it("deposit when not NORMAL", async () => {
-        await expect(perp.connect(user1).deposit(0, user1.address, toWei("500"))).to.be.revertedWith("operation is disallowed now");
+        await expect(perp.connect(user1).deposit(0, user1.address, toWei("500"))).to.be.revertedWith("perpetual should be in NORMAL state");
     })
 
     it("add liquidity more than balance", async () => {
@@ -253,7 +253,7 @@ describe("integration", () => {
         await perp.connect(user2).addLiquidity(toWei("1000"));
         let now = Math.floor(Date.now() / 1000);
         oracle1.setTerminated(true);
-        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("market is closed now");
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("perpetual should be in NORMAL state");
     })
 
     it("trade when invalid close-only amount", async () => {

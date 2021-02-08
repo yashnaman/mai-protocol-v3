@@ -158,14 +158,14 @@ contract Governance is Storage {
      */
     function setEmergencyState(uint256 perpetualIndex) public {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        uint256 currentTime = block.timestamp;
+        _liquidityPool.updateFundingState(currentTime);
+        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
         require(
             IOracle(perpetual.oracle).isTerminated() ||
                 !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
             "prerequisite not met"
         );
-        uint256 currentTime = block.timestamp;
-        _liquidityPool.updateFundingState(currentTime);
-        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
         _liquidityPool.updateFundingRate();
         _liquidityPool.setEmergencyState(perpetualIndex);
     }
