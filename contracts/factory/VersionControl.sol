@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 
 import "../libraries/SafeMathExt.sol";
 
-contract Implementation is Ownable {
+contract VersionControl is Ownable {
     using Address for address;
     using SafeMath for uint256;
     using SafeMathExt for uint256;

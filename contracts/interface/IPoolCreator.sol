@@ -17,4 +17,8 @@ interface IPoolCreator {
     function getAccessController() external view returns (address);
 
     function getSymbolService() external view returns (address);
+
+    function isVersionValid(address implementation) external view returns (bool);
+
+    function isVersionCompatible(address target, address base) external view returns (bool);
 }

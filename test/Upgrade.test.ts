@@ -4,7 +4,8 @@ import { BigNumber as BN } from "ethers";
 import {
     toWei,
     createContract,
-    createLiquidityPoolFactory
+    createLiquidityPoolFactory,
+    createFactory
 } from "../scripts/utils";
 
 describe("upgrade", () => {
@@ -19,7 +20,7 @@ describe("upgrade", () => {
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("ShareToken");
+        var lpTokenTemplate = await createContract("TestGovernor");
         var govTemplate = await createContract("TestGovernor");
         var creator = await createContract(
             "PoolCreator",
@@ -40,10 +41,7 @@ describe("upgrade", () => {
         const liquidityPoolAddr = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
         await creator.createLiquidityPool(ctk.address, 18, false, 998);
 
-
-        const LiquidityPoolFactoryV2 = await createLiquidityPoolFactory("LiquidityPoolRelayable");
-        const liquidityPoolV2Template = await LiquidityPoolFactoryV2.deploy();
-        const liquidityPool = await LiquidityPoolFactoryV2.attach(liquidityPoolAddr);
+        const liquidityPool = await LiquidityPoolFactory.attach(liquidityPoolAddr);
 
         // oracle
         let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
@@ -62,24 +60,19 @@ describe("upgrade", () => {
         )
         await liquidityPool.runLiquidityPool();
 
-        // console.log(liquidityPoolTemplate.address)
 
-        // expect(await govTemplate.getImplementation(liquidityPool.address)).to.equal(liquidityPoolTemplate.address);
-        // await expect(liquidityPool.L2_DOMAIN_NAME()).to.be.revertedWith("");
+        var { addresses } = await liquidityPool.getLiquidityPoolInfo();
+        const governor = (await createFactory("TestGovernor")).attach(addresses[3]);
 
-        await govTemplate.functionCall(liquidityPool.address, "0x675a0aa5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000470de4df820000000000000000000000000000000000000000000000000000002386f26fc1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001f438daa06000000000000000000000000000000000000000000000000000058d15e1762800000000000000000000000000000000000000000000000000000001c6bf526340000000000000000000000000000000000000000000000000000001c6bf5263400000000000000000000000000000000000000000000000000003782dace9d9000000000000000000000000000000000000000000000000003635c9adc5dea00000", 0);
-        // expect(await govTemplate.getImplementation(liquidityPool.address)).to.equal(liquidityPoolV2Template.address);
+        const liquidityPoolV2Template = await LiquidityPoolFactory.deploy();
+        await creator.addVersion(liquidityPoolV2Template.address, 1, "version2");
+        await governor.upgradeTo(liquidityPool.address, liquidityPoolV2Template.address);
 
-        // expect(await liquidityPool.L2_DOMAIN_NAME()).to.equal("Mai L2 Call");
+        // const liquidityPoolV3Template = await LiquidityPoolFactory.deploy();
+        // await creator.addVersion(liquidityPoolV3Template.address, 0, "version3");
+        // expect(await governor.upgradeTo(liquidityPool.address, liquidityPoolV3Template.address)).to.be.revertedWith("incompatible implementation")
 
-        // await govTemplate.functionCall(liquidityPool.address, "0xd73b5e4200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", 0);
-
-
-        // const tx = await liquidityPool.setPerpetualBaseParameter(
-        //     0,
-        //     [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.0005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
-        // );
-
-        // console.log(tx);
+        // const liquidityPoolV4Template = await LiquidityPoolFactory.deploy();
+        // expect(await governor.upgradeTo(liquidityPool.address, liquidityPoolV4Template.address)).to.be.revertedWith("uncertificated implementation")
     })
 })

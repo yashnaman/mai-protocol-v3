@@ -235,7 +235,7 @@ describe("integration", () => {
         await perp.connect(user1).deposit(0, user1.address, toWei("500"));
         await perp.connect(user2).addLiquidity(toWei("1000"));
         let now = Math.floor(Date.now() / 1000);
-        await expect(perp.connect(user2).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("unauthorized operation");
+        await expect(perp.connect(user2).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("unauthorized caller");
     })
 
     it("trade when market closed", async () => {

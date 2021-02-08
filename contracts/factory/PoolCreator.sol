@@ -3,19 +3,19 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/Address.sol";
-import "../thirdparty/proxy/UpgradeableProxy.sol";
 import "../thirdparty/cloneFactory/CloneFactory.sol";
 
 import "../interface/IGovernor.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IShareToken.sol";
 
+import "./UpgradeableProxy.sol";
 import "./Tracer.sol";
-import "./Implementation.sol";
+import "./VersionControl.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
 
-contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneFactory {
+contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneFactory {
     using Address for address;
 
     address internal _governorTemplate;
@@ -28,7 +28,7 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
         address symbolService,
         address globalVault,
         int256 globalVaultFeeRate
-    ) Variables(wethToken, symbolService, globalVault, globalVaultFeeRate) Implementation() {
+    ) Variables(wethToken, symbolService, globalVault, globalVaultFeeRate) VersionControl() {
         require(governorTemplate.isContract(), "governor template must be contract");
         require(shareTokenTemplate.isContract(), "share token template must be contract");
         _governorTemplate = governorTemplate;

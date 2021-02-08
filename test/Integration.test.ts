@@ -150,10 +150,11 @@ describe("integration", () => {
         await ctk.connect(user1).approve(perp.address, toWei("100000"));
         await ctk.connect(user2).approve(perp.address, toWei("100000"));
 
+        await perp.forceToSyncState();
+
         // deposit
         await gs.collect("deposit", perp.connect(user1).deposit(0, user1.address, toWei("100")));
         print(await perp.connect(user1).callStatic.getMarginAccount(0, user1.address));
-
 
         // lp
         await updatePrice(toWei("501"), toWei("601"), toWei("701"), toWei("801"))

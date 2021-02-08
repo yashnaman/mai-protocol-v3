@@ -7,6 +7,7 @@ import {
     getAccounts,
     createContract,
     createLiquidityPoolFactory,
+    createFactory,
 } from '../scripts/utils';
 import "./helper";
 
@@ -56,6 +57,7 @@ describe('LiquidityPool', () => {
 
     describe("erc20", async () => {
 
+        let stk;
         let oracle;
         let liquidityPool;
 
@@ -75,6 +77,10 @@ describe('LiquidityPool', () => {
 
             await oracle.setIndexPrice(toWei("1000"), 10000);
             await oracle.setMarkPrice(toWei("1000"), 10000);
+
+
+            const info = await liquidityPool.getLiquidityPoolInfo();
+            stk = (await createFactory("LpGovernor")).attach(info.addresses[3]);
         })
 
         // it("donateInsuranceFund", async () => {
@@ -155,6 +161,17 @@ describe('LiquidityPool', () => {
             await oracle.setMarkPrice(toWei("2000"), 2000);
 
             await liquidityPool.setEmergencyState(0);
+            await liquidityPool.clear(0);
+            await liquidityPool.connect(user1).settle(0, user1.address);
+            const info = await liquidityPool.getLiquidityPoolInfo();
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address));
+
+
+            console.log(fromWei(await ctk.balanceOf(user1.address)));
+            console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));
+            console.log(fromWei(await ctk.balanceOf(vault.address)));
+            console.log(fromWei(await ctk.balanceOf(user0.address)));
+            console.log(fromWei(await ctk.balanceOf(user2.address)));
         })
     });
 })

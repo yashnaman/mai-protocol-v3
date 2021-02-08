@@ -10,39 +10,28 @@ interface IUpgradeableProxy {
     function upgradeTo(address newImplementation) external;
 }
 
-contract TestGovernor is Ownable {
+contract TestGovernor {
     using Address for address;
 
-    address[] public history;
-
-    constructor() Ownable() {}
-
-    function initialize(address, address target) external {
-        history.push(target);
-    }
-
-    function getHistoryLength() public view onlyOwner returns (uint256) {
-        return history.length;
-    }
+    fallback() external payable {}
 
     function getImplementation(address liquidityPool)
         external
         view
-        onlyOwner
         returns (address implementation)
     {
         implementation = IUpgradeableProxy(liquidityPool).implementation();
     }
 
-    // function upgradeTo(address liquidityPool, address newImplementation) external onlyOwner {
-    //     IUpgradeableProxy(liquidityPool).upgradeTo(newImplementation);
-    // }
+    function upgradeTo(address liquidityPool, address newImplementation) external {
+        IUpgradeableProxy(liquidityPool).upgradeTo(newImplementation);
+    }
 
     function functionCall(
         address liquidityPool,
         bytes calldata data,
         uint256 value
-    ) external payable onlyOwner returns (bytes memory result) {
+    ) external payable returns (bytes memory result) {
         result = liquidityPool.functionCallWithValue(data, value);
     }
 }

@@ -3,6 +3,8 @@ pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "../interface/IPoolCreator.sol";
+
 contract UpgradeableProxy {
     /**
      * @dev Emitted when the implementation is upgraded.
@@ -23,14 +25,23 @@ contract UpgradeableProxy {
      */
     bytes32 private constant _ADMIN_SLOT =
         0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+    /**
+     * @dev Storage slot with the factory of the contract.
+     * This is the keccak-256 hash of "mcdexv3.proxy.factory" subtracted by 1, and is
+     * validated in the constructor.
+     */
+    bytes32 private constant _CONTRACT_FACTORY_SLOT =
+        0xff6a9273564dc51f72a86c5d13c20906dfd3ad8dcb0a5f6a8ca002ae992e2660;
 
     constructor(address logic, address admin) {
         assert(
             _IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
         assert(_ADMIN_SLOT == bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
+        assert(_CONTRACT_FACTORY_SLOT == bytes32(uint256(keccak256("mcdexv3.proxy.factory")) - 1));
         _setImplementation(logic);
         _setAdmin(admin);
+        _setContractFactory(msg.sender);
     }
 
     /**
@@ -89,6 +100,12 @@ contract UpgradeableProxy {
      * Emits an {Upgraded} event.
      */
     function _upgradeTo(address newImplementation) internal {
+        IPoolCreator poolCreator = IPoolCreator(_contractFactory());
+        require(poolCreator.isVersionValid(newImplementation), "uncertificated implementation");
+        require(
+            poolCreator.isVersionCompatible(newImplementation, _implementation()),
+            "incompatible implementation (target version too low)"
+        );
         _setImplementation(newImplementation);
         emit Upgraded(newImplementation);
     }
@@ -101,6 +118,17 @@ contract UpgradeableProxy {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             adm := sload(slot)
+        }
+    }
+
+    /**
+     * @dev Returns the current factory.
+     */
+    function _contractFactory() internal view returns (address contractFactory) {
+        bytes32 slot = _CONTRACT_FACTORY_SLOT;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            contractFactory := sload(slot)
         }
     }
 
@@ -127,6 +155,17 @@ contract UpgradeableProxy {
         // solhint-disable-next-line no-inline-assembly
         assembly {
             sstore(slot, newImplementation)
+        }
+    }
+
+    /**
+     * @dev Stores a new address in the EIP1967 implementation slot.
+     */
+    function _setContractFactory(address contractFactory) private {
+        bytes32 slot = _CONTRACT_FACTORY_SLOT;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            sstore(slot, contractFactory)
         }
     }
 
