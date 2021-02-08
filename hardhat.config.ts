@@ -103,7 +103,8 @@ module.exports = {
             url: "https://kovan.infura.io/v3/3582010d3cc14ab183653e5861d0c118",
             gasPrice: 1e9,
             accounts: ["0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4"],
-            timeout: 300000
+            timeout: 300000,
+            confirmations: 1,
         }
     },
     solidity: {
