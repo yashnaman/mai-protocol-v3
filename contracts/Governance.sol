@@ -131,13 +131,22 @@ contract Governance is Storage {
      */
     function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
         external
-        syncState
         onlyGovernor
     {
-        // may already set emergency when syncState
-        if (_liquidityPool.perpetuals[perpetualIndex].state != PerpetualState.EMERGENCY) {
-            _liquidityPool.setEmergencyState(perpetualIndex, settlementPrice);
-        }
+        require(settlementPrice >= 0, "negative settlement price");
+        uint256 currentTime = block.timestamp;
+        _liquidityPool.updateFundingState(currentTime);
+        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
+        _liquidityPool.perpetuals[perpetualIndex].markPriceData = OraclePriceData({
+            price: settlementPrice,
+            time: currentTime
+        });
+        _liquidityPool.perpetuals[perpetualIndex].indexPriceData = OraclePriceData({
+            price: settlementPrice,
+            time: currentTime
+        });
+        _liquidityPool.updateFundingRate();
+        _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
     /**
@@ -147,17 +156,18 @@ contract Governance is Storage {
      *            2. the AMM of perpetual's maintenance margin is unsafe;
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
-    function setEmergencyState(uint256 perpetualIndex) public syncState {
+    function setEmergencyState(uint256 perpetualIndex) public {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         require(
             IOracle(perpetual.oracle).isTerminated() ||
                 !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
             "prerequisite not met"
         );
-        // may already set emergency when syncState
-        if (_liquidityPool.perpetuals[perpetualIndex].state != PerpetualState.EMERGENCY) {
-            _liquidityPool.setEmergencyState(perpetualIndex);
-        }
+        uint256 currentTime = block.timestamp;
+        _liquidityPool.updateFundingState(currentTime);
+        _liquidityPool.updatePriceIgnoreTerminated(currentTime);
+        _liquidityPool.updateFundingRate();
+        _liquidityPool.setEmergencyState(perpetualIndex);
     }
 
     bytes32[50] private __gap;

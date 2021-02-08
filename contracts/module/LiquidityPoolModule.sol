@@ -347,29 +347,6 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Set the state of the perpetual to "EMERGENCY". Must rebalance first.
-     *         Can only called when AMM is not maintenance margin safe in the perpetual.
-     *         After that the perpetual is not allowed to trade, deposit and withdraw.
-     *         The price of the perpetual is freezed to the settlement price
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     */
-    function setEmergencyState(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        int256 settlementPrice
-    ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
-        require(settlementPrice >= 0, "negative settlement price");
-        liquidityPool.perpetuals[perpetualIndex].markPriceData = OraclePriceData({
-            price: settlementPrice,
-            time: block.timestamp
-        });
-        rebalance(liquidityPool, perpetualIndex);
-        liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
-    }
-
-    /**
      * @notice Set the state of the perpetual to "CLEARED". Add the collateral of AMM in the perpetual to the pool cash.
      *         Can only called when all the active accounts in the perpetual are cleared
      * @param liquidityPool The liquidity pool object
@@ -467,7 +444,8 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @notice Update the oracle price of each perpetual of the liquidity pool
+     * @notice Update the oracle price of each perpetual of the liquidity pool.
+     *         If oracle is terminated, set market to EMERGENCY
      * @param liquidityPool The liquidity pool object
      * @param currentTime The current timestamp
      */
@@ -480,6 +458,29 @@ library LiquidityPoolModule {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (IOracle(perpetual.oracle).isTerminated()) {
                 setEmergencyState(liquidityPool, i);
+            }
+            perpetual.updatePrice();
+        }
+        liquidityPool.priceUpdateTime = currentTime;
+    }
+
+    /**
+     * @notice Update the oracle price of each perpetual of the liquidity pool
+     * @param liquidityPool The liquidity pool object
+     * @param currentTime The current timestamp
+     */
+    function updatePriceIgnoreTerminated(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 currentTime
+    ) public {
+        if (liquidityPool.priceUpdateTime >= currentTime) {
+            return;
+        }
+        uint256 length = liquidityPool.perpetuals.length;
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (IOracle(perpetual.oracle).isTerminated()) {
+                perpetual.updatePrice();
             }
             perpetual.updatePrice();
         }
