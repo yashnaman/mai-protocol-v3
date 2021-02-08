@@ -421,7 +421,11 @@ library LiquidityPoolModule {
         int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            liquidityPool.perpetuals[i].updateFundingState(timeElapsed);
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            perpetual.updateFundingState(timeElapsed);
         }
         liquidityPool.fundingTime = currentTime;
     }
@@ -439,7 +443,11 @@ library LiquidityPoolModule {
         }
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            liquidityPool.perpetuals[i].updateFundingRate(poolMargin);
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            perpetual.updateFundingRate(poolMargin);
         }
     }
 

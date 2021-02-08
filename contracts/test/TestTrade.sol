@@ -69,11 +69,15 @@ contract TestTrade is TestLiquidityPool {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    ) public syncState {
+    ) public syncState(false) {
         _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
-    function brokerTrade(bytes memory orderData, int256 amount) public syncState returns (int256) {
+    function brokerTrade(bytes memory orderData, int256 amount)
+        public
+        syncState(false)
+        returns (int256)
+    {
         Order memory order = orderData.decodeOrderData();
         bytes memory signature = orderData.decodeSignature();
         _liquidityPool.validateSignature(order, signature);

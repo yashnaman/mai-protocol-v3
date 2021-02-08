@@ -136,7 +136,7 @@ contract Governance is Storage {
     {
         require(settlementPrice >= 0, "negative settlement price");
         OraclePriceData memory settlementPriceData =
-            OraclePriceData({ price: settlementPrice, time: currentTime });
+            OraclePriceData({ price: settlementPrice, time: block.timestamp });
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         perpetual.markPriceData = settlementPriceData;
         perpetual.indexPriceData = settlementPriceData;
