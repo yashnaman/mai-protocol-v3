@@ -309,13 +309,13 @@ library TradeModule {
         int256 limitPrice
     ) public returns (int256 liquidatedAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 position = perpetual.getPosition(trader);
-        amount = getMaxPositionToClose(position, amount.neg());
         int256 markPrice = perpetual.getMarkPrice();
         require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
         // 0. price / amount
         validatePrice(amount >= 0, markPrice, limitPrice);
-        (int256 deltaCash, int256 deltaPosition) = (markPrice.wmul(amount), amount.neg());
+        int256 position = perpetual.getPosition(trader);
+        int256 deltaPosition = getMaxPositionToClose(position, amount.neg());
+        int256 deltaCash = markPrice.wmul(deltaPosition).neg();
         // 1. execute
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
