@@ -136,20 +136,17 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /// @notice The duration of voting on a proposal, in blocks
     function votingPeriod() public pure virtual returns (uint256) {
-        // TODO: 17280
-        return 10;
+        return 17280;
     }
 
     /// @notice The delay before a succeeded proposal being executed (say, proposal in queued state)
     function executionDelay() public pure virtual returns (uint256) {
-        // TODO: 11520
-        return 10;
+        return 11520;
     }
 
     /// @notice The duration of a
     function unlockDelay() public pure virtual returns (uint256) {
-        // TODO: 17280
-        return 10;
+        return 17280;
     }
 
     function isCriticalFunction(string memory functionSignature) public pure returns (bool) {

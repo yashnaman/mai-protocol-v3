@@ -67,7 +67,6 @@ contract UpgradeableProxy {
      *
      * NOTE: Only the admin can call this function. See {ProxyAdmin-upgrade}.
      */
-    // TODO: +admin
     function upgradeTo(address newImplementation) external {
         require(msg.sender == _admin(), "only admin is able to call upgradeTo");
         _upgradeTo(newImplementation);

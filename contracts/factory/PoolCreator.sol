@@ -21,11 +21,6 @@ contract PoolCreator is Tracer, Implementation, Variables, AccessControl, CloneF
     address internal _governorTemplate;
     address internal _shareTokenTemplate;
 
-    function debugSetTemplate(address governor, address share) public {
-        _governorTemplate = governor;
-        _shareTokenTemplate = share;
-    }
-
     constructor(
         address governorTemplate,
         address shareTokenTemplate,

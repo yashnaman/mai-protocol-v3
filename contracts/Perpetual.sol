@@ -52,13 +52,19 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external payable syncState(false) nonReentrant {
+    )
+        external
+        payable
+        syncState(false)
+        onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
+        nonReentrant
+    {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        require(trader != address(0), "trader is invalid");
-        require(amount > 0 || msg.value > 0, "amount is invalid");
+        require(trader != address(0), "invalid trader");
+        require(amount > 0 || msg.value > 0, "invalid amount");
         _liquidityPool.deposit(perpetualIndex, trader, amount);
     }
 
@@ -79,13 +85,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external syncState(false) nonReentrant {
+    ) external syncState(false) onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        require(trader != address(0), "trader is invalid");
-        require(amount > 0, "amount is invalid");
+        require(trader != address(0), "invalid trader");
+        require(amount > 0, "invalid amount");
         _liquidityPool.withdraw(perpetualIndex, trader, amount);
     }
 
@@ -250,7 +256,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        require(trader != address(0), "trader is invalid");
+        require(trader != address(0), "invalid trader");
         require(trader != address(this), "cannot liquidate AMM");
         liquidationAmount = _liquidityPool.liquidateByAMM(perpetualIndex, _msgSender(), trader);
     }
@@ -278,7 +284,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        require(trader != address(0), "trader is invalid");
+        require(trader != address(0), "invalid trader");
         require(trader != address(this), "cannot liquidate AMM");
         require(amount != 0, "invalid amount");
         require(limitPrice >= 0, "invalid limit price");

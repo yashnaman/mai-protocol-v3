@@ -28,23 +28,10 @@ contract Storage is ContextUpgradeable {
         _liquidityPool.updateFundingRate();
     }
 
-    modifier onlyNotWhen(uint256 perpetualIndex, PerpetualState disallowedState) {
-        require(
-            _liquidityPool.perpetuals[perpetualIndex].state != disallowedState,
-            "operation is disallow now"
-        );
-        _;
-    }
-
     modifier onlyAuthorized(address trader, uint256 privilege) {
         require(
-            trader == _msgSender() ||
-                IAccessControll(_liquidityPool.accessController).isGranted(
-                    trader,
-                    _msgSender(),
-                    privilege
-                ),
-            "unauthorized operation"
+            _liquidityPool.isAuthorized(trader, _msgSender(), privilege),
+            "unauthorized caller"
         );
         _;
     }
