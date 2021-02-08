@@ -477,7 +477,11 @@ library LiquidityPoolModule {
         }
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
-            liquidityPool.perpetuals[i].updatePrice();
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (IOracle(perpetual.oracle).isTerminated()) {
+                setEmergencyState(liquidityPool, i);
+            }
+            perpetual.updatePrice();
         }
         liquidityPool.priceUpdateTime = currentTime;
     }

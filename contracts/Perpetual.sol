@@ -46,7 +46,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external payable onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
+    ) external payable syncState nonReentrant {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual is not NORMAL"
+        );
         require(trader != address(0), "trader is invalid");
         require(amount > 0 || msg.value > 0, "amount is invalid");
         _liquidityPool.deposit(perpetualIndex, trader, amount);
@@ -66,7 +70,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external syncState onlyWhen(perpetualIndex, PerpetualState.NORMAL) nonReentrant {
+    ) external syncState nonReentrant {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual is not NORMAL"
+        );
         require(trader != address(0), "trader is invalid");
         require(amount > 0, "amount is invalid");
         _liquidityPool.withdraw(perpetualIndex, trader, amount);
@@ -201,10 +209,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
         syncState
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
         nonReentrant
         returns (int256)
     {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual is not NORMAL"
+        );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
         return _liquidityPool.liquidateByAMM(perpetualIndex, _msgSender(), trader);
@@ -232,13 +243,11 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 limitPrice,
         uint256 deadline
-    )
-        external
-        syncState
-        onlyWhen(perpetualIndex, PerpetualState.NORMAL)
-        nonReentrant
-        returns (int256)
-    {
+    ) external syncState nonReentrant returns (int256) {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual is not NORMAL"
+        );
         require(trader != address(0), "trader is invalid");
         require(trader != address(this), "cannot liquidate AMM");
         require(amount != 0, "amount is invalid");

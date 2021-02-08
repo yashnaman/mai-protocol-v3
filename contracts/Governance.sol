@@ -133,9 +133,13 @@ contract Governance is Storage {
      */
     function forceToSetEmergencyState(uint256 perpetualIndex, int256 settlementPrice)
         external
+        syncState
         onlyGovernor
     {
-        _liquidityPool.setEmergencyState(perpetualIndex, settlementPrice);
+        // may already set emergency when syncState
+        if (_liquidityPool.perpetuals[perpetualIndex].state != PerpetualState.EMERGENCY) {
+            _liquidityPool.setEmergencyState(perpetualIndex, settlementPrice);
+        }
     }
 
     /**
@@ -152,7 +156,10 @@ contract Governance is Storage {
                 !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
             "prerequisite not met"
         );
-        _liquidityPool.setEmergencyState(perpetualIndex);
+        // may already set emergency when syncState
+        if (_liquidityPool.perpetuals[perpetualIndex].state != PerpetualState.EMERGENCY) {
+            _liquidityPool.setEmergencyState(perpetualIndex);
+        }
     }
 
     bytes32[50] private __gap;
