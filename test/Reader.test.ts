@@ -152,9 +152,9 @@ describe("Reader", () => {
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
         expect(pool.pool.vaultFeeRate).approximateBigNumber(vaultFeeRate);
         expect(pool.pool.poolCash).approximateBigNumber(toWei("1000"));
-        expect(pool.pool.collateralDecimals).to.equal(6);
-        expect(pool.pool.perpetuals.length).to.equal(2);
-        expect(pool.pool.fundingTime).not.to.equal(0);
+        expect(pool.pool.nums[0]).to.equal(6);
+        expect(pool.pool.nums[1]).to.equal(2);
+        expect(pool.pool.nums[2]).not.to.equal(0);
         expect(pool.pool.perpetuals[0].state).to.equal(2);
         expect(pool.pool.perpetuals[0].oracle).to.equal(oracle1.address);
         expect(pool.pool.perpetuals[0].nums[0].gt('0')).to.be.true; // totalCollateral
@@ -192,9 +192,9 @@ describe("Reader", () => {
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
         expect(pool.pool.vaultFeeRate).approximateBigNumber(vaultFeeRate);
         expect(pool.pool.poolCash).approximateBigNumber(toWei("1000"));
-        expect(pool.pool.collateralDecimals).to.equal(6);
-        expect(pool.pool.perpetuals.length).to.equal(2);
-        expect(pool.pool.fundingTime).not.to.equal(0);
+        expect(pool.pool.nums[0]).to.equal(6);
+        expect(pool.pool.nums[1]).to.equal(2);
+        expect(pool.pool.nums[2]).not.to.equal(0);
         expect(pool.pool.perpetuals[0].state).to.equal(2);
         expect(pool.pool.perpetuals[0].oracle).to.equal(oracle1.address);
         expect(pool.pool.perpetuals[0].nums[0].gt('0')).to.be.true; // totalCollateral
