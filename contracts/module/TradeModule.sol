@@ -321,7 +321,7 @@ library TradeModule {
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         int256 penalty =
-            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
+            deltaCash.wmul(perpetual.liquidationPenaltyRate).abs().min(
                 perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
             );
         {

@@ -198,7 +198,7 @@ interface ILiquidityPool {
      *         Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
      * @return poolMargin The pool margin of the liquidity pool
      */
-    function getPoolMargin() external view returns (int256 poolMargin);
+    function getPoolMargin() external view returns (int256 poolMargin, bool isSafe);
 
     /**
      * @notice Get the update cash amount and the update position amount of trader

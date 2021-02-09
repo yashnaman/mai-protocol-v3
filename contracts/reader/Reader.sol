@@ -94,14 +94,18 @@ contract Reader {
      */
     function getPoolMargin(address liquidityPool)
         public
-        returns (bool isSynced, int256 poolMargin)
+        returns (
+            bool isSynced,
+            int256 poolMargin,
+            bool isSafe
+        )
     {
         try ILiquidityPool(liquidityPool).forceToSyncState() {
             isSynced = true;
         } catch {
             isSynced = false;
         }
-        poolMargin = ILiquidityPool(liquidityPool).getPoolMargin();
+        (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
     }
 
     /**

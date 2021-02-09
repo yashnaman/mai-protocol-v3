@@ -279,9 +279,9 @@ contract Getter is Storage {
      *          To get the latest status, call `syncState` first.
      * @return  poolMargin  The pool margin of the liquidity pool
      */
-    function getPoolMargin() public view returns (int256 poolMargin) {
+    function getPoolMargin() public view returns (int256 poolMargin, bool isSafe) {
         AMMModule.Context memory context = _liquidityPool.prepareContext();
-        (poolMargin, ) = AMMModule.getPoolMargin(context);
+        (poolMargin, isSafe) = AMMModule.getPoolMargin(context);
     }
 
     /**
