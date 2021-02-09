@@ -542,7 +542,7 @@ library AMMModule {
      * @return bool True if AMM is safe
      */
     function getPoolMargin(LiquidityPoolStorage storage liquidityPool)
-        internal
+        public
         view
         returns (int256, bool)
     {
