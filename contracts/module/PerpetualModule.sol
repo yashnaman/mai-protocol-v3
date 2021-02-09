@@ -751,6 +751,8 @@ library PerpetualModule {
         public
         view
     {
+        // must set risk parameters after setting base parameters
+        require(perpetual.initialMarginRate > 0, "need to set base parameters first");
         require(riskParams[INDEX_HARF_SPREAD] >= 0, "halfSpread < 0");
         require(riskParams[INDEX_HARF_SPREAD] < Constant.SIGNED_ONE, "halfSpread >= 100%");
         require(riskParams[INDEX_OPEN_SLIPPAGE_FACTOR] > 0, "openSlippageFactor < 0");
@@ -761,8 +763,6 @@ library PerpetualModule {
         );
         require(riskParams[INDEX_FUNDING_RATE_LIMIT] >= 0, "fundingRateLimit < 0");
         require(riskParams[INDEX_AMM_MAX_LEVERAGE] >= 0, "ammMaxLeverage < 0");
-        // must set risk parameters after setting base parameters
-        require(perpetual.initialMarginRate > 0, "need to set base parameters first");
         require(
             riskParams[INDEX_AMM_MAX_LEVERAGE] <=
                 Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate, Round.FLOOR),
