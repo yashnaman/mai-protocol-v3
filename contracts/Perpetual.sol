@@ -55,7 +55,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     )
         external
         payable
-        syncState(false)
         onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
         nonReentrant
     {
