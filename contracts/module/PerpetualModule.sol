@@ -766,7 +766,7 @@ library PerpetualModule {
         require(
             riskParams[INDEX_AMM_MAX_LEVERAGE] <=
                 Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate, Round.FLOOR),
-            "ammMaxLeverage > initialMarginRate"
+            "ammMaxLeverage > 1 / initialMarginRate"
         );
         require(riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT] >= 0, "maxClosePriceDiscount < 0");
         require(

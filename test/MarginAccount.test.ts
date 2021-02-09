@@ -28,7 +28,7 @@ describe('MarginModule', () => {
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                 [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("0.5"), toWei("0.2")],
             )
             await testMargin.setState(0, 2);
         })
@@ -393,7 +393,7 @@ describe('MarginModule', () => {
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
                 [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("0.5"), toWei("0.2")],
             )
             await testMargin.setState(0, 2);
         })
