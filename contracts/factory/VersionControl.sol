@@ -12,6 +12,7 @@ contract VersionControl is Ownable {
     using Address for address;
     using SafeMath for uint256;
     using SafeMathExt for uint256;
+    using Utils for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct VersionDescription {
@@ -111,25 +112,16 @@ contract VersionControl is Ownable {
     }
 
     /**
-     * @dev Get a certain number of implementations of liquidity pool starting with the index
-     * @param start The index to start with
-     * @param count The number of implementations to get.
-     *              If there isn't the number of implementations left after the index, returning the rest of implementations
-     * @return result The addresses of implementations to get
+     * @dev     Get a certain number of implementations of liquidity pool within range [begin, end)
+     * @param   begin   The index of first element to retrieve.
+     * @param   end     The end index of element, exclusive.
+     * @return  result  An array of addresses of current implementations.
      */
-    function listAvailableVersions(uint256 start, uint256 count)
+    function listAvailableVersions(uint256 begin, uint256 end)
         public
         view
         returns (address[] memory result)
     {
-        uint256 total = _versions.length();
-        if (start >= total) {
-            return result;
-        }
-        uint256 stop = start.add(count).min(total);
-        result = new address[](stop.sub(start));
-        for (uint256 i = start; i < stop; i++) {
-            result[i.sub(start)] = _versions.at(i);
-        }
+        result = _versions.toArray(begin, end);
     }
 }

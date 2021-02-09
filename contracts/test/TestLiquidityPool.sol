@@ -156,10 +156,6 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.removeLiquidity(trader, shareToRemove);
     }
 
-    function increaseFee(address account, int256 amount) public {
-        _liquidityPool.increaseFee(account, amount);
-    }
-
     // function claimFee(address account, int256 amount) public {
     //     _liquidityPool.claimFee(account, amount);
     // }

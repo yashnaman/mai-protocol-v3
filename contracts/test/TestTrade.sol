@@ -145,10 +145,6 @@ contract TestTrade is TestLiquidityPool {
         TradeModule.validatePrice(isLong, price, limitPrice);
     }
 
-    function getClaimableFee(address claimer) public view returns (int256) {
-        return _liquidityPool.claimableFees[claimer];
-    }
-
     function hasOpenedPosition(int256 amount, int256 delta) public pure returns (bool hasOpened) {
         hasOpened = TradeModule.hasOpenedPosition(amount, delta);
     }

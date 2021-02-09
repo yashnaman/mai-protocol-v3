@@ -43,8 +43,9 @@ contract Variables {
     }
 
     /**
-     * @notice Set the vault fee rate. Can only called by vault
-     * @param newVaultFeeRate The new value of the vault fee rate
+     * @notice  Set the vault fee rate. Can only called by vault.
+     *
+     * @param   newVaultFeeRate     The new value of the vault fee rate
      */
     function setVaultFeeRate(int256 newVaultFeeRate) public {
         require(msg.sender == _vault, "caller must be vault");
@@ -56,29 +57,37 @@ contract Variables {
     }
 
     /**
-     * @notice Get the address of weth
-     * @return address The address of weth
+     * @notice  Return address of weth.
+     *
+     * @return  address The address of weth
      */
     function getWeth() public view returns (address) {
         return _weth;
     }
 
     /**
-     * @notice Get the address of the access controller. It's always its own address
-     * @return address The address of the access controller
+     * @notice Get the address of the access controller. It's always its own address.
+     *
+     * @return address The address of the access controller.
      */
     function getAccessController() public view returns (address) {
         return address(this);
     }
 
     /**
-     * @notice Get the address of the symbol service
-     * @return address The address of the symbol service
+     * @notice  Get the address of the symbol service.
+     *
+     * @return  Address The address of the symbol service.
      */
     function getSymbolService() public view returns (address) {
         return _symbolService;
     }
 
+    /**
+     * @notice  Get the address of the symbol service.
+     *
+     * @return  Address The address of the symbol service.
+     */
     function getMCBToken() public pure returns (address) {
         // const MCB token
         // TODO: test only

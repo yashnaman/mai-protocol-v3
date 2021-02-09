@@ -25,7 +25,7 @@ interface ICallee {
         bytes memory callData,
         uint32 nonce,
         uint32 expiration,
-        uint64 gasFeeLimit,
+        uint64 gasLimit,
         bytes memory signature
     ) external;
 }
@@ -101,6 +101,11 @@ contract Broker is ReentrancyGuard {
         emit Withdraw(msg.sender, amount);
     }
 
+    function isOrderCanceled(Order memory order) public view returns (bool) {
+        bytes32 orderHash = order.getOrderHash();
+        return _orderCanceled[orderHash];
+    }
+
     /**
      * @notice Cancel the order. Canceled order is not able to be filled.
      *         Only order.trader / order.relayer and anthorized account (by order.trader)
@@ -108,7 +113,7 @@ contract Broker is ReentrancyGuard {
      * @param order The order object to cancel
      */
     function cancelOrder(Order memory order) public {
-        if (msg.sender != order.trader || msg.sender != order.relayer) {
+        if (msg.sender != order.trader && msg.sender != order.relayer) {
             (, , address[7] memory addresses, , , ) =
                 ILiquidityPool(order.liquidityPool).getLiquidityPoolInfo();
             IAccessControll accessControl =
@@ -141,6 +146,7 @@ contract Broker is ReentrancyGuard {
         require(gasFee <= gasFeeLimit, "fee exceeds limit");
         require(expiration >= block.timestamp, "expired");
         require(nonce == _nonces[account], "non-continuous nonce");
+
         ICallee(to).callFunction(
             account,
             method,

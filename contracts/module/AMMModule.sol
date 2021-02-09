@@ -32,15 +32,17 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when trader trades with AMM, divided into two parts:
-     *      AMM closes its position and AMM opens its position
-     * @param liquidityPool The liquidity pool object of AMM
-     * @param perpetualIndex The index of the perpetual in the liquidity pool to trade
-     * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
-     * @param partialFill Whether to allow partially trading. Set to true when liquidation trading,
-     *                    set to false when normal trading
-     * @return deltaCash The update cash(collateral) of AMM after the trade
-     * @return deltaPosition The update position of AMM after the trade
+     * @dev     Get the trading result when trader trades with AMM, divided into two parts:
+     *            - AMM closes its position
+     *            - AMM opens its position.
+     *
+     * @param   liquidityPool   The liquidity pool object of AMM.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool to trade.
+     * @param   tradeAmount     The trading amount of position, positive if AMM longs, negative if AMM shorts.
+     * @param   partialFill     Whether to allow partially trading. Set to true when liquidation trading,
+     *                          set to false when normal trading.
+     * @return  deltaCash       The update cash(collateral) of AMM after the trade.
+     * @return  deltaPosition   The update position of AMM after the trade.
      */
     function queryTradeWithAMM(
         LiquidityPoolStorage storage liquidityPool,
@@ -69,13 +71,14 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the amount of share token to mint when liquidity provider adds liquidity to the liquidity pool.
-     *      If adding liquidity at first time, which means total supply of share token is zero,
-     *      the amount of share token to mint equals to the amount of cash(collateral) to add
-     * @param liquidityPool The liquidity pool object of AMM
-     * @param shareTotalSupply The total supply of the share token before adding liquidity
-     * @param cashToAdd The cash(collateral) added to the liquidity pool
-     * @return shareToMint The amount of share token to mint
+     * @dev     Calculate the amount of share token to mint when liquidity provider adds liquidity to the liquidity pool.
+     *          If adding liquidity at first time, which means total supply of share token is zero,
+     *          the amount of share token to mint equals to the amount of cash(collateral) to add.
+     *
+     * @param   liquidityPool       The liquidity pool object of AMM.
+     * @param   shareTotalSupply    The total supply of the share token before adding liquidity.
+     * @param   cashToAdd           The cash(collateral) added to the liquidity pool.
+     * @return  shareToMint         The amount of share token to mint.
      */
     function getShareToMint(
         LiquidityPoolStorage storage liquidityPool,
@@ -98,16 +101,17 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the cash(collateral) to return when liquidity provider removes liquidity from the liquidity pool.
-     *      Removing liquidity is forbidden at several cases:
-     *      1. AMM is unsafe before removing liquidity
-     *      2. AMM is unsafe after removing liquidity
-     *      3. AMM will offer negative price at any perpetual after removing liquidity
-     *      4. AMM will exceed maximum leverage at any perpetual after removing liquidity
-     * @param liquidityPool The liquidity pool object of AMM
-     * @param shareTotalSupply The total supply of the share token before removing liquidity
-     * @param shareToRemove The amount of share token to redeem
-     * @return cashToReturn The cash(collateral) to return
+     * @dev     Calculate the cash(collateral) to return when liquidity provider removes liquidity from the liquidity pool.
+     *          Removing liquidity is forbidden at several cases:
+     *            1. AMM is unsafe before removing liquidity
+     *            2. AMM is unsafe after removing liquidity
+     *            3. AMM will offer negative price at any perpetual after removing liquidity
+     *            4. AMM will exceed maximum leverage at any perpetual after removing liquidity
+     *
+     * @param   liquidityPool       The liquidity pool object of AMM.
+     * @param   shareTotalSupply    The total supply of the share token before removing liquidity.
+     * @param   shareToRemove       The amount of share token to redeem.
+     * @return  cashToReturn        The cash(collateral) to return.
      */
     function getCashToReturn(
         LiquidityPoolStorage storage liquidityPool,
@@ -154,11 +158,12 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the pool margin of AMM when AMM is safe.
-     *      Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals
-     * @param context The status of AMM
-     * @param slippageFactor The slippage factor of the current perpetual
-     * @return poolMargin The pool margin of AMM
+     * @dev     Calculate the pool margin of AMM when AMM is safe.
+     *          Pool margin is how much collateral of the pool considering the AMM's positions of perpetuals.
+     *
+     * @param   context         Context object of AMM, but current perpetual is not included.
+     * @param   slippageFactor  The slippage factor of current perpetual.
+     * @return  poolMargin      The pool margin of AMM.
      */
     function calculatePoolMarginWhenSafe(Context memory context, int256 slippageFactor)
         internal
@@ -177,11 +182,10 @@ library AMMModule {
     }
 
     /**
-     * @dev Check if AMM is safe
-     * @param context The status of AMM. The context don't include the current perpetual,
-     *                the status of the current perpetual should be added
-     * @param slippageFactor The slippage factor of the current perpetual
-     * @return bool True if AMM is safe
+     * @dev     Check if AMM is safe
+     * @param   context         Context object of AMM, but current perpetual is not included.
+     * @param   slippageFactor  The slippage factor of current perpetual.
+     * @return  bool            True if AMM is safe.
      */
     function isAMMSafe(Context memory context, int256 slippageFactor) internal pure returns (bool) {
         int256 positionValue = context.indexPrice.wmul(context.position);
@@ -194,15 +198,18 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when AMM closes its position. If AMM is unsafe, the trading price is the best price.
-     *      If the trading price is too bad(for AMM), it will be limited to index price * (1 +/- maximum close price discount)
-     * @param context The status of AMM
-     * @param perpetual The perpetual object to trade
-     * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
-     * @return deltaCash The update cash(collateral) of AMM after the trade
-     * @return bestPrice The best price, is used for clipping to spread price if needed outside.
-     *                   If AMM is safe, best price = middle price * (1 +/- half spread).
-     *                   If AMM is unsafe and normal case, best price = index price
+     * @dev     Get the trading result when AMM closes its position.
+     *          If the AMM is unsafe, the trading price is the best price.
+     *          If trading price is too bad, it will be limited to index price * (1 +/- max close price discount)
+     *
+     * @param   context     Context object of AMM, but current perpetual is not included.
+     * @param   perpetual   The perpetual object to trade.
+     * @param   tradeAmount The amount of position to trade.
+     *                      Positive for long and negative for short from AMM's perspective.
+     * @return  deltaCash   The update cash(collateral) of AMM after the trade.
+     * @return  bestPrice   The best price, is used for clipping to spread price if needed outside.
+     *                      If AMM is safe, best price = middle price * (1 +/- half spread).
+     *                      If AMM is unsafe and normal case, best price = index price.
      */
     function ammClosePosition(
         Context memory context,
@@ -249,17 +256,18 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the trading result when AMM opens its position.
-     *      AMM can't open position when unsafe and can't open position to exceed the maximum position
-     * @param context The status of AMM
-     * @param perpetual The perpetual object to trade
-     * @param tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
-     * @param partialFill Whether to allow partially trading. Set to true when liquidation trading,
-     *                    set to false when normal trading
-     * @return deltaCash The update cash(collateral) of AMM after the trade
-     * @return deltaPosition The update position of AMM after the trade
-     * @return bestPrice The best price, is used for clipping to spread price if needed outside.
-     *                   Equal to middle price * (1 +/- half spread)
+     * @dev     Get the trading result when AMM opens its position.
+     *          AMM can't open position when unsafe and can't open position to exceed the maximum position
+     *
+     * @param   context     Context object of AMM, but current perpetual is not included.
+     * @param   perpetual   The perpetual object to trade
+     * @param   tradeAmount The trading amount of position, positive if AMM longs, negative if AMM shorts
+     * @param   partialFill Whether to allow partially trading. Set to true when liquidation trading,
+     *                      set to false when normal trading
+     * @return  deltaCash       The update cash(collateral) of AMM after the trade
+     * @return  deltaPosition   The update position of AMM after the trade
+     * @return  bestPrice       The best price, is used for clipping to spread price if needed outside.
+     *                          Equal to middle price * (1 +/- half spread)
      */
     function ammOpenPosition(
         Context memory context,
@@ -328,24 +336,26 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the status of AMM
-     * @param liquidityPool The liquidity pool object
-     * @return Context The status of AMM
+     * @dev     Calculate the status of AMM
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @return  context         Context object of AMM, but current perpetual is not included.
      */
     function prepareContext(LiquidityPoolStorage storage liquidityPool)
         internal
         view
-        returns (Context memory)
+        returns (Context memory context)
     {
-        return prepareContext(liquidityPool, liquidityPool.perpetuals.length);
+        context = prepareContext(liquidityPool, liquidityPool.perpetuals.length);
     }
 
     /**
-     * @dev Calculate the status of AMM
-     * @param liquidityPool The liquidity pool object
-     * @param perpetualIndex The index of the perpetual in the liquidity pool to distinguish,
-     *                       set to liquidityPool.perpetuals.length to skip distinguishing.
-     * @return context The status of AMM
+     * @dev     Calculate the status of AMM, but specified perpetual index is not included.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool to distinguish,
+     *                          set to liquidityPool.perpetuals.length to skip distinguishing.
+     * @return  context         Context object of AMM.
      */
     function prepareContext(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         internal
@@ -397,10 +407,11 @@ library AMMModule {
     }
 
     /**
-     * @dev Calculate the cash(collateral) to return when removing liquidity
-     * @param context The status of AMM
-     * @param poolMargin The pool margin of AMM before removing liquidity
-     * @return cashToReturn The cash(collateral) to return
+     * @dev     Calculate the cash(collateral) to return when removing liquidity.
+     *
+     * @param   context         Context object of AMM, but current perpetual is not included.
+     * @param   poolMargin      The pool margin of AMM before removing liquidity.
+     * @return  cashToReturn    The cash(collateral) to return.
      */
     function calculateCashToReturn(Context memory context, int256 poolMargin)
         public
@@ -420,34 +431,35 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the middle price offered by AMM
-     * @param poolMargin The pool margin of AMM
-     * @param indexPrice The index price of the perpetual
-     * @param position The position of AMM in the perpetual
-     * @param slippageFactor The slippage factor of AMM in the perpetual
-     * @return int256 The middle price offered by AMM
+     * @dev     Get the middle price offered by AMM
+     *
+     * @param   poolMargin      The pool margin of AMM.
+     * @param   indexPrice      The index price of the perpetual.
+     * @param   position        The position of AMM in the perpetual.
+     * @param   slippageFactor  The slippage factor of AMM in the perpetual.
+     * @return  midPrice        A middle price offered by AMM.
      */
     function getMidPrice(
         int256 poolMargin,
         int256 indexPrice,
         int256 position,
         int256 slippageFactor
-    ) internal pure returns (int256) {
-        return
-            Constant
-                .SIGNED_ONE
-                .sub(indexPrice.wmul(position).wfrac(slippageFactor, poolMargin))
-                .wmul(indexPrice);
+    ) internal pure returns (int256 midPrice) {
+        midPrice = Constant
+            .SIGNED_ONE
+            .sub(indexPrice.wmul(position).wfrac(slippageFactor, poolMargin))
+            .wmul(indexPrice);
     }
 
     /**
-     * @dev Get update cash(collateral) of AMM if trader trades against AMM
-     * @param poolMargin The pool margin of AMM
-     * @param positionBefore The position of AMM in the perpetual before trading
-     * @param positionAfter The position of AMM in the perpetual after trading
-     * @param indexPrice The index price of the perpetual
-     * @param slippageFactor The slippage factor of AMM in the perpetual
-     * @return deltaCash The update cash(collateral) of AMM after trading
+     * @dev     Get update cash(collateral) of AMM if trader trades against AMM.
+     *
+     * @param   poolMargin      The pool margin of AMM.
+     * @param   positionBefore  The position of AMM in the perpetual before trading.
+     * @param   positionAfter   The position of AMM in the perpetual after trading.
+     * @param   indexPrice      The index price of the perpetual.
+     * @param   slippageFactor  The slippage factor of AMM in the perpetual.
+     * @return  deltaCash       The update cash(collateral) of AMM after trading.
      */
     function getDeltaCash(
         int256 poolMargin,
@@ -466,16 +478,17 @@ library AMMModule {
     }
 
     /**
-     * @dev Get the max position of AMM in the perpetual when AMM is opening position, calculated by three restrictions:
-     *      1. AMM must be safe after the trade.
-     *      2. AMM mustn't exceed maximum leverage in any perpetual after the trade.
-     *      3. AMM must offer positive price in any perpetual after the trade. It's easy to prove that, in the
-     *         perpetual, AMM definitely offers positive price when AMM holds short position
-     * @param context The status of AMM
-     * @param poolMargin The pool margin of AMM
-     * @param ammMaxLeverage The max leverage of AMM in the perpetual
-     * @param slippageFactor The slippage factor of AMM in the perpetual
-     * @return maxPosition The max position of AMM in the perpetual
+     * @dev     Get the max position of AMM in the perpetual when AMM is opening position, calculated by three restrictions:
+     *          1. AMM must be safe after the trade.
+     *          2. AMM mustn't exceed maximum leverage in any perpetual after the trade.
+     *          3. AMM must offer positive price in any perpetual after the trade. It's easy to prove that, in the
+     *             perpetual, AMM definitely offers positive price when AMM holds short position.
+     *
+     * @param   context         Context object of AMM, but current perpetual is not included.
+     * @param   poolMargin      The pool margin of AMM.
+     * @param   ammMaxLeverage  The max leverage of AMM in the perpetual.
+     * @param   slippageFactor  The slippage factor of AMM in the perpetual.
+     * @return  maxPosition     The max position of AMM in the perpetual.
      */
     function getMaxPosition(
         Context memory context,
@@ -519,19 +532,24 @@ library AMMModule {
     }
 
     /**
-     * @dev Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe.
-     *      Marin of AMM: cash + index price1 * position1 + index price2 * position2 + ...
-     * @param context The status of AMM
-     * @return int256 The pool margin of AMM
-     * @return bool True if AMM is safe
+     * @dev     Get pool margin of AMM, equal to 1/2 margin of AMM when AMM is unsafe.
+     *          Marin of AMM: cash + index price1 * position1 + index price2 * position2 + ...
+     *
+     * @param   context     Context object of AMM, but current perpetual is not included.
+     * @return  poolMargin  The pool margin of AMM.
+     * @return  isSafe      True if AMM is safe or false.
      */
-    function getPoolMargin(Context memory context) internal pure returns (int256, bool) {
-        if (isAMMSafe(context, 0)) {
-            return (calculatePoolMarginWhenSafe(context, 0), true);
+    function getPoolMargin(Context memory context)
+        internal
+        pure
+        returns (int256 poolMargin, bool isSafe)
+    {
+        isSafe = isAMMSafe(context, 0);
+        if (isSafe) {
+            poolMargin = calculatePoolMarginWhenSafe(context, 0);
         } else {
-            int256 poolMargin = context.availableCash.add(context.positionValue).div(2);
+            poolMargin = context.availableCash.add(context.positionValue).div(2);
             require(poolMargin >= 0, "pool margin is negative when getting pool margin");
-            return (poolMargin, false);
         }
     }
 

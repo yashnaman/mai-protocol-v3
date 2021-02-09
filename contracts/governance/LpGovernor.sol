@@ -8,13 +8,15 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "./GovernorAlpha.sol";
 import "./RewardDistribution.sol";
+import "../l2adapter/RelayRecipient.sol";
 
 contract LpGovernor is
     Initializable,
     ContextUpgradeable,
     ERC20Upgradeable,
     GovernorAlpha,
-    RewardDistribution
+    RewardDistribution,
+    RelayRecipient
 {
     // admin:  to mint/burn token
     address internal _minter;
@@ -77,6 +79,16 @@ contract LpGovernor is
         require(!isLocked(sender), "sender is locked");
         _updateReward(sender);
         super._beforeTokenTransfer(sender, recipient, amount);
+    }
+
+    function _msgSender()
+        internal
+        view
+        virtual
+        override(ContextUpgradeable, RelayRecipient)
+        returns (address payable)
+    {
+        return RelayRecipient._msgSender();
     }
 
     bytes32[50] private __gap;

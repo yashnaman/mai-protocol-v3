@@ -143,7 +143,6 @@ describe('TradeModule2', () => {
         })
 
         it('test', async () => {
-
             const provider = new ethers.providers.JsonRpcProvider("https://kovan2.arbitrum.io/rpc");
             const signer = new ethers.Wallet("0x0f6c64cd13b5d8e4917231fd9da19589ff604f98e0651f9a551dbede20806155", provider)
 

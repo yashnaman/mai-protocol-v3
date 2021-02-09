@@ -176,7 +176,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     {
         require(trader != address(0), "invalid trader");
         require(amount != 0, "invalid amount");
-        require(limitPrice >= 0, "invalid limit price");
         require(deadline >= block.timestamp, "deadline exceeded");
         tradeAmount = _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }

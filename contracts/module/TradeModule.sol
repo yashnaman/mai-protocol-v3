@@ -222,8 +222,8 @@ library TradeModule {
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
-     * @param   liquidator          The address of the account calling the liquidation method.
-     * @param   trader              The address of the liquidated account.
+     * @param   liquidator      The address of the account calling the liquidation method.
+     * @param   trader          The address of the liquidated account.
      * @return  liquidatedAmount    The amount of positions actually liquidated in the transaction.
      */
     function liquidateByAMM(
@@ -344,10 +344,7 @@ library TradeModule {
                 "trader initial margin unsafe"
             );
         } else {
-            require(
-                perpetual.isMaintenanceMarginSafe(liquidator, markPrice),
-                "trader maintenance margin unsafe"
-            );
+            require(perpetual.isMarginSafe(liquidator, markPrice), "trader margin unsafe");
         }
         emit Liquidate(
             perpetualIndex,
@@ -366,10 +363,10 @@ library TradeModule {
     }
 
     /**
-     * @dev Get the max position amount of trader will be closed in the trade
-     * @param position The current position of trader
-     * @param amount The trading amount of position
-     * @return maxPositionToClose The max position amount of trader will be closed in the trade
+     * @dev     Get the max position amount of trader will be closed in the trade.
+     * @param   position            Current position of trader.
+     * @param   amount              The trading amount of position.
+     * @return  maxPositionToClose  The max position amount of trader will be closed in the trade.
      */
     function getMaxPositionToClose(int256 position, int256 amount)
         internal
@@ -382,10 +379,10 @@ library TradeModule {
     }
 
     /**
-     * @dev Check if the price is better than the limit price
-     * @param isLong True if the side is long
-     * @param price The price
-     * @param priceLimit The limit price
+     * @dev     Check if the price is better than the limit price.
+     * @param   isLong      True if the side is long.
+     * @param   price       The price to be validate.
+     * @param   priceLimit  The limit price.
      */
     function validatePrice(
         bool isLong,
@@ -397,12 +394,12 @@ library TradeModule {
         require(isPriceSatisfied, "price exceeds limit");
     }
 
-    /*
-     * @dev Check if the trader has opened position in the trade.
-     *      Example: 2, 1 => true; 2, -1 => false; -2, -3 => true
-     * @param amount The position of the trader after the trade
-     * @param delta The update position amount of the trader after the trade
-     * @return bool True if the trader has opened position in the trade
+    /**
+     * @dev     Check if the trader has opened position in the trade.
+     *          Example: 2, 1 => true; 2, -1 => false; -2, -3 => true
+     * @param   amount  The position of the trader after the trade
+     * @param   delta   The update position amount of the trader after the trade
+     * @return  True if the trader has opened position in the trade
      */
     function hasOpenedPosition(int256 amount, int256 delta) internal pure returns (bool) {
         if (amount == 0) {
