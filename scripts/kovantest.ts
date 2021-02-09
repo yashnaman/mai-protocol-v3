@@ -224,7 +224,7 @@ async function main(accounts: any[]) {
     // );
     // var broker = await createContract("Broker");
     // const addresses = [
-    //     ["governor", governorTmpl.address],
+    //     ["governorTmpl", governorTmpl.address],
     //     ["shareTokenTmpl", shareTokenTmpl.address],
     //     ["poolCreator", poolCreator.address],
     //     ["symbol", symbol.address],
