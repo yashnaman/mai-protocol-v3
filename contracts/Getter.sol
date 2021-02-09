@@ -280,8 +280,7 @@ contract Getter is Storage {
      * @return  poolMargin  The pool margin of the liquidity pool
      */
     function getPoolMargin() public view returns (int256 poolMargin, bool isSafe) {
-        AMMModule.Context memory context = _liquidityPool.prepareContext();
-        (poolMargin, isSafe) = AMMModule.getPoolMargin(context);
+        (poolMargin, isSafe) = _liquidityPool.getPoolMargin();
     }
 
     /**

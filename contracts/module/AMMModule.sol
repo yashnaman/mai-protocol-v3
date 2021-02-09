@@ -534,4 +534,18 @@ library AMMModule {
             return (poolMargin, false);
         }
     }
+
+    /**
+     * @dev Get pool margin of AMM, prepare context first.
+     * @param liquidityPool The liquidity pool object
+     * @return int256 The pool margin of AMM
+     * @return bool True if AMM is safe
+     */
+    function getPoolMargin(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (int256, bool)
+    {
+        return getPoolMargin(prepareContext(liquidityPool));
+    }
 }

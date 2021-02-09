@@ -260,7 +260,6 @@ describe("integration", () => {
         expect(poolMargin).approximateBigNumber(toWei("1264.320026942584698681"));
     })
 
-    /*
     it("deposit more than balance", async () => {
         await perp.runLiquidityPool();
         await expect(perp.connect(user1).deposit(0, user1.address, toWei("10001"))).to.be.revertedWith("ERC20: transfer amount exceeds balance");
@@ -337,5 +336,4 @@ describe("integration", () => {
         await updatePrice(toWei("939"), toWei("1000"));
         await expect(perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
     })
-    */
 })

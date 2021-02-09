@@ -435,8 +435,7 @@ library LiquidityPoolModule {
      * @param liquidityPool The liquidity pool object
      */
     function updateFundingRate(LiquidityPoolStorage storage liquidityPool) public {
-        AMMModule.Context memory context = liquidityPool.prepareContext();
-        (int256 poolMargin, bool isAMMSafe) = AMMModule.getPoolMargin(context);
+        (int256 poolMargin, bool isAMMSafe) = liquidityPool.getPoolMargin();
         emit UpdatePoolMargin(poolMargin);
         if (!isAMMSafe) {
             poolMargin = 0;
