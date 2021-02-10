@@ -429,7 +429,7 @@ library LiquidityPoolModule {
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
-            perpetual.updateFundingState(timeElapsed);
+            perpetual.updateFundingState(currentTime, timeElapsed);
         }
         liquidityPool.fundingTime = currentTime;
     }

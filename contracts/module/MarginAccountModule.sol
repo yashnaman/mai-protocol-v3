@@ -248,14 +248,10 @@ library MarginAccountModule {
         int256 deltaCash
     ) internal {
         MarginAccount storage account = perpetual.marginAccounts[trader];
-        if (deltaPosition != 0) {
-            account.position = account.position.add(deltaPosition);
-        }
-        if (deltaCash != 0) {
-            account.cash = account.cash.add(deltaCash).add(
-                perpetual.unitAccumulativeFunding.wmul(deltaPosition)
-            );
-        }
+        account.position = account.position.add(deltaPosition);
+        account.cash = account.cash.add(deltaCash).add(
+            perpetual.unitAccumulativeFunding.wmul(deltaPosition)
+        );
     }
 
     /**

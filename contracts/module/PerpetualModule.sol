@@ -3,8 +3,10 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IOracle.sol";
 
@@ -16,7 +18,9 @@ import "./MarginAccountModule.sol";
 import "../Type.sol";
 
 library PerpetualModule {
+    using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
+    using SafeCastUpgradeable for int256;
     using AddressUpgradeable for address;
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -33,6 +37,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_KEEPER_GAS_REWARD = 6;
     uint256 internal constant INDEX_INSURANCE_FUND_RATE = 7;
     uint256 internal constant INDEX_INSURANCE_FUND_CAP = 8;
+    uint256 internal constant INDEX_SYNC_FUNDING_INTERVAL = 9;
 
     uint256 internal constant INDEX_HARF_SPREAD = 0;
     uint256 internal constant INDEX_OPEN_SLIPPAGE_FACTOR = 1;
@@ -176,6 +181,7 @@ library PerpetualModule {
         perpetual.keeperGasReward = baseParams[INDEX_KEEPER_GAS_REWARD];
         perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
         perpetual.insuranceFundCap = baseParams[INDEX_INSURANCE_FUND_CAP];
+        perpetual.syncFundingInterval = baseParams[INDEX_SYNC_FUNDING_INTERVAL];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
 
@@ -268,13 +274,31 @@ library PerpetualModule {
      * @param   perpetual   The reference of perpetual storage.
      * @param   timeElapsed The elapsed time since last update.
      */
-    function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
+    function updateFundingState(
+        PerpetualStorage storage perpetual,
+        uint256 currentTime,
+        int256 timeElapsed
+    ) public {
         int256 deltaUnitLoss =
             timeElapsed.mul(getIndexPrice(perpetual)).wmul(perpetual.fundingRate).div(
                 FUNDING_INTERVAL
             );
-        perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
-        emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
+        perpetual.realTimeUnitAccumulativeFunding = perpetual.realTimeUnitAccumulativeFunding.add(
+            deltaUnitLoss
+        );
+        uint256 syncFundingInterval = perpetual.syncFundingInterval.toUint256();
+        if (
+            currentTime >=
+            (
+                perpetual.syncFundingTime.div(syncFundingInterval).mul(syncFundingInterval).add(
+                    syncFundingInterval
+                )
+            )
+        ) {
+            perpetual.unitAccumulativeFunding = perpetual.realTimeUnitAccumulativeFunding;
+            perpetual.syncFundingTime = currentTime;
+            emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
+        }
     }
 
     /**
@@ -734,6 +758,7 @@ library PerpetualModule {
         require(baseParams[INDEX_KEEPER_GAS_REWARD] >= 0, "keeperGasReward < 0");
         require(baseParams[INDEX_INSURANCE_FUND_RATE] >= 0, "insuranceFundRate < 0");
         require(baseParams[INDEX_INSURANCE_FUND_CAP] >= 0, "insuranceFundCap < 0");
+        require(baseParams[INDEX_SYNC_FUNDING_INTERVAL] >= 0, "syncFundingInterval < 0");
     }
 
     /**

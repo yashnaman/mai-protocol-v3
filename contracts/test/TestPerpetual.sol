@@ -243,12 +243,16 @@ contract TestPerpetual is Storage {
         marginToRebalance = _liquidityPool.perpetuals[perpetualIndex].getRebalanceMargin();
     }
 
-    function updateFundingState(uint256 perpetualIndex, int256 timeElapsed) public {
-        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(timeElapsed);
+    function updateFundingState(
+        uint256 perpetualIndex,
+        uint256 currentTime,
+        int256 timeElapsed
+    ) public {
+        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(currentTime, timeElapsed);
     }
 
     function updateFundingRate(uint256 perpetualIndex, int256 poolMargin) public {
-        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(poolMargin);
+        _liquidityPool.perpetuals[perpetualIndex].updateFundingRate(poolMargin);
     }
 
     function setNormalState(uint256 perpetualIndex) public {
