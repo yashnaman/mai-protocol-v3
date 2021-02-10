@@ -47,6 +47,12 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         _distributor = distributor;
     }
 
+    /**
+     * @notice  Set reward distribution rate. If there is unfinished distribution, the end time will be changed
+     *          according to change of newRewardRate.
+     *
+     * @param   newRewardRate   New reward distribution rate.
+     */
     function setRewardRate(uint256 newRewardRate) external virtual updateReward(address(0)) {
         require(_msgSender() == _distributor, "must be distributor to set reward rate");
         if (newRewardRate == 0) {
@@ -60,6 +66,12 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         rewardRate = newRewardRate;
     }
 
+    /**
+     * @notice  Add new distributable reward to current pool, this will extend an exist distribution or
+     *          start a new distribution if previous one is already ended.
+     *
+     * @param   reward  Amount of reward to add.
+     */
     function notifyRewardAmount(uint256 reward) external virtual updateReward(address(0)) {
         require(_msgSender() == _distributor, "must be distributor to notify reward amount");
         require(rewardRate > 0, "rewardRate is zero");
@@ -76,10 +88,17 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         }
     }
 
+    /**
+     * @notice  Return end time if last distribution is done or current timestamp.
+     */
     function lastTimeRewardApplicable() public view returns (uint256) {
         return block.number <= periodFinish ? block.number : periodFinish;
     }
 
+    /**
+     * @notice  Return the per token amount of reward.
+     *          The expected reward of user is: [amount of share] x rewardPerToken - claimedReward.
+     */
     function rewardPerToken() public view returns (uint256) {
         if (totalSupply() == 0) {
             return rewardPerTokenStored;
@@ -92,7 +111,9 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
             );
     }
 
-    // user interface
+    /**
+     * @notice  Return real time reward of account.
+     */
     function earned(address account) public view returns (uint256) {
         return
             balanceOf(account)
@@ -101,6 +122,9 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
                 .add(rewards[account]);
     }
 
+    /**
+     * @notice  Claim all remaining reward of account.
+     */
     function getReward() public updateReward(_msgSender()) {
         address account = _msgSender();
         uint256 reward = earned(account);

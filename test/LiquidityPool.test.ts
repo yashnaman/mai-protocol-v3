@@ -552,6 +552,7 @@ describe('LiquidityPool', () => {
             var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user0.address);
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));
+            await expect(liquidityPool.settleP(0, user0.address)).to.be.revertedWith("no margin to settle")
 
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("250"));
 
@@ -563,11 +564,7 @@ describe('LiquidityPool', () => {
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
 
             expect(await liquidityPool.callStatic.settle(0, user2.address)).to.equal(toWei("0"));
-            await liquidityPool.settleP(0, user2.address);
-            var { cash, position } = await liquidityPool.callStatic.getMarginAccount(0, user2.address);
-            expect(cash).to.equal(toWei("0"));
-            expect(position).to.equal(toWei("0"));
-            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("50"));
+            await expect(liquidityPool.settleP(0, user2.address)).to.be.revertedWith("no margin to settle")
 
             expect(await liquidityPool.callStatic.settle(0, user3.address)).to.equal(toWei("50"));
             await liquidityPool.settleP(0, user3.address);

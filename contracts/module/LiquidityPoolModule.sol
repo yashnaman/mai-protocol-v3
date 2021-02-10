@@ -564,6 +564,7 @@ library LiquidityPoolModule {
     ) public {
         require(trader != address(0), "invalid trader");
         int256 marginToReturn = liquidityPool.perpetuals[perpetualIndex].settle(trader);
+        require(marginToReturn > 0, "no margin to settle");
         transferFromPerpetualToUser(liquidityPool, perpetualIndex, payable(trader), marginToReturn);
     }
 

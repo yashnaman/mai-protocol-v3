@@ -89,13 +89,13 @@ library AMMModule {
         (int256 poolMargin, ) = getPoolMargin(context);
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
-        if (poolMargin == 0) {
-            // If share token's total supply is not zero, these share tokens have no value,
-            // this case should be avoided.
-            require(shareTotalSupply == 0, "share token has no value");
+        if (shareTotalSupply == 0) {
             // first time
             shareToMint = newPoolMargin;
         } else {
+            // If share token's total supply is not zero, these share tokens have no value,
+            // this case should be avoided.
+            require(poolMargin != 0, "share token has no value");
             shareToMint = newPoolMargin.sub(poolMargin).wfrac(shareTotalSupply, poolMargin);
         }
     }

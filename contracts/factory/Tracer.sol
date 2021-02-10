@@ -119,6 +119,7 @@ contract Tracer {
 
     /**
      * @dev     Record the liquidity pool, the liquidity pool should not be recorded before
+     *
      * @param   liquidityPool   The address of the liquidity pool.
      * @param   operator        The address of operator.
      */
@@ -146,10 +147,10 @@ contract Tracer {
      * @notice  Check if the perpetual is active for the trader. Active means the trader's account is
      *          not empty in the perpetual. Empty means cash and position are zero.
      *
-     * @param   trader          The address of the trader
-     * @param   liquidityPool   The address of liquidity pool
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
-     * @return  True if the perpetual is active for the trader
+     * @param   trader          The address of the trader.
+     * @param   liquidityPool   The address of liquidity pool.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  True if the perpetual is active for the trader.
      */
     function isActiveLiquidityPoolOf(
         address trader,
@@ -217,9 +218,9 @@ contract Tracer {
      * @notice  Deactivate the perpetual for the trader. Active means the trader's account is not empty in
      *          the perpetual. Empty means cash and position are zero. Can only called by a liquidity pool.
      *
-     * @param   trader The address of the trader
-     * @param   perpetualIndex The index of the perpetual in the liquidity pool
-     * @return  True if the deactivation is successful
+     * @param   trader          The address of the trader.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  True if the deactivation is successful.
      */
     function deactivatePerpetualFor(address trader, uint256 perpetualIndex)
         external
@@ -235,9 +236,9 @@ contract Tracer {
     // =========================== Active Liquidity Pool of Trader ===========================
     /**
      * @dev     Get the key of the perpetual
-     * @param   liquidityPool The address of the liquidity pool which the perpetual belongs to
-     * @param   erpetualIndex The index of the perpetual in the liquidity pool
-     * @return  The key of the perpetual
+     * @param   liquidityPool   The address of the liquidity pool which the perpetual belongs to.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  Key hash of the perpetual.
      */
     function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal

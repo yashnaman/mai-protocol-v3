@@ -13,13 +13,12 @@ import "../interface/ILiquidityPool.sol";
  * @notice Possible states that a proposal may be in.
  *
  *         There basicly are up to 4 stages for a proposal:
- *           1. `Pending` state: wait for VotingDelay before voter can cast vote;
- *           2. `Active` VotingPeriod. After votingPeriod, state `Active` => `Defeated` or `Succeeded`;
- *              Once voted, voter's all governor token will be locked until votingPeriod passed;
- *           3. For a `Defeated` proposal, voting is done, all govnor tokens are will unlock immediately;
- *              For a `Succeeded` proposal, lock will be extended by `executionDelay` + `unlockDelay`,
- *              state `Active` => `Queue`
-
+ *           1. Pending:  Period before voter can cast vote.
+ *           2. Active:   Period for casting vote.
+ *                        Once voted, voter's all governor token will be locked until votingPeriod passed.
+ *           3. Defeated / Succeeded:
+ *                        For a defeated proposal, voting is done, all govnor tokens are will unlock immediately;
+ *                        For a  proposal, lock will be extended by `executionDelay` + `unlockDelay`.
  */
 enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Expired }
 
@@ -120,12 +119,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     );
 
     /**
-     * @notice An event emitted when a vote has been cast on a proposal.
+     * @notice  An event emitted when a vote has been cast on a proposal.
      */
     event VoteCast(address account, uint256 proposalId, bool support, uint256 votes);
 
     /**
-     * @notice An event emitted when a proposal has been executed in the Timelock.
+     * @notice  An event emitted when a proposal has been executed in the Timelock.
      */
     event ProposalExecuted(uint256 id);
 
@@ -134,12 +133,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice Balance of vote token which must be implemented through inheritance.
+     * @notice  Balance of vote token which must be implemented through inheritance.
      */
     function balanceOf(address account) public view virtual returns (uint256);
 
     /**
-     * @notice TotalSupply of vote token which must be implemented through inheritance.
+     * @notice  TotalSupply of vote token which must be implemented through inheritance.
      */
     function totalSupply() public view virtual returns (uint256);
 
@@ -152,7 +151,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice The number of votes in support of a proposal required in order for a quorum to be reached
+     * @notice  The number of votes in support of a proposal required in order for a quorum to be reached
      *         and for a vote to succeed.
      */
     function criticalQuorumRate() public pure virtual returns (uint256) {
@@ -160,7 +159,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice The number of votes required in order for a account to become a proposer.
+     * @notice  The number of votes required in order for a account to become a proposer.
      */
     function proposalThresholdRate() public pure virtual returns (uint256) {
         return 1e16;
@@ -174,33 +173,36 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice The delay before voting on a proposal may take place, once proposed.
+     * @notice  The delay before voting on a proposal may take place, once proposed.
      */
     function votingDelay() public pure virtual returns (uint256) {
         return 1;
     }
 
     /**
-     * @notice The duration of voting on a proposal, in blocks.
+     * @notice  The duration of voting on a proposal, in blocks.
      */
     function votingPeriod() public pure virtual returns (uint256) {
         return 17280;
     }
 
     /**
-     * @notice The delay before a succeeded proposal being executed (say, proposal in queued state).
+     * @notice  The delay before a succeeded proposal being executed (say, proposal in queued state).
      */
     function executionDelay() public pure virtual returns (uint256) {
         return 11520;
     }
 
     /**
-     * @notice The duration before a ready-to-execute proposal
+     * @notice  The duration before a ready-to-execute proposal
      */
     function unlockDelay() public pure virtual returns (uint256) {
         return 17280;
     }
 
+    /**
+     * @notice
+     */
     function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
         bytes32 functionHash = keccak256(bytes(functionSignature));
         return
