@@ -56,7 +56,7 @@ library PerpetualModule {
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[9] baseParams);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[10] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
         int256[6] riskParams,
@@ -134,7 +134,7 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         uint256 id,
         address oracle,
-        int256[9] calldata baseParams,
+        int256[10] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
@@ -169,7 +169,7 @@ library PerpetualModule {
      * @param   perpetual   The perpetual object
      * @param   baseParams  The new value of the base parameter
      */
-    function setBaseParameter(PerpetualStorage storage perpetual, int256[9] memory baseParams)
+    function setBaseParameter(PerpetualStorage storage perpetual, int256[10] memory baseParams)
         public
     {
         validateBaseParameters(perpetual, baseParams);
@@ -721,10 +721,10 @@ library PerpetualModule {
      *
      * @param   perpetual   The reference of perpetual storage.
      */
-    function validateBaseParameters(PerpetualStorage storage perpetual, int256[9] memory baseParams)
-        public
-        view
-    {
+    function validateBaseParameters(
+        PerpetualStorage storage perpetual,
+        int256[10] memory baseParams
+    ) public view {
         require(
             perpetual.initialMarginRate == 0 ||
                 baseParams[INDEX_INITIAL_MARGIN_RATE] <= perpetual.initialMarginRate,
