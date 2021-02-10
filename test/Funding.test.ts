@@ -41,19 +41,6 @@ describe('Funding', () => {
         });
         oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-
-        await liquidityPool.createPerpetual(
-            oracle1.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
-            [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-        )
-        await liquidityPool.createPerpetual(
-            oracle2.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
-            [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
-        )
-
-        await liquidityPool.runLiquidityPool();
     });
 
     describe('updateFundingState', function () {
@@ -62,67 +49,117 @@ describe('Funding', () => {
             {
                 name: 'state != NORMAL',
                 state: 1,
+                fundingInterval: 1,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWei('100'),
                 indexPrice2: toWei('200'),
                 fundingRate: toWei('0.002'),
-                timeElapsed: '1000',
+                currentTime: 1100,
+                lastFundingTime: 1000,
                 targetUnitAccumulativeFunding1: params.unitAccumulativeFunding,
                 targetUnitAccumulativeFunding2: params.unitAccumulativeFunding,
-                targetFundingTime: '1000'
+                targetRealTimeUnitAccumulativeFunding1: params.unitAccumulativeFunding,
+                targetRealTimeUnitAccumulativeFunding2: params.unitAccumulativeFunding,
+                targetFundingTime: 1100
             },
             {
                 name: 'init',
                 state: params.state,
+                fundingInterval: 1,
                 unitAccumulativeFunding: _0,
                 indexPrice1: toWei('100'),
                 indexPrice2: toWei('200'),
                 fundingRate: toWei('0'),
-                timeElapsed: '1000',
+                currentTime: 1100,
+                lastFundingTime: 1000,
                 targetUnitAccumulativeFunding1: _0,
                 targetUnitAccumulativeFunding2: _0,
-                targetFundingTime: '1000'
+                targetRealTimeUnitAccumulativeFunding1: _0,
+                targetRealTimeUnitAccumulativeFunding2: _0,
+                targetFundingTime: 1100
             },
             {
-                name: 'current time = liquidityPool time',
+                name: 'current time = last funding time',
                 state: params.state,
+                fundingInterval: 1,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWei('100'),
                 indexPrice2: toWei('200'),
                 fundingRate: toWei('0.002'),
-                timeElapsed: '0',
+                currentTime: 1100,
+                lastFundingTime: 1100,
                 targetUnitAccumulativeFunding1: params.unitAccumulativeFunding,
                 targetUnitAccumulativeFunding2: params.unitAccumulativeFunding,
-                targetFundingTime: '1000'
+                targetRealTimeUnitAccumulativeFunding1: params.unitAccumulativeFunding,
+                targetRealTimeUnitAccumulativeFunding2: params.unitAccumulativeFunding,
+                targetFundingTime: 1100
             },
             {
                 name: 'normal',
                 state: params.state,
+                fundingInterval: 1,
                 unitAccumulativeFunding: params.unitAccumulativeFunding,
                 indexPrice1: toWei('100'),
                 indexPrice2: toWei('200'),
                 fundingRate: toWei('0.002'),
-                timeElapsed: '1000',
-                targetUnitAccumulativeFunding1: toWei('1.906944444444444444'),
-                targetUnitAccumulativeFunding2: toWei('1.913888888888888888'),
-                targetFundingTime: '2000'
-            },
-            {
-                name: 'normal',
-                state: params.state,
-                unitAccumulativeFunding: params.unitAccumulativeFunding,
-                indexPrice1: toWei('100'),
-                indexPrice2: toWei('200'),
-                fundingRate: toWei('0.002'),
-                timeElapsed: '100',
+                currentTime: 1100,
+                lastFundingTime: 1000,
                 targetUnitAccumulativeFunding1: toWei('1.900694444444444444'),
                 targetUnitAccumulativeFunding2: toWei('1.901388888888888888'),
-                targetFundingTime: '2000'
+                targetRealTimeUnitAccumulativeFunding1: toWei('1.900694444444444444'),
+                targetRealTimeUnitAccumulativeFunding2: toWei('1.901388888888888888'),
+                targetFundingTime: 1100
+            },
+            {
+                name: 'not sync',
+                state: params.state,
+                fundingInterval: 110,
+                unitAccumulativeFunding: params.unitAccumulativeFunding,
+                indexPrice1: toWei('100'),
+                indexPrice2: toWei('200'),
+                fundingRate: toWei('0.002'),
+                currentTime: 1100,
+                lastFundingTime: 1000,
+                targetUnitAccumulativeFunding1: toWei('1.9'),
+                targetUnitAccumulativeFunding2: toWei('1.9'),
+                targetRealTimeUnitAccumulativeFunding1: toWei('1.900694444444444444'),
+                targetRealTimeUnitAccumulativeFunding2: toWei('1.901388888888888888'),
+                targetFundingTime: 1100
+            },
+            {
+                name: 'two sync',
+                state: params.state,
+                fundingInterval: 50,
+                unitAccumulativeFunding: params.unitAccumulativeFunding,
+                indexPrice1: toWei('100'),
+                indexPrice2: toWei('200'),
+                fundingRate: toWei('0.002'),
+                currentTime: 1100,
+                lastFundingTime: 1000,
+                targetUnitAccumulativeFunding1: toWei('1.900694444444444444'),
+                targetUnitAccumulativeFunding2: toWei('1.901388888888888888'),
+                targetRealTimeUnitAccumulativeFunding1: toWei('1.900694444444444444'),
+                targetRealTimeUnitAccumulativeFunding2: toWei('1.901388888888888888'),
+                targetFundingTime: 1100
             }
+
         ]
 
         cases.forEach(element => {
             it(element.name, async () => {
+                await liquidityPool.createPerpetual(
+                    oracle1.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+                await liquidityPool.createPerpetual(
+                    oracle2.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+
+                await liquidityPool.runLiquidityPool();
+
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(element.indexPrice1, now);
                 await oracle1.setMarkPrice(element.indexPrice1, now);
@@ -130,20 +167,26 @@ describe('Funding', () => {
                 await oracle2.setMarkPrice(element.indexPrice2, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
+                await liquidityPool.setFundingTime(element.lastFundingTime);
 
                 await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
                 await liquidityPool.setFundingRate(0, element.fundingRate);
                 await liquidityPool.setUnitAccumulativeFunding(0, element.unitAccumulativeFunding);
+                await liquidityPool.setSyncFundingTime(0, 1000);
                 await liquidityPool.setState(0, element.state);
 
                 await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
                 await liquidityPool.setFundingRate(1, element.fundingRate);
                 await liquidityPool.setUnitAccumulativeFunding(1, element.unitAccumulativeFunding);
+                await liquidityPool.setSyncFundingTime(1, 1000);
                 await liquidityPool.setState(1, element.state);
 
-                await liquidityPool.updateFundingStateP(element.timeElapsed);
+                await liquidityPool.updateFundingStateP(element.currentTime);
                 expect(await liquidityPool.getUnitAccumulativeFunding(0)).approximateBigNumber(element.targetUnitAccumulativeFunding1)
                 expect(await liquidityPool.getUnitAccumulativeFunding(1)).approximateBigNumber(element.targetUnitAccumulativeFunding2)
+                expect(await liquidityPool.getRealTimeUnitAccumulativeFunding(0)).approximateBigNumber(element.targetRealTimeUnitAccumulativeFunding1)
+                expect(await liquidityPool.getRealTimeUnitAccumulativeFunding(1)).approximateBigNumber(element.targetRealTimeUnitAccumulativeFunding2)
+                expect(await liquidityPool.getFundingTime()).to.equal(element.targetFundingTime)
             })
         })
     })
@@ -200,6 +243,19 @@ describe('Funding', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
+                await liquidityPool.createPerpetual(
+                    oracle1.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+                await liquidityPool.createPerpetual(
+                    oracle2.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+
+                await liquidityPool.runLiquidityPool();
+
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(params.indexPrice, now);
                 await oracle1.setMarkPrice(params.indexPrice, now);
@@ -238,6 +294,19 @@ describe('Funding', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
+                await liquidityPool.createPerpetual(
+                    oracle1.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+                await liquidityPool.createPerpetual(
+                    oracle2.address,
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                )
+
+                await liquidityPool.runLiquidityPool();
+
                 var now = Math.floor(Date.now() / 1000);
                 await oracle1.setIndexPrice(params.indexPrice, now);
                 await oracle1.setMarkPrice(params.indexPrice, now);

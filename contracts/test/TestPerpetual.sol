@@ -173,10 +173,33 @@ contract TestPerpetual is Storage {
         unitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding;
     }
 
+    function getRealTimeUnitAccumulativeFunding(uint256 perpetualIndex)
+        public
+        view
+        returns (int256 realTimeUnitAccumulativeFunding)
+    {
+        realTimeUnitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex].realTimeUnitAccumulativeFunding;
+    }
+
     function setUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding)
         public
     {
         _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
+        _liquidityPool.perpetuals[perpetualIndex].realTimeUnitAccumulativeFunding = unitAccumulativeFunding;
+    }
+
+    function getSyncFundingTime(uint256 perpetualIndex)
+        public
+        view
+        returns (uint256 syncFundingTime)
+    {
+        syncFundingTime = _liquidityPool.perpetuals[perpetualIndex].syncFundingTime;
+    }
+
+    function setSyncFundingTime(uint256 perpetualIndex, uint256 syncFundingTime)
+        public
+    {
+        _liquidityPool.perpetuals[perpetualIndex].syncFundingTime = syncFundingTime;
     }
 
     function getFundingRate(uint256 perpetualIndex) public view returns (int256) {
