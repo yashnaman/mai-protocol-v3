@@ -21,6 +21,16 @@ contract LpGovernor is
     // admin:  to mint/burn token
     address internal _minter;
 
+    /**
+     * @notice  Initialize LpGovernor instance.
+     *
+     * @param   name        ERC20 name of token.
+     * @param   symbol      ERC20 symbol of token.
+     * @param   minter      The role that has privilege to mint / burn token.
+     * @param   target      The target of execution, all action of proposal will be send to target.
+     * @param   rewardToken The ERC20 token used as reward of mining / reward distribution.
+     * @param   distributor The role that has privilege to set reward.
+     */
     function initialize(
         string memory name,
         string memory symbol,
@@ -37,11 +47,17 @@ contract LpGovernor is
         _target = target;
     }
 
+    /**
+     * @notice  Mint token to account.
+     */
     function mint(address account, uint256 amount) public virtual {
         require(_msgSender() == _minter, "must be minter to mint");
         _mint(account, amount);
     }
 
+    /**
+     * @notice  Burn token from account. Voting will block also block burning.
+     */
     function burn(address account, uint256 amount) public virtual {
         require(_msgSender() == _minter, "must be minter to burn");
         _burn(account, amount);
@@ -51,6 +67,9 @@ contract LpGovernor is
         return GovernorAlpha.isLockedByVoting(account);
     }
 
+    /**
+     * @notice  Override ERC20 balanceOf.
+     */
     function balanceOf(address account)
         public
         view
@@ -61,6 +80,9 @@ contract LpGovernor is
         return ERC20Upgradeable.balanceOf(account);
     }
 
+    /**
+     * @notice  Override ERC20 balanceOf.
+     */
     function totalSupply()
         public
         view

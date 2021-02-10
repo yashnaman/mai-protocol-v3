@@ -7,6 +7,9 @@ import "@openzeppelin/contracts-upgradeable/cryptography/ECDSAUpgradeable.sol";
 
 import "../libraries/Utils.sol";
 
+/**
+ * @notice This is a module adding relayed function call to contract.
+ */
 contract RelayRecipient is ContextUpgradeable {
     // new domain, with version and chainId
     string internal constant L2_DOMAIN_NAME = "Mai L2 Call";
@@ -26,22 +29,9 @@ contract RelayRecipient is ContextUpgradeable {
             "Call(uint256 chainId,string method,address broker,address from,address to,bytes callData,uint32 nonce,uint32 expiration,uint64 gasLimit)"
         );
 
-    function _msgSender() internal view virtual override returns (address payable) {
-        if (msg.sender != address(this)) {
-            return msg.sender;
-        }
-        return _getRelayedCallSender();
-    }
-
-    function _getRelayedCallSender() private view returns (address payable sender) {
-        require(msg.data.length >= 20, "invalid data format");
-        uint256 tmp;
-        assembly {
-            tmp := calldataload(sub(calldatasize(), 32))
-        }
-        sender = address(bytes20(uint160(tmp)));
-    }
-
+    /**
+     * @notice Call function from broker.
+     */
     function callFunction(
         address from,
         string memory method,
@@ -75,6 +65,26 @@ contract RelayRecipient is ContextUpgradeable {
                 abi.encodePacked(bytes4(keccak256(bytes(method))), callData, signer)
             );
         require(success, "call function failed");
+    }
+
+    /**
+     * @dev     A key feature to replace msg.sender with what is ecoded at the tail of msg.data.
+     *          inspired by openzeppelin GSN network.
+     */
+    function _msgSender() internal view virtual override returns (address payable) {
+        if (msg.sender != address(this)) {
+            return msg.sender;
+        }
+        return _getRelayedCallSender();
+    }
+
+    function _getRelayedCallSender() private view returns (address payable sender) {
+        require(msg.data.length >= 20, "invalid data format");
+        uint256 tmp;
+        assembly {
+            tmp := calldataload(sub(calldatasize(), 32))
+        }
+        sender = address(bytes20(uint160(tmp)));
     }
 
     bytes32[50] private __gap;

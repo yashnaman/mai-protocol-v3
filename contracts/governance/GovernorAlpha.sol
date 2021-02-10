@@ -19,6 +19,11 @@ import "../interface/ILiquidityPool.sol";
  *           3. Defeated / Succeeded:
  *                        For a defeated proposal, voting is done, all govnor tokens are will unlock immediately;
  *                        For a  proposal, lock will be extended by `executionDelay` + `unlockDelay`.
+ *           4. Queued:   Successfull proposal can only be executed after an `executionDelay`;
+ *           5. Executed: After `executionDelay` a successfull proposal is able to be called by anyone then marked as 'executed';
+ *           6. Expired:  If a proposal succeeded but no one try to execute it, when the `unlockDelay` passed.
+ *                        it will be marked as expired and no longer can be executed.
+ *
  */
 enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Expired }
 
@@ -174,6 +179,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The delay before voting on a proposal may take place, once proposed.
+     *          See `ProposalState` for details;
      */
     function votingDelay() public pure virtual returns (uint256) {
         return 1;
@@ -181,6 +187,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The duration of voting on a proposal, in blocks.
+     *          See `ProposalState` for details;
      */
     function votingPeriod() public pure virtual returns (uint256) {
         return 17280;
@@ -188,27 +195,17 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The delay before a succeeded proposal being executed (say, proposal in queued state).
+     *          See `ProposalState` for details;
      */
     function executionDelay() public pure virtual returns (uint256) {
         return 11520;
     }
 
     /**
-     * @notice  The duration before a ready-to-execute proposal
+     * @notice  The duration after a proposal can be executed. See `ProposalState` for details;
      */
     function unlockDelay() public pure virtual returns (uint256) {
         return 17280;
-    }
-
-    /**
-     * @notice
-     */
-    function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
-        bytes32 functionHash = keccak256(bytes(functionSignature));
-        return
-            functionHash == SIGNATURE_PERPETUAL_UPGRADE ||
-            functionHash == SIGNATURE_PERPETUAL_SETTLE ||
-            functionHash == SIGNATURE_PERPETUAL_TRANSFER_OPERATOR;
     }
 
     function getProposalThreshold() public view virtual returns (uint256) {
@@ -228,6 +225,23 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         return totalVotes.mul(quorumRate()).div(1e18);
     }
 
+    /**
+     * @notice  Return true if a signature matches critical functions, which means a proposal with critical actions
+     *          will require more share (governance) token to create.
+     *
+     * @param   functionSignature   The string signature of function to test.
+     */
+    function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
+        bytes32 functionHash = keccak256(bytes(functionSignature));
+        return
+            functionHash == SIGNATURE_PERPETUAL_UPGRADE ||
+            functionHash == SIGNATURE_PERPETUAL_SETTLE ||
+            functionHash == SIGNATURE_PERPETUAL_TRANSFER_OPERATOR;
+    }
+
+    /**
+     *
+     */
     function execute(uint256 proposalId) public payable {
         require(
             state(proposalId) == ProposalState.Queued,
