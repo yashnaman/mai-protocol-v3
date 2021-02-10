@@ -1,13 +1,8 @@
 import BigNumber from 'bignumber.js';
-import { ethers } from "hardhat";
 import { expect } from "chai";
 
 import "./helper";
 import { createContract } from '../scripts/utils';
-
-import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
-import { TestShareTokenFactory } from "../typechain/TestShareTokenFactory"
-import { TestAmmFactory } from "../typechain/TestAmmFactory"
 
 const weis = new BigNumber('1000000000000000000');
 const toWad = (x: any) => {

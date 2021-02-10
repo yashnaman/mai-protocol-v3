@@ -9,9 +9,6 @@ import {
     createLiquidityPoolFactory
 } from "../scripts/utils";
 
-import { CustomErc20Factory } from "../typechain/CustomErc20Factory"
-import { LiquidityPoolFactory } from "../typechain/LiquidityPoolFactory"
-
 describe("Reader", () => {
     var accounts;
     var user0;
@@ -68,14 +65,16 @@ describe("Reader", () => {
                 vaultFeeRate,
             ]
         );
+        const LiquidityPoolFactory = await createLiquidityPoolFactory()
+
         await symbol.addWhitelistedFactory(maker.address);
-        var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
+        var perpTemplate = await LiquidityPoolFactory.deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
 
         const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 6, false, 998);
         await maker.createLiquidityPool(ctk.address, 6, false, 998);
 
-        perp = await LiquidityPoolFactory.connect(perpAddr, user0);
+        perp = await LiquidityPoolFactory.attach(perpAddr);
         reader = await createContract("Reader");
 
         // oracle
@@ -84,14 +83,14 @@ describe("Reader", () => {
         await updatePrice(toWei("500"), toWei("500"))
 
         await perp.createPerpetual(oracle1.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99")],
         )
 
         await perp.createPerpetual(oracle2.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99")],
@@ -102,24 +101,20 @@ describe("Reader", () => {
         // get initial coins
         await ctk.mint(user1.address, toWei("10000"));
         await ctk.mint(user2.address, toWei("10000"));
-        const ctkUser1 = await CustomErc20Factory.connect(ctk.address, user1);
-        await ctkUser1.approve(perp.address, toWei("100000"));
-        const ctkUser2 = await CustomErc20Factory.connect(ctk.address, user2);
-        await ctkUser2.approve(perp.address, toWei("100000"));
+        await ctk.connect(user1).approve(perp.address, toWei("100000"));
+        await ctk.connect(user2).approve(perp.address, toWei("100000"));
 
         // deposit
-        const perpUser1 = await LiquidityPoolFactory.connect(perp.address, user1);
-        await perpUser1.deposit(0, user1.address, toWei("100"));
+        await perp.connect(user1).deposit(0, user1.address, toWei("100"));
 
         // lp
         await updatePrice(toWei("501"), toWei("601"));
-        const perpUser2 = await LiquidityPoolFactory.connect(perp.address, user2);
-        await perpUser2.addLiquidity(toWei("1000"));
+        await perp.connect(user2).addLiquidity(toWei("1000"));
 
         // trade 1
         await updatePrice(toWei("502"), toWei("603"));
         let now = Math.floor(Date.now() / 1000);
-        await perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0);
+        await perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0);
     });
 
     it('getAccountStorage', async () => {

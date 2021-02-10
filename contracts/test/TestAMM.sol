@@ -72,12 +72,7 @@ contract TestAMM {
         return AMMModule.calculatePoolMarginWhenSafe(context, perpetual.openSlippageFactor.value);
     }
 
-
-    function getDeltaCash(int256 amount)
-        public
-        view
-        returns (int256 deltaCash)
-    {
+    function getDeltaCash(int256 amount) public view returns (int256 deltaCash) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         deltaCash = AMMModule.getDeltaCash(
             getPoolMargin(),
@@ -129,5 +124,4 @@ contract TestAMM {
     {
         return AMMModule.getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
     }
-
 }

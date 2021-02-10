@@ -11,7 +11,7 @@ import {
 } from '../scripts/utils';
 const { ethers } = require("hardhat");
 
-describe('LiquidityPool', () => {
+describe('Perpetual2', () => {
     let accounts;
     let user0;
     let user1;
@@ -67,7 +67,7 @@ describe('LiquidityPool', () => {
 
             liquidityPool = await LiquidityPoolFactory.attach(liquidityPoolAddr);
             await liquidityPool.createPerpetual(oracle.address,
-                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05")],
                 [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
                 [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99")],
@@ -91,7 +91,7 @@ describe('LiquidityPool', () => {
             await liquidityPool.connect(user1).donateInsuranceFund(0, toWei("10"));
             await liquidityPool.connect(user2).donateInsuranceFund(0, toWei("10"));
             var result = await liquidityPool.getPerpetualInfo(0);
-            expect(result.nums[15]).to.equal(toWei("20"));
+            expect(result.nums[17]).to.equal(toWei("20"));
 
             await expect(liquidityPool.connect(user1).donateInsuranceFund(0, 0)).to.be.revertedWith("invalid amount")
         })

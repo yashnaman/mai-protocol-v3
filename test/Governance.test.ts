@@ -57,7 +57,7 @@ describe('Governance', () => {
         governance = await TestGovernance.deploy();
         await governance.initializeParameters(
             "0x0000000000000000000000000000000000000000",
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2")],
             [toWei("0.01"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.9"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
@@ -198,6 +198,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("0.2"),
             toWei("100"),
+            1,
         ]);
 
         expect(await governance.initialMarginRate(0)).to.equal(toWei("0.05"));
@@ -223,6 +224,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("0.2"),
             toWei("100"),
+            1,
         ])).to.be.revertedWith("only governor is allowed");
 
         await governance.setGovernor(user0.address);
@@ -235,7 +237,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("cannot increase initialMarginRate");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -247,7 +250,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("cannot increase maintenanceMarginRate");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -259,7 +263,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("maintenanceMarginRate > initialMarginRate");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -271,7 +276,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("initialMarginRate <= 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -283,7 +289,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("initialMarginRate <= 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -295,7 +302,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("maintenanceMarginRate <= 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -307,7 +315,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("maintenanceMarginRate <= 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -319,7 +328,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("operatorFeeRate < 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -331,7 +341,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("operatorFeeRate > 1%");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -343,7 +354,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("lpFeeRate < 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -355,7 +367,8 @@ describe('Governance', () => {
             toWei("0.02"),
             toWei("0.00000002"),
             toWei("0.5"),
-            toWei("1000")
+            toWei("1000"),
+            1,
         ])).to.be.revertedWith("lpFeeRate > 1%");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -368,6 +381,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("0.2"),
             toWei("100"),
+            1,
         ])).to.be.revertedWith("liquidationPenaltyRate < 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -380,6 +394,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("0.2"),
             toWei("100"),
+            1,
         ])).to.be.revertedWith("liquidationPenaltyRate > maintenanceMarginRate");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -392,6 +407,7 @@ describe('Governance', () => {
             toWei("-1"),
             toWei("0.2"),
             toWei("100"),
+            1,
         ])).to.be.revertedWith("keeperGasReward < 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -404,6 +420,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("-0.2"),
             toWei("100"),
+            1,
         ])).to.be.revertedWith("insuranceFundRate < 0");
 
         await expect(governance.setPerpetualBaseParameter(0, [
@@ -416,6 +433,7 @@ describe('Governance', () => {
             toWei("1"),
             toWei("0.2"),
             toWei("-100"),
+            1,
         ])).to.be.revertedWith("insuranceFundCap < 0");
     })
 
@@ -547,7 +565,7 @@ describe('Governance', () => {
             toWei("0.45"),
             toWei("0.1"),
             toWei("5"),
-            toWei("0.05")
+            toWei("0.05"),
         ])).to.be.revertedWith("operator is allowed");
 
         await governance.setOperatorNoAuth(user0.address);
@@ -557,7 +575,7 @@ describe('Governance', () => {
             toWei("0.45"),
             toWei("0.1"),
             toWei("5"),
-            toWei("0.05")
+            toWei("0.05"),
         ]);
         await governance.updatePerpetualRiskParameter(0, [
             toWei("0.9"),
@@ -565,7 +583,7 @@ describe('Governance', () => {
             toWei("0.45"),
             toWei("0.1"),
             toWei("5"),
-            toWei("0.05")
+            toWei("0.05"),
         ]);
 
         await expect(governance.updatePerpetualRiskParameter(0, [
@@ -574,7 +592,7 @@ describe('Governance', () => {
             toWei("0.45"),
             toWei("0.1"),
             toWei("5"),
-            toWei("0.05")
+            toWei("0.05"),
         ])).to.be.revertedWith("value out of range");
         await expect(governance.updatePerpetualRiskParameter(0, [
             toWei("0.001"),
@@ -582,7 +600,7 @@ describe('Governance', () => {
             toWei("0.45"),
             toWei("0.1"),
             toWei("5"),
-            toWei("0.05")
+            toWei("0.05"),
         ])).to.be.revertedWith("value out of range");
     })
 

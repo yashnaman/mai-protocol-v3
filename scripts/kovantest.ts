@@ -64,7 +64,7 @@ async function deployLibraries() {
     // │    4    │ 'LiquidityPoolModule' │ '0x6A3D71b6B208B3626E20d5d2cD334628dd57cdd6' │
     // │    5    │     'TradeModule'     │ '0x56deCcd5C9b0E41C1F1129990e0d1E54713a8593' │
     // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
-    
+
     // 2021/2/8
     // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
     // │ (index) │           0           │                      1                       │
@@ -186,7 +186,7 @@ async function deployOracle() {
     // │    4    │ 'Oracle  \'DOT - USD\'  ' │      '0x91413ad76641Ab090b61EfEF9Cc51F3acA123350'       │
     // │    5    │ 'Oracle  \'SP500 - USD\'' │      '0xa4d055E817540D0f5b6DDd4916a758D77B5E7E55'       │
     // │    6    │ 'Oracle  \'TSLA - USD \'' │      '0x1e723a23324a61ceFD50e00dDa56B1d2388426E2'       │
-    
+
 }
 
 async function main(accounts: any[]) {
@@ -207,7 +207,7 @@ async function main(accounts: any[]) {
         ["SP500 - USD", "0xa4d055E817540D0f5b6DDd4916a758D77B5E7E55"],
         ["TSLA - USD", "0x1e723a23324a61ceFD50e00dDa56B1d2388426E2"],
     ]);
-    
+
     // 2. libraries
     // await deployLibraries()
     // return
@@ -231,7 +231,7 @@ async function main(accounts: any[]) {
     //     ["broker", broker.address],
     // ];
     // console.table(addresses);
-    const symbol =  await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
+    const symbol = await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
     const poolCreator = await (await createFactory("PoolCreator")).attach('0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b')
 
     // 2021 / 1 / 13 kovan / https://kovan.etherscan.io/address/0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a
@@ -274,7 +274,7 @@ async function main(accounts: any[]) {
     // │    2    │  'poolCreator'   │ '0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b' │
     // │    3    │     'symbol'     │ '0x0A701c621210859eAbE2F47BE37456BEc2427462' │
     // │    4    │     'broker'     │ '0x243d3bB879779911a5299592d38e84E54B83fd19' │
-    
+
     // 4. add version
     // await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
     // const LiquidityPool = await createLiquidityPoolFactory();
@@ -309,7 +309,7 @@ async function set1(deployer, poolCreator, oracleAddresses) {
     const mtx1 = await liquidityPool.createPerpetual(
         oracleAddresses["USD - ETH"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper           insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000"), 1],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -318,7 +318,7 @@ async function set1(deployer, poolCreator, oracleAddresses) {
     const mtx2 = await liquidityPool.createPerpetual(
         oracleAddresses["BTC - ETH"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper           insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("1000"), 1],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -365,7 +365,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx1 = await liquidityPool.createPerpetual(
         oracleAddresses["ETH - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -374,7 +374,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx2 = await liquidityPool.createPerpetual(
         oracleAddresses["BTC - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha          beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -383,7 +383,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx3 = await liquidityPool.createPerpetual(
         oracleAddresses["DPI - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -392,7 +392,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx4 = await liquidityPool.createPerpetual(
         oracleAddresses["DOT - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -401,7 +401,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx5 = await liquidityPool.createPerpetual(
         oracleAddresses["SP500 - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -410,7 +410,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const mtx6 = await liquidityPool.createPerpetual(
         oracleAddresses["TSLA - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty          keeper        insur         cap
-        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000")],
+        [toWei("0.02"), toWei("0.01"), toWei("0.00000"), toWei("0.00055"), toWei("0.4"), toWei("0.005"), toWei("0.5"), toWei("0.25"), toWei("1000000"), 1],
         // alpha         beta1            beta2             fr              lev         max close
         [toWei("0.0005"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -421,7 +421,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     await mtx3.wait()
     await mtx4.wait()
     await mtx5.wait()
-    await mtx6.wait()    
+    await mtx6.wait()
     const addresses = [
         ["Collateral (USDC)", USDC],
         ["LiquidityPool", `${liquidityPool.address} @ ${tx.blockNumber}`],
