@@ -21,6 +21,7 @@ library PerpetualModule {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;
     using SafeCastUpgradeable for int256;
+    using SafeCastUpgradeable for uint256;
     using AddressUpgradeable for address;
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -272,33 +273,37 @@ library PerpetualModule {
      *                                       + index * fundingRate * elapsedTime / fundingInterval
      *
      * @param   perpetual   The reference of perpetual storage.
-     * @param   timeElapsed The elapsed time since last update.
+     * @param   lastFundingTime The timestamp since last update funding.
      */
     function updateFundingState(
         PerpetualStorage storage perpetual,
         uint256 currentTime,
-        int256 timeElapsed
+        uint256 lastFundingTime
     ) public {
-        int256 deltaUnitLoss =
-            timeElapsed.mul(getIndexPrice(perpetual)).wmul(perpetual.fundingRate).div(
+        uint256 syncFundingInterval = perpetual.syncFundingInterval.toUint256();
+        int256 timeElapsed;
+        int256 deltaUnitLoss;
+        int256 indexPrice = getIndexPrice(perpetual);
+        if (currentTime >= (perpetual.syncFundingTime.add(syncFundingInterval))) {
+            uint256 newSyncFundingTime =
+                currentTime.div(syncFundingInterval).mul(syncFundingInterval);
+            timeElapsed = newSyncFundingTime.sub(lastFundingTime).toInt256();
+            deltaUnitLoss = timeElapsed.mul(indexPrice).wmul(perpetual.fundingRate).div(
                 FUNDING_INTERVAL
             );
+            perpetual.unitAccumulativeFunding = perpetual.realTimeUnitAccumulativeFunding.add(
+                deltaUnitLoss
+            );
+            perpetual.syncFundingTime = newSyncFundingTime;
+            emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
+        }
+        timeElapsed = currentTime.sub(lastFundingTime).toInt256();
+        deltaUnitLoss = timeElapsed.mul(indexPrice).wmul(perpetual.fundingRate).div(
+            FUNDING_INTERVAL
+        );
         perpetual.realTimeUnitAccumulativeFunding = perpetual.realTimeUnitAccumulativeFunding.add(
             deltaUnitLoss
         );
-        uint256 syncFundingInterval = perpetual.syncFundingInterval.toUint256();
-        if (
-            currentTime >=
-            (
-                perpetual.syncFundingTime.div(syncFundingInterval).mul(syncFundingInterval).add(
-                    syncFundingInterval
-                )
-            )
-        ) {
-            perpetual.unitAccumulativeFunding = perpetual.realTimeUnitAccumulativeFunding;
-            perpetual.syncFundingTime = currentTime;
-            emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
-        }
     }
 
     /**
@@ -758,7 +763,7 @@ library PerpetualModule {
         require(baseParams[INDEX_KEEPER_GAS_REWARD] >= 0, "keeperGasReward < 0");
         require(baseParams[INDEX_INSURANCE_FUND_RATE] >= 0, "insuranceFundRate < 0");
         require(baseParams[INDEX_INSURANCE_FUND_CAP] >= 0, "insuranceFundCap < 0");
-        require(baseParams[INDEX_SYNC_FUNDING_INTERVAL] >= 0, "syncFundingInterval < 0");
+        require(baseParams[INDEX_SYNC_FUNDING_INTERVAL] >= 1, "syncFundingInterval < 1");
     }
 
     /**

@@ -246,9 +246,9 @@ contract TestPerpetual is Storage {
     function updateFundingState(
         uint256 perpetualIndex,
         uint256 currentTime,
-        int256 timeElapsed
+        uint256 lastFundingTime
     ) public {
-        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(currentTime, timeElapsed);
+        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(currentTime, lastFundingTime);
     }
 
     function updateFundingRate(uint256 perpetualIndex, int256 poolMargin) public {

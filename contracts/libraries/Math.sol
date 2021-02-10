@@ -2,18 +2,6 @@
 pragma solidity >=0.7.4;
 
 library Math {
-    uint256 private constant _POSITIVE_INT256_MAX = 2**255 - 1;
-
-    /**
-     * @dev Convert uint256 to int256 safely
-     * @param x The uint256 input
-     * @return int256 The int256 output
-     */
-    function toInt256(uint256 x) internal pure returns (int256) {
-        require(x <= _POSITIVE_INT256_MAX, "uint256 overflow");
-        return int256(x);
-    }
-
     /**
      * @dev Get the most significant bit of the number,
             example: 0 ~ 1 => 0, 2 ~ 3 => 1, 4 ~ 7 => 2, 8 ~ 15 => 3,
@@ -82,13 +70,12 @@ library Math {
 
         // modified babylonian method
         // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
-        int next = int256(1 << n);
+        int256 next = int256(1 << n);
         int256 y;
         do {
             y = next;
             next = (next + x / next) >> 1;
-        }
-        while (next < y);
+        } while (next < y);
         return y;
     }
 }
