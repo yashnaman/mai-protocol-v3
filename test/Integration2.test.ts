@@ -9,7 +9,7 @@ import {
     createLiquidityPoolFactory
 } from "../scripts/utils";
 
-describe("integration", () => {
+describe("integration2", () => {
 
     let user0;
     let user1;
@@ -222,7 +222,7 @@ describe("integration", () => {
         expect(isMaintenanceMarginSafe).to.be.true;
         expect(await ctk.balanceOf(user3.address)).to.equal(toWei("10000.5")); // keeper gas reward = 0.5
         var { nums } = await perp.getPerpetualInfo(0);
-        expect(nums[14]).to.equal(toWei("2.982")); // insurance fund = 994 * 3 * 0.002 * 0.5
+        expect(nums[16]).to.equal(toWei("2.982")); // insurance fund = 994 * 3 * 0.002 * 0.5
         var { availableCash, position, margin } = await perp.getMarginAccount(0, perp.address);
         expect(availableCash).approximateBigNumber(toWei("-98.118"));
         expect(position).to.equal(0);
@@ -245,7 +245,7 @@ describe("integration", () => {
         expect(margin).approximateBigNumber(toWei("2.447186993858006293"));
         expect(isMaintenanceMarginSafe).to.be.true;
         var { nums } = await perp.getPerpetualInfo(1);
-        expect(nums[14]).to.equal(toWei("1.006")); // insurance fund = 1006 * 1 * 0.002 * 0.5
+        expect(nums[16]).to.equal(toWei("1.006")); // insurance fund = 1006 * 1 * 0.002 * 0.5
         var { availableCash, position, margin } = await perp.getMarginAccount(1, user3.address);
         expect(availableCash).approximateBigNumber(toWei("1507.006")); // 500 + 1006 + 1006 * 1 * 0.002 * 0.5
         expect(position).to.equal(toWei("-1"));
