@@ -9,7 +9,18 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "../interface/ILiquidityPool.sol";
 
-/// @notice Possible states that a proposal may be in
+/**
+ * @notice Possible states that a proposal may be in.
+ *
+ *         There basicly are up to 4 stages for a proposal:
+ *           1. `Pending` state: wait for VotingDelay before voter can cast vote;
+ *           2. `Active` VotingPeriod. After votingPeriod, state `Active` => `Defeated` or `Succeeded`;
+ *              Once voted, voter's all governor token will be locked until votingPeriod passed;
+ *           3. For a `Defeated` proposal, voting is done, all govnor tokens are will unlock immediately;
+ *              For a `Succeeded` proposal, lock will be extended by `executionDelay` + `unlockDelay`,
+ *              state `Active` => `Queue`
+
+ */
 enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Expired }
 
 struct Proposal {
@@ -37,7 +48,9 @@ struct Proposal {
     mapping(address => Receipt) receipts;
 }
 
-/// @notice Ballot receipt record for a account
+/**
+ * @notice Ballot receipt record for a account.
+ */
 struct Receipt {
     // Whether or not a vote has been cast
     bool hasVoted;
@@ -47,6 +60,10 @@ struct Receipt {
     uint256 votes;
 }
 
+/**
+ * @notice This is a simplify version of 'Compound GovernorAlpha'.
+ *         Timelock is integrated into GovernorAlpha.
+ */
 abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -59,20 +76,27 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         keccak256(bytes("transferOperator(address)"));
 
     address internal _target;
-
     mapping(address => uint256) internal _voteLocks;
     mapping(address => EnumerableSetUpgradeable.UintSet) internal _supportedProposals;
 
-    /// @notice The total number of proposals
+    /**
+     * @notice The total number of proposals.
+     */
     uint256 public proposalCount;
 
-    /// @notice The official record of all proposals ever proposed
+    /**
+     * @notice The official record of all proposals ever proposed.
+     */
     mapping(uint256 => Proposal) public proposals;
 
-    /// @notice The latest proposal for each proposer
+    /**
+     * @notice The latest proposal for each proposer.
+     */
     mapping(address => uint256) public latestProposalIds;
 
-    /// @notice An event emitted when a new proposal is created
+    /**
+     * @notice An event emitted when a new proposal is created.
+     */
     event ProposalCreated(
         uint256 id,
         address proposer,
@@ -83,7 +107,10 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         uint256 quorumVotes,
         string description
     );
-    /// @notice An event emitted when a proposal is executed
+
+    /**
+     * @notice An event emitted when a proposal is executed.
+     */
     event ExecuteTransaction(
         bytes32 indexed txHash,
         address indexed target,
@@ -91,60 +118,85 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         bytes data,
         uint256 eta
     );
-    /// @notice An event emitted when a vote has been cast on a proposal
+
+    /**
+     * @notice An event emitted when a vote has been cast on a proposal.
+     */
     event VoteCast(address account, uint256 proposalId, bool support, uint256 votes);
 
-    /// @notice An event emitted when a proposal has been executed in the Timelock
+    /**
+     * @notice An event emitted when a proposal has been executed in the Timelock.
+     */
     event ProposalExecuted(uint256 id);
 
     function __GovernorAlpha_init_unchained(address target) internal initializer {
         _target = target;
     }
 
-    /// @notice Balance of vote token which must be implemented through inheritance
+    /**
+     * @notice Balance of vote token which must be implemented through inheritance.
+     */
     function balanceOf(address account) public view virtual returns (uint256);
 
-    /// @notice TotalSupply of vote token which must be implemented through inheritance
+    /**
+     * @notice TotalSupply of vote token which must be implemented through inheritance.
+     */
     function totalSupply() public view virtual returns (uint256);
 
-    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached
-    ///         and for a vote to succeed
+    /**
+     * @notice The number of votes in support of a proposal required in order for a quorum to be reached
+     *         and for a vote to succeed.
+     */
     function quorumRate() public pure virtual returns (uint256) {
         return 1e17;
     }
 
-    /// @notice The number of votes in support of a proposal required in order for a quorum to be reached
-    ///         and for a vote to succeed
+    /**
+     * @notice The number of votes in support of a proposal required in order for a quorum to be reached
+     *         and for a vote to succeed.
+     */
     function criticalQuorumRate() public pure virtual returns (uint256) {
         return 2e17;
     }
 
-    /// @notice The number of votes required in order for a account to become a proposer
+    /**
+     * @notice The number of votes required in order for a account to become a proposer.
+     */
     function proposalThresholdRate() public pure virtual returns (uint256) {
         return 1e16;
     }
 
-    /// @notice The maximum number of actions that can be included in a proposal
+    /**
+     * @notice The maximum number of actions that can be included in a proposal.
+     */
     function proposalMaxOperations() public pure virtual returns (uint256) {
         return 10;
     }
 
-    /// @notice The delay before voting on a proposal may take place, once proposed
+    /**
+     * @notice The delay before voting on a proposal may take place, once proposed.
+     */
     function votingDelay() public pure virtual returns (uint256) {
         return 1;
     }
 
-    /// @notice The duration of voting on a proposal, in blocks
+    /**
+     * @notice The duration of voting on a proposal, in blocks.
+     */
     function votingPeriod() public pure virtual returns (uint256) {
         return 17280;
     }
 
-    /// @notice The delay before a succeeded proposal being executed (say, proposal in queued state)
+    /**
+     * @notice The delay before a succeeded proposal being executed (say, proposal in queued state).
+     */
     function executionDelay() public pure virtual returns (uint256) {
         return 11520;
     }
 
-    /// @notice The duration of a
+    /**
+     * @notice The duration before a ready-to-execute proposal
+     */
     function unlockDelay() public pure virtual returns (uint256) {
         return 17280;
     }

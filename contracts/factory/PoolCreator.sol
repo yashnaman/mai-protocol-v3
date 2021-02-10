@@ -46,39 +46,40 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
     );
 
     /**
-     * @notice Create a liquidity pool with the latest implementation. The operator is sender
-     * @param collateral The collateral address of the liquidity pool
-     * @param collateralDecimals The collateral's decimals of the liquidity pool
-     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
-     *                              when the liquidity pool is running
-     * @param nonce The nonce for the creation
-     * @return address The address of the created liquidity pool
+     * @notice  Create a liquidity pool with the latest implementation.
+     *          The sender will be the operator of pool.
+     *
+     * @param   collateral              he collateral address of the liquidity pool.
+     * @param   collateralDecimals      The collateral's decimals of the liquidity pool.
+     * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
+     *                                  when the liquidity pool is running.
+     * @param   nonce           A nonce for calcuating address.
+     * @return  liquidityPool   The address of the created liquidity pool.
      */
     function createLiquidityPool(
         address collateral,
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
-    ) external returns (address) {
-        return
-            _createLiquidityPoolWith(
-                getLatestVersion(),
-                collateral,
-                collateralDecimals,
-                isFastCreationEnabled,
-                nonce
-            );
+    ) external returns (address liquidityPool) {
+        liquidityPool = _createLiquidityPoolWith(
+            getLatestVersion(),
+            collateral,
+            collateralDecimals,
+            isFastCreationEnabled,
+            nonce
+        );
     }
 
     /**
-     * @notice Create a liquidity pool with the specific implementation. The operator is sender
-     * @param implementation The address of the implementation
-     * @param collateral The collateral address of the liquidity pool
-     * @param collateralDecimals The collateral's decimals of the liquidity pool
-     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
-     *                              when the liquidity pool is running
-     * @param nonce The nonce for the creation
-     * @return address The address of the created liquidity pool
+     * @notice  Create a liquidity pool with the specific implementation. The operator is sender
+     * @param   implementation          The address of the implementation
+     * @param   collateral              The collateral address of the liquidity pool
+     * @param   collateralDecimals      The collateral's decimals of the liquidity pool
+     * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
+     *                                  when the liquidity pool is running
+     * @param   nonce           The nonce for the creation
+     * @return  liquidityPool   The address of the created liquidity pool
      */
     function createLiquidityPoolWith(
         address implementation,
@@ -86,26 +87,25 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
-    ) external returns (address) {
-        return
-            _createLiquidityPoolWith(
-                implementation,
-                collateral,
-                collateralDecimals,
-                isFastCreationEnabled,
-                nonce
-            );
+    ) external returns (address liquidityPool) {
+        liquidityPool = _createLiquidityPoolWith(
+            implementation,
+            collateral,
+            collateralDecimals,
+            isFastCreationEnabled,
+            nonce
+        );
     }
 
     /**
-     * @dev Create a liquidity pool with the specific implementation. The operator is sender
-     * @param implementation The address of implementation
-     * @param collateral The collateral address of the liquidity pool
-     * @param collateralDecimals The collateral's decimals of the liquidity pool
-     * @param isFastCreationEnabled If the operator of the liquidity pool is allowed to create new perpetual
-     *                              when the liquidity pool is running
-     * @param nonce The nonce for the creation
-     * @return address The address of the created liquidity pool
+     * @dev     Create a liquidity pool with the specific implementation. The operator is sender
+     * @param   implementation          The address of implementation
+     * @param   collateral              The collateral address of the liquidity pool
+     * @param   collateralDecimals      The collateral's decimals of the liquidity pool
+     * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
+     *                                  when the liquidity pool is running
+     * @param   nonce                   The nonce for the creation
+     * @return  liquidityPool           The address of the created liquidity pool
      */
     function _createLiquidityPoolWith(
         address implementation,
@@ -113,13 +113,13 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
         int256 nonce
-    ) internal returns (address) {
+    ) internal returns (address liquidityPool) {
         require(isVersionValid(implementation), "invalid implementation");
         address governor = _createClone(_shareTokenTemplate);
         address shareToken = governor;
         bytes32 argsHash =
             keccak256(abi.encode(collateral, collateralDecimals, isFastCreationEnabled));
-        address liquidityPool = _createUpgradeableProxy(implementation, governor, argsHash, nonce);
+        liquidityPool = _createUpgradeableProxy(implementation, governor, argsHash, nonce);
         // initialize
         address operator = msg.sender;
         IShareToken(governor).initialize(
@@ -154,22 +154,24 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
     }
 
     /**
-     * @dev Create a clone contract of the implementation of liquidity pool
-     * @param implementation The address of the implementation
-     * @return address The address of the cloned contract
+     * @dev     Create a clone contract of the implementation of liquidity pool;
+     *
+     * @param   implementation  The address of the implementation.
+     * @return  cloneContract   The contract cloned from master contract.
      */
-    function _createClone(address implementation) internal returns (address) {
+    function _createClone(address implementation) internal returns (address cloneContract) {
         require(implementation != address(0), "invalid implementation");
-        return createClone(implementation);
+        cloneContract = createClone(implementation);
     }
 
     /**
-     * @dev Create an upgradeable proxy contract of the implementation of liquidity pool
-     * @param implementation The address of the implementation
-     * @param admin The admin address of the created contract
-     * @param argsHash The hash of the arguments for the creation
-     * @param nonce The nonce for the creation
-     * @return instance The address of the created upgradeable proxy contract
+     * @dev     Create an upgradeable proxy contract of the implementation of liquidity pool.
+     *
+     * @param   implementation The address of the implementation.
+     * @param   admin       The admin address of the created contract.
+     * @param   argsHash    The hash of the arguments for the creation.
+     * @param   nonce       The nonce for the creation.
+     * @return  instance    The address of the created upgradeable proxy contract.
      */
     function _createUpgradeableProxy(
         address implementation,

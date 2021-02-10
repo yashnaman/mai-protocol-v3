@@ -100,11 +100,6 @@ library MarginAccountModule {
         margin = perpetual.marginAccounts[trader].position.wmul(price).add(
             getAvailableCash(perpetual, trader)
         );
-        // MarginAccount storage account = perpetual.marginAccounts[trader];
-        // if (account.position == 0) {
-        //     return account.cash;
-        // }
-        // return account.position.wmul(price).add(getAvailableCash(perpetual, trader));
     }
 
     /**
@@ -135,12 +130,12 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Get the available margin of the trader in the perpetual.
-     *      Available margin = margin - max(initial margin, keeper gas reward), keeper gas reward = 0 if position = 0
-     * @param perpetual The perpetual object
-     * @param trader The address of the trader
-     * @param price The price to calculate available margin
-     * @return availableMargin The available margin of the trader in the perpetual
+     * @dev     Get the available margin of the trader in the perpetual.
+     *          Available margin = margin - max(initial margin, keeper gas reward), keeper gas reward = 0 if position = 0
+     * @param   perpetual   The perpetual object
+     * @param   trader      The address of the trader
+     * @param   price       The price to calculate available margin
+     * @return  availableMargin The available margin of the trader in the perpetual
      */
     function getAvailableMargin(
         PerpetualStorage storage perpetual,
@@ -155,11 +150,11 @@ library MarginAccountModule {
     }
 
     /**
-     * @dev Check if the trader is initial margin safe in the perpetual, which means available margin >= 0
-     * @param perpetual The perpetual object
-     * @param trader The address of the trader
-     * @param price The price to calculate the available margin
-     * @return isSafe True if the trader is initial margin safe in the perpetual
+     * @dev     Check if the trader is initial margin safe in the perpetual, which means available margin >= 0
+     * @param   perpetual   The perpetual object
+     * @param   trader      The address of the trader
+     * @param   price       The price to calculate the available margin
+     * @return  isSafe      True if the trader is initial margin safe in the perpetual
      */
     function isInitialMarginSafe(
         PerpetualStorage storage perpetual,

@@ -11,24 +11,13 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IAccessControll.sol";
 import "../interface/IPoolCreator.sol";
+import "../interface/IRelayRecipient.sol";
 
 import "../libraries/SafeMathExt.sol";
-import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
+import "../libraries/Utils.sol";
 
 import "../Type.sol";
-
-interface ICallee {
-    function callFunction(
-        address from,
-        string memory method,
-        bytes memory callData,
-        uint32 nonce,
-        uint32 expiration,
-        uint64 gasLimit,
-        bytes memory signature
-    ) external;
-}
 
 contract Broker is ReentrancyGuard {
     using Address for address;
@@ -42,7 +31,6 @@ contract Broker is ReentrancyGuard {
     uint256 internal constant GWEI = 10**9;
 
     uint256 internal _chainID;
-    uint256 internal _claimableFees;
     mapping(address => uint32) internal _nonces;
     mapping(address => uint256) internal _balances;
     mapping(bytes32 => int256) internal _orderFilled;
@@ -92,8 +80,9 @@ contract Broker is ReentrancyGuard {
     }
 
     /**
-     * @notice Withdraw eth from the account of sender
-     * @param amount The amount of eth to withdraw
+     * @notice  Withdraw eth for gas reward.
+     *
+     * @param   amount  The amount of eth to withdraw.
      */
     function withdraw(uint256 amount) public nonReentrant {
         _balances[msg.sender] = _balances[msg.sender].sub(amount);
@@ -101,16 +90,41 @@ contract Broker is ReentrancyGuard {
         emit Withdraw(msg.sender, amount);
     }
 
+    /**
+     * @notice Return if an order is canceled.
+     *
+     * @param   order   Order object.
+     */
     function isOrderCanceled(Order memory order) public view returns (bool) {
         bytes32 orderHash = order.getOrderHash();
         return _orderCanceled[orderHash];
     }
 
     /**
-     * @notice Cancel the order. Canceled order is not able to be filled.
-     *         Only order.trader / order.relayer and anthorized account (by order.trader)
-     *         are able to cancel the order
-     * @param order The order object to cancel
+     * @notice Return filled amount of an order.
+     *
+     * @param   order           Order object.
+     * @return  filledAmount    The amount of already filled.
+     */
+    function getOrderFilledAmount(Order memory order) public view returns (int256 filledAmount) {
+        bytes32 orderHash = order.getOrderHash();
+        filledAmount = _orderFilled[orderHash];
+    }
+
+    /**
+     * @notice  Get next avilable nonce for account. Nonce in an relayed call must match
+     *          record on chain and will be increased on a successful call, to prevent replay attack.
+     */
+    function getNonce(address account) public view returns (uint32 nonce) {
+        return _nonces[account];
+    }
+
+    /**
+     * @notice  Cancel an order to prevent any further trade.
+     *          Currently, Only trader or elayer and anthorized account (by order.trader)
+     *          are able to cancel an order.
+     *
+     * @param   order   Order object.
      */
     function cancelOrder(Order memory order) public {
         if (msg.sender != order.trader && msg.sender != order.relayer) {
@@ -128,10 +142,17 @@ contract Broker is ReentrancyGuard {
         emit CancelOrder(orderHash);
     }
 
-    function getNonce(address account) public view returns (uint32 nonce) {
-        return _nonces[account];
-    }
-
+    /**
+     * @notice  Making general function call to a contract who implements the IRelayRecipient interface.
+     *          Relay (the one sends transaction for real signer) will get reward for successful relay call.
+     *          The reward is desided by relayer but will not exceed gasFeeLimit set by user.
+     *
+     * @param   userData1   Compact bytes32 data, see `_decodeUserData1`.
+     * @param   userData2   Compact bytes32 data, see `_decodeUserData2`.
+     * @param   method      A string indicates the function to call, eg. 'deposit(uint256)'.
+     * @param   callData    The calldata of method, using abi encode format.
+     * @param   signature   The r-s-v combined format signature.
+     */
     function callFunction(
         bytes32 userData1,
         bytes32 userData2,
@@ -146,8 +167,7 @@ contract Broker is ReentrancyGuard {
         require(gasFee <= gasFeeLimit, "fee exceeds limit");
         require(expiration >= block.timestamp, "expired");
         require(nonce == _nonces[account], "non-continuous nonce");
-
-        ICallee(to).callFunction(
+        IRelayRecipient(to).callFunction(
             account,
             method,
             callData,
@@ -157,15 +177,17 @@ contract Broker is ReentrancyGuard {
             signature
         );
         _nonces[account]++;
-        Address.sendValue(payable(msg.sender), _getGasFee(gasFee));
+        if (gasFee > 0) {
+            Address.sendValue(payable(msg.sender), _getGasFee(gasFee));
+        }
         emit CallFunction(userData1, userData2, method, callData, signature);
     }
 
     /**
-     * @notice Trade multiple orders, each order will be treated seperately
-     * @param compressedOrders The compressed order objects to trade
-     * @param amounts The trading amounts of position
-     * @param gasRewards The gas rewards of eth given to their brokers
+     * @notice  Trade multiple orders, each order will be treated seperately.
+     * @param   compressedOrders    The compressed order objects to trade.
+     * @param   amounts             The trading amounts of position.
+     * @param   gasRewards          The gas rewards of eth given to their brokers.
      */
     function batchTrade(
         bytes[] calldata compressedOrders,
@@ -219,9 +241,10 @@ contract Broker is ReentrancyGuard {
     }
 
     /**
-     * @dev Update the filled position amount of the order
-     * @param orderHash The hash of the order
-     * @param amount The changed amount of filled position
+     * @dev     Update the filled position amount of the order.
+     *
+     * @param   orderHash   The hash of the order.
+     * @param   amount      The changed amount of filled position.
      */
     function _fillOrder(bytes32 orderHash, int256 amount) internal {
         _orderFilled[orderHash] = _orderFilled[orderHash].add(amount);
@@ -229,10 +252,11 @@ contract Broker is ReentrancyGuard {
     }
 
     /**
-     * @dev Transfer eth from sender's account to recipient's account
-     * @param sender The address of the sender
-     * @param recipient The address of the recipient
-     * @param amount The amount of eth to transfer
+     * @dev     Transfer eth from sender's account to recipient's account.
+     *
+     * @param   sender      The address of the sender
+     * @param   recipient   The address of the recipient
+     * @param   amount      The amount of eth to transfer
      */
     function _transfer(
         address sender,
@@ -248,6 +272,16 @@ contract Broker is ReentrancyGuard {
         emit Transfer(sender, recipient, amount);
     }
 
+    /**
+     * @dev     Decode compact userData, which contains:
+     *            - A 20 bytes address, indicates the address of account to operate on;
+     *            - A  4 bytes nonce, see `getNonce` for details;
+     *            - A  4 bytes unix timestamp expiration;
+     *            - A  4 bytes gasFeeLimit, multiply by 1e11 to get realy limit in 'wei';
+     *          The gasFeeLimit is the max amount user wish to pay for the transaction.
+     *
+     * @param   userData    Compact userdata.
+     */
     function _decodeUserData1(bytes32 userData)
         internal
         pure
@@ -264,11 +298,25 @@ contract Broker is ReentrancyGuard {
         gasFeeLimit = uint32(bytes4(userData << 224));
     }
 
+    /**
+     * @dev     Decode compact userData, which contains:
+     *            - A 20 bytes address, indicates the final address of transaction to send to;
+     *            - A  4 bytes gasFee, multiply by 1e11 to get realy fee in 'wei'.
+     *          The gasFee is the actual fee claiming from pre-deposited funds by user, which should
+     *          alway be lower than the gasFeeLimit.
+     *
+     * @param   userData    Compact userdata.
+     */
     function _decodeUserData2(bytes32 userData) internal pure returns (address to, uint32 gasFee) {
         to = address(bytes20(userData));
         gasFee = uint32(bytes4(userData << 160));
     }
 
+    /**
+     * @dev     Convert gasFee in userData to wei.
+     *
+     * @param   gasFee  The amount from userData.
+     */
     function _getGasFee(uint32 gasFee) internal pure returns (uint64) {
         return uint64(gasFee) * uint64(1e11);
     }

@@ -57,10 +57,10 @@ library LiquidityPoolModule {
     event OperatorCheckIn(address indexed operator);
 
     /**
-     * @dev Get the vault's address of the liquidity pool
+     * @dev     Get the vault's address of the liquidity pool
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @return vault The vault's address of the liquidity pool
+     * @return  vault           The vault's address of the liquidity pool
      */
     function getVault(LiquidityPoolStorage storage liquidityPool)
         public

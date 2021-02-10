@@ -37,27 +37,30 @@ contract Tracer {
 
     // =========================== Liquidity Pool ===========================
     /**
-     * @notice Get the number of all liquidity pools
-     * @return uint256 The number of all liquidity pools
+     * @notice  Get the number of all liquidity pools.
+     *
+     * @return  uint256 The number of all liquidity pools
      */
     function getLiquidityPoolCount() public view returns (uint256) {
         return _liquidityPoolSet.length();
     }
 
     /**
-     * @notice Check if the liquidity pool exists
-     * @param liquidityPool The address of the liquidity pool
-     * @return bool True if the liquidity pool exists
+     * @notice  Check if the liquidity pool exists.
+     *
+     * @param   liquidityPool   The address of the liquidity pool.
+     * @return  True if the liquidity pool exists.
      */
     function isLiquidityPool(address liquidityPool) public view returns (bool) {
         return _liquidityPoolSet.contains(liquidityPool);
     }
 
     /**
-     * @notice Get the liquidity pools whose index between begin and end
-     * @param begin The begin index
-     * @param end The end index
-     * @return result The addresses of the liquidity pools whose index between begin and end
+     * @notice  Get the liquidity pools whose index between begin and end.
+     *
+     * @param   begin   The begin index.
+     * @param   end     The end index.
+     * @return  result  An array of liquidity pool addresses whose index between begin and end.
      */
     function listLiquidityPools(uint256 begin, uint256 end)
         public
@@ -68,20 +71,22 @@ contract Tracer {
     }
 
     /**
-     * @notice Get the number of the liquidity pools owned by the operator
-     * @param operator The address of operator
-     * @return uint256 The number of the liquidity pools owned by the operator
+     * @notice  Get the number of the liquidity pools owned by the operator.
+     *
+     * @param   operator    The address of operator.
+     * @return  uint256     The number of the liquidity pools owned by the operator.
      */
     function getOwnedLiquidityPoolsCountOf(address operator) public view returns (uint256) {
         return _operatorOwnedLiquidityPools[operator].length();
     }
 
     /**
-     * @notice Get the liquidity pools owned by the operator and whose index between begin and end
-     * @param operator The address of the operator
-     * @param begin The begin index
-     * @param end The end index
-     * @return result The liquidity pools owned by the operator and whose index between begin and end
+     * @notice  Get the liquidity pools owned by the operator and whose index between begin and end.
+     *
+     * @param   operator    The address of the operator.
+     * @param   begin       The begin index.
+     * @param   end         The end index.
+     * @return  result      The liquidity pools owned by the operator and whose index between begin and end.
      */
     function listLiquidityPoolOwnedBy(
         address operator,
@@ -92,10 +97,11 @@ contract Tracer {
     }
 
     /**
-     * @notice Liquidity pool must call this method when changing its ownership to the new operator.
-     *         Can only be called by a liquidity pool
-     * @param liquidityPool The address of the liquidity pool
-     * @param operator The address of the new operator, must be different from the old operator
+     * @notice  Liquidity pool must call this method when changing its ownership to the new operator.
+     *          Can only be called by a liquidity pool.
+     *
+     * @param   liquidityPool   The address of the liquidity pool.
+     * @param   operator        The address of the new operator, must be different from the old operator.
      */
     function setLiquidityPoolOwnership(address liquidityPool, address operator)
         public
@@ -112,9 +118,9 @@ contract Tracer {
     }
 
     /**
-     * @dev Record the liquidity pool, the liquidity pool should not be recorded before
-     * @param liquidityPool The address of the liquidity pool
-     * @param operator The address of the operator
+     * @dev     Record the liquidity pool, the liquidity pool should not be recorded before
+     * @param   liquidityPool   The address of the liquidity pool.
+     * @param   operator        The address of operator.
      */
     function _registerLiquidityPool(address liquidityPool, address operator) internal {
         require(liquidityPool != address(0), "invalid liquidity pool address");
@@ -126,22 +132,24 @@ contract Tracer {
 
     // =========================== Active Liquidity Pool of Trader ===========================
     /**
-     * @notice Get the number of the trader's active liquidity pools. Active means the trader's account is
-     *         not all empty in perpetuals of the liquidity pool. Empty means cash and position are zero
-     * @param trader The address of the trader
-     * @return uint256 The number of the trader's active liquidity pools
+     * @notice  Get the number of the trader's active liquidity pools. Active means the trader's account is
+     *          not all empty in perpetuals of the liquidity pool. Empty means cash and position are zero.
+     *
+     * @param   trader  The address of the trader.
+     * @return  Number of the trader's active liquidity pools.
      */
     function getActiveLiquidityPoolCountOf(address trader) public view returns (uint256) {
         return _traderActiveLiquidityPools[trader].length();
     }
 
     /**
-     * @notice Check if the perpetual is active for the trader. Active means the trader's account is
-     *         not empty in the perpetual. Empty means cash and position are zero
-     * @param trader The address of the trader
-     * @param liquidityPool The address of liquidity pool
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return bool True if the perpetual is active for the trader
+     * @notice  Check if the perpetual is active for the trader. Active means the trader's account is
+     *          not empty in the perpetual. Empty means cash and position are zero.
+     *
+     * @param   trader          The address of the trader
+     * @param   liquidityPool   The address of liquidity pool
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @return  True if the perpetual is active for the trader
      */
     function isActiveLiquidityPoolOf(
         address trader,
@@ -157,11 +165,12 @@ contract Tracer {
     /**
      * @notice Get the liquidity pools whose index between begin and end and active for the trader.
      *         Active means the trader's account is not all empty in perpetuals of the liquidity pool.
-     *         Empty means cash and position are zero
-     * @param trader The address of the trader
-     * @param begin The begin index
-     * @param end The end index
-     * @return result The addresses of the liquidity pools whose index between begin and end and active for the trader
+     *         Empty means cash and position are zero.
+     *
+     * @param   trader  The address of the trader.
+     * @param   begin   The begin index.
+     * @param   end     The end index.
+     * @return  result  An array of active (non-empty margin account) liquidity pool address and perpetul index.
      */
     function listActiveLiquidityPoolsOf(
         address trader,
@@ -182,11 +191,12 @@ contract Tracer {
     }
 
     /**
-     * @notice Activate the perpetual for the trader. Active means the trader's account is not empty in
-     *         the perpetual. Empty means cash and position are zero. Can only called by a liquidity pool
-     * @param trader The address of the trader
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return bool True if the activation is successful
+     * @notice  Activate the perpetual for the trader. Active means the trader's account is not empty in
+     *          the perpetual. Empty means cash and position are zero. Can only called by a liquidity pool.
+     *
+     * @param   trader          The address of the trader.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  True if the activation is successful.
      */
     function activatePerpetualFor(address trader, uint256 perpetualIndex)
         external
@@ -204,11 +214,12 @@ contract Tracer {
     }
 
     /**
-     * @notice Deactivate the perpetual for the trader. Active means the trader's account is not empty in
-     *         the perpetual. Empty means cash and position are zero. Can only called by a liquidity pool
-     * @param trader The address of the trader
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return bool True if the deactivation is successful
+     * @notice  Deactivate the perpetual for the trader. Active means the trader's account is not empty in
+     *          the perpetual. Empty means cash and position are zero. Can only called by a liquidity pool.
+     *
+     * @param   trader The address of the trader
+     * @param   perpetualIndex The index of the perpetual in the liquidity pool
+     * @return  True if the deactivation is successful
      */
     function deactivatePerpetualFor(address trader, uint256 perpetualIndex)
         external
@@ -223,10 +234,10 @@ contract Tracer {
 
     // =========================== Active Liquidity Pool of Trader ===========================
     /**
-     * @dev Get the key of the perpetual
-     * @param liquidityPool The address of the liquidity pool which the perpetual belongs to
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
-     * @return bytes32 The key of the perpetual
+     * @dev     Get the key of the perpetual
+     * @param   liquidityPool The address of the liquidity pool which the perpetual belongs to
+     * @param   erpetualIndex The index of the perpetual in the liquidity pool
+     * @return  The key of the perpetual
      */
     function _getPerpetualKey(address liquidityPool, uint256 perpetualIndex)
         internal
