@@ -212,6 +212,16 @@ describe('LiquidityPool', () => {
             })
         })
 
+        it('donate', async function() {
+            await liquidityPool.setState(0, 2);
+            await liquidityPool.setState(1, 2);
+            await ctk.mint(user1.address, toWei('1000'));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+            await liquidityPool.donateLiquidity(user1.address, toWei('1000'));
+            expect(await stk.balanceOf(user1.address)).approximateBigNumber("0");
+            expect(await ctk.balanceOf(user1.address)).approximateBigNumber("0");
+            expect(await ctk.balanceOf(liquidityPool.address)).approximateBigNumber(toWei('1000'));
+        })
     });
 
 

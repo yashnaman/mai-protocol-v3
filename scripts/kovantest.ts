@@ -340,7 +340,7 @@ async function set1(deployer, poolCreator, oracleAddresses) {
     console.log('add liquidity')
     await eth.mint(deployer.address, toWei("6000"));
     await eth.approve(liquidityPool.address, toWei("6000"));
-    await liquidityPool.addLiquidity(toWei("6000"), { gas: 800000 });
+    await liquidityPool.addLiquidity(toWei("6000"));
 
     return liquidityPool
 }
@@ -440,7 +440,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     console.log('add liquidity')
     await usd.mint(deployer.address, "10000000" + "000000");
     await usd.approve(liquidityPool.address, "10000000" + "000000");
-    await liquidityPool.addLiquidity(toWei("10000000"), { gas: 1400000 });
+    await liquidityPool.addLiquidity(toWei("10000000"));
 
     return liquidityPool
 }

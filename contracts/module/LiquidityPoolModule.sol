@@ -651,6 +651,24 @@ library LiquidityPoolModule {
     }
 
     /**
+     * @dev Add collateral to the liquidity pool without getting share tokens.
+     * @param liquidityPool The reference of liquidity pool storage.
+     * @param trader The address of the trader that adding liquidity
+     * @param cashToAdd The cash(collateral) to add
+     */
+    function donateLiquidity(
+        LiquidityPoolStorage storage liquidityPool,
+        address trader,
+        int256 cashToAdd
+    ) public {
+        require(cashToAdd > 0 || msg.value > 0, "cash amount must be positive");
+        int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
+        // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
+        increasePoolCash(liquidityPool, totalCashToAdd);
+        emit AddLiquidity(trader, totalCashToAdd, 0);
+    }
+
+    /**
      * @dev To keep the AMM's margin equal to initial margin in the perpetual as posiible.
      *         Transfer collateral between the perpetual and the liquidity pool's cash, then
      *         update the AMM's cash in perpetual. The liquidity pool's cash can be negative,

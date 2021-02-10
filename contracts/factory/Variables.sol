@@ -91,6 +91,8 @@ contract Variables {
     function getMCBToken() public pure returns (address) {
         // const MCB token
         // TODO: test only
-        return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
+        // return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
+        // kovan
+        return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
     }
 }
