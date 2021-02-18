@@ -52,6 +52,7 @@ contract LpGovernor is
      */
     function mint(address account, uint256 amount) public virtual {
         require(_msgSender() == _minter, "must be minter to mint");
+        _updateReward(account);
         _mint(account, amount);
     }
 
@@ -60,6 +61,7 @@ contract LpGovernor is
      */
     function burn(address account, uint256 amount) public virtual {
         require(_msgSender() == _minter, "must be minter to burn");
+        _updateReward(account);
         _burn(account, amount);
     }
 
@@ -99,7 +101,6 @@ contract LpGovernor is
         uint256 amount
     ) internal virtual override {
         require(!isLocked(sender), "sender is locked");
-        _updateReward(sender);
         super._beforeTokenTransfer(sender, recipient, amount);
     }
 

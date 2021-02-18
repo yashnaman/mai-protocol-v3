@@ -93,7 +93,6 @@ describe('Minging', () => {
         expect(await miner.periodFinish()).to.equal(blockNumber2);
     })
 
-
     it("earned", async () => {
         await stk.mint(user1.address, toWei("100"));
 
@@ -157,6 +156,76 @@ describe('Minging', () => {
         expect(await miner.earned(user1.address)).to.equal(toWei("0"))
         await stk.connect(user1).approve(miner.address, toWei("10000")); // +2
         await stk.connect(user1).approve(miner.address, toWei("10000")); // +2
+    })
+
+    it("rewardPerToken - 2", async () => {
+        await miner.connect(user1).setRewardRate(toWei("2"));
+        await miner.connect(user1).notifyRewardAmount(toWei("40"));
+
+        expect(await miner.rewardPerToken()).to.equal(toWei("0"));
+
+        await rtk.mint(miner.address, toWei("10000"));
+        await stk.mint(user1.address, toWei("100"));
+
+        expect(await miner.rewardPerToken()).to.equal(toWei("0"));
+
+        await stk.connect(user1).approve(miner.address, toWei("10000"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.02"));
+
+        await stk.connect(user1).approve(miner.address, toWei("10000"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.04"));
+
+        await miner.burn(user1.address, toWei("100"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.06"));
+
+        expect(await rtk.balanceOf(user1.address)).to.equal(toWei("0"));
+        expect(await miner.rewards(user1.address)).to.equal(toWei("6"))
+        await miner.connect(user1).getReward();
+        expect(await rtk.balanceOf(user1.address)).to.equal(toWei("6"));
+
+        await miner.connect(user1).getReward();
+        expect(await rtk.balanceOf(user1.address)).to.equal(toWei("6"));
+        expect(await miner.userRewardPerTokenPaid(user1.address)).to.equal(toWei("0.06"));
+
+        await stk.connect(user1).approve(miner.address, toWei("10000"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.06"));
+
+        await stk.mint(user1.address, toWei("200"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.06"));
+        await stk.mint(user2.address, toWei("50"));
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.07"));
+
+        await stk.connect(user1).approve(miner.address, toWei("10000")); // +2
+        expect(await miner.rewardPerToken()).to.equal(toWei("0.078")); // 2/250 + 0.07
+
+        // // 0.07 * 200
+        expect(await miner.earned(user1.address)).to.equal(toWei("3.6"))
+        expect(await miner.earned(user2.address)).to.equal(toWei("0.4"))
+        await miner.connect(user1).getReward(); // +2
+        expect(await rtk.balanceOf(user1.address)).to.equal(toWei("11.2")); // 6 + 3.6 + 1.6
+
+        await miner.connect(user2).getReward(); // +2
+        expect(await rtk.balanceOf(user2.address)).to.equal(toWei("1.2"));  // 0.4 + 0.4 + 0.4
+
+        await miner.burn(user1.address, toWei("150")); // + 2
+
+        expect(await miner.earned(user1.address)).to.equal(toWei("3.2"))
+        expect(await miner.earned(user2.address)).to.equal(toWei("0.4"))
+
+        await stk.connect(user1).approve(miner.address, toWei("10000")); // +2
+
+        expect(await miner.earned(user1.address)).to.equal(toWei("4.2"))
+        expect(await miner.earned(user2.address)).to.equal(toWei("1.4"))
+
+        await miner.burn(user1.address, toWei("50")); // + 2
+
+        expect(await miner.earned(user1.address)).to.equal(toWei("5.2"))
+        expect(await miner.earned(user2.address)).to.equal(toWei("2.4"))
+
+        await stk.connect(user1).approve(miner.address, toWei("10000")); // +2
+
+        expect(await miner.earned(user1.address)).to.equal(toWei("5.2"))
+        expect(await miner.earned(user2.address)).to.equal(toWei("4.4"))
 
     })
 })
