@@ -233,9 +233,11 @@ library TradeModule {
         address trader
     ) public returns (int256 liquidatedAmount) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(
+            !perpetual.isMaintenanceMarginSafe(trader, perpetual.getMarkPrice()),
+            "trader is safe"
+        );
         int256 position = perpetual.getPosition(trader);
-        int256 markPrice = perpetual.getMarkPrice();
-        require(!perpetual.isMaintenanceMarginSafe(trader, markPrice), "trader is safe");
         // 0. price / amount
         (int256 deltaCash, int256 deltaPosition) =
             liquidityPool.queryTradeWithAMM(perpetualIndex, position, true);
@@ -248,31 +250,14 @@ library TradeModule {
             deltaPosition.neg(),
             deltaCash.add(perpetual.keeperGasReward).neg()
         );
-        // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
-        int256 penalty =
-            markPrice.wmul(deltaPosition).wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
-            );
-        int256 penaltyToTaker;
-        {
-            int256 penaltyToFund;
-            if (penalty > 0) {
-                penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
-                penaltyToTaker = penalty.sub(penaltyToFund);
-            } else {
-                penaltyToFund = penalty;
-                penaltyToTaker = 0;
-            }
-            int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
-            perpetual.updateCash(address(this), penaltyToLP.add(penaltyToTaker));
-            perpetual.updateCash(trader, penalty.neg());
-        }
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidator,
             perpetual.keeperGasReward
         );
-
+        // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
+        (int256 penalty, int256 penaltyToLiquidator) =
+            postLiquidate(liquidityPool, perpetual, address(this), trader, position, deltaPosition);
         emit Liquidate(
             perpetualIndex,
             address(this),
@@ -280,12 +265,8 @@ library TradeModule {
             deltaPosition.neg(),
             liquidatePrice,
             penalty,
-            penaltyToTaker
+            0
         );
-        // 4. emergency
-        if (perpetual.donatedInsuranceFund < 0) {
-            liquidityPool.setEmergencyState(perpetualIndex);
-        }
         liquidatedAmount = deltaPosition.neg();
     }
 
@@ -320,23 +301,8 @@ library TradeModule {
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
-        int256 penalty =
-            deltaCash.wmul(perpetual.liquidationPenaltyRate).abs().min(
-                perpetual.getMargin(trader, markPrice).wfrac(deltaPosition.abs(), position.abs())
-            );
-        {
-            int256 penaltyToFund;
-            int256 penaltyToTaker;
-            if (penalty > 0) {
-                penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
-                penaltyToTaker = penalty.sub(penaltyToFund);
-            } else {
-                penaltyToFund = penalty;
-            }
-            perpetual.updateCash(address(this), perpetual.updateInsuranceFund(penaltyToFund));
-            perpetual.updateCash(liquidator, penaltyToTaker);
-            perpetual.updateCash(trader, penalty.neg());
-        }
+        (int256 penalty, int256 penaltyToLiquidator) =
+            postLiquidate(liquidityPool, perpetual, liquidator, trader, position, deltaPosition);
         // 3. safe
         if (hasOpenedPosition(perpetual.getPosition(liquidator), deltaPosition.neg())) {
             require(
@@ -353,13 +319,62 @@ library TradeModule {
             deltaPosition.neg(),
             markPrice,
             penalty,
-            0
+            penaltyToLiquidator
         );
-        // 5. emergency
-        if (perpetual.donatedInsuranceFund < 0) {
-            liquidityPool.setEmergencyState(perpetualIndex);
-        }
         liquidatedAmount = deltaPosition.neg();
+    }
+
+    /**
+     * @dev     Handle liquidate penalty / fee.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetual       The reference of perpetual storage.
+     * @param   liquidator      The address of the account calling the liquidation method.
+     * @param   trader          The address of the liquidated account.
+     * @param   position        The amount of position owned by trader before liquidation.
+     * @param   deltaPosition   The amount of position to be taken from liquidated trader.
+     * @return  penalty             The amount of positions actually liquidated in the transaction.
+     * @return  penaltyToLiquidator The amount of positions actually liquidated in the transaction.
+     */
+    function postLiquidate(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        address liquidator,
+        address trader,
+        int256 position,
+        int256 deltaPosition
+    ) public returns (int256 penalty, int256 penaltyToLiquidator) {
+        int256 vaultFee = 0;
+        int256 markPrice = perpetual.getMarkPrice();
+        int256 remainingMargin = perpetual.getMargin(trader, markPrice);
+        int256 liquidationValue = markPrice.wmul(deltaPosition).abs();
+        penalty = liquidationValue.wmul(perpetual.liquidationPenaltyRate).min(
+            remainingMargin.wfrac(deltaPosition.abs(), position.abs())
+        );
+        remainingMargin = remainingMargin.sub(penalty);
+        if (remainingMargin > 0) {
+            vaultFee = liquidationValue.wmul(liquidityPool.getVaultFeeRate()).min(remainingMargin);
+            liquidityPool.transferFromPerpetualToUser(
+                perpetual.id,
+                liquidityPool.getVault(),
+                vaultFee
+            );
+        }
+        int256 penaltyToFund;
+        if (penalty > 0) {
+            penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
+            penaltyToLiquidator = penalty.sub(penaltyToFund);
+        } else {
+            penaltyToFund = penalty;
+            penaltyToLiquidator = 0;
+        }
+        int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
+        perpetual.updateCash(address(this), penaltyToLP);
+        perpetual.updateCash(liquidator, penaltyToLiquidator);
+        perpetual.updateCash(trader, penalty.add(vaultFee).neg());
+        if (perpetual.donatedInsuranceFund < 0) {
+            liquidityPool.setEmergencyState(perpetual.id);
+        }
     }
 
     /**
