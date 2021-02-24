@@ -9,11 +9,11 @@
 [Overview](./contracts/Readme.md) of mai-protocol-v3.
 
 ## Reference
-[common terms](./docs/term.md)
+[Terms](./docs/term.md)
 
 [v3.mcdex.io/references](https://v3.mcdex.io/references/#/en-US/mai-protocol-v3?id=_1-introduction)
 
-[AMM design](https://mcdexio.github.io/documents/en/Shared-Liquidity-AMM-of-MAI-PROTOCOL-v3.pdf)
+[AMMDesign](https://mcdexio.github.io/documents/en/Shared-Liquidity-AMM-of-MAI-PROTOCOL-v3.pdf)
 
 ## test deploy
 ```
