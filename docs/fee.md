@@ -4,9 +4,9 @@
 
 | Fee          | Belong to          | How to calculate               | Note                          |
 |--------------|--------------------|--------------------------------|-------------------------------|
-| lp fee       | liquidity provider | tradeValue * lp fee rate       | may rebate a part to referral |
-| operator fee | operator           | tradeValue * operator fee rate | may rebate a part to referral |
-| vault fee    | vault              | tradeValue * vault fee rate    |                               |
+| lp fee       | liquidity provider | tradeValue * lpFeeRate         | may rebate a part to referral |
+| operator fee | operator           | tradeValue * operatorFeeRate   | may rebate a part to referral |
+| vault fee    | vault              | tradeValue * vaultFeeRate      |                               |
 
 ### What if trader's available margin is not enough to pay fee
 
