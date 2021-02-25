@@ -94,6 +94,7 @@ struct PerpetualStorage {
     PerpetualState state;
     address oracle;
     int256 totalCollateral;
+    int256 openInterest;
     // prices
     OraclePriceData indexPriceData;
     OraclePriceData markPriceData;
@@ -114,6 +115,7 @@ struct PerpetualStorage {
     int256 insuranceFundRate;
     int256 insuranceFundCap;
     int256 syncFundingInterval;
+    int256 maxOpenInterestRate;
     // risk parameters
     Option halfSpread;
     Option openSlippageFactor;

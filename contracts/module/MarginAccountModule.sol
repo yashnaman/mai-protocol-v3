@@ -246,12 +246,23 @@ library MarginAccountModule {
         address trader,
         int256 deltaPosition,
         int256 deltaCash
-    ) internal {
+    ) internal returns (int256 deltaOpenInterest) {
         MarginAccount storage account = perpetual.marginAccounts[trader];
+        int256 oldPosition = account.position;
         account.position = account.position.add(deltaPosition);
         account.cash = account.cash.add(deltaCash).add(
             perpetual.unitAccumulativeFunding.wmul(deltaPosition)
         );
+        if (oldPosition < 0 && account.position > 0) {
+            deltaOpenInterest = account.position;
+        } else if (oldPosition >= 0 && deltaPosition > 0) {
+            deltaOpenInterest = deltaPosition;
+        } else if (oldPosition > 0 && deltaPosition < 0) {
+            deltaOpenInterest = oldPosition.abs() > deltaPosition.abs()
+                ? deltaPosition
+                : oldPosition.neg();
+        }
+        perpetual.openInterest = perpetual.openInterest.add(deltaOpenInterest);
     }
 
     /**

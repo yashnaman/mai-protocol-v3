@@ -36,4 +36,12 @@ library MockAMMModule {
         MockAMMPriceEntries priceHook = MockAMMPriceEntries(liquidityPool.governor);
         return priceHook.queryPrice(tradeAmount);
     }
+
+    function getPoolMargin(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (int256, bool)
+    {
+        return (10000 * 10**18, true);
+    }
 }

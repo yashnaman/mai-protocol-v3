@@ -39,6 +39,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_INSURANCE_FUND_RATE = 7;
     uint256 internal constant INDEX_INSURANCE_FUND_CAP = 8;
     uint256 internal constant INDEX_SYNC_FUNDING_INTERVAL = 9;
+    uint256 internal constant INDEX_MAX_OPEN_INTEREST_RATE = 10;
 
     uint256 internal constant INDEX_HALF_SPREAD = 0;
     uint256 internal constant INDEX_OPEN_SLIPPAGE_FACTOR = 1;
@@ -56,7 +57,7 @@ library PerpetualModule {
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[10] baseParams);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[11] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
         int256[6] riskParams,
@@ -134,7 +135,7 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         uint256 id,
         address oracle,
-        int256[10] calldata baseParams,
+        int256[11] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
@@ -169,7 +170,7 @@ library PerpetualModule {
      * @param   perpetual   The perpetual object
      * @param   baseParams  The new value of the base parameter
      */
-    function setBaseParameter(PerpetualStorage storage perpetual, int256[10] memory baseParams)
+    function setBaseParameter(PerpetualStorage storage perpetual, int256[11] memory baseParams)
         public
     {
         validateBaseParameters(perpetual, baseParams);
@@ -183,6 +184,7 @@ library PerpetualModule {
         perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
         perpetual.insuranceFundCap = baseParams[INDEX_INSURANCE_FUND_CAP];
         perpetual.syncFundingInterval = baseParams[INDEX_SYNC_FUNDING_INTERVAL];
+        perpetual.maxOpenInterestRate = baseParams[INDEX_MAX_OPEN_INTEREST_RATE];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
 
@@ -723,7 +725,7 @@ library PerpetualModule {
      */
     function validateBaseParameters(
         PerpetualStorage storage perpetual,
-        int256[10] memory baseParams
+        int256[11] memory baseParams
     ) public view {
         require(
             perpetual.initialMarginRate == 0 ||
@@ -764,6 +766,7 @@ library PerpetualModule {
         require(baseParams[INDEX_INSURANCE_FUND_RATE] >= 0, "insuranceFundRate < 0");
         require(baseParams[INDEX_INSURANCE_FUND_CAP] >= 0, "insuranceFundCap < 0");
         require(baseParams[INDEX_SYNC_FUNDING_INTERVAL] >= 1, "syncFundingInterval < 1");
+        require(baseParams[INDEX_MAX_OPEN_INTEREST_RATE] > 0, "maxOpenInterestRate <= 0");
     }
 
     /**

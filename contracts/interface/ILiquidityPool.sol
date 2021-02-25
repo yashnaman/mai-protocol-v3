@@ -76,7 +76,9 @@ interface ILiquidityPool {
             // [27-29] fundingRateLimit value, min, max,
             // [30-32] ammMaxLeverage value, min, max,
             // [33-35] maxClosePriceDiscount value, min, max,
-            int256[36] memory nums,
+            // [36] openInterest,
+            // [37] maxOpenInterestRate,
+            int256[38] memory nums,
             uint256 syncFundingTime
         );
 

@@ -22,7 +22,7 @@ contract TestPerpetual is Storage {
     // ================ debug ============================================
     function createPerpetual(
         address oracle,
-        int256[10] calldata coreParams,
+        int256[11] calldata coreParams,
         int256[6] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetuals.length;
@@ -178,14 +178,16 @@ contract TestPerpetual is Storage {
         view
         returns (int256 realTimeUnitAccumulativeFunding)
     {
-        realTimeUnitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex].realTimeUnitAccumulativeFunding;
+        realTimeUnitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex]
+            .realTimeUnitAccumulativeFunding;
     }
 
     function setUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding)
         public
     {
         _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
-        _liquidityPool.perpetuals[perpetualIndex].realTimeUnitAccumulativeFunding = unitAccumulativeFunding;
+        _liquidityPool.perpetuals[perpetualIndex]
+            .realTimeUnitAccumulativeFunding = unitAccumulativeFunding;
     }
 
     function getSyncFundingTime(uint256 perpetualIndex)
@@ -196,9 +198,7 @@ contract TestPerpetual is Storage {
         syncFundingTime = _liquidityPool.perpetuals[perpetualIndex].syncFundingTime;
     }
 
-    function setSyncFundingTime(uint256 perpetualIndex, uint256 syncFundingTime)
-        public
-    {
+    function setSyncFundingTime(uint256 perpetualIndex, uint256 syncFundingTime) public {
         _liquidityPool.perpetuals[perpetualIndex].syncFundingTime = syncFundingTime;
     }
 

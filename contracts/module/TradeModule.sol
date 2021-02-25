@@ -46,6 +46,7 @@ library TradeModule {
         int256 penaltyToLP
     );
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
+    event UpdateOpenInterest(uint256 perpetualIndex, int256 openInterest);
 
     /**
      * @dev     See `trade` in Perpetual.sol for details.
@@ -83,8 +84,20 @@ library TradeModule {
             int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
             validatePrice(amount >= 0, tradePrice, limitPrice);
         }
-        perpetual.updateMargin(address(this), deltaPosition, deltaCash);
-        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        int256 deltaOpenInterest1 = perpetual.updateMargin(address(this), deltaPosition, deltaCash);
+        int256 deltaOpenInterest2 =
+            perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
+        require(perpetual.openInterest >= 0, "negative open interest");
+        if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
+            // open interest will increase, check limit
+            (int256 poolMargin, ) = liquidityPool.getPoolMargin();
+            require(
+                perpetual.openInterest <=
+                    perpetual.maxOpenInterestRate.wfrac(poolMargin, perpetual.getIndexPrice()),
+                "open interest exceeds limit"
+            );
+        }
         // handle trading fee
         (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
@@ -249,6 +262,8 @@ library TradeModule {
             deltaPosition.neg(),
             deltaCash.add(perpetual.keeperGasReward).neg()
         );
+        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
+        require(perpetual.openInterest >= 0, "negative open interest");
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidator,
@@ -304,8 +319,10 @@ library TradeModule {
         int256 deltaPosition = getMaxPositionToClose(position, amount.neg()).neg();
         int256 deltaCash = markPrice.wmul(deltaPosition).neg();
         // 1. execute
-        perpetual.updateMargin(liquidator, deltaPosition, deltaCash);
-        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        perpetual.updateMargin(trader, deltaPosition, deltaCash);
+        perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
+        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
+        require(perpetual.openInterest >= 0, "negative open interest");
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =
             postLiquidate(
