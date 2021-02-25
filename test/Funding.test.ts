@@ -149,12 +149,12 @@ describe('Funding', () => {
             it(element.name, async () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
 
@@ -245,12 +245,12 @@ describe('Funding', () => {
             it(element.name, async () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
 
@@ -296,12 +296,12 @@ describe('Funding', () => {
             it(element.name, async () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
-                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                    [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
                     [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
                 )
 

@@ -67,7 +67,7 @@ describe('Perpetual2', () => {
 
             liquidityPool = await LiquidityPoolFactory.attach(liquidityPoolAddr);
             await liquidityPool.createPerpetual(oracle.address,
-                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1],
+                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05")],
                 [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
                 [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99")],

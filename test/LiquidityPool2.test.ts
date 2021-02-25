@@ -65,14 +65,14 @@ describe('LiquidityPool2', () => {
         await liquidityPool.createPerpetual(
             oracle1.address,
             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1],
+            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2')],
         )
         oracle2 = await createContract("OracleWrapper", ["ctk", "ctk"]);
         await liquidityPool.createPerpetual(
             oracle2.address,
             // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1],
+            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2')],
         )
     })
@@ -212,7 +212,7 @@ describe('LiquidityPool2', () => {
             })
         })
 
-        it('donate', async function() {
+        it('donate', async function () {
             await liquidityPool.setState(0, 2);
             await liquidityPool.setState(1, 2);
             await ctk.mint(user1.address, toWei('1000'));
