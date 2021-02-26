@@ -63,7 +63,7 @@ contract LibraryEvents {
         address operator,
         address oracle,
         address collateral,
-        int256[11] coreParams,
+        int256[11] baseParams,
         int256[6] riskParams
     );
     event RunLiquidityPool();

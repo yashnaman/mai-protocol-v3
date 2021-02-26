@@ -35,7 +35,7 @@ contract TestGovernance is Governance {
 
     function initializeParameters(
         address oracle,
-        int256[11] calldata coreParams,
+        int256[11] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
@@ -44,7 +44,7 @@ contract TestGovernance is Governance {
         _liquidityPool.perpetuals[0].initialize(
             0,
             oracle,
-            coreParams,
+            baseParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues

@@ -126,7 +126,7 @@ library PerpetualModule {
      * @param   perpetual           The reference of perpetual storage.
      * @param   id                  The id of the perpetual (currently the index of perpetual)
      * @param   oracle              The address of oracle contract.
-     * @param   baseParams          An int array of core parameter values.
+     * @param   baseParams          An int array of base parameter values.
      * @param   riskParams          An int array of risk parameter values.
      * @param   minRiskParamValues  An int array of minimal risk parameter values.
      * @param   maxRiskParamValues  An int array of maximum risk parameter values.

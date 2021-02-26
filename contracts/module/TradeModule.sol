@@ -283,7 +283,7 @@ library TradeModule {
             deltaPosition.neg(),
             liquidatePrice,
             penalty,
-            0
+            penaltyToLiquidator
         );
         liquidatedAmount = deltaPosition.neg();
     }
@@ -345,7 +345,7 @@ library TradeModule {
             deltaPosition.neg(),
             markPrice,
             penalty,
-            penaltyToLiquidator
+            0
         );
         liquidatedAmount = deltaPosition.neg();
     }

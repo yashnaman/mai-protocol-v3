@@ -49,7 +49,7 @@ library LiquidityPoolModule {
         address operator,
         address oracle,
         address collateral,
-        int256[11] coreParams,
+        int256[11] baseParams,
         int256[6] riskParams
     );
     event RunLiquidityPool();
@@ -202,7 +202,7 @@ library LiquidityPoolModule {
      *         Otherwise can only called by the governor
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param oracle The oracle's address of the perpetual
-     * @param coreParams The core parameters of the perpetual
+     * @param baseParams The base parameters of the perpetual
      * @param riskParams The risk parameters of the perpetual, must between minimum value and maximum value
      * @param minRiskParamValues The risk parameters' minimum values of the perpetual
      * @param maxRiskParamValues The risk parameters' maximum values of the perpetual
@@ -210,7 +210,7 @@ library LiquidityPoolModule {
     function createPerpetual(
         LiquidityPoolStorage storage liquidityPool,
         address oracle,
-        int256[11] calldata coreParams,
+        int256[11] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
@@ -224,7 +224,7 @@ library LiquidityPoolModule {
         perpetual.initialize(
             perpetualIndex,
             oracle,
-            coreParams,
+            baseParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues
@@ -242,7 +242,7 @@ library LiquidityPoolModule {
             getOperator(liquidityPool),
             oracle,
             liquidityPool.collateralToken,
-            coreParams,
+            baseParams,
             riskParams
         );
     }

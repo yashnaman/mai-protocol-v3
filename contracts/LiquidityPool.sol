@@ -64,7 +64,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          Otherwise a perpetual can only be create by governor (say, through voting).
      *
      * @param   oracle              The oracle's address of the perpetual.
-     * @param   coreParams          The core parameters of the perpetual, see TODO for details.
+     * @param   baseParams          The base parameters of the perpetual, see TODO for details.
      * @param   riskParams          The risk parameters of the perpetual,
      *                              Must be within range [minRiskParamValues, maxRiskParamValues].
      * @param   minRiskParamValues  The minimum values of risk parameters.
@@ -72,7 +72,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      */
     function createPerpetual(
         address oracle,
-        int256[11] calldata coreParams,
+        int256[11] calldata baseParams,
         int256[6] calldata riskParams,
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
@@ -87,7 +87,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         }
         _liquidityPool.createPerpetual(
             oracle,
-            coreParams,
+            baseParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues

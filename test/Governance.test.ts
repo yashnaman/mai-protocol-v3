@@ -18,7 +18,7 @@ describe('Governance', () => {
     let TestGovernance;
     let creator;
 
-    const coreParameters = {
+    const baseParameters = {
         initialMarginRate: toWei("0.1"),
         maintenanceMarginRate: toWei("0.05"),
         liquidationPenaltyRate: toWei("0.005"),

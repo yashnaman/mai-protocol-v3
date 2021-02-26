@@ -104,7 +104,7 @@ struct PerpetualStorage {
     int256 realTimeUnitAccumulativeFunding;
     int256 unitAccumulativeFunding;
     uint256 syncFundingTime;
-    // core parameters
+    // base parameters
     int256 initialMarginRate;
     int256 maintenanceMarginRate;
     int256 operatorFeeRate;
