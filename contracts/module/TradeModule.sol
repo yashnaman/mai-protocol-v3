@@ -87,6 +87,9 @@ library TradeModule {
         int256 deltaOpenInterest2 =
             perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         require(perpetual.openInterest >= 0, "negative open interest");
+        // handle trading fee
+        (int256 lpFee, int256 totalFee) =
+            postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
         if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
             // open interest will increase, check limit
             (int256 poolMargin, ) = liquidityPool.getPoolMargin();
@@ -96,9 +99,6 @@ library TradeModule {
                 "open interest exceeds limit"
             );
         }
-        // handle trading fee
-        (int256 lpFee, int256 totalFee) =
-            postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
         emit Trade(
             perpetualIndex,
             trader,

@@ -70,13 +70,13 @@ describe("integration2", () => {
 
         // create perpetual
         await perp.createPerpetual(oracle1.address,
-            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("1000"), 1, toWei("4.4")],
+            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("1000"), 1, toWei("4")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
         await perp.createPerpetual(oracle2.address,
-            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("1000"), 1, toWei("4.4")],
+            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("1000"), 1, toWei("4")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
@@ -349,6 +349,6 @@ describe("integration2", () => {
         await perp.connect(user1).deposit(0, user1.address, toWei("10000"));
         await perp.connect(user2).addLiquidity(toWei("1000"));
         let now = Math.floor(Date.now() / 1000);
-        await expect(perp.connect(user1).trade(0, user1.address, toWei("4.45"), toWei("999999"), now + 999999, none, 0)).to.be.revertedWith("open interest exceeds limit");
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("4.3"), toWei("999999"), now + 999999, none, 0)).to.be.revertedWith("open interest exceeds limit");
     })
 })
