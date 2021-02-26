@@ -28,7 +28,7 @@ contract Reader {
         PerpetualState state;
         address oracle;
         // check Getter.sol for detail
-        int256[38] nums;
+        int256[41] nums;
         uint256 syncFundingTime;
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;

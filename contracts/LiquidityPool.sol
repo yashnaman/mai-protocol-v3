@@ -73,9 +73,9 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     function createPerpetual(
         address oracle,
         int256[11] calldata baseParams,
-        int256[6] calldata riskParams,
-        int256[6] calldata minRiskParamValues,
-        int256[6] calldata maxRiskParamValues
+        int256[7] calldata riskParams,
+        int256[7] calldata minRiskParamValues,
+        int256[7] calldata maxRiskParamValues
     ) external {
         if (!_liquidityPool.isRunning || _liquidityPool.isFastCreationEnabled) {
             require(

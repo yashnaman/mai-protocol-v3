@@ -130,7 +130,8 @@ contract Getter is Storage {
             // [33-35] maxClosePriceDiscount value, min, max,
             // [36] openInterest,
             // [37] maxOpenInterestRate,
-            int256[38] memory nums,
+            // [38-40] fundingRateFactor value, min, max,
+            int256[41] memory nums,
             uint256 syncFundingTime
         )
     {
@@ -179,7 +180,10 @@ contract Getter is Storage {
             perpetual.maxClosePriceDiscount.minValue,
             perpetual.maxClosePriceDiscount.maxValue,
             perpetual.openInterest,
-            perpetual.maxOpenInterestRate
+            perpetual.maxOpenInterestRate,
+            perpetual.fundingRateFactor.value,
+            perpetual.fundingRateFactor.minValue,
+            perpetual.fundingRateFactor.maxValue
         ];
         syncFundingTime = perpetual.syncFundingTime;
     }

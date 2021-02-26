@@ -36,9 +36,9 @@ contract TestGovernance is Governance {
     function initializeParameters(
         address oracle,
         int256[11] calldata baseParams,
-        int256[6] calldata riskParams,
-        int256[6] calldata minRiskParamValues,
-        int256[6] calldata maxRiskParamValues
+        int256[7] calldata riskParams,
+        int256[7] calldata minRiskParamValues,
+        int256[7] calldata maxRiskParamValues
     ) public {
         _liquidityPool.perpetuals.push();
         _liquidityPool.perpetuals[0].initialize(
@@ -106,6 +106,10 @@ contract TestGovernance is Governance {
 
     function fundingRateLimit(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].fundingRateLimit.value;
+    }
+
+    function fundingRateFactor(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].fundingRateFactor.value;
     }
 
     function ammMaxLeverage(uint256 perpetualIndex) public view returns (int256) {

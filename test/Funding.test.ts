@@ -16,8 +16,9 @@ const params = {
     ammMaxLeverage: toWei('5'),
     maxClosePriceDiscount: toWei('0.05'),
     indexPrice: toWei('100'),
-    fundingRateLimit: toWei('0.005'),
-    negFundingRateLimit: toWei('-0.005')
+    fundingRateLimit: toWei('0.01'),
+    negFundingRateLimit: toWei('-0.01'),
+    fundingRateFactor: toWei("0.005")
 }
 
 describe('Funding', () => {
@@ -150,12 +151,12 @@ describe('Funding', () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), element.fundingInterval, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
 
                 await liquidityPool.runLiquidityPool();
@@ -246,12 +247,12 @@ describe('Funding', () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
 
                 await liquidityPool.runLiquidityPool();
@@ -297,12 +298,12 @@ describe('Funding', () => {
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
                 await liquidityPool.createPerpetual(
                     oracle2.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), 1, toWei("1")],
-                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount],
+                    [toWei("0.01"), params.openSlippageFactor, params.openSlippageFactor, params.fundingRateLimit, params.ammMaxLeverage, params.maxClosePriceDiscount, params.fundingRateFactor],
                 )
 
                 await liquidityPool.runLiquidityPool();

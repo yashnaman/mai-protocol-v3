@@ -121,6 +121,7 @@ struct PerpetualStorage {
     Option openSlippageFactor;
     Option closeSlippageFactor;
     Option fundingRateLimit;
+    Option fundingRateFactor;
     Option ammMaxLeverage;
     Option maxClosePriceDiscount;
     // users

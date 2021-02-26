@@ -47,6 +47,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_FUNDING_RATE_LIMIT = 3;
     uint256 internal constant INDEX_AMM_MAX_LEVERAGE = 4;
     uint256 internal constant INDEX_AMM_CLOSE_PRICE_DISCOUNT = 5;
+    uint256 internal constant INDEX_FUNDING_RATE_FACTOR = 6;
 
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
@@ -60,11 +61,11 @@ library PerpetualModule {
     event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[11] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
-        int256[6] riskParams,
-        int256[6] minRiskParamValues,
-        int256[6] maxRiskParamValues
+        int256[7] riskParams,
+        int256[7] minRiskParamValues,
+        int256[7] maxRiskParamValues
     );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[6] riskParams);
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[7] riskParams);
     event TransferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
     event SetOracle(address indexed oldOralce, address indexed newOracle);
 
@@ -136,9 +137,9 @@ library PerpetualModule {
         uint256 id,
         address oracle,
         int256[11] calldata baseParams,
-        int256[6] calldata riskParams,
-        int256[6] calldata minRiskParamValues,
-        int256[6] calldata maxRiskParamValues
+        int256[7] calldata riskParams,
+        int256[7] calldata minRiskParamValues,
+        int256[7] calldata maxRiskParamValues
     ) public {
         perpetual.id = id;
         perpetual.oracle = oracle;
@@ -199,9 +200,9 @@ library PerpetualModule {
      */
     function setRiskParameter(
         PerpetualStorage storage perpetual,
-        int256[6] memory riskParams,
-        int256[6] memory minRiskParamValues,
-        int256[6] memory maxRiskParamValues
+        int256[7] memory riskParams,
+        int256[7] memory minRiskParamValues,
+        int256[7] memory maxRiskParamValues
     ) public {
         validateRiskParameters(perpetual, riskParams);
         setOption(
@@ -240,6 +241,12 @@ library PerpetualModule {
             minRiskParamValues[INDEX_AMM_CLOSE_PRICE_DISCOUNT],
             maxRiskParamValues[INDEX_AMM_CLOSE_PRICE_DISCOUNT]
         );
+        setOption(
+            perpetual.fundingRateFactor,
+            riskParams[INDEX_FUNDING_RATE_FACTOR],
+            minRiskParamValues[INDEX_FUNDING_RATE_FACTOR],
+            maxRiskParamValues[INDEX_FUNDING_RATE_FACTOR]
+        );
         emit SetPerpetualRiskParameter(
             perpetual.id,
             riskParams,
@@ -254,7 +261,7 @@ library PerpetualModule {
      * @param   perpetual   The reference of perpetual storage.
      * @param   riskParams  An int array of risk parameter values.
      */
-    function updateRiskParameter(PerpetualStorage storage perpetual, int256[6] memory riskParams)
+    function updateRiskParameter(PerpetualStorage storage perpetual, int256[7] memory riskParams)
         public
     {
         validateRiskParameters(perpetual, riskParams);
@@ -264,6 +271,7 @@ library PerpetualModule {
         updateOption(perpetual.fundingRateLimit, riskParams[INDEX_FUNDING_RATE_LIMIT]);
         updateOption(perpetual.ammMaxLeverage, riskParams[INDEX_AMM_MAX_LEVERAGE]);
         updateOption(perpetual.maxClosePriceDiscount, riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT]);
+        updateOption(perpetual.fundingRateFactor, riskParams[INDEX_FUNDING_RATE_FACTOR]);
         emit UpdatePerpetualRiskParameter(perpetual.id, riskParams);
     }
 
@@ -326,14 +334,9 @@ library PerpetualModule {
             int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
                 newFundingRate = getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
-                    fundingRateLimit
+                    perpetual.fundingRateFactor.value
                 );
-                newFundingRate = newFundingRate > fundingRateLimit
-                    ? fundingRateLimit
-                    : newFundingRate;
-                newFundingRate = newFundingRate < fundingRateLimit.neg()
-                    ? fundingRateLimit.neg()
-                    : newFundingRate;
+                newFundingRate = newFundingRate.min(fundingRateLimit).max(fundingRateLimit.neg());
             } else if (position > 0) {
                 newFundingRate = fundingRateLimit.neg();
             } else {
@@ -780,7 +783,7 @@ library PerpetualModule {
      *
      * @param   perpetual   The reference of perpetual storage.
      */
-    function validateRiskParameters(PerpetualStorage storage perpetual, int256[6] memory riskParams)
+    function validateRiskParameters(PerpetualStorage storage perpetual, int256[7] memory riskParams)
         public
         view
     {
@@ -794,6 +797,7 @@ library PerpetualModule {
             riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR] <= riskParams[INDEX_OPEN_SLIPPAGE_FACTOR],
             "closeSlippageFactor > openSlippageFactor"
         );
+        require(riskParams[INDEX_FUNDING_RATE_FACTOR] >= 0, "fundingRateFactor < 0");
         require(riskParams[INDEX_FUNDING_RATE_LIMIT] >= 0, "fundingRateLimit < 0");
         require(riskParams[INDEX_AMM_MAX_LEVERAGE] >= 0, "ammMaxLeverage < 0");
         require(

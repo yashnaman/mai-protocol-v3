@@ -64,7 +64,7 @@ contract LibraryEvents {
         address oracle,
         address collateral,
         int256[11] baseParams,
-        int256[6] riskParams
+        int256[7] riskParams
     );
     event RunLiquidityPool();
     event OperatorCheckIn(address indexed operator);

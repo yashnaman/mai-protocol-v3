@@ -23,7 +23,7 @@ contract TestPerpetual is Storage {
     function createPerpetual(
         address oracle,
         int256[11] calldata baseParams,
-        int256[6] calldata riskParams
+        int256[7] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetuals.length;
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
@@ -95,6 +95,8 @@ contract TestPerpetual is Storage {
             perpetual.ammMaxLeverage.setOption(newValue, newMinValue, newMaxValue);
         } else if (key == "maxClosePriceDiscount") {
             perpetual.maxClosePriceDiscount.setOption(newValue, newMinValue, newMaxValue);
+        } else if (key == "fundingRateFactor") {
+            perpetual.fundingRateFactor.setOption(newValue, newMinValue, newMaxValue);
         } else {
             revert("key not found");
         }
@@ -118,6 +120,8 @@ contract TestPerpetual is Storage {
             perpetual.ammMaxLeverage.updateOption(newValue);
         } else if (key == "maxClosePriceDiscount") {
             perpetual.maxClosePriceDiscount.updateOption(newValue);
+        } else if (key == "fundingRateFactor") {
+            perpetual.fundingRateFactor.updateOption(newValue);
         } else {
             revert("key not found");
         }
