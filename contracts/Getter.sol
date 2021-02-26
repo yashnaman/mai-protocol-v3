@@ -183,6 +183,7 @@ contract Getter is Storage {
             perpetual.maxOpenInterestRate,
             perpetual.fundingRateFactor.value,
             perpetual.fundingRateFactor.minValue,
+            // [40]
             perpetual.fundingRateFactor.maxValue
         ];
         syncFundingTime = perpetual.syncFundingTime;
