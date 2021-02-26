@@ -427,4 +427,66 @@ describe('MarginModule', () => {
             expect(await testMargin.getPosition(0, trader)).to.equal(toWei("-5"));
         })
     })
+
+    describe('OpenInterest', async () => {
+        let testMargin;
+
+        before(async () => {
+            const PerpetualModule = await createContract("PerpetualModule");
+            testMargin = await createContract("TestMarginAccount", [], {
+                PerpetualModule
+            });
+            await testMargin.createPerpetual(
+                accounts[1].address,
+                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
+                [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("0.5"), toWei("0.2")],
+            )
+        })
+
+        it("updateMargin", async () => {
+            let trader = accounts[0].address;
+
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+
+            await testMargin.setMarginAccount(0, trader, toWei("0"), toWei("0"))
+
+            // 0 -> 5
+            await testMargin.updateMargin(0, trader, toWei("5"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("5"));
+
+            // 5 -> 7
+            await testMargin.updateMargin(0, trader, toWei("2"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("7"));
+
+            // 7 -> 5
+            await testMargin.updateMargin(0, trader, toWei("-2"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("5"));
+
+            // 5 -> -2
+            await testMargin.updateMargin(0, trader, toWei("-7"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+
+            // -2 -> -5
+            await testMargin.updateMargin(0, trader, toWei("-3"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+
+            // -5 -> -3
+            await testMargin.updateMargin(0, trader, toWei("2"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+
+            // -3 -> 1
+            await testMargin.updateMargin(0, trader, toWei("4"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("1"));
+
+            // 1 -> 0
+            await testMargin.updateMargin(0, trader, toWei("-1"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+
+            // 0 -> -1
+            await testMargin.updateMargin(0, trader, toWei("-1"), toWei("0"))
+            expect(await testMargin.getOpenInterest(0)).to.equal(toWei("0"));
+        })
+    })
+
 })

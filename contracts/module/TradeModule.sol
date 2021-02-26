@@ -46,7 +46,6 @@ library TradeModule {
         int256 penaltyToLP
     );
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
-    event UpdateOpenInterest(uint256 perpetualIndex, int256 openInterest);
 
     /**
      * @dev     See `trade` in Perpetual.sol for details.
@@ -87,7 +86,6 @@ library TradeModule {
         int256 deltaOpenInterest1 = perpetual.updateMargin(address(this), deltaPosition, deltaCash);
         int256 deltaOpenInterest2 =
             perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
-        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
         require(perpetual.openInterest >= 0, "negative open interest");
         if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
             // open interest will increase, check limit
@@ -262,7 +260,6 @@ library TradeModule {
             deltaPosition.neg(),
             deltaCash.add(perpetual.keeperGasReward).neg()
         );
-        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
         require(perpetual.openInterest >= 0, "negative open interest");
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
@@ -321,7 +318,6 @@ library TradeModule {
         // 1. execute
         perpetual.updateMargin(trader, deltaPosition, deltaCash);
         perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
-        emit UpdateOpenInterest(perpetual.id, perpetual.openInterest);
         require(perpetual.openInterest >= 0, "negative open interest");
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =

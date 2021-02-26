@@ -253,14 +253,11 @@ library MarginAccountModule {
         account.cash = account.cash.add(deltaCash).add(
             perpetual.unitAccumulativeFunding.wmul(deltaPosition)
         );
-        if (oldPosition < 0 && account.position > 0) {
-            deltaOpenInterest = account.position;
-        } else if (oldPosition >= 0 && deltaPosition > 0) {
-            deltaOpenInterest = deltaPosition;
-        } else if (oldPosition > 0 && deltaPosition < 0) {
-            deltaOpenInterest = oldPosition.abs() > deltaPosition.abs()
-                ? deltaPosition
-                : oldPosition.neg();
+        if (oldPosition > 0) {
+            deltaOpenInterest = oldPosition.neg();
+        }
+        if (account.position > 0) {
+            deltaOpenInterest = deltaOpenInterest.add(account.position);
         }
         perpetual.openInterest = perpetual.openInterest.add(deltaOpenInterest);
     }

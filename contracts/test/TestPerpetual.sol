@@ -362,4 +362,8 @@ contract TestPerpetual is Storage {
     function decreaseTotalCollateral(uint256 perpetualIndex, int256 amount) public {
         _liquidityPool.perpetuals[perpetualIndex].decreaseTotalCollateral(amount);
     }
+
+    function getOpenInterest(uint256 perpetualIndex) public view returns (int256) {
+        return _liquidityPool.perpetuals[perpetualIndex].openInterest;
+    }
 }
