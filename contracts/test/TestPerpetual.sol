@@ -22,7 +22,7 @@ contract TestPerpetual is Storage {
     // ================ debug ============================================
     function createPerpetual(
         address oracle,
-        int256[11] calldata baseParams,
+        int256[10] calldata baseParams,
         int256[7] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetuals.length;
@@ -177,33 +177,10 @@ contract TestPerpetual is Storage {
         unitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding;
     }
 
-    function getRealTimeUnitAccumulativeFunding(uint256 perpetualIndex)
-        public
-        view
-        returns (int256 realTimeUnitAccumulativeFunding)
-    {
-        realTimeUnitAccumulativeFunding = _liquidityPool.perpetuals[perpetualIndex]
-            .realTimeUnitAccumulativeFunding;
-    }
-
     function setUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding)
         public
     {
         _liquidityPool.perpetuals[perpetualIndex].unitAccumulativeFunding = unitAccumulativeFunding;
-        _liquidityPool.perpetuals[perpetualIndex]
-            .realTimeUnitAccumulativeFunding = unitAccumulativeFunding;
-    }
-
-    function getSyncFundingTime(uint256 perpetualIndex)
-        public
-        view
-        returns (uint256 syncFundingTime)
-    {
-        syncFundingTime = _liquidityPool.perpetuals[perpetualIndex].syncFundingTime;
-    }
-
-    function setSyncFundingTime(uint256 perpetualIndex, uint256 syncFundingTime) public {
-        _liquidityPool.perpetuals[perpetualIndex].syncFundingTime = syncFundingTime;
     }
 
     function getFundingRate(uint256 perpetualIndex) public view returns (int256) {
@@ -270,12 +247,8 @@ contract TestPerpetual is Storage {
         marginToRebalance = _liquidityPool.perpetuals[perpetualIndex].getRebalanceMargin();
     }
 
-    function updateFundingState(
-        uint256 perpetualIndex,
-        uint256 currentTime,
-        uint256 lastFundingTime
-    ) public {
-        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(currentTime, lastFundingTime);
+    function updateFundingState(uint256 perpetualIndex, int256 timeElapsed) public {
+        _liquidityPool.perpetuals[perpetualIndex].updateFundingState(timeElapsed);
     }
 
     function updateFundingRate(uint256 perpetualIndex, int256 poolMargin) public {

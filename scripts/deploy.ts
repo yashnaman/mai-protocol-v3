@@ -105,13 +105,13 @@ async function set1(accounts: any[], poolCreator, weth) {
 
     const mtx1 = await liquidityPool.createPerpetual("0x57B3e8836681937bcdC40044B1FF5b574664f321",
         // imr          mmr            operatorfr        lpfr             rebate        penalty        keeper       insur          cap
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx2 = await liquidityPool.createPerpetual("0x16A35eDa33e28d75da662E91a808D674c5E80c29",
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("40000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
@@ -148,25 +148,25 @@ async function set2(accounts: any[], poolCreator, weth) {
     const liquidityPool = await LiquidityPool.attach(allLiquidityPools[allLiquidityPools.length - 1]);
 
     const mtx1 = await liquidityPool.createPerpetual("0x6B61774d291AC46444c2a32D91621532b22A301C",
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx2 = await liquidityPool.createPerpetual("0xa920a1d31aa3cE77C557a9106a056fE8d99bB75c",
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx3 = await liquidityPool.createPerpetual("0x406e84F1ad2e0806A6cbbf0178beFF9C6Cb8fDA3",
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],
     )
     const mtx4 = await liquidityPool.createPerpetual("0x4327b88af616B31E48c745613f1BACa347f7630a",
-        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000"), 1],
+        [toWei("0.05"), toWei("0.02"), toWei("0.00005"), toWei("0.0005"), toWei("0.5"), toWei("0.01"), toWei("0.1"), toWei("0.2"), toWei("1000000")],
         [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.005"), toWei("3"), toWei("0.05")],
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1")],

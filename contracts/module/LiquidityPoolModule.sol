@@ -49,7 +49,7 @@ library LiquidityPoolModule {
         address operator,
         address oracle,
         address collateral,
-        int256[11] baseParams,
+        int256[10] baseParams,
         int256[7] riskParams
     );
     event RunLiquidityPool();
@@ -210,7 +210,7 @@ library LiquidityPoolModule {
     function createPerpetual(
         LiquidityPoolStorage storage liquidityPool,
         address oracle,
-        int256[11] calldata baseParams,
+        int256[10] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
@@ -294,7 +294,7 @@ library LiquidityPoolModule {
     function setPerpetualBaseParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        int256[11] memory baseParams
+        int256[10] memory baseParams
     ) public {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -429,13 +429,14 @@ library LiquidityPoolModule {
             // invalid time
             return;
         }
+        int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
         uint256 length = liquidityPool.perpetuals.length;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
-            perpetual.updateFundingState(currentTime, liquidityPool.fundingTime);
+            perpetual.updateFundingState(timeElapsed);
         }
         liquidityPool.fundingTime = currentTime;
     }

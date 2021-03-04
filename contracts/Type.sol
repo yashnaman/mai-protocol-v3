@@ -101,9 +101,7 @@ struct PerpetualStorage {
     OraclePriceData settlementPriceData;
     // funding state
     int256 fundingRate;
-    int256 realTimeUnitAccumulativeFunding;
     int256 unitAccumulativeFunding;
-    uint256 syncFundingTime;
     // base parameters
     int256 initialMarginRate;
     int256 maintenanceMarginRate;
@@ -114,7 +112,6 @@ struct PerpetualStorage {
     int256 keeperGasReward;
     int256 insuranceFundRate;
     int256 insuranceFundCap;
-    int256 syncFundingInterval;
     int256 maxOpenInterestRate;
     // risk parameters
     Option halfSpread;

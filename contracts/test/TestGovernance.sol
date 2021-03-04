@@ -35,7 +35,7 @@ contract TestGovernance is Governance {
 
     function initializeParameters(
         address oracle,
-        int256[11] calldata baseParams,
+        int256[10] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues

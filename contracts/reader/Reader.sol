@@ -28,8 +28,7 @@ contract Reader {
         PerpetualState state;
         address oracle;
         // check Getter.sol for detail
-        int256[41] nums;
-        uint256 syncFundingTime;
+        int256[39] nums;
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;
         bool isMarketClosed;
@@ -153,8 +152,9 @@ contract Reader {
         uint256 perpetualIndex
     ) private {
         // perpetual
-        (perp.state, perp.oracle, perp.nums, perp.syncFundingTime) = ILiquidityPool(liquidityPool)
-            .getPerpetualInfo(perpetualIndex);
+        (perp.state, perp.oracle, perp.nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
+            perpetualIndex
+        );
         // read more from symbol service
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
         // read more from oracle

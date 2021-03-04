@@ -85,7 +85,7 @@ contract Governance is Storage {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   baseParams      Values of new base parameter set
      */
-    function setPerpetualBaseParameter(uint256 perpetualIndex, int256[11] calldata baseParams)
+    function setPerpetualBaseParameter(uint256 perpetualIndex, int256[10] calldata baseParams)
         public
         onlyGovernor
     {

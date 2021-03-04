@@ -108,31 +108,28 @@ contract Getter is Storage {
             // [1] markPrice, (return settlementPrice if it is in EMERGENCY state)
             // [2] indexPrice,
             // [3] fundingRate,
-            // [4] realTimeUnitAccumulativeFunding,
-            // [5] unitAccumulativeFunding,
-            // [6] initialMarginRate,
-            // [7] maintenanceMarginRate,
-            // [8] operatorFeeRate,
-            // [9] lpFeeRate,
-            // [10] referralRebateRate,
-            // [11] liquidationPenaltyRate,
-            // [12] keeperGasReward,
-            // [13] insuranceFundRate,
-            // [14] insuranceFundCap,
-            // [15] syncFundingInterval,
-            // [16] insuranceFund,
-            // [17] donatedInsuranceFund,
-            // [18-20] halfSpread value, min, max,
-            // [21-23] openSlippageFactor value, min, max,
-            // [24-26] closeSlippageFactor value, min, max,
-            // [27-29] fundingRateLimit value, min, max,
-            // [30-32] ammMaxLeverage value, min, max,
-            // [33-35] maxClosePriceDiscount value, min, max,
-            // [36] openInterest,
-            // [37] maxOpenInterestRate,
-            // [38-40] fundingRateFactor value, min, max,
-            int256[41] memory nums,
-            uint256 syncFundingTime
+            // [4] unitAccumulativeFunding,
+            // [5] initialMarginRate,
+            // [6] maintenanceMarginRate,
+            // [7] operatorFeeRate,
+            // [8] lpFeeRate,
+            // [9] referralRebateRate,
+            // [10] liquidationPenaltyRate,
+            // [11] keeperGasReward,
+            // [12] insuranceFundRate,
+            // [13] insuranceFundCap,
+            // [14] insuranceFund,
+            // [15] donatedInsuranceFund,
+            // [16-18] halfSpread value, min, max,
+            // [19-21] openSlippageFactor value, min, max,
+            // [22-24] closeSlippageFactor value, min, max,
+            // [25-27] fundingRateLimit value, min, max,
+            // [28-30] ammMaxLeverage value, min, max,
+            // [31-33] maxClosePriceDiscount value, min, max,
+            // [34] openInterest,
+            // [35] maxOpenInterestRate,
+            // [36-38] fundingRateFactor value, min, max,
+            int256[39] memory nums
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -144,26 +141,24 @@ contract Getter is Storage {
             perpetual.getMarkPrice(),
             perpetual.getIndexPrice(),
             perpetual.fundingRate,
-            perpetual.realTimeUnitAccumulativeFunding,
             perpetual.unitAccumulativeFunding,
             perpetual.initialMarginRate,
             perpetual.maintenanceMarginRate,
             perpetual.operatorFeeRate,
             perpetual.lpFeeRate,
-            // [10]
             perpetual.referralRebateRate,
+            // [10]
             perpetual.liquidationPenaltyRate,
             perpetual.keeperGasReward,
             perpetual.insuranceFundRate,
             perpetual.insuranceFundCap,
-            perpetual.syncFundingInterval,
             perpetual.insuranceFund,
             perpetual.donatedInsuranceFund,
             perpetual.halfSpread.value,
             perpetual.halfSpread.minValue,
-            // [20]
             perpetual.halfSpread.maxValue,
             perpetual.openSlippageFactor.value,
+            // [20]
             perpetual.openSlippageFactor.minValue,
             perpetual.openSlippageFactor.maxValue,
             perpetual.closeSlippageFactor.value,
@@ -172,9 +167,9 @@ contract Getter is Storage {
             perpetual.fundingRateLimit.value,
             perpetual.fundingRateLimit.minValue,
             perpetual.fundingRateLimit.maxValue,
-            // [30]
             perpetual.ammMaxLeverage.value,
             perpetual.ammMaxLeverage.minValue,
+            // [30]
             perpetual.ammMaxLeverage.maxValue,
             perpetual.maxClosePriceDiscount.value,
             perpetual.maxClosePriceDiscount.minValue,
@@ -183,10 +178,8 @@ contract Getter is Storage {
             perpetual.maxOpenInterestRate,
             perpetual.fundingRateFactor.value,
             perpetual.fundingRateFactor.minValue,
-            // [40]
             perpetual.fundingRateFactor.maxValue
         ];
-        syncFundingTime = perpetual.syncFundingTime;
     }
 
     /**

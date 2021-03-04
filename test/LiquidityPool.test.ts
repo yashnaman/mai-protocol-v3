@@ -52,13 +52,13 @@ describe('LiquidityPool', () => {
             await liquidityPool.createPerpetual(
                 oracle0.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.createPerpetual(
                 oracle1.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.2"), toWei("0.1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
+                [toWei("0.2"), toWei("0.1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.setState(0, 2);
@@ -301,7 +301,7 @@ describe('LiquidityPool', () => {
             await liquidityPool.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur       insur cap
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), 1, toWei("1")],
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.setState(0, 2);

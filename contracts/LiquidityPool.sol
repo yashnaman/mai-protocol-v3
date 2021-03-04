@@ -72,7 +72,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      */
     function createPerpetual(
         address oracle,
-        int256[11] calldata baseParams,
+        int256[10] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
