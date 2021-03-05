@@ -30,51 +30,45 @@ async function deployLibraries() {
         ["TradeModule", TradeModule.address],
     ])
     // 2021/1/13 kovan
-    // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
-    // │ (index) │           0           │                      1                       │
-    // ├─────────┼───────────────────────┼──────────────────────────────────────────────┤
     // │    0    │      'AMMModule'      │ '0x0A1334aCea4E38a746daC7DCf7C3E61F0AB3D834' │
     // │    1    │  'CollateralModule'   │ '0x25E74e6D8A414Dff02c9CCC680B49F3708955ECF' │
     // │    2    │     'OrderModule'     │ '0x0530ed22a74c57CcD48d181085e78F60280E939b' │
     // │    3    │   'PerpetualModule'   │ '0x6EF05857FA25A81401407dE3D57Ebcb45A746E70' │
     // │    4    │ 'LiquidityPoolModule' │ '0xf5605bBed7BF76c276b6D8468F560a7B76077932' │
     // │    5    │     'TradeModule'     │ '0x99C30392BDe2161019eCa7c3d5fFc4BCf55489b2' │
-    // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
 
     // 2021/1/15 kovan
-    // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
-    // │ (index) │           0           │                      1                       │
-    // ├─────────┼───────────────────────┼──────────────────────────────────────────────┤
     // │    0    │      'AMMModule'      │ '0xf9d087E0687356101078DC80A24e9A2296B87228' │
     // │    1    │  'CollateralModule'   │ '0xb972336415C9A8e264Ab44dfd1188293e23511ba' │
     // │    2    │     'OrderModule'     │ '0xF59fD05e4575ddC7BF37183b8aFDD042A085Ce55' │
     // │    3    │   'PerpetualModule'   │ '0x4db2EFBfa164Cf893bd0E6a9fDcAD932844FeEC3' │
     // │    4    │ 'LiquidityPoolModule' │ '0xfE0a7Df6c1c38c384Ac2b23F444bbf6Bc147Cd53' │
     // │    5    │     'TradeModule'     │ '0x04f361eAe689282BcCbA6D05711641FB5D161F1B' │
-    // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
 
     // 2021/1/28 kovan
-    // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
-    // │ (index) │           0           │                      1                       │
-    // ├─────────┼───────────────────────┼──────────────────────────────────────────────┤
     // │    0    │      'AMMModule'      │ '0x6154996e1C80dE982f9eebC3E93B4DFd4F30a74a' │
     // │    1    │  'CollateralModule'   │ '0xbE4094f6eA19FBd59950139145a94CfC9ACe7f2E' │
     // │    2    │     'OrderModule'     │ '0x406A99DAFb06fC7050dfF78d53c6c013EA9Ed464' │
     // │    3    │   'PerpetualModule'   │ '0x5B7b919734ed0CedBD076BE3c4272bd2d08E1bb4' │
     // │    4    │ 'LiquidityPoolModule' │ '0x6A3D71b6B208B3626E20d5d2cD334628dd57cdd6' │
     // │    5    │     'TradeModule'     │ '0x56deCcd5C9b0E41C1F1129990e0d1E54713a8593' │
-    // └─────────┴───────────────────────┴──────────────────────────────────────────────┘
 
-    // 2021/2/8
-    // ┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
-    // │ (index) │           0           │                      1                       │
-    // ├─────────┼───────────────────────┼──────────────────────────────────────────────┤
+    // 2021/2/8 kovan
     // │    0    │      'AMMModule'      │ '0xf0e6480cea3ccb86f9e91063e5c7E73705D3B98f' │
     // │    1    │  'CollateralModule'   │ '0x0D7D906c0dA5b063536edB6F0fD67bAd86E4ec05' │
     // │    2    │     'OrderModule'     │ '0x5b8147Cb4E7A9F75652F90bAFa69325627680e55' │
     // │    3    │   'PerpetualModule'   │ '0x7FCE4ECCe2026a370B82333020bAFDD794D2376D' │
     // │    4    │ 'LiquidityPoolModule' │ '0xAfcbD2De178c7A84DB8C5616f707A08D25d56F60' │
     // │    5    │     'TradeModule'     │ '0xf72cce2af89Fe69Bbab69950eB2050CB0Aeb9743' │
+
+    // 2021/3/4 kovan
+    // │    0    │      'AMMModule'      │ '0x6C0eB14714421294c05d2842cfCDC94F3410E93C' │
+    // │    1    │  'CollateralModule'   │ '0x5Af4882504975380994A13d763855434E08275EE' │
+    // │    2    │     'OrderModule'     │ '0xe43f8Ae37Faa9fa252c0Bf2dFE822F3C4DB7FCAE' │
+    // │    3    │   'PerpetualModule'   │ '0xA739E50913E98a5B055B1c20006F3c3220AF7299' │
+    // │    4    │ 'LiquidityPoolModule' │ '0x08E6cb5d56a8CA4b59a064C880645454448F7501' │
+    // │    5    │     'TradeModule'     │ '0x1307a3551D9dc3214e25b65bd377751Cc218b421' │
+
 }
 
 async function createLiquidityPoolFactory() {
@@ -82,10 +76,10 @@ async function createLiquidityPoolFactory() {
         "LiquidityPool",
         {
             libraries: {
-                AMMModule: "0xf0e6480cea3ccb86f9e91063e5c7E73705D3B98f",
-                OrderModule: "0x5b8147Cb4E7A9F75652F90bAFa69325627680e55",
-                LiquidityPoolModule: "0xAfcbD2De178c7A84DB8C5616f707A08D25d56F60",
-                TradeModule: "0xf72cce2af89Fe69Bbab69950eB2050CB0Aeb9743",
+                AMMModule: "0x6C0eB14714421294c05d2842cfCDC94F3410E93C",
+                OrderModule: "0xe43f8Ae37Faa9fa252c0Bf2dFE822F3C4DB7FCAE",
+                LiquidityPoolModule: "0x08E6cb5d56a8CA4b59a064C880645454448F7501",
+                TradeModule: "0x1307a3551D9dc3214e25b65bd377751Cc218b421",
             }
         }
     )
@@ -231,42 +225,32 @@ async function main(accounts: any[]) {
     //     ["broker", broker.address],
     // ];
     // console.table(addresses);
-    const symbol = await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
-    const poolCreator = await (await createFactory("PoolCreator")).attach('0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b')
+    // return
+
+    const symbol = await (await createFactory("SymbolService")).attach('0x39A7CC050B636b556C244D48f918A79b74f88Dfe')
+    const poolCreator = await (await createFactory("PoolCreator")).attach('0xd10a6552956027FEfEC54F43Ed3B5B441392EBf8')
 
     // 2021 / 1 / 13 kovan / https://kovan.etherscan.io/address/0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a
-    // ┌─────────┬───────────────┬──────────────────────────────────────────────┐
-    // │ (index) │       0       │                      1                       │
-    // ├─────────┼───────────────┼──────────────────────────────────────────────┤
     // │    0    │    'weth'     │ '0xd0A1E359811322d97991E03f863a0C30C2cF029C' │
     // │    1    │    'usdc'     │ '0x59edD5AEBf97955F53a094B49221E63F544ddA5a' │
     // │    3    │ 'poolCreator' │ '0xFc3Cf479C7EC041f7A75710d5B0aE22407aD766e' │
     // │    4    │   'symbol'    │ '0x465fB17aCc62Efd26D5B3bE9B3FFC984Cebd03d1' │
     // │    5    │ 'brokerRelay' │ '0xF9Aa44df5dD1DFD321c9Dd7cDa892a046135A054' │
-    // └─────────┴───────────────┴──────────────────────────────────────────────┘
 
     // 2021/1/15 kovan
-    // ┌─────────┬───────────────┬──────────────────────────────────────────────┐
-    // │ (index) │       0       │                      1                       │
-    // ├─────────┼───────────────┼──────────────────────────────────────────────┤
     // │    0    │    'weth'     │ '0xd0A1E359811322d97991E03f863a0C30C2cF029C' │
     // │    1    │    'usdc'     │ '0xd4AC81D9FD2b28363eBD1D88a8364Ff3b3577e84' │
     // │    2    │ 'poolCreator' │ '0xfa81036567A378C44C5bC13323416aECfeD29D09' │
     // │    3    │   'symbol'    │ '0x02ae5f2802941789311d0b21969ff52178CeC555' │
     // │    4    │ 'brokerRelay' │ '0xF3B092451cDBD827105aB593222975c5B0F91578' │
-    // └─────────┴───────────────┴──────────────────────────────────────────────┘
 
     // 2021/1/28
-    // ┌─────────┬──────────────────┬──────────────────────────────────────────────┐
-    // │ (index) │        0         │                      1                       │
-    // ├─────────┼──────────────────┼──────────────────────────────────────────────┤
     // │    0    │      'weth'      │ '0xd0A1E359811322d97991E03f863a0C30C2cF029C' │
     // │    1    │    'governor'    │ '0xaae7556C23B213c605D01C88385ee1e025B27F0f' │
     // │    2    │ 'shareTokenTmpl' │ '0xA30128343816bBA44EB934b6136cf6d0633934EA' │
     // │    3    │  'poolCreator'   │ '0x0c8B800A797541bF43ABe26C850DBeD352B6230c' │
     // │    4    │     'symbol'     │ '0xc0Df603B5424e95c00bF34494B25F38A1c4d2dDb' │
     // │    5    │  'brokerRelay'   │ '0x7e63e0559a16614B999D8C9Fe806A09EAAc39842' │
-    // └─────────┴──────────────────┴──────────────────────────────────────────────┘
 
     // 2021/2/8
     // │    0    │    'governor'    │ '0x02C0526c230392A4C01417e7Df8233F46344C042' │
@@ -275,18 +259,26 @@ async function main(accounts: any[]) {
     // │    3    │     'symbol'     │ '0x0A701c621210859eAbE2F47BE37456BEc2427462' │
     // │    4    │     'broker'     │ '0x243d3bB879779911a5299592d38e84E54B83fd19' │
 
+    // 2021/3/4
+    // │    0    │  'governorTmpl'  │ '0x7eAB06Bf6097255482F31b4c39063fb2b8075EC2' │
+    // │    1    │ 'shareTokenTmpl' │ '0x7eAB06Bf6097255482F31b4c39063fb2b8075EC2' │
+    // │    2    │  'poolCreator'   │ '0xd10a6552956027FEfEC54F43Ed3B5B441392EBf8' │
+    // │    3    │     'symbol'     │ '0x39A7CC050B636b556C244D48f918A79b74f88Dfe' │
+    // │    4    │     'broker'     │ '0x762D08137657C2d9702917098A2A70208d809315' │
+    
+    
     // 4. add version
-    // await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
-    // const LiquidityPool = await createLiquidityPoolFactory();
-    // var liquidityPoolTmpl = await LiquidityPool.deploy();
-    // await (await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version")).wait();
+    await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
+    const LiquidityPool = await createLiquidityPoolFactory();
+    var liquidityPoolTmpl = await LiquidityPool.deploy();
+    await (await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version")).wait();
 
     // 5. pools
-    // const pool1 = await set1(deployer, poolCreator, oracleAddresses);
+    const pool1 = await set1(deployer, poolCreator, oracleAddresses);
     const pool2 = await set2(deployer, poolCreator, oracleAddresses);
 
     // 6. reader
-    // await deployReader({  });
+    await deployReader({  });
 }
 
 async function set1(deployer, poolCreator, oracleAddresses) {
