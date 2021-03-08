@@ -105,6 +105,20 @@ module.exports = {
             accounts: ["0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4"],
             timeout: 300000,
             confirmations: 1,
+        },
+        bscTestnet: {
+            url: "https://data-seed-prebsc-2-s1.binance.org:8545/",
+            gasPrice: 20e9,
+            accounts: ["0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4"],
+            timeout: 300000,
+            confirmations: 1,
+        },
+        hecoTestnet: {
+            url: "https://http-testnet.hecochain.com",
+            gasPrice: 1e9,
+            accounts: ["0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4"],
+            timeout: 300000,
+            confirmations: 1,
         }
     },
     solidity: {
