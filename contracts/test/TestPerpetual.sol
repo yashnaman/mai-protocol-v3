@@ -25,8 +25,8 @@ contract TestPerpetual is Storage {
         int256[10] calldata baseParams,
         int256[7] calldata riskParams
     ) external {
-        uint256 perpetualIndex = _liquidityPool.perpetuals.length;
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals.push();
+        uint256 perpetualIndex = _liquidityPool.perpetualCount;
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         perpetual.initialize(
             perpetualIndex,
             oracle,
@@ -35,6 +35,7 @@ contract TestPerpetual is Storage {
             riskParams,
             riskParams
         );
+        _liquidityPool.perpetualCount++;
     }
 
     function setPerpetualBaseParameter(

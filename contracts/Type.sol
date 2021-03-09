@@ -83,7 +83,10 @@ struct LiquidityPoolStorage {
     uint256 priceUpdateTime;
     uint256 operatorExpiration;
     // perpetuals
-    PerpetualStorage[] perpetuals;
+    uint256 perpetualCount;
+    mapping(uint256 => PerpetualStorage) perpetuals;
+    // reserved slot for future upgrade
+    bytes32[20] reserved;
 }
 
 /**
@@ -133,4 +136,6 @@ struct PerpetualStorage {
     int256 donatedInsuranceFund;
     // accounts
     mapping(address => MarginAccount) marginAccounts;
+    // reserved slot for future upgrade
+    bytes32[20] reserved;
 }

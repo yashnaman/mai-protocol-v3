@@ -76,7 +76,7 @@ library OrderModule {
         // pool / perpetual
         require(order.liquidityPool == address(this), "liquidity pool mismatch");
         require(
-            order.perpetualIndex < liquidityPool.perpetuals.length,
+            order.perpetualIndex < liquidityPool.perpetualCount,
             "perpetual index out of range"
         );
         // amount

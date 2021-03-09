@@ -22,11 +22,6 @@ contract TestAMM {
     int256 maxClosePriceDiscount = 2 * 10**17;
     LiquidityPoolStorage liquidityPool;
 
-    constructor() {
-        liquidityPool.perpetuals.push();
-        liquidityPool.perpetuals.push();
-    }
-
     function setParams(
         int256 ammMaxLeverage,
         int256 cash,
@@ -58,6 +53,8 @@ contract TestAMM {
         liquidityPool.perpetuals[1].maxClosePriceDiscount.value = maxClosePriceDiscount;
         liquidityPool.perpetuals[1].marginAccounts[address(this)].position = positionAmount2;
         liquidityPool.perpetuals[1].indexPriceData.price = indexPrice2;
+
+        liquidityPool.perpetualCount = 2;
     }
 
     function isAMMSafe() public view returns (bool) {

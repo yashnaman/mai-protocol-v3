@@ -81,7 +81,7 @@ contract Getter is Storage {
         vaultFeeRate = _liquidityPool.getVaultFeeRate();
         poolCash = _liquidityPool.poolCash;
         nums[0] = _liquidityPool.collateralDecimals;
-        nums[1] = _liquidityPool.perpetuals.length;
+        nums[1] = _liquidityPool.perpetualCount;
         nums[2] = _liquidityPool.fundingTime;
         nums[3] = _liquidityPool.operatorExpiration;
     }

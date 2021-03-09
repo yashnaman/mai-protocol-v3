@@ -40,16 +40,16 @@ contract TestGovernance is Governance {
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
     ) public {
-        _liquidityPool.perpetuals.push();
-        _liquidityPool.perpetuals[0].initialize(
-            0,
+        _liquidityPool.perpetuals[_liquidityPool.perpetualCount].initialize(
+            _liquidityPool.perpetualCount,
             oracle,
             baseParams,
             riskParams,
             minRiskParamValues,
             maxRiskParamValues
         );
-        _liquidityPool.perpetuals[0].state = PerpetualState.NORMAL;
+        _liquidityPool.perpetuals[_liquidityPool.perpetualCount].state = PerpetualState.NORMAL;
+        _liquidityPool.perpetualCount++;
     }
 
     function isFastCreationEnabled() public view returns (bool) {

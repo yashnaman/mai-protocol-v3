@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
-// import "./misc/typechain-ethers-v5-mcdex"
+import "./misc/typechain-ethers-v5-mcdex"
 import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";

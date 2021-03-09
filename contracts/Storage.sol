@@ -16,7 +16,7 @@ contract Storage is ContextUpgradeable {
     LiquidityPoolStorage internal _liquidityPool;
 
     modifier onlyExistedPerpetual(uint256 perpetualIndex) {
-        require(perpetualIndex < _liquidityPool.perpetuals.length, "perpetual not exist");
+        require(perpetualIndex < _liquidityPool.perpetualCount, "perpetual not exist");
         _;
     }
 

@@ -135,7 +135,7 @@ library AMMModule {
         }
         cashToReturn = calculateCashToReturn(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -346,7 +346,7 @@ library AMMModule {
         view
         returns (Context memory context)
     {
-        context = prepareContext(liquidityPool, liquidityPool.perpetuals.length);
+        context = prepareContext(liquidityPool, liquidityPool.perpetualCount);
     }
 
     /**
@@ -354,7 +354,7 @@ library AMMModule {
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool to distinguish,
-     *                          set to liquidityPool.perpetuals.length to skip distinguishing.
+     *                          set to liquidityPool.perpetualCount to skip distinguishing.
      * @return  context         Context object of AMM.
      */
     function prepareContext(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
@@ -362,7 +362,7 @@ library AMMModule {
         view
         returns (Context memory context)
     {
-        for (uint256 i = 0; i < liquidityPool.perpetuals.length; i++) {
+        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             // only involve normal market
             if (perpetual.state != PerpetualState.NORMAL) {

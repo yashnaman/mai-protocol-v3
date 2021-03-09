@@ -16,7 +16,7 @@ contract TestOrder is Storage {
     using OrderModule for LiquidityPoolStorage;
 
     constructor() {
-        _liquidityPool.perpetuals.push();
+        _liquidityPool.perpetualCount = 1;
     }
 
     function decompress(bytes memory data)

@@ -9,8 +9,6 @@ import {
     createLiquidityPoolFactory
 } from '../scripts/utils';
 
-import { SymbolServiceFactory } from "../typechain/SymbolServiceFactory"
-
 describe('SymbolService', () => {
     let accounts;
     let symbolService;
@@ -37,8 +35,7 @@ describe('SymbolService', () => {
         it('not owner', async () => {
             const factory = testSymbolService.address;
             const user = accounts[2];
-            const symbolServiceUser = await SymbolServiceFactory.connect(symbolService.address, user);
-            await expect(symbolServiceUser.addWhitelistedFactory(factory)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(symbolService.connect(user).addWhitelistedFactory(factory)).to.be.revertedWith('Ownable: caller is not the owner');
         })
     })
 
@@ -107,8 +104,7 @@ describe('SymbolService', () => {
             await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             const user = accounts[2];
-            const symbolServiceUser = await SymbolServiceFactory.connect(symbolService.address, user);
-            await expect(symbolServiceUser.assignReservedSymbol(testSymbolService.address, 0, 888)).to.be.revertedWith('Ownable: caller is not the owner');
+            await expect(symbolService.connect(user).assignReservedSymbol(testSymbolService.address, 0, 888)).to.be.revertedWith('Ownable: caller is not the owner');
         })
 
         it('not contract', async () => {

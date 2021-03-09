@@ -100,14 +100,14 @@ library LiquidityPoolModule {
      *
      * @param   liquidityPool       The reference of liquidity pool storage.
      * @param   exclusiveIndex      The index of perpetual in the liquidity pool to exclude,
-     *                              set to liquidityPool.perpetuals.length to skip excluding.
+     *                              set to liquidityPool.perpetualCount to skip excluding.
      * @return  availablePoolCash   The available pool cash(collateral) of the liquidity pool excluding the specific perpetual
      */
     function getAvailablePoolCash(
         LiquidityPoolStorage storage liquidityPool,
         uint256 exclusiveIndex
     ) public view returns (int256 availablePoolCash) {
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (i == exclusiveIndex || perpetual.state != PerpetualState.NORMAL) {
@@ -135,7 +135,7 @@ library LiquidityPoolModule {
         view
         returns (int256 availablePoolCash)
     {
-        return getAvailablePoolCash(liquidityPool, liquidityPool.perpetuals.length);
+        return getAvailablePoolCash(liquidityPool, liquidityPool.perpetualCount);
     }
 
     /**
@@ -215,12 +215,17 @@ library LiquidityPoolModule {
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
     ) public {
+<<<<<<< HEAD
         require(
             liquidityPool.perpetuals.length < MAX_PERPETUAL_COUNT,
             "perpetual count exceeds limit"
         );
         uint256 perpetualIndex = liquidityPool.perpetuals.length;
         PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
+=======
+        uint256 perpetualIndex = liquidityPool.perpetualCount;
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+>>>>>>> perpetuals: array => map to avoid storage collisions
         perpetual.initialize(
             perpetualIndex,
             oracle,
@@ -235,6 +240,8 @@ library LiquidityPoolModule {
         if (liquidityPool.isRunning) {
             perpetual.setNormalState();
         }
+        liquidityPool.perpetualCount++;
+
         emit CreatePerpetual(
             perpetualIndex,
             liquidityPool.governor,
@@ -253,7 +260,7 @@ library LiquidityPoolModule {
      * @param   liquidityPool   The reference of liquidity pool storage.
      */
     function runLiquidityPool(LiquidityPoolStorage storage liquidityPool) public {
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         require(length > 0, "there should be at least 1 perpetual to run");
         for (uint256 i = 0; i < length; i++) {
             liquidityPool.perpetuals[i].setNormalState();
@@ -280,7 +287,7 @@ library LiquidityPoolModule {
         uint256 perpetualIndex,
         address newOracle
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setOracle(newOracle);
     }
@@ -296,7 +303,7 @@ library LiquidityPoolModule {
         uint256 perpetualIndex,
         int256[10] memory baseParams
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setBaseParameter(baseParams);
     }
@@ -317,7 +324,7 @@ library LiquidityPoolModule {
         int256[7] memory minRiskParamValues,
         int256[7] memory maxRiskParamValues
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.setRiskParameter(riskParams, minRiskParamValues, maxRiskParamValues);
     }
@@ -333,7 +340,7 @@ library LiquidityPoolModule {
         uint256 perpetualIndex,
         int256[7] memory riskParams
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateRiskParameter(riskParams);
     }
@@ -349,7 +356,7 @@ library LiquidityPoolModule {
     function setEmergencyState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
     {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
     }
@@ -363,7 +370,7 @@ library LiquidityPoolModule {
     function setClearedState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
     {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.countMargin(address(this));
         perpetual.setClearedState();
@@ -430,7 +437,7 @@ library LiquidityPoolModule {
             return;
         }
         int256 timeElapsed = currentTime.sub(liquidityPool.fundingTime).toInt256();
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -451,7 +458,7 @@ library LiquidityPoolModule {
         if (!isAMMSafe) {
             poolMargin = 0;
         }
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -475,7 +482,7 @@ library LiquidityPoolModule {
         if (liquidityPool.priceUpdateTime >= currentTime) {
             return;
         }
-        uint256 length = liquidityPool.perpetuals.length;
+        uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -502,7 +509,7 @@ library LiquidityPoolModule {
         address donator,
         int256 amount
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         int256 totalAmount =
             transferFromUserToPerpetual(liquidityPool, perpetualIndex, donator, amount);
         liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
@@ -523,7 +530,7 @@ library LiquidityPoolModule {
         address trader,
         int256 amount
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         int256 totalAmount =
             transferFromUserToPerpetual(liquidityPool, perpetualIndex, trader, amount);
         if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
@@ -547,7 +554,7 @@ library LiquidityPoolModule {
         address trader,
         int256 amount
     ) public {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         rebalance(liquidityPool, perpetualIndex);
         if (perpetual.withdraw(trader, amount)) {
