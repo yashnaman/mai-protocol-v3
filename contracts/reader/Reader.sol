@@ -105,7 +105,12 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
+        address imp = ILiquidityPool(liquidityPool).implementation();
+        if (isV004(imp)) {
+            (poolMargin, isSafe) = getPoolMarginV004(liquidityPool);
+        } else {
+            (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
+        }
     }
 
     /**
@@ -140,8 +145,13 @@ contract Reader {
         address creator = pool.addresses[0];
         address symbolService = IPoolCreator(creator).getSymbolService();
         pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
+        address imp = ILiquidityPool(liquidityPool).implementation();
         for (uint256 i = 0; i < perpetualCount; i++) {
-            getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
+            if (isV004(imp)) {
+                getPerpetualV004(pool.perpetuals[i], symbolService, liquidityPool, i);
+            } else {
+                getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
+            }
         }
     }
 
@@ -180,4 +190,70 @@ contract Reader {
         }
         return minSymbol;
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // back-compatible: beta0.0.4
+
+    function isV004(address imp) private pure returns (bool) {
+        // kovan
+        if (imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8) {
+            return true;
+        }
+        return false;
+    }
+
+    function getPoolMarginV004(address liquidityPool)
+        private view
+        returns (
+            int256 poolMargin,
+            bool isSafe
+        )
+    {
+        poolMargin = ILiquidityPool004(liquidityPool).getPoolMargin();
+        isSafe = true;
+    }
+
+    function getPerpetualV004(
+        PerpetualReaderResult memory perp,
+        address symbolService,
+        address liquidityPool,
+        uint256 perpetualIndex
+    ) private {
+        // perpetual
+        int256[34] memory nums;
+        (perp.state, perp.oracle, nums) = ILiquidityPool004(liquidityPool).getPerpetualInfo(
+            perpetualIndex
+        );
+        for (uint i = 0; i < 34; i++) {
+            perp.nums[i] = nums[i];
+        }
+        perp.nums[34] = 0; // [34] openInterest
+        perp.nums[35] = 100 * 10**18; // [35] maxOpenInterestRate
+        perp.nums[36] = perp.nums[25]; // [25-27] fundingRateLimit value, min, max [36-38] fundingRateFactor value, min, max
+        perp.nums[37] = perp.nums[26];
+        perp.nums[38] = perp.nums[27];
+        // read more from symbol service
+        perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
+        // read more from oracle
+        perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
+        perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
+        // read more from account
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
+            .getMarginAccount(perpetualIndex, liquidityPool);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+// back-compatible: beta0.0.4
+
+interface ILiquidityPool004 {
+    function getPerpetualInfo(uint256 perpetualIndex)
+        external
+        view
+        returns (
+            PerpetualState state,
+            address oracle,
+            int256[34] memory nums
+        );
+    function getPoolMargin() external view returns (int256 poolMargin);
 }

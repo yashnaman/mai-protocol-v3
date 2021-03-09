@@ -229,5 +229,13 @@ interface ILiquidityPool {
      */
     function getClaimableFee(address claimer) external view returns (int256);
 
+    /**
+     * @notice  If you want to get the real-time data, call this function first
+     */
     function forceToSyncState() external;
+
+    /**
+     * @notice Returns the current implementation of UpgradeableProxy.
+     */
+    function implementation() external view returns (address);
 }
