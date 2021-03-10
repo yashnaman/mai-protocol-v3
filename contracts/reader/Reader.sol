@@ -196,7 +196,8 @@ contract Reader {
 
     function isV004(address imp) private pure returns (bool) {
         // kovan
-        if (imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8) {
+        if (imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8 ||
+            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C) {
             return true;
         }
         return false;
