@@ -73,7 +73,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
     bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE =
-        keccak256(bytes("upgradeTo(address,address)"));
+        keccak256(bytes("upgradeTo(address)"));
     bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
         keccak256(bytes("forceToSetEmergencyState(uint256)"));
     bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
