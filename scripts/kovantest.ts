@@ -61,13 +61,14 @@ async function deployLibraries() {
     // │    4    │ 'LiquidityPoolModule' │ '0xAfcbD2De178c7A84DB8C5616f707A08D25d56F60' │
     // │    5    │     'TradeModule'     │ '0xf72cce2af89Fe69Bbab69950eB2050CB0Aeb9743' │
 
-    // 2021/3/4 kovan
-    // │    0    │      'AMMModule'      │ '0x6C0eB14714421294c05d2842cfCDC94F3410E93C' │
-    // │    1    │  'CollateralModule'   │ '0x5Af4882504975380994A13d763855434E08275EE' │
-    // │    2    │     'OrderModule'     │ '0xe43f8Ae37Faa9fa252c0Bf2dFE822F3C4DB7FCAE' │
-    // │    3    │   'PerpetualModule'   │ '0xA739E50913E98a5B055B1c20006F3c3220AF7299' │
-    // │    4    │ 'LiquidityPoolModule' │ '0x08E6cb5d56a8CA4b59a064C880645454448F7501' │
-    // │    5    │     'TradeModule'     │ '0x1307a3551D9dc3214e25b65bd377751Cc218b421' │
+    // 2021/3/10 kovan
+    // │    0    │      'AMMModule'      │ '0x1B114EA6E969f817DFdb74D503128927936Ad715' │
+    // │    1    │  'CollateralModule'   │ '0xF598F8c0b86D37884D76e11A979955c191A008C1' │
+    // │    2    │     'OrderModule'     │ '0xB78E12f984bbe71897DbF6c3371119E31b24A989' │
+    // │    3    │   'PerpetualModule'   │ '0x4c13f37A1198c1539796014d50079dCB266C9B88' │
+    // │    4    │ 'LiquidityPoolModule' │ '0x349eFDf923EfC83d43377a85e5CCADe3147ebf32' │
+    // │    5    │     'TradeModule'     │ '0x4592021F3AC4aaED5411f35c33175B2A3845C498' │
+    
 
 }
 
@@ -76,10 +77,10 @@ async function createLiquidityPoolFactory() {
         "LiquidityPool",
         {
             libraries: {
-                AMMModule: "0x6C0eB14714421294c05d2842cfCDC94F3410E93C",
-                OrderModule: "0xe43f8Ae37Faa9fa252c0Bf2dFE822F3C4DB7FCAE",
-                LiquidityPoolModule: "0x08E6cb5d56a8CA4b59a064C880645454448F7501",
-                TradeModule: "0x1307a3551D9dc3214e25b65bd377751Cc218b421",
+                AMMModule: "0x1B114EA6E969f817DFdb74D503128927936Ad715",
+                OrderModule: "0xB78E12f984bbe71897DbF6c3371119E31b24A989",
+                LiquidityPoolModule: "0x349eFDf923EfC83d43377a85e5CCADe3147ebf32",
+                TradeModule: "0x4592021F3AC4aaED5411f35c33175B2A3845C498",
             }
         }
     )
@@ -227,8 +228,8 @@ async function main(accounts: any[]) {
     // console.table(addresses);
     // return
 
-    const symbol = await (await createFactory("SymbolService")).attach('0x39A7CC050B636b556C244D48f918A79b74f88Dfe')
-    const poolCreator = await (await createFactory("PoolCreator")).attach('0xd10a6552956027FEfEC54F43Ed3B5B441392EBf8')
+    const symbol = await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
+    const poolCreator = await (await createFactory("PoolCreator")).attach('0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b')
 
     // 2021 / 1 / 13 kovan / https://kovan.etherscan.io/address/0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a
     // │    0    │    'weth'     │ '0xd0A1E359811322d97991E03f863a0C30C2cF029C' │
@@ -258,14 +259,6 @@ async function main(accounts: any[]) {
     // │    2    │  'poolCreator'   │ '0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b' │
     // │    3    │     'symbol'     │ '0x0A701c621210859eAbE2F47BE37456BEc2427462' │
     // │    4    │     'broker'     │ '0x243d3bB879779911a5299592d38e84E54B83fd19' │
-
-    // 2021/3/4
-    // │    0    │  'governorTmpl'  │ '0x7eAB06Bf6097255482F31b4c39063fb2b8075EC2' │
-    // │    1    │ 'shareTokenTmpl' │ '0x7eAB06Bf6097255482F31b4c39063fb2b8075EC2' │
-    // │    2    │  'poolCreator'   │ '0xd10a6552956027FEfEC54F43Ed3B5B441392EBf8' │
-    // │    3    │     'symbol'     │ '0x39A7CC050B636b556C244D48f918A79b74f88Dfe' │
-    // │    4    │     'broker'     │ '0x762D08137657C2d9702917098A2A70208d809315' │
-    
     
     // 4. add version
     await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
