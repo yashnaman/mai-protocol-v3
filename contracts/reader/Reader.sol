@@ -47,6 +47,14 @@ contract Reader {
         bool isMarginSafe;
     }
 
+    struct AccountsResult {
+        address account;
+        int256 availableCash;
+        int256 position;
+        int256 margin;
+        bool isSafe;
+    }
+
     /**
      * @notice Get the storage of the account in the perpetual
      * @param liquidityPool The address of the liquidity pool
@@ -196,19 +204,19 @@ contract Reader {
 
     function isV004(address imp) private pure returns (bool) {
         // kovan
-        if (imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8 ||
-            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C) {
+        if (
+            imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8 ||
+            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C
+        ) {
             return true;
         }
         return false;
     }
 
     function getPoolMarginV004(address liquidityPool)
-        private view
-        returns (
-            int256 poolMargin,
-            bool isSafe
-        )
+        private
+        view
+        returns (int256 poolMargin, bool isSafe)
     {
         poolMargin = ILiquidityPool004(liquidityPool).getPoolMargin();
         isSafe = true;
@@ -225,7 +233,7 @@ contract Reader {
         (perp.state, perp.oracle, nums) = ILiquidityPool004(liquidityPool).getPerpetualInfo(
             perpetualIndex
         );
-        for (uint i = 0; i < 34; i++) {
+        for (uint256 i = 0; i < 34; i++) {
             perp.nums[i] = nums[i];
         }
         perp.nums[34] = 0; // [34] openInterest
@@ -242,6 +250,37 @@ contract Reader {
         (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, liquidityPool);
     }
+
+    function getAccountsInfo(
+        address liquidityPool,
+        uint256 perpetualIndex,
+        uint256 begin,
+        uint256 end
+    ) public returns (bool isSynced, AccountsResult[] memory result) {
+        address[] memory accounts =
+            ILiquidityPool(liquidityPool).listActiveAccounts(perpetualIndex, begin, end);
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
+        result = new AccountsResult[](accounts.length);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            int256 availableCash;
+            int256 margin;
+            int256 position;
+            bool isMaintenanceMarginSafe;
+            (, position, availableCash, margin, , , isMaintenanceMarginSafe, ) = ILiquidityPool(
+                liquidityPool
+            )
+                .getMarginAccount(perpetualIndex, accounts[i]);
+            result[i].account = accounts[i];
+            result[i].position = position;
+            result[i].availableCash = availableCash;
+            result[i].margin = margin;
+            result[i].isSafe = isMaintenanceMarginSafe;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -256,5 +295,6 @@ interface ILiquidityPool004 {
             address oracle,
             int256[34] memory nums
         );
+
     function getPoolMargin() external view returns (int256 poolMargin);
 }
