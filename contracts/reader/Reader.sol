@@ -122,6 +122,33 @@ contract Reader {
     }
 
     /**
+     * @notice  Query the cost and position amount that amm could afford based on current liquidity.
+     *          This method should returns the same result as a 'read' trade, and trading fee is not included.
+     *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
+     *          To get the latest status, call `syncState` first.
+     * @param   liquidityPool   The address of the liquidity pool
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   amount          The expected(max) amoun of position to trade.
+     * @return  isSynced        True if the funding state is synced to real-time data. False if
+     *                          error happens (oracle error, zero price etc.). In this case,
+     *                          trading, withdraw (if position != 0), addLiquidity, removeLiquidity
+     *                          will fail
+     * @return  deltaCash       The cost of cash of trade.
+     * @return  deltaPosition   The update position of the trader after the trade
+     */
+    function queryTradeWithAMM(address liquidityPool, uint256 perpetualIndex, int256 amount)
+        public
+        returns (bool isSynced, int256 deltaCash, int256 deltaPosition)
+    {
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
+        (deltaCash, deltaPosition) = ILiquidityPool(liquidityPool).queryTradeWithAMM(perpetualIndex, amount);
+    }
+
+    /**
      * @notice Get the status of the liquidity pool
      * @param liquidityPool The address of the liquidity pool
      * @return isSynced True if the funding state is synced to real-time data. False if
