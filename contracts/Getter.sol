@@ -195,7 +195,7 @@ contract Getter is Storage {
      *                          calculating AMM margin
      * @return cash                     The cash of the account.
      * @return position                 The position of the account.
-     * @return availableCash            The available cash of the account.
+     * @return availableMargin          The available margin of the account.
      * @return margin                   The margin of the account.
      * @return settleableMargin         The settleable margin of the account.
      * @return isInitialMarginSafe      True if the account is initial margin safe.
@@ -209,7 +209,7 @@ contract Getter is Storage {
         returns (
             int256 cash,
             int256 position,
-            int256 availableCash,
+            int256 availableMargin,
             int256 margin,
             int256 settleableMargin,
             bool isInitialMarginSafe,
@@ -222,7 +222,7 @@ contract Getter is Storage {
         int256 markPrice = perpetual.getMarkPrice();
         cash = account.cash;
         position = account.position;
-        availableCash = perpetual.getAvailableCash(trader);
+        availableMargin = perpetual.getAvailableMargin(trader, markPrice);
         margin = perpetual.getMargin(trader, markPrice);
         settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
         isInitialMarginSafe = perpetual.isInitialMarginSafe(trader, markPrice);

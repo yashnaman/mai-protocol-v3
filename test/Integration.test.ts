@@ -164,7 +164,10 @@ describe("integration", () => {
 
         print(await perp.callStatic.getLiquidityPoolInfo());
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> available cash -> available margin
         let now = Math.floor(Date.now() / 1000);
         // trade 1
         await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
@@ -340,6 +343,7 @@ describe("integration", () => {
         // print(await perp.callStatic.getLiquidityPoolInfo());
 
         let now = Math.floor(Date.now() / 1000);
+<<<<<<< HEAD
         // // trade 1
         // await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
         // await gs.collect("trade 1 - open", perpUser1.trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, false));
@@ -359,6 +363,28 @@ describe("integration", () => {
         // await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
         // await gs.collect("trade 4 - close all", perpUser1.trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, false));
         // print(await perpUser1.callStatic.getMarginAccount(0, user1.address));
+=======
+
+        // // trade 1
+        // await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
+        // await gs.collect("trade 1 - open", perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0));
+        // print(await perp.callStatic.getMarginAccount(0, user1.address));
+
+        // // trade 2
+        // await updatePrice(toWei("503"), toWei("604"), toWei("705"), toWei("806"))
+        // await gs.collect("trade 2 - open", perp.connect(user1).trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
+        // print(await perp.callStatic.getMarginAccount(0, user1.address));
+
+        // // trade 3
+        // await updatePrice(toWei("504"), toWei("605"), toWei("706"), toWei("807"))
+        // await gs.collect("trade 3 - revert", perp.connect(user1).trade(0, user1.address, toWei("-0.2"), toWei("0"), now + 999999, none, 0));
+        // print(await perp.callStatic.getMarginAccount(0, user1.address));
+
+        // // trade 4
+        // await updatePrice(toWei("505"), toWei("606"), toWei("707"), toWei("808"))
+        // await gs.collect("trade 4 - close all", perp.connect(user1).trade(0, user1.address, toWei("0.05"), toWei("1000"), now + 999999, none, 0));
+        // print(await perp.callStatic.getMarginAccount(0, user1.address));
+>>>>>>> available cash -> available margin
 
         // withdraw
         await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
@@ -366,7 +392,11 @@ describe("integration", () => {
         // console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
         print(await perp.connect(user1).callStatic.getMarginAccount(0, user1.address));
 
+<<<<<<< HEAD
         // // remove lp
+=======
+        // remove lp
+>>>>>>> available cash -> available margin
         // await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
         // await gs.collect("removeLiquidity", perpUser2.removeLiquidity(await shareUser2.balanceOf(user2.address)));
         // console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
@@ -716,23 +746,23 @@ describe("integration", () => {
         let now = Math.floor(Date.now() / 1000);
         await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1000"), now + 999999, none, 0);
 
-        // var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
-        // console.log("cash:", fromWei(availableCash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+        // var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        // console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
         await updatePrice(toWei("100"))
         await perp.connect(user1).forceToSyncState();
 
-        // var { availableCash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
-        // console.log("cash:", fromWei(availableCash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+        // var { cash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
+        // console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
         // var { deltaCash } = await perp.queryTradeWithAMM(0, toWei("0").sub(position))
         // console.log(deltaCash.add(margin))
 
         await perp.connect(user2).donateInsuranceFund(0, toWei("1000"))
 
         await perp.connect(user3).liquidateByAMM(0, user1.address);
-        var { availableCash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
-        expect(availableCash).to.equal(0);
+        var { cash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(0);
         expect(position).to.equal(0);
-        console.log("cash:", fromWei(availableCash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+        console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
     })
 
 

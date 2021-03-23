@@ -102,16 +102,16 @@ describe("integration2", () => {
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9500"));
         await perp.connect(user1).deposit(1, user1.address, toWei("100"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9400"));
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
-        expect(availableCash).to.equal(toWei("500"));
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(toWei("500"));
         expect(position).to.equal(toWei("0"));
         expect(margin).to.equal(toWei("500"));
         expect(isMaintenanceMarginSafe).to.be.true;
         var { nums } = await perp.getPerpetualInfo(0);
         expect(nums[0]).to.equal(toWei("500")); // total collateral of perpetual
         expect(nums[34]).to.equal(toWei("0")); // open interest of perpetual
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
-        expect(availableCash).to.equal(toWei("100"));
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
+        expect(cash).to.equal(toWei("100"));
         expect(position).to.equal(toWei("0"));
         expect(margin).to.equal(toWei("100"));
         expect(isMaintenanceMarginSafe).to.be.true;
@@ -135,13 +135,13 @@ describe("integration2", () => {
         // trade
         let now = Math.floor(Date.now() / 1000);
         await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
-        expect(availableCash).to.equal(toWei("-2960.35")); // 500 - 3450 - 3450 * 0.003(fee) = -2960.35
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(toWei("-2960.35")); // 500 - 3450 - 3450 * 0.003(fee) = -2960.35
         expect(position).to.equal(toWei("3"));
         expect(margin).to.equal(toWei("39.65"));
         expect(isMaintenanceMarginSafe).to.be.true;
-        var { availableCash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account
-        expect(availableCash).to.equal(toWei("3453.45")); // lp fee = 3.45, 3450 + 3.45 = 3453.45
+        var { cash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account
+        expect(cash).to.equal(toWei("3453.45")); // lp fee = 3.45, 3450 + 3.45 = 3453.45
         expect(position).to.equal(toWei("-3"));
         expect(margin).to.equal(toWei("453.45"));
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
@@ -155,13 +155,13 @@ describe("integration2", () => {
         expect(nums[34]).to.equal(toWei("3")); // open interest of perpetual
 
         await perp.connect(user1).trade(1, user1.address, toWei("-1"), toWei("950"), now + 999999, none, 0);
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
-        expect(availableCash).approximateBigNumber(toWei("1047.459186993858006293")); // 100 - 950.310117345895693374 - 950.310117345895693374 * 0.003(fee) = 1047.4591869938580062938859841
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
+        expect(cash).approximateBigNumber(toWei("1047.459186993858006293")); // 100 - 950.310117345895693374 - 950.310117345895693374 * 0.003(fee) = 1047.4591869938580062938859841
         expect(position).to.equal(toWei("-1"));
         expect(margin).approximateBigNumber(toWei("47.459186993858006293"));
         expect(isMaintenanceMarginSafe).to.be.true;
-        var { availableCash, position, margin } = await perp.getMarginAccount(1, perp.address); // AMM account
-        expect(availableCash).approximateBigNumber(toWei("-949.35980722854979768")); // lp fee = 950.310117345895693374 * 0.001, -950.310117345895693374 + 950.310117345895693374 * 0.001 = -949.359807228549797680626
+        var { cash, position, margin } = await perp.getMarginAccount(1, perp.address); // AMM account
+        expect(cash).approximateBigNumber(toWei("-949.35980722854979768")); // lp fee = 950.310117345895693374 * 0.001, -950.310117345895693374 + 950.310117345895693374 * 0.001 = -949.359807228549797680626
         expect(position).to.equal(toWei("1"));
         expect(margin).approximateBigNumber(toWei("50.64019277145020232"));
         expect(await ctk.balanceOf(user0.address)).approximateBigNumber(toWei("4.400310117345895693")); // operator fee = 0.950310117345895693 + 3.45
@@ -190,25 +190,25 @@ describe("integration2", () => {
         // withdraw
         await perp.connect(user1).withdraw(0, user1.address, toWei("9"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9409"));
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
-        expect(availableCash).to.equal(toWei("-2969.35")); // -2960.35 - 9 = -2969.35
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(toWei("-2969.35")); // -2960.35 - 9 = -2969.35
         expect(position).to.equal(toWei("3"));
         expect(margin).to.equal(toWei("30.65")); // 39.65 - 9 = 30.65
         expect(isMaintenanceMarginSafe).to.be.true;
-        var { availableCash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account, rebalance, pool margin and available cash in perpetual are both changed
-        expect(availableCash).approximateBigNumber(toWei("3030"));
+        var { cash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account, rebalance, pool margin and available cash in perpetual are both changed
+        expect(cash).approximateBigNumber(toWei("3030"));
         var { poolCash } = await perp.getLiquidityPoolInfo();
         expect(poolCash).approximateBigNumber(toWei("1345.82077054932881945"));
 
         await perp.connect(user1).withdraw(1, user1.address, toWei("37"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9446"));
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
-        expect(availableCash).approximateBigNumber(toWei("1010.459186993858006293")); // 1047.4591869938580062938859841 - 37 = 1010.4591869938580062938859841
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
+        expect(cash).approximateBigNumber(toWei("1010.459186993858006293")); // 1047.4591869938580062938859841 - 37 = 1010.4591869938580062938859841
         expect(position).to.equal(toWei("-1"));
         expect(margin).approximateBigNumber(toWei("10.459186993858006293")); // 47.459186993858006293 - 37 = 10.459186993858006293
         expect(isMaintenanceMarginSafe).to.be.true;
-        var { availableCash, position, margin } = await perp.getMarginAccount(1, perp.address); // AMM account, rebalance, pool margin and available cash in perpetual are both changed
-        expect(availableCash).approximateBigNumber(toWei("-990"));
+        var { cash, position, margin } = await perp.getMarginAccount(1, perp.address); // AMM account, rebalance, pool margin and available cash in perpetual are both changed
+        expect(cash).approximateBigNumber(toWei("-990"));
         var { poolCash } = await perp.getLiquidityPoolInfo();
         expect(poolCash).approximateBigNumber(toWei("1386.4609633207790218"));
 
@@ -219,9 +219,9 @@ describe("integration2", () => {
         // penalty = mark * amount * penalty rate = 994 * 3 * 0.002
         // keeper gas reward = 0.5
         await perp.connect(user3).liquidateByAMM(0, user1.address);
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
-        // expect(availableCash).to.equal(toWei("155.286")); // -2969.35 + 994 * (1 + 0.05) * 3 - 994 * 3 * 0.002 - 0.5
-        expect(availableCash).to.equal(toWei("152.304")); // -2969.35 + 994 * (1 + 0.05) * 3 - 994 * 3 * 0.002 - 0.5 - 994 * 3 * 0.001
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        // expect(cash).to.equal(toWei("155.286")); // -2969.35 + 994 * (1 + 0.05) * 3 - 994 * 3 * 0.002 - 0.5
+        expect(cash).to.equal(toWei("152.304")); // -2969.35 + 994 * (1 + 0.05) * 3 - 994 * 3 * 0.002 - 0.5 - 994 * 3 * 0.001
         expect(position).to.equal(0);
         expect(margin).to.equal(toWei("152.304"));
         expect(isMaintenanceMarginSafe).to.be.true;
@@ -229,8 +229,8 @@ describe("integration2", () => {
         var { nums } = await perp.getPerpetualInfo(0);
         expect(nums[14]).to.equal(toWei("2.982")); // insurance fund = 994 * 3 * 0.002 * 0.5
         expect(nums[34]).to.equal(toWei("0")); // open interest of perpetual
-        var { availableCash, position, margin } = await perp.getMarginAccount(0, perp.address);
-        expect(availableCash).approximateBigNumber(toWei("-98.118"));
+        var { cash, position, margin } = await perp.getMarginAccount(0, perp.address);
+        expect(cash).approximateBigNumber(toWei("-98.118"));
         expect(position).to.equal(0);
         expect(margin).approximateBigNumber(toWei("-98.118"));
         var { poolCash } = await perp.getLiquidityPoolInfo();
@@ -245,20 +245,20 @@ describe("integration2", () => {
         // liquidate price is mark price = 1006
         // penalty = 1006 * 1 * 0.002 = 2.012
         await perp.connect(user3).liquidateByTrader(1, user1.address, toWei("-1"), toWei("1006"), now + 999999);
-        var { availableCash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
-        expect(availableCash).approximateBigNumber(toWei("1.441186993858006293")); // 1010.459186993858006293 - 1006 * 1 - 1006 * 1 * 0.002 - 1.006
+        var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
+        expect(cash).approximateBigNumber(toWei("1.441186993858006293")); // 1010.459186993858006293 - 1006 * 1 - 1006 * 1 * 0.002 - 1.006
         expect(position).to.equal(0);
         expect(margin).approximateBigNumber(toWei("1.441186993858006293"));
         expect(isMaintenanceMarginSafe).to.be.true;
         var { nums } = await perp.getPerpetualInfo(1);
         expect(nums[14]).to.equal(toWei("1.006")); // insurance fund = 1006 * 1 * 0.002 * 0.5
         expect(nums[34]).to.equal(toWei("1")); // open interest of perpetual
-        var { availableCash, position, margin } = await perp.getMarginAccount(1, user3.address);
-        expect(availableCash).approximateBigNumber(toWei("1507.006")); // 500 + 1006 + 1006 * 1 * 0.002 * 0.5
+        var { cash, position, margin } = await perp.getMarginAccount(1, user3.address);
+        expect(cash).approximateBigNumber(toWei("1507.006")); // 500 + 1006 + 1006 * 1 * 0.002 * 0.5
         expect(position).to.equal(toWei("-1"));
         expect(margin).approximateBigNumber(toWei("501.006"));
-        var { availableCash, position, margin } = await perp.getMarginAccount(1, perp.address);
-        expect(availableCash).to.equal(toWei("-990"));
+        var { cash, position, margin } = await perp.getMarginAccount(1, perp.address);
+        expect(cash).to.equal(toWei("-990"));
         expect(position).to.equal(toWei("1"));
         expect(margin).approximateBigNumber(toWei("16"));
         var { poolCash } = await perp.getLiquidityPoolInfo();

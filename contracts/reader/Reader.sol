@@ -39,7 +39,7 @@ contract Reader {
     struct AccountReaderResult {
         int256 cash;
         int256 position;
-        int256 availableCash;
+        int256 availableMargin;
         int256 margin;
         int256 settleableMargin;
         bool isInitialMarginSafe;
@@ -49,7 +49,6 @@ contract Reader {
 
     struct AccountsResult {
         address account;
-        int256 availableCash;
         int256 position;
         int256 margin;
         bool isSafe;
@@ -82,7 +81,7 @@ contract Reader {
         (
             accountStorage.cash,
             accountStorage.position,
-            accountStorage.availableCash,
+            accountStorage.availableMargin,
             accountStorage.margin,
             accountStorage.settleableMargin,
             accountStorage.isInitialMarginSafe,
@@ -314,17 +313,13 @@ contract Reader {
         }
         result = new AccountsResult[](accounts.length);
         for (uint256 i = 0; i < accounts.length; i++) {
-            int256 availableCash;
             int256 margin;
             int256 position;
             bool isMaintenanceMarginSafe;
-            (, position, availableCash, margin, , , isMaintenanceMarginSafe, ) = ILiquidityPool(
-                liquidityPool
-            )
+            (, position, , margin, , , isMaintenanceMarginSafe, ) = ILiquidityPool(liquidityPool)
                 .getMarginAccount(perpetualIndex, accounts[i]);
             result[i].account = accounts[i];
             result[i].position = position;
-            result[i].availableCash = availableCash;
             result[i].margin = margin;
             result[i].isSafe = isMaintenanceMarginSafe;
         }

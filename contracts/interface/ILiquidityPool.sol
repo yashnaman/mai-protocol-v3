@@ -87,7 +87,7 @@ interface ILiquidityPool {
      * @param trader The address of the trader
      * @return cash The cash(collateral) of the account
      * @return position The position of the account
-     * @return availableCash The available cash of the account
+     * @return availableMargin The available margin of the account
      * @return margin The margin of the account
      * @return settleableMargin The settleable margin of the account
      * @return isInitialMarginSafe True if the account is initial margin safe
@@ -100,7 +100,7 @@ interface ILiquidityPool {
         returns (
             int256 cash,
             int256 position,
-            int256 availableCash,
+            int256 availableMargin,
             int256 margin,
             int256 settleableMargin,
             bool isInitialMarginSafe,
