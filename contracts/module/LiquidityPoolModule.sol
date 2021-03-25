@@ -645,19 +645,25 @@ library LiquidityPoolModule {
     function removeLiquidity(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
-        int256 shareToRemove
+        int256 shareToRemove,
+        int256 cashToReturn
     ) public {
-        require(shareToRemove > 0, "share to remove must be positive");
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
+        int256 shareTotalSupply = shareToken.totalSupply().toInt256();
+        if (cashToReturn == 0 && shareToRemove > 0) {
+            cashToReturn = liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
+            require(cashToReturn > 0, "cash to return must be positive");
+        } else if (cashToReturn > 0 && shareToRemove == 0) {
+            shareToRemove = liquidityPool.getShareToRemove(shareTotalSupply, cashToReturn);
+            require(shareToRemove > 0, "share to remove must be positive");
+        } else {
+            revert("invalid parameter");
+        }
         require(
             shareToRemove.toUint256() <= shareToken.balanceOf(trader),
             "insufficient share balance"
         );
-        int256 shareTotalSupply = shareToken.totalSupply().toInt256();
-        int256 cashToReturn = liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
-        require(cashToReturn >= 0, "cash to return is negative");
         require(cashToReturn <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
-
         shareToken.burn(trader, shareToRemove.toUint256());
         liquidityPool.transferToUser(payable(trader), cashToReturn);
         // pool cash cannot be added before calculation, DO NOT use transferFromPoolToUser

@@ -127,10 +127,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   shareToRemove   The amount of share token to remove
      */
-    function removeLiquidity(int256 shareToRemove) external syncState(false) nonReentrant {
+    function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
+        external
+        syncState(false)
+        nonReentrant
+    {
         require(_liquidityPool.isRunning, "pool is not running");
         require(shareToRemove > 0, "invalid share");
-        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove);
+        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
     }
 
     /**

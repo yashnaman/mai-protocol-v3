@@ -152,8 +152,12 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.addLiquidity(trader, cashToAdd);
     }
 
-    function removeLiquidity(address trader, int256 shareToRemove) public {
-        _liquidityPool.removeLiquidity(trader, shareToRemove);
+    function removeLiquidity(
+        address trader,
+        int256 shareToRemove,
+        int256 cashToReturn
+    ) public {
+        _liquidityPool.removeLiquidity(trader, shareToRemove, cashToReturn);
     }
 
     function donateLiquidity(address trader, int256 cashToAdd) public {

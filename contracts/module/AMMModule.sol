@@ -95,8 +95,39 @@ library AMMModule {
         } else {
             // If share token's total supply is not zero, these share tokens have no value,
             // this case should be avoided.
-            require(poolMargin != 0, "share token has no value");
+            require(poolMargin > 0, "share token has no value");
             shareToMint = newPoolMargin.sub(poolMargin).wfrac(shareTotalSupply, poolMargin);
+        }
+    }
+
+    function getCashToAdd(
+        LiquidityPoolStorage storage liquidityPool,
+        int256 shareTotalSupply,
+        int256 shareToMint
+    ) public view returns (int256 cashToAdd) {
+        Context memory context = prepareContext(liquidityPool);
+        (int256 poolMargin, ) = getPoolMargin(context);
+        if (shareTotalSupply == 0) {
+            // first time
+            cashToAdd = shareToMint.sub(poolMargin).max(0);
+        } else {
+            // If share token's total supply is not zero, these share tokens have no value,
+            // this case should be avoided.
+            require(poolMargin > 0, "share token has no value");
+            int256 newPoolMargin =
+                shareTotalSupply.add(shareToMint).wfrac(poolMargin, shareTotalSupply);
+            int256 minPoolMargin = context.squareValue.div(2).sqrt();
+            int256 newCash;
+            if (newPoolMargin <= minPoolMargin) {
+                // pool is still unsafe after adding liquidity
+                newCash = newPoolMargin.mul(2).sub(context.positionValue);
+            } else {
+                // context.squareValue is 10^36, so use div instead of wdiv
+                newCash = context.squareValue.div(newPoolMargin).div(2).add(newPoolMargin).sub(
+                    context.positionValue
+                );
+            }
+            cashToAdd = newCash.sub(context.availableCash);
         }
     }
 
@@ -125,9 +156,7 @@ library AMMModule {
         Context memory context = prepareContext(liquidityPool);
         require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
         int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
-        if (poolMargin == 0) {
-            return 0;
-        }
+        require(poolMargin > 0, "pool margin must be positive");
         poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(poolMargin, shareTotalSupply);
         {
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
@@ -135,17 +164,17 @@ library AMMModule {
         }
         cashToReturn = calculateCashToReturn(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
-        uint256 length = liquidityPool.perpetualCount;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
-            int256 indexPrice = perpetual.getIndexPrice();
             // prevent AMM offering negative price
             require(
                 perpetual.getPosition(address(this)) <=
-                    poolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(indexPrice),
+                    poolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(
+                        perpetual.getIndexPrice()
+                    ),
                 "AMM is unsafe after removing liquidity"
             );
         }
@@ -153,6 +182,43 @@ library AMMModule {
         require(
             context.availableCash.add(context.positionValue).sub(cashToReturn) >=
                 context.positionMargin,
+            "AMM exceeds max leverage after removing liquidity"
+        );
+    }
+
+    function getShareToRemove(
+        LiquidityPoolStorage storage liquidityPool,
+        int256 shareTotalSupply,
+        int256 cashToReturn
+    ) public view returns (int256 shareToRemove) {
+        require(
+            shareTotalSupply > 0,
+            "total supply of share token is zero when removing liquidity"
+        );
+        Context memory context = prepareContext(liquidityPool);
+        require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
+        int256 poolMargin = calculatePoolMarginWhenSafe(context, 0);
+        context.availableCash = context.availableCash.sub(cashToReturn);
+        require(isAMMSafe(context, 0), "AMM is unsafe after removing liquidity");
+        int256 newPoolMargin = calculatePoolMarginWhenSafe(context, 0);
+        shareToRemove = poolMargin.sub(newPoolMargin).wfrac(shareTotalSupply, poolMargin);
+        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            // prevent AMM offering negative price
+            require(
+                perpetual.getPosition(address(this)) <=
+                    newPoolMargin.wdiv(perpetual.openSlippageFactor.value).wdiv(
+                        perpetual.getIndexPrice()
+                    ),
+                "AMM is unsafe after removing liquidity"
+            );
+        }
+        // prevent AMM exceeding max leverage
+        require(
+            context.availableCash.add(context.positionValue) >= context.positionMargin,
             "AMM exceeds max leverage after removing liquidity"
         );
     }
