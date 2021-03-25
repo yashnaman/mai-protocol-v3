@@ -69,7 +69,6 @@ library Math {
         n = (n + 1) / 2 + 1;
 
         // modified babylonian method
-        // https://github.com/Uniswap/uniswap-v2-core/blob/v1.0.1/contracts/libraries/Math.sol#L11
         int256 next = int256(1 << n);
         int256 y;
         do {
