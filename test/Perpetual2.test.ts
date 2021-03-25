@@ -256,7 +256,7 @@ describe('Perpetual2', () => {
             await liquidityPool.clear(0);
             await liquidityPool.connect(user1).settle(0, user1.address);
             const info = await liquidityPool.getLiquidityPoolInfo();
-            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address));
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
 
             console.log(fromWei(await ctk.balanceOf(user1.address)));
             console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));

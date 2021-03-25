@@ -324,6 +324,78 @@ contract Reader {
             result[i].isSafe = isMaintenanceMarginSafe;
         }
     }
+
+    /**
+     * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.
+     *          Only one of cashToAdd or shareToMint may be non-zero.
+     *
+     * @param   liquidityPool     The address of the liquidity pool
+     * @param   cashToAdd         The amount of cash to add, always use decimals 18.
+     * @param   shareToMint       The amount of share token to mint, always use decimals 18.
+     * @return  isSynced          True if the funding state is synced to real-time data. False if
+     *                            error happens (oracle error, zero price etc.). In this case,
+     *                            trading, withdraw (if position != 0), addLiquidity, removeLiquidity
+     *                            will fail
+     * @return  cashToAddResult   The amount of cash to add, always use decimals 18. Equal to cashToAdd if cashToAdd is non-zero.
+     * @return  shareToMintResult The amount of cash to add, always use decimals 18. Equal to shareToMint if shareToMint is non-zero.
+     */
+    function queryAddLiquidity(
+        address liquidityPool,
+        int256 cashToAdd,
+        int256 shareToMint
+    )
+        public
+        returns (
+            bool isSynced,
+            int256 cashToAddResult,
+            int256 shareToMintResult
+        )
+    {
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
+        (cashToAddResult, shareToMintResult) = ILiquidityPool(liquidityPool).queryAddLiquidity(
+            cashToAdd,
+            shareToMint
+        );
+    }
+
+    /**
+     * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
+     *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *
+     * @param   liquidityPool       The address of the liquidity pool
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
+     * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
+     * @return  isSynced            True if the funding state is synced to real-time data. False if
+     *                              error happens (oracle error, zero price etc.). In this case,
+     *                              trading, withdraw (if position != 0), addLiquidity, removeLiquidity
+     *                              will fail
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     */
+    function queryRemoveLiquidity(
+        address liquidityPool,
+        int256 cashToReturn,
+        int256 shareToRemove
+    )
+        public
+        returns (
+            bool isSynced,
+            int256 cashToReturnResult,
+            int256 shareToRemoveResult
+        )
+    {
+        try ILiquidityPool(liquidityPool).forceToSyncState() {
+            isSynced = true;
+        } catch {
+            isSynced = false;
+        }
+        (cashToReturnResult, shareToRemoveResult) = ILiquidityPool(liquidityPool)
+            .queryRemoveLiquidity(cashToReturn, shareToRemove);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////

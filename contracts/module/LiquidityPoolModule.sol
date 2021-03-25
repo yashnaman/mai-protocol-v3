@@ -637,10 +637,12 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Remove collateral from the liquidity pool and redeem the share tokens when the liquidity pool is running
-     * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param trader The address of the trader that removing liquidity
-     * @param shareToRemove The amount of the share token to redeem
+     * @dev Remove collateral from the liquidity pool and redeem the share tokens when the liquidity pool is running.
+     *      Only one of shareToRemove or cashToReturn may be non-zero.
+     * @param liquidityPool The reference of liquidity pool storage.
+     * @param trader        The address of the trader that removing liquidity.
+     * @param shareToRemove The amount of the share token to redeem.
+     * @param cashToReturn  The amount of cash(collateral) to return.
      */
     function removeLiquidity(
         LiquidityPoolStorage storage liquidityPool,

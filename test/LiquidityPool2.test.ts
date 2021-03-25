@@ -229,17 +229,6 @@ describe('LiquidityPool2', () => {
 
         const successCases = [
             {
-                name: 'poolMargin = 0',
-                amm: {
-                    cash: toWei("0"),
-                    position1: toWei("0"),
-                    position2: toWei("0"),
-                },
-                shareLeft: toWei('90'), // total 100
-                shareToRemove: toWei('10'),
-                marginToRemove: toWei("0"),
-            },
-            {
                 name: 'no position',
                 amm: {
                     cash: toWei('10000'),
@@ -318,6 +307,19 @@ describe('LiquidityPool2', () => {
         })
 
         const failCases = [
+            {
+                name: 'poolMargin = 0',
+                amm: {
+                    cash: toWei("0"),
+                    position1: toWei("0"),
+                    position2: toWei("0"),
+                },
+                shareLeft: toWei('90'), // total 100
+                shareBalance: toWei("10"),
+                shareToRemove: toWei("10"),
+                ammMaxLeverage: toWei("5"),
+                errorMsg: 'pool margin must be positive',
+            },
             {
                 name: 'zero share to remove',
                 amm: {

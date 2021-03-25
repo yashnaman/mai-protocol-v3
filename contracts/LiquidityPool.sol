@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "./interface/IPoolCreator.sol";
 
@@ -19,6 +20,7 @@ import "./Type.sol";
 
 contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents {
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
+    using SafeCastUpgradeable for uint256;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
@@ -125,7 +127,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          The amount of collateral retrieved may differ from the amount when adding liquidity,
      *          The index price, trading fee and positions holding by amm will affect the profitability of providers.
      *
-     * @param   shareToRemove   The amount of share token to remove
+     * @param   shareToRemove  The amount of share token to remove
+     * @param   cashToReturn   The amount of cash(collateral) to return
      */
     function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
         external
@@ -133,8 +136,61 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         nonReentrant
     {
         require(_liquidityPool.isRunning, "pool is not running");
-        require(shareToRemove > 0, "invalid share");
         _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
+    }
+
+    /**
+     * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.
+     *          Only one of cashToAdd or shareToMint may be non-zero.
+     *
+     * @param   cashToAdd         The amount of cash to add, always use decimals 18.
+     * @param   shareToMint       The amount of share token to mint, always use decimals 18.
+     * @return  cashToAddResult   The amount of cash to add, always use decimals 18. Equal to cashToAdd if cashToAdd is non-zero.
+     * @return  shareToMintResult The amount of cash to add, always use decimals 18. Equal to shareToMint if shareToMint is non-zero.
+     */
+    function queryAddLiquidity(int256 cashToAdd, int256 shareToMint)
+        public
+        view
+        returns (int256 cashToAddResult, int256 shareToMintResult)
+    {
+        require(_liquidityPool.isRunning, "pool is not running");
+        int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
+        if (cashToAdd > 0 && shareToMint == 0) {
+            shareToMintResult = _liquidityPool.getShareToMint(shareTotalSupply, cashToAdd);
+            cashToAddResult = cashToAdd;
+        } else if (cashToAdd == 0 && shareToMint > 0) {
+            cashToAddResult = _liquidityPool.getCashToAdd(shareTotalSupply, shareToMint);
+            shareToMintResult = shareToMint;
+        } else {
+            revert("invalid parameter");
+        }
+    }
+
+    /**
+     * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
+     *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
+     * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     */
+    function queryRemoveLiquidity(int256 cashToReturn, int256 shareToRemove)
+        public
+        view
+        returns (int256 cashToReturnResult, int256 shareToRemoveResult)
+    {
+        require(_liquidityPool.isRunning, "pool is not running");
+        int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
+        if (shareToRemove > 0 && cashToReturn == 0) {
+            cashToReturnResult = _liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
+            shareToRemoveResult = shareToRemove;
+        } else if (shareToRemove == 0 && cashToReturn > 0) {
+            shareToRemoveResult = _liquidityPool.getShareToRemove(shareTotalSupply, cashToReturn);
+            cashToReturnResult = cashToReturn;
+        } else {
+            revert("invalid parameter");
+        }
     }
 
     /**

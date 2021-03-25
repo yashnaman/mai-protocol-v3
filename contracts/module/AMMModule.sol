@@ -73,11 +73,11 @@ library AMMModule {
     /**
      * @dev     Calculate the amount of share token to mint when liquidity provider adds liquidity to the liquidity pool.
      *          If adding liquidity at first time, which means total supply of share token is zero,
-     *          the amount of share token to mint equals to the amount of cash(collateral) to add.
+     *          the amount of share token to mint equals to the pool margin after adding liquidity.
      *
      * @param   liquidityPool       The liquidity pool object of AMM.
      * @param   shareTotalSupply    The total supply of the share token before adding liquidity.
-     * @param   cashToAdd           The cash(collateral) added to the liquidity pool.
+     * @param   cashToAdd           The amount of cash(collateral) added to the liquidity pool.
      * @return  shareToMint         The amount of share token to mint.
      */
     function getShareToMint(
@@ -90,7 +90,7 @@ library AMMModule {
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
         if (shareTotalSupply == 0) {
-            // first time
+            // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             shareToMint = newPoolMargin;
         } else {
             // If share token's total supply is not zero, these share tokens have no value,
@@ -100,6 +100,16 @@ library AMMModule {
         }
     }
 
+    /**
+     * @dev     Calculate the amount of cash to add when liquidity provider adds liquidity to the liquidity pool.
+     *          If adding liquidity at first time, which means total supply of share token is zero,
+     *          the amount of cash to add equals to the share amount to mint minus pool margin before adding liquidity.
+     *
+     * @param   liquidityPool       The liquidity pool object of AMM.
+     * @param   shareTotalSupply    The total supply of the share token before adding liquidity.
+     * @param   shareToMint         The amount of share token to mint.
+     * @return  cashToAdd           The amount of cash(collateral) to add to the liquidity pool.
+     */
     function getCashToAdd(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
@@ -108,7 +118,7 @@ library AMMModule {
         Context memory context = prepareContext(liquidityPool);
         (int256 poolMargin, ) = getPoolMargin(context);
         if (shareTotalSupply == 0) {
-            // first time
+            // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             cashToAdd = shareToMint.sub(poolMargin).max(0);
         } else {
             // If share token's total supply is not zero, these share tokens have no value,
@@ -132,7 +142,7 @@ library AMMModule {
     }
 
     /**
-     * @dev     Calculate the cash(collateral) to return when liquidity provider removes liquidity from the liquidity pool.
+     * @dev     Calculate the amount of cash(collateral) to return when liquidity provider removes liquidity from the liquidity pool.
      *          Removing liquidity is forbidden at several cases:
      *            1. AMM is unsafe before removing liquidity
      *            2. AMM is unsafe after removing liquidity
@@ -142,7 +152,7 @@ library AMMModule {
      * @param   liquidityPool       The liquidity pool object of AMM.
      * @param   shareTotalSupply    The total supply of the share token before removing liquidity.
      * @param   shareToRemove       The amount of share token to redeem.
-     * @return  cashToReturn        The cash(collateral) to return.
+     * @return  cashToReturn        The amount of cash(collateral) to return.
      */
     function getCashToReturn(
         LiquidityPoolStorage storage liquidityPool,
@@ -164,7 +174,8 @@ library AMMModule {
         }
         cashToReturn = calculateCashToReturn(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
-        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
@@ -186,6 +197,19 @@ library AMMModule {
         );
     }
 
+    /**
+     * @dev     Calculate the amount of share token to redeem when liquidity provider removes liquidity from the liquidity pool.
+     *          Removing liquidity is forbidden at several cases:
+     *            1. AMM is unsafe before removing liquidity
+     *            2. AMM is unsafe after removing liquidity
+     *            3. AMM will offer negative price at any perpetual after removing liquidity
+     *            4. AMM will exceed maximum leverage at any perpetual after removing liquidity
+     *
+     * @param   liquidityPool       The liquidity pool object of AMM.
+     * @param   shareTotalSupply    The total supply of the share token before removing liquidity.
+     * @param   cashToReturn        The cash(collateral) to return.
+     * @return  shareToRemove       The amount of share token to redeem.
+     */
     function getShareToRemove(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
@@ -202,7 +226,8 @@ library AMMModule {
         require(isAMMSafe(context, 0), "AMM is unsafe after removing liquidity");
         int256 newPoolMargin = calculatePoolMarginWhenSafe(context, 0);
         shareToRemove = poolMargin.sub(newPoolMargin).wfrac(shareTotalSupply, poolMargin);
-        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;

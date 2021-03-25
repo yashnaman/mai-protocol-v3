@@ -643,14 +643,6 @@ describe('AMM', () => {
 
         const successCases = [
             {
-                name: 'poolMargin = 0',
-                amm: ammInit,
-                totalShare: toWad('100'),
-                shareToRemove: toWad('10'),
-                marginToRemove: _0,
-                state: params.state
-            },
-            {
                 name: 'no position',
                 amm: amm0,
                 totalShare: toWad('100'),
@@ -701,6 +693,14 @@ describe('AMM', () => {
         })
 
         const failCases = [
+            {
+                name: 'poolMargin = 0',
+                amm: ammInit,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'pool margin must be positive',
+            },
             {
                 name: 'short, before unsafe',
                 amm: amm3,

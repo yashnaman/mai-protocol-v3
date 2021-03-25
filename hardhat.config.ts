@@ -93,6 +93,7 @@ module.exports = {
     defaultNetwork: "hardhat",
     networks: {
         hardhat: {
+            allowUnlimitedContractSize: true
         },
         s10: {
             url: "http://server10.jy.mcarlo.com:8747",

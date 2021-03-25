@@ -175,7 +175,7 @@ describe("integration2", () => {
         expect(nums[34]).to.equal(toWei("1")); // open interest of perpetual
 
         // remove liquidity
-        await perp.connect(user2).removeLiquidity(toWei("200"));
+        await perp.connect(user2).removeLiquidity(toWei("200"), 0);
         expect(await stk.balanceOf(user2.address)).to.equal(toWei("800"));
         expect(await ctk.balanceOf(user2.address)).approximateBigNumber(toWei("9077.629229450671180548"));
         var { poolCash } = await perp.getLiquidityPoolInfo();

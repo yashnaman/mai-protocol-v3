@@ -238,4 +238,32 @@ interface ILiquidityPool {
      * @notice Returns the current implementation of UpgradeableProxy.
      */
     function implementation() external view returns (address);
+
+    /**
+     * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.
+     *          Only one of cashToAdd or shareToMint may be non-zero.
+     *
+     * @param   cashToAdd         The amount of cash to add, always use decimals 18.
+     * @param   shareToMint       The amount of share token to mint, always use decimals 18.
+     * @return  cashToAddResult   The amount of cash to add, always use decimals 18. Equal to cashToAdd if cashToAdd is non-zero.
+     * @return  shareToMintResult The amount of cash to add, always use decimals 18. Equal to shareToMint if shareToMint is non-zero.
+     */
+    function queryAddLiquidity(int256 cashToAdd, int256 shareToMint)
+        external
+        view
+        returns (int256 cashToAddResult, int256 shareToMintResult);
+
+    /**
+     * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
+     *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
+     * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     */
+    function queryRemoveLiquidity(int256 cashToReturn, int256 shareToRemove)
+        external
+        view
+        returns (int256 cashToReturnResult, int256 shareToRemoveResult);
 }
