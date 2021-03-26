@@ -421,6 +421,7 @@ library LiquidityPoolModule {
     function claimOperator(LiquidityPoolStorage storage liquidityPool, address claimer) public {
         require(claimer == liquidityPool.transferringOperator, "caller is not qualified");
         liquidityPool.operator = claimer;
+        liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.transferringOperator = address(0);
         IPoolCreator(liquidityPool.creator).registerOperatorOfLiquidityPool(address(this), claimer);
         emit ClaimOperator(claimer);
