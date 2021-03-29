@@ -413,14 +413,14 @@ contract Reader {
      */
     function queryRemoveLiquidity(
         address liquidityPool,
-        int256 cashToReturn,
-        int256 shareToRemove
+        int256 shareToRemove,
+        int256 cashToReturn
     )
         public
         returns (
             bool isSynced,
-            int256 cashToReturnResult,
-            int256 shareToRemoveResult
+            int256 shareToRemoveResult,
+            int256 cashToReturnResult
         )
     {
         try ILiquidityPool(liquidityPool).forceToSyncState() {
@@ -428,8 +428,8 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (cashToReturnResult, shareToRemoveResult) = ILiquidityPool(liquidityPool)
-            .queryRemoveLiquidity(cashToReturn, shareToRemove);
+        (shareToRemoveResult, cashToReturnResult) = ILiquidityPool(liquidityPool)
+            .queryRemoveLiquidity(shareToRemove, cashToReturn);
     }
 }
 

@@ -179,10 +179,10 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
      * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
      */
-    function queryRemoveLiquidity(int256 cashToReturn, int256 shareToRemove)
+    function queryRemoveLiquidity(int256 shareToRemove, int256 cashToReturn)
         public
         view
-        returns (int256 cashToReturnResult, int256 shareToRemoveResult)
+        returns (int256 shareToRemoveResult, int256 cashToReturnResult)
     {
         require(_liquidityPool.isRunning, "pool is not running");
         int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
