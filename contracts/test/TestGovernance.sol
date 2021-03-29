@@ -35,7 +35,7 @@ contract TestGovernance is Governance {
 
     function initializeParameters(
         address oracle,
-        int256[10] calldata baseParams,
+        int256[9] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
@@ -86,10 +86,6 @@ contract TestGovernance is Governance {
 
     function insuranceFundRate(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].insuranceFundRate;
-    }
-
-    function insuranceFundCap(uint256 perpetualIndex) public view returns (int256) {
-        return _liquidityPool.perpetuals[perpetualIndex].insuranceFundCap;
     }
 
     function halfSpread(uint256 perpetualIndex) public view returns (int256) {

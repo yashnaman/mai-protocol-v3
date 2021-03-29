@@ -22,7 +22,7 @@ contract TestPerpetual is Storage {
     // ================ debug ============================================
     function createPerpetual(
         address oracle,
-        int256[10] calldata baseParams,
+        int256[9] calldata baseParams,
         int256[7] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetualCount;
@@ -69,8 +69,6 @@ contract TestPerpetual is Storage {
             perpetual.referralRebateRate = newValue;
         } else if (key == "insuranceFundRate") {
             perpetual.insuranceFundRate = newValue;
-        } else if (key == "insuranceFundCap") {
-            perpetual.insuranceFundCap = newValue;
         } else {
             revert("key not found");
         }
@@ -192,19 +190,6 @@ contract TestPerpetual is Storage {
         _liquidityPool.perpetuals[perpetualIndex].fundingRate = fundingRate;
     }
 
-    function getDonatedInsuranceFund(uint256 perpetualIndex) public view returns (int256) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        return perpetual.donatedInsuranceFund;
-    }
-
-    function setInsuranceFund(uint256 perpetualIndex, int256 amount) public {
-        _liquidityPool.perpetuals[perpetualIndex].insuranceFund = amount;
-    }
-
-    function getInsuranceFund(uint256 perpetualIndex) public view returns (int256) {
-        return _liquidityPool.perpetuals[perpetualIndex].insuranceFund;
-    }
-
     function getTotalCollateral(uint256 perpetualIndex) public view returns (int256) {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         return perpetual.totalCollateral;
@@ -268,10 +253,6 @@ contract TestPerpetual is Storage {
         _liquidityPool.perpetuals[perpetualIndex].setClearedState();
     }
 
-    function donateInsuranceFund(uint256 perpetualIndex, int256 amount) public payable {
-        _liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(amount);
-    }
-
     function deposit(
         uint256 perpetualIndex,
         address trader,
@@ -294,13 +275,6 @@ contract TestPerpetual is Storage {
 
     function settle(uint256 perpetualIndex, address trader) public returns (int256 marginToReturn) {
         marginToReturn = _liquidityPool.perpetuals[perpetualIndex].settle(trader);
-    }
-
-    function updateInsuranceFund(uint256 perpetualIndex, int256 penaltyToFund)
-        public
-        returns (int256 penaltyToLP)
-    {
-        penaltyToLP = _liquidityPool.perpetuals[perpetualIndex].updateInsuranceFund(penaltyToFund);
     }
 
     function getNextActiveAccount(uint256 perpetualIndex) public view returns (address account) {

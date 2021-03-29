@@ -74,7 +74,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      */
     function createPerpetual(
         address oracle,
-        int256[10] calldata baseParams,
+        int256[9] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
@@ -113,6 +113,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      * @notice  Add liquidity to the liquidity pool.
      *          Liquidity provider deposits collaterals then gets share tokens back.
      *          The ratio of added cash to share token is determined by current liquidity.
+     *          Can only called when the pool is running.
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
@@ -126,6 +127,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          Liquidity providers redeems share token then gets collateral back.
      *          The amount of collateral retrieved may differ from the amount when adding liquidity,
      *          The index price, trading fee and positions holding by amm will affect the profitability of providers.
+     *          Can only called when the pool is running.
      *
      * @param   shareToRemove  The amount of share token to remove
      * @param   cashToReturn   The amount of cash(collateral) to return
@@ -142,6 +144,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     /**
      * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.
      *          Only one of cashToAdd or shareToMint may be non-zero.
+     *          Can only called when the pool is running.
      *
      * @param   cashToAdd         The amount of cash to add, always use decimals 18.
      * @param   shareToMint       The amount of share token to mint, always use decimals 18.
@@ -169,6 +172,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     /**
      * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
      *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *          Can only called when the pool is running.
      *
      * @param   cashToReturn        The amount of cash to return, always use decimals 18.
      * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
@@ -191,6 +195,20 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         } else {
             revert("invalid parameter");
         }
+    }
+
+    /**
+     * @notice  Donate collateral to the insurance fund of the pool.
+     *          Can only called when the pool is running.
+     *          Donated collateral is not withdrawable but can be used to improve security.
+     *          Unexpected loss (backrupt) will be deducted from insurance fund then donated insurance fund.
+     *          Until donated insurance fund is drained, the perpetual will not enter emergency state and shutdown.
+     *
+     * @param   amount          The amount of collateral to donate.
+     */
+    function donateInsuranceFund(int256 amount) external payable nonReentrant {
+        require(_liquidityPool.isRunning, "pool is not running");
+        _liquidityPool.donateInsuranceFund(_msgSender(), amount);
     }
 
     /**

@@ -40,9 +40,8 @@ contract Getter is Storage {
      * @return  isFastCreationEnabled   True if the operator of the liquidity pool is allowed to create new perpetual
      *                                  when the liquidity pool is running.
      * @return  addresses               The related addresses of the liquidity pool.
-     * @return  vaultFeeRate            The vault fee rate of the liquidity pool.
-     * @return  poolCash                The pool cash of the liquidity pool.
-     * @return  nums                    An fixed length array of uint type properties, see comments for details.
+     * @return  intNums                 An fixed length array of int type properties, see comments for details.
+     * @return  uintNums                An fixed length array of uint type properties, see comments for details.
      */
     function getLiquidityPoolInfo()
         public
@@ -58,13 +57,17 @@ contract Getter is Storage {
             // [5] collateralToken,
             // [6] vault,
             address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
+            // [0] vaultFeeRate,
+            // [1] poolCash,
+            // [2] insuranceFundCap,
+            // [3] insuranceFund,
+            // [4] donatedInsuranceFund,
+            int256[5] memory intNums,
             // [0] collateralDecimals,
-            // [1] perpetualCount
+            // [1] perpetualCount,
             // [2] fundingTime,
             // [3] operatorExpiration,
-            uint256[4] memory nums
+            uint256[4] memory uintNums
         )
     {
         isRunning = _liquidityPool.isRunning;
@@ -78,12 +81,15 @@ contract Getter is Storage {
             _liquidityPool.collateralToken,
             _liquidityPool.getVault()
         ];
-        vaultFeeRate = _liquidityPool.getVaultFeeRate();
-        poolCash = _liquidityPool.poolCash;
-        nums[0] = _liquidityPool.collateralDecimals;
-        nums[1] = _liquidityPool.perpetualCount;
-        nums[2] = _liquidityPool.fundingTime;
-        nums[3] = _liquidityPool.operatorExpiration;
+        intNums[0] = _liquidityPool.getVaultFeeRate();
+        intNums[1] = _liquidityPool.poolCash;
+        intNums[2] = _liquidityPool.insuranceFundCap;
+        intNums[3] = _liquidityPool.insuranceFund;
+        intNums[4] = _liquidityPool.donatedInsuranceFund;
+        uintNums[0] = _liquidityPool.collateralDecimals;
+        uintNums[1] = _liquidityPool.perpetualCount;
+        uintNums[2] = _liquidityPool.fundingTime;
+        uintNums[3] = _liquidityPool.operatorExpiration;
     }
 
     /**
@@ -117,19 +123,28 @@ contract Getter is Storage {
             // [10] liquidationPenaltyRate,
             // [11] keeperGasReward,
             // [12] insuranceFundRate,
+
             // [13] insuranceFundCap,
             // [14] insuranceFund,
             // [15] donatedInsuranceFund,
+
             // [16-18] halfSpread value, min, max,
             // [19-21] openSlippageFactor value, min, max,
             // [22-24] closeSlippageFactor value, min, max,
             // [25-27] fundingRateLimit value, min, max,
             // [28-30] ammMaxLeverage value, min, max,
             // [31-33] maxClosePriceDiscount value, min, max,
-            // [34] openInterest,
-            // [35] maxOpenInterestRate,
-            // [36-38] fundingRateFactor value, min, max,
-            int256[39] memory nums
+
+            // [13-15] halfSpread value, min, max,
+            // [16-18] openSlippageFactor value, min, max,
+            // [19-21] closeSlippageFactor value, min, max,
+            // [22-24] fundingRateLimit value, min, max,
+            // [25-27] ammMaxLeverage value, min, max,
+            // [28-30] maxClosePriceDiscount value, min, max,
+            // [31] openInterest,
+            // [32] maxOpenInterestRate,
+            // [33-35] fundingRateFactor value, min, max,
+            int256[36] memory nums
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -151,17 +166,14 @@ contract Getter is Storage {
             perpetual.liquidationPenaltyRate,
             perpetual.keeperGasReward,
             perpetual.insuranceFundRate,
-            perpetual.insuranceFundCap,
-            perpetual.insuranceFund,
-            perpetual.donatedInsuranceFund,
             perpetual.halfSpread.value,
             perpetual.halfSpread.minValue,
             perpetual.halfSpread.maxValue,
             perpetual.openSlippageFactor.value,
-            // [20]
             perpetual.openSlippageFactor.minValue,
             perpetual.openSlippageFactor.maxValue,
             perpetual.closeSlippageFactor.value,
+            // [20]
             perpetual.closeSlippageFactor.minValue,
             perpetual.closeSlippageFactor.maxValue,
             perpetual.fundingRateLimit.value,
@@ -169,10 +181,10 @@ contract Getter is Storage {
             perpetual.fundingRateLimit.maxValue,
             perpetual.ammMaxLeverage.value,
             perpetual.ammMaxLeverage.minValue,
-            // [30]
             perpetual.ammMaxLeverage.maxValue,
             perpetual.maxClosePriceDiscount.value,
             perpetual.maxClosePriceDiscount.minValue,
+            // [30]
             perpetual.maxClosePriceDiscount.maxValue,
             perpetual.openInterest,
             perpetual.maxOpenInterestRate,

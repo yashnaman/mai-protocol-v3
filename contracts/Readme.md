@@ -120,9 +120,6 @@ Operations available in `NORMAL` state:
 - liquidateByTrader
   Liquidate unsafe positions. Sender will take liquidated positions if possible;
 
-- donateInsuranceFund
-  Donate insurance fund to recovery bankrupted margin account;
-
 ### EMERGENCY
 
 Once the emergency conditions are met, unrecoverable loss in trading or a proposal to close perpetual is succeeded, the perpetual will be set into `EMERGENCY` to prevent further loss.
@@ -180,5 +177,10 @@ A operator is able to:
 - transferOperator
 - revokeOperator
 
+### Anyone
 
+Anyone can donate collateral to insurance fund to make liquidity pool safer
+
+- donateInsuranceFund
+  Donate insurance fund to recovery bankrupted margin account;
 

@@ -41,7 +41,7 @@ library LiquidityPoolModule {
     event TransferOperatorTo(address indexed newOperator);
     event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
-    event SetLiquidityPoolParameter(int256[1] value);
+    event SetLiquidityPoolParameter(int256[2] value);
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -49,11 +49,13 @@ library LiquidityPoolModule {
         address operator,
         address oracle,
         address collateral,
-        int256[10] baseParams,
+        int256[9] baseParams,
         int256[7] riskParams
     );
     event RunLiquidityPool();
     event OperatorCheckIn(address indexed operator);
+    event DonateInsuranceFund(int256 amount);
+    event TransferExcessInsuranceFundToLP(int256 amount);
 
     /**
      * @dev     Get the vault's address of the liquidity pool
@@ -210,7 +212,7 @@ library LiquidityPoolModule {
     function createPerpetual(
         LiquidityPoolStorage storage liquidityPool,
         address oracle,
-        int256[10] calldata baseParams,
+        int256[9] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
@@ -271,15 +273,26 @@ library LiquidityPoolModule {
 
     /**
      * @dev Set the parameter of the liquidity pool. Can only called by the governor
-     * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param params The new value of the parameter
+     * @param   liquidityPool  The reference of liquidity pool storage.
+     * @param   params         The new value of the parameter
      */
     function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
-        int256[1] memory params
+        int256[2] memory params
     ) public {
+        validateLiquidityPoolParameter(params);
         liquidityPool.isFastCreationEnabled = (params[0] != 0);
+        liquidityPool.insuranceFundCap = params[1];
         emit SetLiquidityPoolParameter(params);
+    }
+
+    /**
+     * @dev     Validate the liquidity pool parameter:
+     *            1. insurance fund cap >= 0
+     * @param   liquidityPoolParams  The parameters of the liquidity pool.
+     */
+    function validateLiquidityPoolParameter(int256[2] memory liquidityPoolParams) public view {
+        require(liquidityPoolParams[1] >= 0, "insuranceFundCap < 0");
     }
 
     function setPerpetualOracle(
@@ -301,7 +314,7 @@ library LiquidityPoolModule {
     function setPerpetualBaseParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        int256[10] memory baseParams
+        int256[9] memory baseParams
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -497,22 +510,55 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev  Donate collateral to the insurance fund of the perpetual. Can improve the security of the perpetual.
-     *          Can only called when the state of the perpetual is "NORMAL"
+     * @dev  Donate collateral to the insurance fund of the liquidity pool to make the liquidity pool safer
      * @param   liquidityPool   The liquidity pool object
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      * @param   amount          The amount of collateral to donate
      */
     function donateInsuranceFund(
         LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
         address donator,
         int256 amount
     ) public {
-        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
-        int256 totalAmount =
-            transferFromUserToPerpetual(liquidityPool, perpetualIndex, donator, amount);
-        liquidityPool.perpetuals[perpetualIndex].donateInsuranceFund(totalAmount);
+        require(amount > 0 || msg.value > 0, "invalid amount");
+        int256 totalCashToDonate = liquidityPool.transferFromUser(donator, amount);
+        liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
+            totalCashToDonate
+        );
+        emit DonateInsuranceFund(totalCashToDonate);
+    }
+
+    /**
+     * @dev     Update the collateral of the insurance fund in the liquidity pool.
+     *          If the collateral of the insurance fund exceeds the cap, the extra part of collateral belongs to LP.
+     *          If the collateral of the insurance fund < 0, the donated insurance fund will cover it.
+     *
+     * @param   liquidityPool   The liquidity pool object
+     * @param   deltaFund       The update collateral amount of the insurance fund in the perpetual
+     * @return  penaltyToLP     The extra part of collateral if the collateral of the insurance fund exceeds the cap
+     */
+    function updateInsuranceFund(LiquidityPoolStorage storage liquidityPool, int256 deltaFund)
+        public
+        returns (int256 penaltyToLP)
+    {
+        penaltyToLP = 0;
+        if (deltaFund != 0) {
+            int256 newInsuranceFund = liquidityPool.insuranceFund.add(deltaFund);
+            if (deltaFund > 0) {
+                if (newInsuranceFund > liquidityPool.insuranceFundCap) {
+                    penaltyToLP = newInsuranceFund.sub(liquidityPool.insuranceFundCap);
+                    newInsuranceFund = liquidityPool.insuranceFundCap;
+                    emit TransferExcessInsuranceFundToLP(penaltyToLP);
+                }
+            } else {
+                if (newInsuranceFund < 0) {
+                    liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
+                        newInsuranceFund
+                    );
+                    newInsuranceFund = 0;
+                }
+            }
+            liquidityPool.insuranceFund = newInsuranceFund;
+        }
     }
 
     /**

@@ -394,11 +394,11 @@ library TradeModule {
             penaltyToFund = penalty;
             penaltyToLiquidator = 0;
         }
-        int256 penaltyToLP = perpetual.updateInsuranceFund(penaltyToFund);
+        int256 penaltyToLP = liquidityPool.updateInsuranceFund(penaltyToFund);
         perpetual.updateCash(address(this), penaltyToLP);
         perpetual.updateCash(liquidator, penaltyToLiquidator);
         perpetual.updateCash(trader, penalty.add(vaultFee).neg());
-        if (perpetual.donatedInsuranceFund < 0) {
+        if (liquidityPool.donatedInsuranceFund < 0) {
             liquidityPool.setEmergencyState(perpetual.id);
         }
     }

@@ -45,6 +45,10 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.initializeCollateral(collateralToken, collateralDecimals);
     }
 
+    function setInsuranceFund(int256 amount) public {
+        _liquidityPool.insuranceFund = amount;
+    }
+
     function getPoolCash() public view returns (int256) {
         return _liquidityPool.poolCash;
     }
@@ -63,6 +67,14 @@ contract TestLiquidityPool is TestPerpetual {
 
     function getPriceUpdateTime() public view returns (uint256) {
         return _liquidityPool.priceUpdateTime;
+    }
+
+    function getDonatedInsuranceFund() public view returns (int256) {
+        return _liquidityPool.donatedInsuranceFund;
+    }
+
+    function getInsuranceFund() public view returns (int256) {
+        return _liquidityPool.insuranceFund;
     }
 
     // raw
@@ -107,6 +119,14 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.revokeOperator();
     }
 
+    function donateInsuranceFund(int256 amount) public payable {
+        _liquidityPool.donateInsuranceFund(msg.sender, amount);
+    }
+
+    function updateInsuranceFund(int256 penaltyToFund) public returns (int256 penaltyToLP) {
+        penaltyToLP = _liquidityPool.updateInsuranceFund(penaltyToFund);
+    }
+
     // state
     function updateFundingStateP(uint256 currentTime) public {
         _liquidityPool.updateFundingState(currentTime);
@@ -120,8 +140,8 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.updatePrice(currentTime, false);
     }
 
-    function donateInsuranceFundP(uint256 perpetualIndex, int256 amount) public payable {
-        _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
+    function donateInsuranceFundP(int256 amount) public payable {
+        _liquidityPool.donateInsuranceFund(_msgSender(), amount);
     }
 
     function depositP(

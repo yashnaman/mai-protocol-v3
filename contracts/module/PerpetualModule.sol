@@ -37,8 +37,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_LIQUIDATION_PENALTY_RATE = 5;
     uint256 internal constant INDEX_KEEPER_GAS_REWARD = 6;
     uint256 internal constant INDEX_INSURANCE_FUND_RATE = 7;
-    uint256 internal constant INDEX_INSURANCE_FUND_CAP = 8;
-    uint256 internal constant INDEX_MAX_OPEN_INTEREST_RATE = 9;
+    uint256 internal constant INDEX_MAX_OPEN_INTEREST_RATE = 8;
 
     uint256 internal constant INDEX_HALF_SPREAD = 0;
     uint256 internal constant INDEX_OPEN_SLIPPAGE_FACTOR = 1;
@@ -52,12 +51,11 @@ library PerpetualModule {
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Clear(uint256 perpetualIndex, address indexed trader);
     event Settle(uint256 perpetualIndex, address indexed trader, int256 amount);
-    event DonateInsuranceFund(uint256 perpetualIndex, int256 amount);
     event SetNormalState(uint256 perpetualIndex);
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
     event UpdateUnitAccumulativeFunding(uint256 perpetualIndex, int256 unitAccumulativeFunding);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[10] baseParams);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[9] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
         int256[7] riskParams,
@@ -65,7 +63,6 @@ library PerpetualModule {
         int256[7] maxRiskParamValues
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[7] riskParams);
-    event TransferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
     event SetOracle(address indexed oldOralce, address indexed newOracle);
 
     /**
@@ -135,7 +132,7 @@ library PerpetualModule {
         PerpetualStorage storage perpetual,
         uint256 id,
         address oracle,
-        int256[10] calldata baseParams,
+        int256[9] calldata baseParams,
         int256[7] calldata riskParams,
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
@@ -170,7 +167,7 @@ library PerpetualModule {
      * @param   perpetual   The perpetual object
      * @param   baseParams  The new value of the base parameter
      */
-    function setBaseParameter(PerpetualStorage storage perpetual, int256[10] memory baseParams)
+    function setBaseParameter(PerpetualStorage storage perpetual, int256[9] memory baseParams)
         public
     {
         validateBaseParameters(perpetual, baseParams);
@@ -182,7 +179,6 @@ library PerpetualModule {
         perpetual.liquidationPenaltyRate = baseParams[INDEX_LIQUIDATION_PENALTY_RATE];
         perpetual.keeperGasReward = baseParams[INDEX_KEEPER_GAS_REWARD];
         perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
-        perpetual.insuranceFundCap = baseParams[INDEX_INSURANCE_FUND_CAP];
         perpetual.maxOpenInterestRate = baseParams[INDEX_MAX_OPEN_INTEREST_RATE];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
@@ -380,19 +376,6 @@ library PerpetualModule {
     }
 
     /**
-     * @dev     Donate collateral to the insurance fund of the perpetual. All the donated collateral counts towards
-     *          the total collateral of perpetual, which means these collateral will be settled when settling the
-     *          collateral of the perpetual. Will improve the security of the perpetual.
-     * @param   perpetual   The reference of perpetual storage.
-     * @param   amount      The amount of collateral to donate
-     */
-    function donateInsuranceFund(PerpetualStorage storage perpetual, int256 amount) public {
-        require(amount > 0, "amount should greater than 0");
-        perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(amount);
-        emit DonateInsuranceFund(perpetual.id, amount);
-    }
-
-    /**
      * @dev     Deposit collateral to the trader's account of the perpetual, that will increase the cash amount in
      *          trader's margin account.
      *
@@ -539,39 +522,6 @@ library PerpetualModule {
     }
 
     /**
-     * @dev     Update the collateral of the insurance fund in the perpetual. If the collateral of the insurance fund
-     *          exceeds the cap, the extra part of collateral belongs to LP
-     *
-     * @param   perpetual   The reference of perpetual storage.
-     * @param   deltaFund   The update collateral amount of the insurance fund in the perpetual
-     * @return  penaltyToLP The extra part of collateral if the collateral of the insurance fund exceeds the cap
-     */
-    function updateInsuranceFund(PerpetualStorage storage perpetual, int256 deltaFund)
-        public
-        returns (int256 penaltyToLP)
-    {
-        penaltyToLP = 0;
-        if (deltaFund != 0) {
-            int256 newInsuranceFund = perpetual.insuranceFund.add(deltaFund);
-            if (deltaFund > 0) {
-                if (newInsuranceFund > perpetual.insuranceFundCap) {
-                    penaltyToLP = newInsuranceFund.sub(perpetual.insuranceFundCap);
-                    newInsuranceFund = perpetual.insuranceFundCap;
-                    emit TransferExcessInsuranceFundToLP(perpetual.id, penaltyToLP);
-                }
-            } else {
-                if (newInsuranceFund < 0) {
-                    perpetual.donatedInsuranceFund = perpetual.donatedInsuranceFund.add(
-                        newInsuranceFund
-                    );
-                    newInsuranceFund = 0;
-                }
-            }
-            perpetual.insuranceFund = newInsuranceFund;
-        }
-    }
-
-    /**
      * @dev     Settle the total collateral of the perpetual, which means update redemptionRateWithPosition
      *          and redemptionRateWithoutPosition variables.
      *          If the total collateral is not enough for the accounts without position,
@@ -701,11 +651,12 @@ library PerpetualModule {
      *            6. keeper gas reward >= 0
      *
      * @param   perpetual   The reference of perpetual storage.
+     * @param   baseParams  The base parameters of the perpetual.
      */
-    function validateBaseParameters(
-        PerpetualStorage storage perpetual,
-        int256[10] memory baseParams
-    ) public view {
+    function validateBaseParameters(PerpetualStorage storage perpetual, int256[9] memory baseParams)
+        public
+        view
+    {
         require(
             perpetual.initialMarginRate == 0 ||
                 baseParams[INDEX_INITIAL_MARGIN_RATE] <= perpetual.initialMarginRate,
@@ -743,7 +694,6 @@ library PerpetualModule {
         );
         require(baseParams[INDEX_KEEPER_GAS_REWARD] >= 0, "keeperGasReward < 0");
         require(baseParams[INDEX_INSURANCE_FUND_RATE] >= 0, "insuranceFundRate < 0");
-        require(baseParams[INDEX_INSURANCE_FUND_CAP] >= 0, "insuranceFundCap < 0");
         require(baseParams[INDEX_MAX_OPEN_INTEREST_RATE] > 0, "maxOpenInterestRate <= 0");
     }
 

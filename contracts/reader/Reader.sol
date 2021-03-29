@@ -18,9 +18,8 @@ contract Reader {
         bool isFastCreationEnabled;
         // check Getter.sol for detail
         address[7] addresses;
-        int256 vaultFeeRate;
-        int256 poolCash;
-        uint256[4] nums;
+        int256[5] intNums;
+        uint256[4] uintNums;
         PerpetualReaderResult[] perpetuals;
     }
 
@@ -28,7 +27,7 @@ contract Reader {
         PerpetualState state;
         address oracle;
         // check Getter.sol for detail
-        int256[39] nums;
+        int256[36] nums;
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;
         bool isMarketClosed;
@@ -175,24 +174,44 @@ contract Reader {
             isSynced = false;
         }
         // pool
-        (
-            pool.isRunning,
-            pool.isFastCreationEnabled,
-            pool.addresses,
-            pool.vaultFeeRate,
-            pool.poolCash,
-            pool.nums
-        ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
-        // perpetual
-        uint256 perpetualCount = pool.nums[1];
-        address creator = pool.addresses[0];
-        address symbolService = IPoolCreator(creator).getSymbolService();
-        pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
         address imp = ILiquidityPool(liquidityPool).implementation();
-        for (uint256 i = 0; i < perpetualCount; i++) {
-            if (isV004(imp)) {
-                getPerpetualV004(pool.perpetuals[i], symbolService, liquidityPool, i);
-            } else {
+        if (isV004(imp)) {
+            int256 vaultFeeRate;
+            int256 poolCash;
+            (
+                pool.isRunning,
+                pool.isFastCreationEnabled,
+                pool.addresses,
+                vaultFeeRate,
+                poolCash,
+                pool.uintNums
+            ) = ILiquidityPool004(liquidityPool).getLiquidityPoolInfo();
+            pool.intNums[0] = vaultFeeRate;
+            pool.intNums[1] = poolCash;
+            // perpetual
+            uint256 perpetualCount = pool.uintNums[1];
+            address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
+            pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
+            for (uint256 i = 0; i < perpetualCount; i++) {
+                (int256 insuranceFundCap, int256 insuranceFund, int256 donatedInsuranceFund) =
+                    getPerpetualV004(pool.perpetuals[i], symbolService, liquidityPool, i);
+                pool.intNums[2] = pool.intNums[2] + insuranceFundCap;
+                pool.intNums[3] = pool.intNums[3] + insuranceFund;
+                pool.intNums[4] = pool.intNums[4] + donatedInsuranceFund;
+            }
+        } else {
+            (
+                pool.isRunning,
+                pool.isFastCreationEnabled,
+                pool.addresses,
+                pool.intNums,
+                pool.uintNums
+            ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
+            // perpetual
+            uint256 perpetualCount = pool.uintNums[1];
+            address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
+            pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
+            for (uint256 i = 0; i < perpetualCount; i++) {
                 getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
             }
         }
@@ -262,20 +281,36 @@ contract Reader {
         address symbolService,
         address liquidityPool,
         uint256 perpetualIndex
-    ) private {
+    )
+        private
+        returns (
+            int256 insuranceFundCap,
+            int256 insuranceFund,
+            int256 donatedInsuranceFund
+        )
+    {
         // perpetual
         int256[34] memory nums;
         (perp.state, perp.oracle, nums) = ILiquidityPool004(liquidityPool).getPerpetualInfo(
             perpetualIndex
         );
-        for (uint256 i = 0; i < 34; i++) {
-            perp.nums[i] = nums[i];
+        insuranceFundCap = nums[13];
+        insuranceFund = nums[14];
+        donatedInsuranceFund = nums[15];
+        for (uint256 i = 0; i < 31; i++) {
+            if (i >= 13) {
+                // insuranceFundCap, insuranceFund, donatedInsuranceFund are moved to liquidityPoolStorage
+                perp.nums[i] = nums[i + 3];
+            } else {
+                // 0-12, unchanged
+                perp.nums[i] = nums[i];
+            }
         }
-        perp.nums[34] = 0; // [34] openInterest
-        perp.nums[35] = 100 * 10**18; // [35] maxOpenInterestRate
-        perp.nums[36] = perp.nums[25]; // [25-27] fundingRateLimit value, min, max [36-38] fundingRateFactor value, min, max
-        perp.nums[37] = perp.nums[26];
-        perp.nums[38] = perp.nums[27];
+        perp.nums[31] = 0; // [31] openInterest
+        perp.nums[32] = 100 * 10**18; // [32] maxOpenInterestRate
+        perp.nums[33] = perp.nums[22]; // [22-24] fundingRateLimit value, min, max [33-35] fundingRateFactor value, min, max
+        perp.nums[34] = perp.nums[23];
+        perp.nums[35] = perp.nums[24];
         // read more from symbol service
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
         // read more from oracle
@@ -402,6 +437,18 @@ contract Reader {
 // back-compatible: beta0.0.4
 
 interface ILiquidityPool004 {
+    function getLiquidityPoolInfo()
+        external
+        view
+        returns (
+            bool isRunning,
+            bool isFastCreationEnabled,
+            address[7] memory addresses,
+            int256 vaultFeeRate,
+            int256 poolCash,
+            uint256[4] memory nums
+        );
+
     function getPerpetualInfo(uint256 perpetualIndex)
         external
         view

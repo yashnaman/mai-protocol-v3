@@ -21,25 +21,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
 
     /**
-     * @notice  Donate collateral to the insurance fund of the perpetual.
-     *          Can only called when the perpetual's state is "NORMAL".
-     *          Donated collateral is not withdrawable but can be used to improve security.
-     *          Unexpected loss (backrupt) will be deducted from insurance fund then donated insurance fund.
-     *          Until donated insurance fund is drained, the perpetual will not enter emergency state and shutdown.
-     *
-     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
-     * @param   amount          The amount of collateral to donate.
-     */
-    function donateInsuranceFund(uint256 perpetualIndex, int256 amount) external payable {
-        require(amount > 0 || msg.value > 0, "invalid amount");
-        require(
-            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual should be in NORMAL state"
-        );
-        _liquidityPool.donateInsuranceFund(perpetualIndex, _msgSender(), amount);
-    }
-
-    /**
      * @notice  Deposit collateral to the perpetual.
      *          Can only called when the perpetual's state is "NORMAL".
      *          This method will always increase `cash` amount in trader's margin account.

@@ -11,9 +11,8 @@ interface ILiquidityPool {
      * @return isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
      *                               when the liquidity pool is running
      * @return addresses The related addresses of the liquidity pool
-     * @return vaultFeeRate The vault fee rate of the liquidity pool
-     * @return poolCash The pool cash(collateral) of the liquidity pool
-     * @return nums Uint type properties, see below for details.
+     * @return intNums Int type properties, see below for details.
+     * @return uintNums Uint type properties, see below for details.
      */
     function getLiquidityPoolInfo()
         external
@@ -29,13 +28,17 @@ interface ILiquidityPool {
             // [5] collateralToken,
             // [6] vault,
             address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
+            // [0] vaultFeeRate,
+            // [1] poolCash,
+            // [2] insuranceFundCap,
+            // [3] insuranceFund,
+            // [4] donatedInsuranceFund,
+            int256[5] memory intNums,
             // [0] collateralDecimals,
             // [1] perpetualCount
             // [2] fundingTime,
             // [3] operatorExpiration,
-            uint256[4] memory nums
+            uint256[4] memory uintNums
         );
 
     /**
@@ -65,19 +68,16 @@ interface ILiquidityPool {
             // [10] liquidationPenaltyRate,
             // [11] keeperGasReward,
             // [12] insuranceFundRate,
-            // [13] insuranceFundCap,
-            // [14] insuranceFund,
-            // [15] donatedInsuranceFund,
-            // [16-18] halfSpread value, min, max,
-            // [19-21] openSlippageFactor value, min, max,
-            // [22-24] closeSlippageFactor value, min, max,
-            // [25-27] fundingRateLimit value, min, max,
-            // [28-30] ammMaxLeverage value, min, max,
-            // [31-33] maxClosePriceDiscount value, min, max,
-            // [34] openInterest,
-            // [35] maxOpenInterestRate,
-            // [36-38] fundingRateFactor value, min, max,
-            int256[39] memory nums
+            // [13-15] halfSpread value, min, max,
+            // [16-18] openSlippageFactor value, min, max,
+            // [19-21] closeSlippageFactor value, min, max,
+            // [22-24] fundingRateLimit value, min, max,
+            // [25-27] ammMaxLeverage value, min, max,
+            // [28-30] maxClosePriceDiscount value, min, max,
+            // [31] openInterest,
+            // [32] maxOpenInterestRate,
+            // [33-35] fundingRateFactor value, min, max,
+            int256[36] memory nums
         );
 
     /**

@@ -12,7 +12,7 @@ contract LibraryEvents {
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Clear(uint256 perpetualIndex, address indexed trader);
     event Settle(uint256 perpetualIndex, address indexed trader, int256 amount);
-    event DonateInsuranceFund(uint256 perpetualIndex, int256 amount);
+    event DonateInsuranceFund(int256 amount);
     event SetNormalState(uint256 perpetualIndex);
     event SetEmergencyState(uint256 perpetualIndex, int256 settlementPrice, uint256 settlementTime);
     event SetClearedState(uint256 perpetualIndex);
@@ -44,7 +44,7 @@ contract LibraryEvents {
         int256 maxValue
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
-    event transferExcessInsuranceFundToLP(uint256 perpetualIndex, int256 amount);
+    event transferExcessInsuranceFundToLP(int256 amount);
 
     // pool
     event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);

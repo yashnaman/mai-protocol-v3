@@ -36,5 +36,5 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
-    bytes32[50] private __gap;
+    bytes32[28] private __gap;
 }

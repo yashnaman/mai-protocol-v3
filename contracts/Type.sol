@@ -82,11 +82,17 @@ struct LiquidityPoolStorage {
     uint256 fundingTime;
     uint256 priceUpdateTime;
     uint256 operatorExpiration;
+    mapping(address => int256) reserved1;
+    bytes32[] reserved2;
     // perpetuals
     uint256 perpetualCount;
     mapping(uint256 => PerpetualStorage) perpetuals;
+    // insurance fund
+    int256 insuranceFundCap;
+    int256 insuranceFund;
+    int256 donatedInsuranceFund;
     // reserved slot for future upgrade
-    bytes32[20] reserved;
+    bytes32[17] reserved;
 }
 
 /**
@@ -114,7 +120,7 @@ struct PerpetualStorage {
     int256 liquidationPenaltyRate;
     int256 keeperGasReward;
     int256 insuranceFundRate;
-    int256 insuranceFundCap;
+    int256 reserved1; // insuranceFundCap;
     int256 maxOpenInterestRate;
     // risk parameters
     Option halfSpread;
@@ -132,8 +138,8 @@ struct PerpetualStorage {
     int256 redemptionRateWithPosition;
     EnumerableSetUpgradeable.AddressSet activeAccounts;
     // insurance fund
-    int256 insuranceFund;
-    int256 donatedInsuranceFund;
+    int256 reserved2; // insuranceFund
+    int256 reserved3; // donatedInsuranceFund
     // accounts
     mapping(address => MarginAccount) marginAccounts;
     // reserved slot for future upgrade

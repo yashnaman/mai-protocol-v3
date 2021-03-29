@@ -72,8 +72,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
-    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE =
-        keccak256(bytes("upgradeTo(address)"));
+    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE = keccak256(bytes("upgradeTo(address)"));
     bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
         keccak256(bytes("forceToSetEmergencyState(uint256,int256)"));
     bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
@@ -455,7 +454,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     function _getOperator() internal view returns (address) {
-        (, , address[7] memory addresses, , , ) = ILiquidityPool(_target).getLiquidityPoolInfo();
+        (, , address[7] memory addresses, , ) = ILiquidityPool(_target).getLiquidityPoolInfo();
         return addresses[1];
     }
 
