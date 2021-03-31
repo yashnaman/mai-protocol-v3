@@ -123,18 +123,6 @@ contract Getter is Storage {
             // [10] liquidationPenaltyRate,
             // [11] keeperGasReward,
             // [12] insuranceFundRate,
-
-            // [13] insuranceFundCap,
-            // [14] insuranceFund,
-            // [15] donatedInsuranceFund,
-
-            // [16-18] halfSpread value, min, max,
-            // [19-21] openSlippageFactor value, min, max,
-            // [22-24] closeSlippageFactor value, min, max,
-            // [25-27] fundingRateLimit value, min, max,
-            // [28-30] ammMaxLeverage value, min, max,
-            // [31-33] maxClosePriceDiscount value, min, max,
-
             // [13-15] halfSpread value, min, max,
             // [16-18] openSlippageFactor value, min, max,
             // [19-21] closeSlippageFactor value, min, max,

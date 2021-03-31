@@ -57,6 +57,16 @@ contract TestAMM {
         liquidityPool.perpetualCount = 2;
     }
 
+    function setInsuranceFund(int256 insuranceFund, int256 donatedInsuranceFund) public {
+        liquidityPool.insuranceFund = insuranceFund;
+        liquidityPool.donatedInsuranceFund = donatedInsuranceFund;
+    }
+
+    function setAllCleared() public {
+        liquidityPool.perpetuals[0].state = PerpetualState.CLEARED;
+        liquidityPool.perpetuals[1].state = PerpetualState.CLEARED;
+    }
+
     function isAMMSafe() public view returns (bool) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[0];
         AMMModule.Context memory context = AMMModule.prepareContext(liquidityPool, 0);
@@ -114,15 +124,37 @@ contract TestAMM {
         return AMMModule.getShareToMint(liquidityPool, shareTotalSupply, cashToAdd);
     }
 
+    function getCashToAdd(int256 shareTotalSupply, int256 shareToMint)
+        public
+        view
+        returns (int256)
+    {
+        return AMMModule.getCashToAdd(liquidityPool, shareTotalSupply, shareToMint);
+    }
+
     function getCashToReturn(int256 shareTotalSupply, int256 shareToRemove)
         public
         view
-        returns (int256 cashToReturn)
+        returns (
+            int256 cashToReturn,
+            int256 removedInsuranceFund,
+            int256 removedDonatedInsuranceFund
+        )
     {
-        (cashToReturn, , ) = AMMModule.getCashToReturn(
-            liquidityPool,
-            shareTotalSupply,
-            shareToRemove
-        );
+        (cashToReturn, removedInsuranceFund, removedDonatedInsuranceFund) = AMMModule
+            .getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
+    }
+
+    function getShareToRemove(int256 shareTotalSupply, int256 cashToReturn)
+        public
+        view
+        returns (
+            int256 shareToRemove,
+            int256 removedInsuranceFund,
+            int256 removedDonatedInsuranceFund
+        )
+    {
+        (shareToRemove, removedInsuranceFund, removedDonatedInsuranceFund) = AMMModule
+            .getShareToRemove(liquidityPool, shareTotalSupply, cashToReturn);
     }
 }

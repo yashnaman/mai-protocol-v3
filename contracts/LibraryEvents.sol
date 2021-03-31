@@ -35,15 +35,14 @@ contract LibraryEvents {
         int256 penaltyToLP
     );
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
-    event SetPerpetualBaseParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[9] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
-        bytes32 key,
-        int256 value,
-        int256 minValue,
-        int256 maxValue
+        int256[7] riskParams,
+        int256[7] minRiskParamValues,
+        int256[7] maxRiskParamValues
     );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, bytes32 key, int256 value);
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[7] riskParams);
     event transferExcessInsuranceFundToLP(int256 amount);
 
     // pool
