@@ -40,9 +40,17 @@ contract MockLiquidityPool {
             // [5] collateralToken,
             // [6] vault,
             address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
-            uint256[4] memory nums
+            // [0] vaultFeeRate,
+            // [1] poolCash,
+            // [2] insuranceFundCap,
+            // [3] insuranceFund,
+            // [4] donatedInsuranceFund,
+            int256[5] memory intNums,
+            // [0] collateralDecimals,
+            // [1] perpetualCount
+            // [2] fundingTime,
+            // [3] operatorExpiration,
+            uint256[4] memory uintNums
         )
     {
         addresses[1] = operator;

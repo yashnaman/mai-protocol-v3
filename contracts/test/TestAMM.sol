@@ -117,8 +117,12 @@ contract TestAMM {
     function getCashToReturn(int256 shareTotalSupply, int256 shareToRemove)
         public
         view
-        returns (int256)
+        returns (int256 cashToReturn)
     {
-        return AMMModule.getCashToReturn(liquidityPool, shareTotalSupply, shareToRemove);
+        (cashToReturn, , ) = AMMModule.getCashToReturn(
+            liquidityPool,
+            shareTotalSupply,
+            shareToRemove
+        );
     }
 }

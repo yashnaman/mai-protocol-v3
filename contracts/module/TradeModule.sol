@@ -371,26 +371,38 @@ library TradeModule {
         int256 deltaPosition
     ) public returns (int256 penalty, int256 penaltyToLiquidator) {
         int256 vaultFee = 0;
-        int256 markPrice = perpetual.getMarkPrice();
-        int256 remainingMargin = perpetual.getMargin(trader, markPrice);
-        int256 liquidationValue = markPrice.wmul(deltaPosition).abs();
-        penalty = liquidationValue.wmul(perpetual.liquidationPenaltyRate).min(
-            remainingMargin.wfrac(deltaPosition.abs(), position.abs())
-        );
-        remainingMargin = remainingMargin.sub(penalty);
-        if (remainingMargin > 0) {
-            vaultFee = liquidationValue.wmul(liquidityPool.getVaultFeeRate()).min(remainingMargin);
-            liquidityPool.transferFromPerpetualToUser(
-                perpetual.id,
-                liquidityPool.getVault(),
-                vaultFee
+        {
+            int256 markPrice = perpetual.getMarkPrice();
+            int256 remainingMargin = perpetual.getMargin(trader, markPrice);
+            int256 liquidationValue = markPrice.wmul(deltaPosition).abs();
+            penalty = liquidationValue.wmul(perpetual.liquidationPenaltyRate).min(
+                remainingMargin.wfrac(deltaPosition.abs(), position.abs())
             );
+            remainingMargin = remainingMargin.sub(penalty);
+            if (remainingMargin > 0) {
+                vaultFee = liquidationValue.wmul(liquidityPool.getVaultFeeRate()).min(
+                    remainingMargin
+                );
+                liquidityPool.transferFromPerpetualToUser(
+                    perpetual.id,
+                    liquidityPool.getVault(),
+                    vaultFee
+                );
+            }
         }
         int256 penaltyToFund;
+        bool setEmergency;
         if (penalty > 0) {
             penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
             penaltyToLiquidator = penalty.sub(penaltyToFund);
         } else {
+            int256 totalInsuranceFund =
+                liquidityPool.insuranceFund.add(liquidityPool.donatedInsuranceFund);
+            if (totalInsuranceFund.add(penalty) < 0) {
+                // ensure donatedInsuranceFund >= 0
+                penalty = totalInsuranceFund.neg();
+                setEmergency = true;
+            }
             penaltyToFund = penalty;
             penaltyToLiquidator = 0;
         }
@@ -398,7 +410,12 @@ library TradeModule {
         perpetual.updateCash(address(this), penaltyToLP);
         perpetual.updateCash(liquidator, penaltyToLiquidator);
         perpetual.updateCash(trader, penalty.add(vaultFee).neg());
-        if (liquidityPool.donatedInsuranceFund < 0) {
+        if (penaltyToFund >= 0) {
+            perpetual.decreaseTotalCollateral(penaltyToFund.sub(penaltyToLP));
+        } else {
+            perpetual.increaseTotalCollateral(penaltyToFund.neg());
+        }
+        if (setEmergency) {
             liquidityPool.setEmergencyState(perpetual.id);
         }
     }

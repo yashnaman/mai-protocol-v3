@@ -149,16 +149,26 @@ library AMMModule {
      *            3. AMM will offer negative price at any perpetual after removing liquidity
      *            4. AMM will exceed maximum leverage at any perpetual after removing liquidity
      *
-     * @param   liquidityPool       The liquidity pool object of AMM.
-     * @param   shareTotalSupply    The total supply of the share token before removing liquidity.
-     * @param   shareToRemove       The amount of share token to redeem.
-     * @return  cashToReturn        The amount of cash(collateral) to return.
+     * @param   liquidityPool                The liquidity pool object of AMM.
+     * @param   shareTotalSupply             The total supply of the share token before removing liquidity.
+     * @param   shareToRemove                The amount of share token to redeem.
+     * @return  cashToReturn                 The amount of cash(collateral) to return.
+     * @return  removedInsuranceFund         The part of insurance fund returned to LP if all perpetuals are in CLEARED state.
+     * @return  removedDonatedInsuranceFund  The part of donated insurance fund returned to LP if all perpetuals are in CLEARED state.
      */
     function getCashToReturn(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 shareToRemove
-    ) public view returns (int256 cashToReturn) {
+    )
+        public
+        view
+        returns (
+            int256 cashToReturn,
+            int256 removedInsuranceFund,
+            int256 removedDonatedInsuranceFund
+        )
+    {
         require(
             shareTotalSupply > 0,
             "total supply of share token is zero when removing liquidity"
@@ -175,8 +185,12 @@ library AMMModule {
         cashToReturn = calculateCashToReturn(context, poolMargin);
         require(cashToReturn >= 0, "received margin is negative");
         uint256 length = liquidityPool.perpetualCount;
+        bool allCleared = true;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.CLEARED) {
+                allCleared = false;
+            }
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
@@ -195,6 +209,20 @@ library AMMModule {
                 context.positionMargin,
             "AMM exceeds max leverage after removing liquidity"
         );
+        if (allCleared) {
+            // get insurance fund proportionally
+            removedInsuranceFund = liquidityPool.insuranceFund.wfrac(
+                shareToRemove,
+                shareTotalSupply,
+                Round.FLOOR
+            );
+            removedDonatedInsuranceFund = liquidityPool.donatedInsuranceFund.wfrac(
+                shareToRemove,
+                shareTotalSupply,
+                Round.FLOOR
+            );
+            cashToReturn = cashToReturn.add(removedInsuranceFund).add(removedDonatedInsuranceFund);
+        }
     }
 
     /**
@@ -205,16 +233,26 @@ library AMMModule {
      *            3. AMM will offer negative price at any perpetual after removing liquidity
      *            4. AMM will exceed maximum leverage at any perpetual after removing liquidity
      *
-     * @param   liquidityPool       The liquidity pool object of AMM.
-     * @param   shareTotalSupply    The total supply of the share token before removing liquidity.
-     * @param   cashToReturn        The cash(collateral) to return.
-     * @return  shareToRemove       The amount of share token to redeem.
+     * @param   liquidityPool                The liquidity pool object of AMM.
+     * @param   shareTotalSupply             The total supply of the share token before removing liquidity.
+     * @param   cashToReturn                 The cash(collateral) to return.
+     * @return  shareToRemove                The amount of share token to redeem.
+     * @return  removedInsuranceFund         The part of insurance fund returned to LP if all perpetuals are in CLEARED state.
+     * @return  removedDonatedInsuranceFund  The part of donated insurance fund returned to LP if all perpetuals are in CLEARED state.
      */
     function getShareToRemove(
         LiquidityPoolStorage storage liquidityPool,
         int256 shareTotalSupply,
         int256 cashToReturn
-    ) public view returns (int256 shareToRemove) {
+    )
+        public
+        view
+        returns (
+            int256 shareToRemove,
+            int256 removedInsuranceFund,
+            int256 removedDonatedInsuranceFund
+        )
+    {
         require(
             shareTotalSupply > 0,
             "total supply of share token is zero when removing liquidity"
@@ -227,8 +265,12 @@ library AMMModule {
         int256 newPoolMargin = calculatePoolMarginWhenSafe(context, 0);
         shareToRemove = poolMargin.sub(newPoolMargin).wfrac(shareTotalSupply, poolMargin);
         uint256 length = liquidityPool.perpetualCount;
+        bool allCleared = true;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.CLEARED) {
+                allCleared = false;
+            }
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
@@ -245,6 +287,66 @@ library AMMModule {
         require(
             context.availableCash.add(context.positionValue) >= context.positionMargin,
             "AMM exceeds max leverage after removing liquidity"
+        );
+        if (allCleared) {
+            // get insurance fund proportionally
+            (
+                shareToRemove,
+                removedInsuranceFund,
+                removedDonatedInsuranceFund
+            ) = getShareToRemoveWhenAllCleared(
+                liquidityPool,
+                cashToReturn,
+                poolMargin,
+                shareTotalSupply
+            );
+        }
+    }
+
+    /**
+     * @dev     Calculate the amount of share token to redeem when liquidity provider removes liquidity from the liquidity pool.
+     *          Only called when all perpetuals in the liquidity pool are in CLEARED state.
+     *
+     * @param   liquidityPool                The liquidity pool object of AMM.
+     * @param   cashToReturn                 The cash(collateral) to return.
+     * @param   poolMargin                   The pool margin before removing liquidity.
+     * @param   shareTotalSupply             The total supply of the share token before removing liquidity.
+     * @return  shareToRemove                The amount of share token to redeem.
+     * @return  removedInsuranceFund         The part of insurance fund returned to LP if all perpetuals are in CLEARED state.
+     * @return  removedDonatedInsuranceFund  The part of donated insurance fund returned to LP if all perpetuals are in CLEARED state.
+     */
+    function getShareToRemoveWhenAllCleared(
+        LiquidityPoolStorage storage liquidityPool,
+        int256 cashToReturn,
+        int256 poolMargin,
+        int256 shareTotalSupply
+    )
+        public
+        view
+        returns (
+            int256 shareToRemove,
+            int256 removedInsuranceFund,
+            int256 removedDonatedInsuranceFund
+        )
+    {
+        int256 removedCash =
+            cashToReturn.wdiv(
+                liquidityPool
+                    .insuranceFund
+                    .add(liquidityPool.donatedInsuranceFund)
+                    .wdiv(poolMargin)
+                    .add(Constant.SIGNED_ONE)
+            );
+        shareToRemove = removedCash.wfrac(shareTotalSupply, poolMargin);
+        removedInsuranceFund = removedCash.wfrac(
+            liquidityPool.insuranceFund,
+            poolMargin,
+            Round.FLOOR
+        );
+        removedDonatedInsuranceFund = removedCash.wfrac(
+            liquidityPool.donatedInsuranceFund,
+            poolMargin,
+            Round.FLOOR
         );
     }
 

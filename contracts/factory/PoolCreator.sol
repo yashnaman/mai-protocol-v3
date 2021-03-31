@@ -42,7 +42,8 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         address operator,
         address collateral,
         uint256 collateralDecimals,
-        bool isFastCreationEnabled
+        bool isFastCreationEnabled,
+        int256 insuranceFundCap
     );
 
     /**
@@ -53,21 +54,24 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
      * @param   collateralDecimals      The collateral's decimals of the liquidity pool.
      * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
      *                                  when the liquidity pool is running.
-     * @param   nonce           A nonce for calcuating address.
-     * @return  liquidityPool   The address of the created liquidity pool.
+     * @param   nonce                   A nonce for calcuating address.
+     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP.
+     * @return  liquidityPool           The address of the created liquidity pool.
      */
     function createLiquidityPool(
         address collateral,
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
-        int256 nonce
+        int256 nonce,
+        int256 insuranceFundCap
     ) external returns (address liquidityPool) {
         liquidityPool = _createLiquidityPoolWith(
             getLatestVersion(),
             collateral,
             collateralDecimals,
             isFastCreationEnabled,
-            nonce
+            nonce,
+            insuranceFundCap
         );
     }
 
@@ -78,22 +82,25 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
      * @param   collateralDecimals      The collateral's decimals of the liquidity pool
      * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
      *                                  when the liquidity pool is running
-     * @param   nonce           The nonce for the creation
-     * @return  liquidityPool   The address of the created liquidity pool
+     * @param   nonce                   The nonce for the creation
+     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP
+     * @return  liquidityPool           The address of the created liquidity pool
      */
     function createLiquidityPoolWith(
         address implementation,
         address collateral,
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
-        int256 nonce
+        int256 nonce,
+        int256 insuranceFundCap
     ) external returns (address liquidityPool) {
         liquidityPool = _createLiquidityPoolWith(
             implementation,
             collateral,
             collateralDecimals,
             isFastCreationEnabled,
-            nonce
+            nonce,
+            insuranceFundCap
         );
     }
 
@@ -105,6 +112,7 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
      * @param   isFastCreationEnabled   If the operator of the liquidity pool is allowed to create new perpetual
      *                                  when the liquidity pool is running
      * @param   nonce                   The nonce for the creation
+     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP
      * @return  liquidityPool           The address of the created liquidity pool
      */
     function _createLiquidityPoolWith(
@@ -112,7 +120,8 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         address collateral,
         uint256 collateralDecimals,
         bool isFastCreationEnabled,
-        int256 nonce
+        int256 nonce,
+        int256 insuranceFundCap
     ) internal returns (address liquidityPool) {
         require(implementation.isContract(), "the implementation must be a contract");
         require(collateral.isContract(), "the collateral must be a contract");
@@ -121,7 +130,9 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         address governor = _createClone(_shareTokenTemplate);
         address shareToken = governor;
         bytes32 argsHash =
-            keccak256(abi.encode(collateral, collateralDecimals, isFastCreationEnabled));
+            keccak256(
+                abi.encode(collateral, collateralDecimals, isFastCreationEnabled, insuranceFundCap)
+            );
         liquidityPool = _createUpgradeableProxy(implementation, governor, argsHash, nonce);
         // initialize
         address operator = msg.sender;
@@ -140,7 +151,8 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
             collateralDecimals,
             governor,
             shareToken,
-            isFastCreationEnabled
+            isFastCreationEnabled,
+            insuranceFundCap
         );
         // register
         _registerLiquidityPool(liquidityPool, operator);
@@ -151,7 +163,8 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
             operator,
             collateral,
             collateralDecimals,
-            isFastCreationEnabled
+            isFastCreationEnabled,
+            insuranceFundCap
         );
         return liquidityPool;
     }

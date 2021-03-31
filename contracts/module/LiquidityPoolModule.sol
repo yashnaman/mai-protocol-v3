@@ -170,6 +170,7 @@ library LiquidityPoolModule {
      * @param   shareToken              The share token's address of the liquidity pool.
      * @param   isFastCreationEnabled   True if the operator of the liquidity pool is allowed to create new perpetual
      *                                  when the liquidity pool is running
+     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP
      */
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
@@ -179,7 +180,8 @@ library LiquidityPoolModule {
         address operator,
         address governor,
         address shareToken,
-        bool isFastCreationEnabled
+        bool isFastCreationEnabled,
+        int256 insuranceFundCap
     ) public {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
@@ -196,6 +198,7 @@ library LiquidityPoolModule {
         liquidityPool.governor = governor;
         liquidityPool.shareToken = shareToken;
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
+        liquidityPool.insuranceFundCap = insuranceFundCap;
     }
 
     /**
@@ -291,7 +294,7 @@ library LiquidityPoolModule {
      *            1. insurance fund cap >= 0
      * @param   liquidityPoolParams  The parameters of the liquidity pool.
      */
-    function validateLiquidityPoolParameter(int256[2] memory liquidityPoolParams) public view {
+    function validateLiquidityPoolParameter(int256[2] memory liquidityPoolParams) public pure {
         require(liquidityPoolParams[1] >= 0, "insuranceFundCap < 0");
     }
 
@@ -659,7 +662,8 @@ library LiquidityPoolModule {
 
     /**
      * @dev Add collateral to the liquidity pool and get the minted share tokens.
-     *         The share token is the credential and use to get the collateral back when removing liquidity.
+     *      The share token is the credential and use to get the collateral back when removing liquidity.
+     *      Can only called when at least 1 perpetual is in NORMAL state.
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param trader The address of the trader that adding liquidity
      * @param cashToAdd The cash(collateral) to add
@@ -670,6 +674,15 @@ library LiquidityPoolModule {
         int256 cashToAdd
     ) public {
         require(cashToAdd > 0 || msg.value > 0, "cash amount must be positive");
+        uint256 length = liquidityPool.perpetualCount;
+        bool allowAdd;
+        for (uint256 i = 0; i < length; i++) {
+            if (liquidityPool.perpetuals[i].state == PerpetualState.NORMAL) {
+                allowAdd = true;
+                break;
+            }
+        }
+        require(allowAdd, "all perpetuals are not in NORMAL state");
         int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
@@ -698,11 +711,15 @@ library LiquidityPoolModule {
     ) public {
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
+        int256 removedInsuranceFund;
+        int256 removedDonatedInsuranceFund;
         if (cashToReturn == 0 && shareToRemove > 0) {
-            cashToReturn = liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
+            (cashToReturn, removedInsuranceFund, removedDonatedInsuranceFund) = liquidityPool
+                .getCashToReturn(shareTotalSupply, shareToRemove);
             require(cashToReturn > 0, "cash to return must be positive");
         } else if (cashToReturn > 0 && shareToRemove == 0) {
-            shareToRemove = liquidityPool.getShareToRemove(shareTotalSupply, cashToReturn);
+            (shareToRemove, removedInsuranceFund, removedDonatedInsuranceFund) = liquidityPool
+                .getShareToRemove(shareTotalSupply, cashToReturn);
             require(shareToRemove > 0, "share to remove must be positive");
         } else {
             revert("invalid parameter");
@@ -711,11 +728,17 @@ library LiquidityPoolModule {
             shareToRemove.toUint256() <= shareToken.balanceOf(trader),
             "insufficient share balance"
         );
-        require(cashToReturn <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
+        int256 deltaPoolCash =
+            cashToReturn.sub(removedInsuranceFund).sub(removedDonatedInsuranceFund);
+        require(deltaPoolCash <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
         shareToken.burn(trader, shareToRemove.toUint256());
         liquidityPool.transferToUser(payable(trader), cashToReturn);
+        liquidityPool.insuranceFund = liquidityPool.insuranceFund.sub(removedInsuranceFund);
+        liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.sub(
+            removedDonatedInsuranceFund
+        );
         // pool cash cannot be added before calculation, DO NOT use transferFromPoolToUser
-        decreasePoolCash(liquidityPool, cashToReturn);
+        decreasePoolCash(liquidityPool, deltaPoolCash);
         emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }
 

@@ -408,8 +408,8 @@ contract Reader {
      *                              error happens (oracle error, zero price etc.). In this case,
      *                              trading, withdraw (if position != 0), addLiquidity, removeLiquidity
      *                              will fail
-     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
      * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
      */
     function queryRemoveLiquidity(
         address liquidityPool,

@@ -117,6 +117,7 @@ interface ILiquidityPool {
      * @param shareToken The share token's address of the liquidity pool
      * @param isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
      *                              when the liquidity pool is running
+     * @param insuranceFundCap The max value of the insurance fund, if exceeds, the extra belongs to LP
      */
     function initialize(
         address operator,
@@ -124,7 +125,8 @@ interface ILiquidityPool {
         uint256 collateralDecimals,
         address governor,
         address shareToken,
-        bool isFastCreationEnabled
+        bool isFastCreationEnabled,
+        int256 insuranceFundCap
     ) external;
 
     /**
@@ -256,11 +258,12 @@ interface ILiquidityPool {
     /**
      * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
      *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *          Can only called when the pool is running.
      *
-     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
      * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
-     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
      * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
      */
     function queryRemoveLiquidity(int256 shareToRemove, int256 cashToReturn)
         external

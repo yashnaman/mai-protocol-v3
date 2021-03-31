@@ -40,6 +40,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      * @param   shareToken              The address of share token, which is the token for liquidity providers.
      * @param   isFastCreationEnabled   True if the operator is able to create new perpetual without governor
      *                                  when the liquidity pool is running.
+     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP.
      */
     function initialize(
         address operator,
@@ -47,7 +48,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         uint256 collateralDecimals,
         address governor,
         address shareToken,
-        bool isFastCreationEnabled
+        bool isFastCreationEnabled,
+        int256 insuranceFundCap
     ) external initializer {
         _liquidityPool.initialize(
             _msgSender(),
@@ -56,7 +58,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
             operator,
             governor,
             shareToken,
-            isFastCreationEnabled
+            isFastCreationEnabled,
+            insuranceFundCap
         );
     }
 
@@ -174,10 +177,10 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          Only one of shareToRemove or cashToReturn may be non-zero.
      *          Can only called when the pool is running.
      *
-     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
      * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
-     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
      * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
      */
     function queryRemoveLiquidity(int256 shareToRemove, int256 cashToReturn)
         public
@@ -187,10 +190,16 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         require(_liquidityPool.isRunning, "pool is not running");
         int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
         if (shareToRemove > 0 && cashToReturn == 0) {
-            cashToReturnResult = _liquidityPool.getCashToReturn(shareTotalSupply, shareToRemove);
+            (cashToReturnResult, , ) = _liquidityPool.getCashToReturn(
+                shareTotalSupply,
+                shareToRemove
+            );
             shareToRemoveResult = shareToRemove;
         } else if (shareToRemove == 0 && cashToReturn > 0) {
-            shareToRemoveResult = _liquidityPool.getShareToRemove(shareTotalSupply, cashToReturn);
+            (shareToRemoveResult, , ) = _liquidityPool.getShareToRemove(
+                shareTotalSupply,
+                cashToReturn
+            );
             cashToReturnResult = cashToReturn;
         } else {
             revert("invalid parameter");
