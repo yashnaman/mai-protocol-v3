@@ -98,6 +98,8 @@ contract TestLiquidityPool is TestPerpetual {
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) public {
         if (key == "isFastCreationEnabled") {
             _liquidityPool.isFastCreationEnabled = (newValue != 0);
+        } else if (key == "insuranceFundCap") {
+            _liquidityPool.insuranceFundCap = newValue;
         } else {
             revert("key not found");
         }

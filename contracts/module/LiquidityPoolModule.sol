@@ -557,6 +557,10 @@ library LiquidityPoolModule {
                     liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
                         newInsuranceFund
                     );
+                    require(
+                        liquidityPool.donatedInsuranceFund >= 0,
+                        "negative donated insurance fund"
+                    );
                     newInsuranceFund = 0;
                 }
             }

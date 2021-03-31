@@ -66,17 +66,9 @@ contract TestSymbolService {
         returns (
             bool isRunning,
             bool isFastCreationEnabled,
-            // [0] creator,
-            // [1] operator,
-            // [2] transferringOperator,
-            // [3] governor,
-            // [4] shareToken,
-            // [5] collateralToken,
-            // [6] vault,
             address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
-            uint256[4] memory nums
+            int256[5] memory intNums,
+            uint256[4] memory uintNums
         )
     {
         addresses[0] = factory;
