@@ -126,6 +126,10 @@ contract TestPerpetual is Storage {
         }
     }
 
+    function setInsuranceFundCap(int256 insuranceFundCap) public {
+        _liquidityPool.insuranceFundCap = insuranceFundCap;
+    }
+
     function setState(uint256 perpetualIndex, PerpetualState state) public {
         _liquidityPool.perpetuals[perpetualIndex].state = state;
     }

@@ -741,7 +741,6 @@ library LiquidityPoolModule {
         liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.sub(
             removedDonatedInsuranceFund
         );
-        // pool cash cannot be added before calculation, DO NOT use transferFromPoolToUser
         decreasePoolCash(liquidityPool, deltaPoolCash);
         emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }

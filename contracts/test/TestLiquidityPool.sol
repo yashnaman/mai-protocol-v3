@@ -49,6 +49,10 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.insuranceFund = amount;
     }
 
+    function setDonatedInsuranceFund(int256 amount) public {
+        _liquidityPool.donatedInsuranceFund = amount;
+    }
+
     function getPoolCash() public view returns (int256) {
         return _liquidityPool.poolCash;
     }
