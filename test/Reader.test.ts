@@ -71,8 +71,8 @@ describe("Reader", () => {
         var perpTemplate = await LiquidityPoolFactory.deploy();
         await maker.addVersion(perpTemplate.address, 0, "initial version");
 
-        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 6, false, 998);
-        await maker.createLiquidityPool(ctk.address, 6, false, 998);
+        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 6, false, 998, toWei("1000000"));
+        await maker.createLiquidityPool(ctk.address, 6, false, 998, toWei("1000000"));
 
         perp = await LiquidityPoolFactory.attach(perpAddr);
         reader = await createContract("Reader");
@@ -83,14 +83,14 @@ describe("Reader", () => {
         await updatePrice(toWei("500"), toWei("500"))
 
         await perp.createPerpetual(oracle1.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
 
         await perp.createPerpetual(oracle2.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
@@ -145,11 +145,14 @@ describe("Reader", () => {
         // expect(pool.pool.addresses[4]).to.equal(lpToken.address) // shareToken is a template
         expect(pool.pool.addresses[5]).to.equal(ctk.address) // collateralToken
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
-        expect(pool.pool.vaultFeeRate).approximateBigNumber(vaultFeeRate);
-        expect(pool.pool.poolCash).approximateBigNumber(toWei("1000"));
-        expect(pool.pool.nums[0]).to.equal(6);
-        expect(pool.pool.nums[1]).to.equal(2);
-        expect(pool.pool.nums[2]).not.to.equal(0);
+        expect(pool.pool.intNums[0]).approximateBigNumber(vaultFeeRate);
+        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000"));
+        expect(pool.pool.intNums[2]).approximateBigNumber(toWei("1000000"));
+        expect(pool.pool.intNums[3]).approximateBigNumber(toWei("0"));
+        expect(pool.pool.intNums[4]).approximateBigNumber(toWei("0"));
+        expect(pool.pool.uintNums[0]).to.equal(6);
+        expect(pool.pool.uintNums[1]).to.equal(2);
+        expect(pool.pool.uintNums[2]).not.to.equal(0);
         expect(pool.pool.perpetuals[0].state).to.equal(2);
         expect(pool.pool.perpetuals[0].oracle).to.equal(oracle1.address);
         expect(pool.pool.perpetuals[0].nums[0].gt('0')).to.be.true; // totalCollateral
@@ -185,11 +188,14 @@ describe("Reader", () => {
         // expect(pool.pool.addresses[4]).to.equal(lpToken.address) // shareToken is a template
         expect(pool.pool.addresses[5]).to.equal(ctk.address) // collateralToken
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
-        expect(pool.pool.vaultFeeRate).approximateBigNumber(vaultFeeRate);
-        expect(pool.pool.poolCash).approximateBigNumber(toWei("1000"));
-        expect(pool.pool.nums[0]).to.equal(6);
-        expect(pool.pool.nums[1]).to.equal(2);
-        expect(pool.pool.nums[2]).not.to.equal(0);
+        expect(pool.pool.intNums[0]).approximateBigNumber(vaultFeeRate);
+        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000"));
+        expect(pool.pool.intNums[2]).approximateBigNumber(toWei("1000000"));
+        expect(pool.pool.intNums[3]).approximateBigNumber(toWei("0"));
+        expect(pool.pool.intNums[4]).approximateBigNumber(toWei("0"));
+        expect(pool.pool.uintNums[0]).to.equal(6);
+        expect(pool.pool.uintNums[1]).to.equal(2);
+        expect(pool.pool.uintNums[2]).not.to.equal(0);
         expect(pool.pool.perpetuals[0].state).to.equal(2);
         expect(pool.pool.perpetuals[0].oracle).to.equal(oracle1.address);
         expect(pool.pool.perpetuals[0].nums[0].gt('0')).to.be.true; // totalCollateral

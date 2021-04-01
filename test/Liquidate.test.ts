@@ -47,7 +47,7 @@ describe('Liquidate', () => {
             const PerpetualModule = await createContract("PerpetualModule");
             const OrderModule = await createContract("OrderModule");
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-            const TradeModule = await createContract("TradeModule", [], { AMMModule, PerpetualModule, LiquidityPoolModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
@@ -57,8 +57,8 @@ describe('Liquidate', () => {
             });
             await testTrade.createPerpetual(
                 oracle.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+                // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0.1"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2"), toWei("0.01")],
             )
             await testTrade.setOperator(user0.address)
@@ -75,6 +75,7 @@ describe('Liquidate', () => {
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(toWei("1000"), now);
             await oracle.setIndexPrice(toWei("1000"), now);
+            await testTrade.setInsuranceFundCap(toWei("10000"));
             await testTrade.updatePrice(now);
 
             await mocker.setPrice(toWei("1000"));
@@ -94,6 +95,7 @@ describe('Liquidate', () => {
             expect(cash).to.equal(toWei("33.8")) // value = 1000, penalty = 1000 * 0.005,  || margin = 40  penalty = -5 -1 || vault = 0.2
             expect(position).to.equal(toWei("0"))
             expect(await ctk.balanceOf(user2.address)).to.equal(toWei("1"));
+            expect(await testTrade.getInsuranceFund()).to.equal(toWei("0.5")) // insurance fund = penalty * 0.1
         })
 
         it("liquidateByAMM - bankrupt", async () => {
@@ -108,11 +110,11 @@ describe('Liquidate', () => {
 
             await testTrade.setMarginAccount(0, user2.address, toWei("5000"), toWei("0"));
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-1200.999999999999999999"), toWei("0.999999999999999999")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 50
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("0")) // value = 1000, penalty = 1000 * 0.005,  || margin = 40  penalty = -5 -1
+            expect(cash).to.equal(toWei("-201")) // margin = -200, keeper gas reward = 1, no penalty, no vault fee
             expect(position).to.equal(toWei("0"))
             expect(await ctk.balanceOf(user2.address)).to.equal(toWei("1"));
         })
@@ -122,6 +124,7 @@ describe('Liquidate', () => {
             await oracle.setMarkPrice(toWei("1000"), now);
             await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
+            await testTrade.setInsuranceFundCap(toWei("10000"));
 
             await mocker.setPrice(toWei("1000"));
             await ctk.mint(testTrade.address, toWei("1000"));
@@ -143,6 +146,7 @@ describe('Liquidate', () => {
             expect(position).to.equal(toWei("0"))
             expect(await ctk.balanceOf(user2.address)).to.equal(toWei("1"));
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.2"))
+            expect(await testTrade.getInsuranceFund()).to.equal(toWei("0.5")) // insurance fund = penalty * 0.1
         })
 
 
@@ -159,11 +163,11 @@ describe('Liquidate', () => {
 
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0"))
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-1200.999999999999999999"), toWei("0.999999999999999999")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 50
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("0")) // value = 1000, penalty = 1000 * 0.005,  || margin = 40  penalty = -5 -1
+            expect(cash).to.equal(toWei("-201")) // margin = -200, keeper gas reward = 1, no penalty, no vault fee
             expect(position).to.equal(toWei("0"))
             expect(await ctk.balanceOf(user2.address)).to.equal(toWei("1"));
 
@@ -175,6 +179,7 @@ describe('Liquidate', () => {
             await oracle.setMarkPrice(toWei("1000"), now);
             await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
+            await testTrade.setInsuranceFundCap(toWei("10000"));
 
             await mocker.setPrice(toWei("1000"));
             await ctk.mint(testTrade.address, toWei("2000"));
@@ -193,6 +198,7 @@ describe('Liquidate', () => {
             expect(position).to.equal(toWei("0"))
             expect(await ctk.balanceOf(user2.address)).to.equal(toWei("1"));
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.1"))
+            expect(await testTrade.getInsuranceFund()).to.equal(toWei("0.5")) // insurance fund = penalty * 0.1
         })
     })
 })

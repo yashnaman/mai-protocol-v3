@@ -51,14 +51,14 @@ describe('LiquidityPool', () => {
             oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
             await liquidityPool.createPerpetual(
                 oracle0.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+                // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.createPerpetual(
                 oracle1.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.2"), toWei("0.1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+                // imr         mmr           operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+                [toWei("0.2"), toWei("0.1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.setState(0, 2);
@@ -300,8 +300,8 @@ describe('LiquidityPool', () => {
             await liquidityPool.setCollateralToken(ctk.address, 18);
             await liquidityPool.createPerpetual(
                 oracle.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur       insur cap
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+                // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
             )
             await liquidityPool.setState(0, 2);
@@ -312,24 +312,24 @@ describe('LiquidityPool', () => {
         })
 
         it("donateInsuranceFund", async () => {
-            await liquidityPool.setState(0, 2);
-
             await ctk.mint(user0.address, toWei("100"));
             await ctk.connect(user0).approve(liquidityPool.address, toWei("100"));
 
             expect(await ctk.balanceOf(user0.address), toWei("100"));
 
-            expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-            await liquidityPool.donateInsuranceFundP(0, toWei("10"));
-            expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("10"));
-            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("10"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("0"));
+            await liquidityPool.donateInsuranceFundP(toWei("10"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("10"));
+            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("0"));
 
-            await liquidityPool.donateInsuranceFundP(0, toWei("11"));
-            expect(await liquidityPool.getDonatedInsuranceFund(0)).to.equal(toWei("21"));
-            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("21"));
+            await liquidityPool.donateInsuranceFundP(toWei("11"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("21"));
+            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("0"));
 
             expect(await ctk.balanceOf(user0.address), toWei("79"));
             expect(await ctk.balanceOf(liquidityPool.address), toWei("21"));
+            await expect(liquidityPool.donateInsuranceFund(toWei("0"))).to.be.revertedWith("invalid amount");
+            await expect(liquidityPool.donateInsuranceFund(toWei("-1"))).to.be.revertedWith("invalid amount");
         })
 
         it("deposit", async () => {
@@ -572,6 +572,29 @@ describe('LiquidityPool', () => {
             expect(cash).to.equal(toWei("0"));
             expect(position).to.equal(toWei("0"));
             expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("0"));
+        })
+
+        it("updateInsuranceFund", async () => {
+            await liquidityPool.setLiquidityPoolParameter(toBytes32("insuranceFundCap"), toWei("100"));
+
+            expect(await liquidityPool.getInsuranceFund()).to.equal(toWei("0"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("0"));
+
+            expect(await liquidityPool.callStatic.updateInsuranceFund(toWei("1"))).to.equal(toWei("0"))
+            await liquidityPool.updateInsuranceFund(toWei("100"));
+            expect(await liquidityPool.getInsuranceFund()).to.equal(toWei("100"));
+
+            expect(await liquidityPool.callStatic.updateInsuranceFund(toWei("1"))).to.equal(toWei("1"))
+            await liquidityPool.updateInsuranceFund(toWei("1"));
+            expect(await liquidityPool.getInsuranceFund()).to.equal(toWei("100"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("0"));
+
+            expect(await liquidityPool.callStatic.updateInsuranceFund(toWei("-100"))).to.equal(toWei("0"))
+            await liquidityPool.updateInsuranceFund(toWei("-100"));
+            expect(await liquidityPool.getInsuranceFund()).to.equal(toWei("0"));
+            expect(await liquidityPool.getDonatedInsuranceFund()).to.equal(toWei("0"));
+
+            await expect(liquidityPool.updateInsuranceFund(toWei("-1"))).to.be.revertedWith("negative donated insurance fund");;
         })
 
     })

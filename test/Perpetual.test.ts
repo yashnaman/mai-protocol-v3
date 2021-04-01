@@ -35,8 +35,8 @@ describe('Perpetual', () => {
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
         await perpetual.createPerpetual(
             oracle.address,
-            // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+            // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei('0.05'), toWei("0.01")],
         )
         await perpetual.setState(0, 2);
@@ -138,22 +138,6 @@ describe('Perpetual', () => {
         await perpetual.setState(0, 4);
         await expect(perpetual.setClearedState(0)).to.be.revertedWith("perpetual should be in emergency state");
     })
-
-
-    it("donateInsuranceFund", async () => {
-        await perpetual.setState(0, 2);
-
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-        await perpetual.donateInsuranceFund(0, toWei("10"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("10"));
-
-        await perpetual.donateInsuranceFund(0, toWei("11"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("21"));
-
-        await expect(perpetual.donateInsuranceFund(0, toWei("0"))).to.be.revertedWith("amount should greater than 0");
-        await expect(perpetual.donateInsuranceFund(0, toWei("-1"))).to.be.revertedWith("amount should greater than 0");
-    })
-
 
     it("deposit", async () => {
         await perpetual.setState(0, 2);
@@ -415,33 +399,5 @@ describe('Perpetual', () => {
         expect(position).to.equal(toWei("0"));
     })
 
-
-    it("updateInsuranceFund", async () => {
-        await perpetual.setState(0, 2);
-
-        await perpetual.setPerpetualBaseParameter(0, toBytes32("insuranceFundCap"), toWei("100"));
-
-        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-
-        expect(await perpetual.callStatic.updateInsuranceFund(0, toWei("1"))).to.equal(toWei("0"))
-        await perpetual.updateInsuranceFund(0, toWei("100"));
-        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("100"));
-
-        expect(await perpetual.callStatic.updateInsuranceFund(0, toWei("1"))).to.equal(toWei("1"))
-        await perpetual.updateInsuranceFund(0, toWei("1"));
-        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("100"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-
-        expect(await perpetual.callStatic.updateInsuranceFund(0, toWei("-100"))).to.equal(toWei("0"))
-        await perpetual.updateInsuranceFund(0, toWei("-100"));
-        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("0"));
-
-        expect(await perpetual.callStatic.updateInsuranceFund(0, toWei("-1"))).to.equal(toWei("0"))
-        await perpetual.updateInsuranceFund(0, toWei("-1"));
-        expect(await perpetual.getInsuranceFund(0)).to.equal(toWei("0"));
-        expect(await perpetual.getDonatedInsuranceFund(0)).to.equal(toWei("-1"));
-    })
 })
 

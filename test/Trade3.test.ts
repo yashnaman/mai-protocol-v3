@@ -49,7 +49,7 @@ describe('TradeModule3', () => {
             const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
 
             const MockAMMModule = await createContract("MockAMMModule");
-            const TradeModule = await createContract("TradeModule", [], { AMMModule: MockAMMModule, PerpetualModule, LiquidityPoolModule });
+            const TradeModule = await createContract("TradeModule", [], { AMMModule: MockAMMModule, LiquidityPoolModule });
             testTrade = await createContract("TestTrade", [], {
                 PerpetualModule,
                 CollateralModule,
@@ -59,8 +59,8 @@ describe('TradeModule3', () => {
             });
             await testTrade.createPerpetual(
                 oracle.address,
-                // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+                // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+                [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.2"), toWei("0.01")],
             )
             await testTrade.setOperator(user0.address)

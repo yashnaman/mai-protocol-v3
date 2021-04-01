@@ -62,12 +62,12 @@ describe('Perpetual2', () => {
 
         beforeEach(async () => {
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
-            const liquidityPoolAddr = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-            await poolCreator.createLiquidityPool(ctk.address, 18, false, 998);
+            const liquidityPoolAddr = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+            await poolCreator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
 
             liquidityPool = await LiquidityPoolFactory.attach(liquidityPoolAddr);
             await liquidityPool.createPerpetual(oracle.address,
-                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
                 [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
                 [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
@@ -80,20 +80,6 @@ describe('Perpetual2', () => {
 
             const info = await liquidityPool.getLiquidityPoolInfo();
             stk = (await createFactory("LpGovernor")).attach(info.addresses[3]);
-        })
-
-        it("donateInsuranceFund", async () => {
-            await ctk.mint(user1.address, toWei("100"));
-            await ctk.mint(user2.address, toWei("100"));
-            await ctk.connect(user1).approve(liquidityPool.address, toWei("100"));
-            await ctk.connect(user2).approve(liquidityPool.address, toWei("100"));
-
-            await liquidityPool.connect(user1).donateInsuranceFund(0, toWei("10"));
-            await liquidityPool.connect(user2).donateInsuranceFund(0, toWei("10"));
-            var result = await liquidityPool.getPerpetualInfo(0);
-            expect(result.nums[15]).to.equal(toWei("20"));
-
-            await expect(liquidityPool.connect(user1).donateInsuranceFund(0, 0)).to.be.revertedWith("invalid amount")
         })
 
         it("deposit", async () => {

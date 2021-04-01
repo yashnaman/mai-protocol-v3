@@ -226,7 +226,7 @@ describe('GovernorAlpha.test', () => {
     it("quorum critical", async () => {
         await stk.mint(user1.address, toWei("1000"));
         await governor.connect(user1).propose(
-            ["upgradeTo(address,address)"],
+            ["upgradeTo(address)"],
             ["0x0000000000000000000000000000000000000000000000000000000000000001"],
             "setFastCreationEnabled to true"
         );
@@ -234,7 +234,7 @@ describe('GovernorAlpha.test', () => {
 
         await stk.mint(user2.address, toWei("1000"));
         await governor.connect(user2).propose(
-            ["forceToSetEmergencyState(uint256)"],
+            ["forceToSetEmergencyState(uint256,int256)"],
             ["0x0000000000000000000000000000000000000000000000000000000000000001"],
             "setFastCreationEnabled to true"
         );
@@ -252,7 +252,7 @@ describe('GovernorAlpha.test', () => {
     it("quorum critical - mixed", async () => {
         await stk.mint(user1.address, toWei("1000"));
         await governor.connect(user1).propose(
-            ["setFastCreationEnabled(bool)", "upgradeTo(address,address)"],
+            ["setFastCreationEnabled(bool)", "upgradeTo(address)"],
             ["0x0000000000000000000000000000000000000000000000000000000000000001", "0x0000000000000000000000000000000000000000000000000000000000000001"],
             "setFastCreationEnabled to true"
         );

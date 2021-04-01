@@ -578,8 +578,7 @@ describe('AMM', () => {
         })
     })
 
-
-    describe('mint share', async () => {
+    describe('get share to mint', async () => {
 
         const successCases = [
             {
@@ -639,7 +638,67 @@ describe('AMM', () => {
         })
     })
 
-    describe('redeem share', function () {
+    describe('get cash to add', async () => {
+
+        const successCases = [
+            {
+                name: 'init',
+                amm: ammInit,
+                totalShare: _0,
+                shareToMint: toWad('1000'),
+                cash: toWad('1000')
+            },
+            {
+                name: 'before safe, after safe',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToMint: toWad('10.0916660306314520522392020897'),
+                cash: toWad('1000')
+            },
+            {
+                name: 'short, before unsafe, after unsafe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                shareToMint: toWad('5.321016166281755196304849885'),
+                cash: toWad('576')
+            },
+            {
+                name: 'short, before unsafe, after safe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                shareToMint: toWad('6.021800176340430529365414419'),
+                cash: toWad('577')
+            },
+            {
+                name: 'long, before unsafe, after unsafe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                shareToMint: toWad('5.321016166281755196304849885'),
+                cash: toWad('576')
+            },
+            {
+                name: 'long, before unsafe, after safe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                shareToMint: toWad('6.021800176340430529365414419'),
+                cash: toWad('577')
+            }
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+                expect(await amm.getCashToAdd(element.totalShare, element.shareToMint)).approximateBigNumber(element.cash);
+            })
+        })
+
+        it("poolMargin = 0 && totalShare != 0", async () => {
+            await amm.setParams(params.ammMaxLeverage, ammInit.cash, ammInit.positionAmount1, ammInit.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+            await expect(amm.getCashToAdd(toWad('100'), toWad('100'))).to.be.revertedWith("share token has no value");
+        })
+    })
+
+    describe('get cash to return', function () {
 
         const successCases = [
             {
@@ -648,7 +707,10 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('1000'),
-                state: params.state
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
             },
             {
                 name: 'no position, remove all',
@@ -656,7 +718,10 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('100'),
                 marginToRemove: toWad('10000'),
-                state: params.state
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
             },
             {
                 name: 'short',
@@ -664,7 +729,10 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('988.888888888888888888888888889'),
-                state: params.state
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
             },
             {
                 name: 'long',
@@ -672,7 +740,10 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('988.888888888888888888888888889'),
-                state: params.state
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
             },
             {
                 name: 'state != NORMAL',
@@ -680,15 +751,35 @@ describe('AMM', () => {
                 totalShare: toWad('100'),
                 shareToRemove: toWad('10'),
                 marginToRemove: toWad('900.25420688843233693447638834'),
-                state: 3
-            }
-
+                state: 3,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'all states CLEARED',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('824.8'),
+                state: params.state,
+                allCleared: true,
+                removedInsuranceFund: toWad('10'),
+                removedDonatedInsuranceFund: toWad('1')
+            },
         ]
 
         successCases.forEach(element => {
             it(element.name, async () => {
                 await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, element.state)
-                expect(await amm.getCashToReturn(element.totalShare, element.shareToRemove)).approximateBigNumber(element.marginToRemove);
+                await amm.setInsuranceFund(toWad('100'), toWad('10'))
+                if (element.allCleared) {
+                    await amm.setAllCleared()
+                }
+                var context = await amm.getCashToReturn(element.totalShare, element.shareToRemove)
+                expect(context.cashToReturn).approximateBigNumber(element.marginToRemove);
+                expect(context.removedInsuranceFund).approximateBigNumber(element.removedInsuranceFund);
+                expect(context.removedDonatedInsuranceFund).approximateBigNumber(element.removedDonatedInsuranceFund);
             })
         })
 
@@ -764,6 +855,166 @@ describe('AMM', () => {
         it("zero supply of share token", async () => {
             await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, params.indexPrice, params.state)
             await expect(amm.getCashToReturn(_0, _0)).to.be.revertedWith("total supply of share token is zero when removing liquidity");
+        })
+    })
+
+    describe('get share to remove', function () {
+
+        const successCases = [
+            {
+                name: 'no position',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('1000'),
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'no position, remove all',
+                amm: amm0,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('100'),
+                marginToRemove: toWad('10000'),
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'short',
+                amm: amm1,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('988.888888888888888888888888889'),
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'long',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('988.888888888888888888888888889'),
+                state: params.state,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'state != NORMAL',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('900.25420688843233693447638834'),
+                state: 3,
+                allCleared: false,
+                removedInsuranceFund: toWad('0'),
+                removedDonatedInsuranceFund: toWad('0')
+            },
+            {
+                name: 'all cleared',
+                amm: amm4,
+                totalShare: toWad('100'),
+                shareToRemove: toWad('10'),
+                marginToRemove: toWad('824.8'),
+                state: params.state,
+                allCleared: true,
+                removedInsuranceFund: toWad('10'),
+                removedDonatedInsuranceFund: toWad('1')
+            },
+        ]
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(params.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, element.state)
+                await amm.setInsuranceFund(toWad('100'), toWad('10'))
+                if (element.allCleared) {
+                    await amm.setAllCleared()
+                }
+                var context = await amm.getShareToRemove(element.totalShare, element.marginToRemove)
+                expect(context.shareToRemove).approximateBigNumber(element.shareToRemove);
+                expect(context.removedInsuranceFund).approximateBigNumber(element.removedInsuranceFund);
+                expect(context.removedDonatedInsuranceFund).approximateBigNumber(element.removedDonatedInsuranceFund);
+            })
+        })
+
+        const failCases = [
+            {
+                name: 'poolMargin = 0',
+                amm: ammInit,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe after removing liquidity',
+            },
+            {
+                name: 'short, before unsafe',
+                amm: amm3,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe before removing liquidity',
+            },
+            {
+                name: 'long, before unsafe',
+                amm: amm6,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('10'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe before removing liquidity',
+            },
+            {
+                name: 'short, after unsafe',
+                amm: amm1,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('8101'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after unsafe',
+                amm: amm4,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('8101'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after negative price',
+                amm: amm5,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('0.001'),
+                ammMaxLeverage: params.ammMaxLeverage,
+                errorMsg: 'AMM is unsafe after removing liquidity',
+            },
+            {
+                name: 'long, after exceed leverage',
+                amm: amm4,
+                totalShare: toWad('100'),
+                marginToRemove: toWad('0.001'),
+                ammMaxLeverage: toWad('0.1'),
+                errorMsg: 'AMM exceeds max leverage after removing liquidity',
+            }
+        ]
+
+        failCases.forEach(element => {
+            it(element.name, async () => {
+                await amm.setParams(element.ammMaxLeverage, element.amm.cash, element.amm.positionAmount1, element.amm.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+                await expect(amm.getShareToRemove(element.totalShare, element.marginToRemove)).to.be.revertedWith(element.errorMsg);
+            })
+        })
+        it("zero index", async () => {
+            await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, _0, params.state)
+            await expect(amm.getShareToRemove(toWad('100'), toWad('1'))).to.be.revertedWith("index price must be positive");
+        })
+        it("zero supply of share token", async () => {
+            await amm.setParams(params.ammMaxLeverage, amm4.cash, amm4.positionAmount1, amm4.positionAmount2, params.indexPrice, params.indexPrice, params.state)
+            await expect(amm.getShareToRemove(_0, toWad('1'))).to.be.revertedWith("total supply of share token is zero when removing liquidity");
         })
     })
 

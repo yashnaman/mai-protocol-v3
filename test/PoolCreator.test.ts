@@ -50,9 +50,9 @@ describe("PoolCreator", () => {
         var perpTemplate = await (await createLiquidityPoolFactory()).deploy();
         await creator.addVersion(perpTemplate.address, 0, "initial version");
 
-        const perpAddr = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
+        const perpAddr = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
 
-        await creator.createLiquidityPool(ctk.address, 18, false, 998);
+        await creator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
         const n = await creator.getLiquidityPoolCount();
         const allLiquidityPools = await creator.listLiquidityPools(0, n.toString());
 
@@ -108,10 +108,10 @@ describe("PoolCreator", () => {
         expect(await creator.isVersionCompatible(perpTemplate3.address, perpTemplate1.address)).to.be.true;
         expect(await creator.isVersionCompatible(perpTemplate1.address, perpTemplate3.address)).to.be.false;
 
-        const perpAddr1 = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await creator.createLiquidityPool(ctk.address, 18, false, 998);
-        const perpAddr2 = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 999);
-        await creator.createLiquidityPool(ctk.address, 18, false, 999);
+        const perpAddr1 = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await creator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        const perpAddr2 = await creator.callStatic.createLiquidityPool(ctk.address, 18, false, 999, toWei("1000000"));
+        await creator.createLiquidityPool(ctk.address, 18, false, 999, toWei("1000000"));
 
         const n = await creator.getLiquidityPoolCount();
         expect(n).to.equal(2);

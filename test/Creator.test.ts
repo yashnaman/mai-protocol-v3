@@ -115,14 +115,14 @@ describe('LiquidityPool', () => {
         await poolCreator.addVersion(implVersion2.address, 2, "version2");
 
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
-        const liquidityPoolAddr = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
 
         const proxy1 = (await createContract("UpgradeableProxy", [liquidityPoolAddr, user0.address])).attach(liquidityPoolAddr);
         expect(await proxy1.implementation()).to.equal(implVersion2.address);
 
-        const liquidityPoolAddr2 = await poolCreator.callStatic.createLiquidityPoolWith(implVersion1.address, ctk.address, 18, false, 998);
-        await poolCreator.createLiquidityPoolWith(implVersion1.address, ctk.address, 18, false, 998);
+        const liquidityPoolAddr2 = await poolCreator.callStatic.createLiquidityPoolWith(implVersion1.address, ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.createLiquidityPoolWith(implVersion1.address, ctk.address, 18, false, 998, toWei("1000000"));
 
         const proxy2 = (await createContract("UpgradeableProxy", [liquidityPoolAddr, user0.address])).attach(liquidityPoolAddr2);
         expect(await proxy2.implementation()).to.equal(implVersion1.address);
@@ -134,16 +134,16 @@ describe('LiquidityPool', () => {
         expect(await poolCreator.getLiquidityPoolCount()).to.equal(0);
 
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
-        const liquidityPoolAddr1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
         expect(await poolCreator.getLiquidityPoolCount()).to.equal(1);
 
-        const liquidityPoolAddr2 = await poolCreator.connect(user2).callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.connect(user2).createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr2 = await poolCreator.connect(user2).callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.connect(user2).createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
         expect(await poolCreator.getLiquidityPoolCount()).to.equal(2);
 
-        const liquidityPoolAddr3 = await poolCreator.connect(user2).callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.connect(user2).createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr3 = await poolCreator.connect(user2).callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.connect(user2).createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
         expect(await poolCreator.getLiquidityPoolCount()).to.equal(3);
 
         expect(await poolCreator.isLiquidityPool(liquidityPoolAddr1)).to.be.true;
@@ -181,30 +181,30 @@ describe('LiquidityPool', () => {
         await oracle.setIndexPrice(toWei("1000"), 1000)
         await oracle.setMarkPrice(toWei("1000"), 1000)
 
-        const liquidityPoolAddr1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
 
         const liquidityPool1 = await LiquidityPoolFactory.attach(liquidityPoolAddr1);
         await liquidityPool1.createPerpetual(oracle.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
         await liquidityPool1.createPerpetual(oracle.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
         await liquidityPool1.runLiquidityPool();
 
-        const liquidityPoolAddr2 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998);
-        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998);
+        const liquidityPoolAddr2 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+        await poolCreator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
 
         const liquidityPool2 = await LiquidityPoolFactory.attach(liquidityPoolAddr2);
         await liquidityPool2.createPerpetual(oracle.address,
-            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1000"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],

@@ -64,15 +64,15 @@ describe('LiquidityPool2', () => {
         oracle1 = await createContract("OracleWrapper", ["ctk", "ctk"]);
         await liquidityPool.createPerpetual(
             oracle1.address,
-            // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+            // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2'), toWei("0.01")],
         )
         oracle2 = await createContract("OracleWrapper", ["ctk", "ctk"]);
         await liquidityPool.createPerpetual(
             oracle2.address,
-            // imr         mmr            operatorfr      lpfr            rebate        penalty        keeper       insur
-            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1000"), toWei("1")],
+            // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
+            [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2'), toWei("0.01")],
         )
     })
@@ -97,7 +97,7 @@ describe('LiquidityPool2', () => {
                     position1: toWei("-10"),
                     position2: toWei("10"),
                 },
-                totalShare: toWei('100'), // oracle = 10 0
+                totalShare: toWei('100'),
                 marginToAdd: toWei('1000'),
                 share: toWei('10.091666030631452052')
             },
@@ -237,7 +237,11 @@ describe('LiquidityPool2', () => {
                 },
                 shareLeft: toWei('90'), // total 100
                 shareToRemove: toWei('10'),
-                marginToRemove: toWei('1000')
+                marginToRemove: toWei('1000'),
+                state1: 2,
+                state2: 2,
+                insuranceFund: toWei('100'),
+                donatedInsuranceFund: toWei('10')
             },
             {
                 name: 'no position, remove all',
@@ -248,7 +252,11 @@ describe('LiquidityPool2', () => {
                 },
                 shareLeft: toWei("0"), // total 100
                 shareToRemove: toWei('100'),
-                marginToRemove: toWei('10000')
+                marginToRemove: toWei('10000'),
+                state1: 2,
+                state2: 2,
+                insuranceFund: toWei('100'),
+                donatedInsuranceFund: toWei('10')
             },
             {
                 name: 'short',
@@ -259,7 +267,11 @@ describe('LiquidityPool2', () => {
                 },
                 shareLeft: toWei('90'), // total 100
                 shareToRemove: toWei('10'),
-                marginToRemove: toWei('988.888888888888888889')
+                marginToRemove: toWei('988.888888888888888889'),
+                state1: 2,
+                state2: 2,
+                insuranceFund: toWei('100'),
+                donatedInsuranceFund: toWei('10')
             },
             {
                 name: 'long',
@@ -270,7 +282,41 @@ describe('LiquidityPool2', () => {
                 },
                 shareLeft: toWei('90'), // total 100
                 shareToRemove: toWei('10'),
-                marginToRemove: toWei('988.888888888888888889')
+                marginToRemove: toWei('988.888888888888888889'),
+                state1: 2,
+                state2: 2,
+                insuranceFund: toWei('100'),
+                donatedInsuranceFund: toWei('10')
+            },
+            {
+                name: 'state != NORMAL',
+                amm: {
+                    cash: toWei('8138'),
+                    position1: toWei("10"),
+                    position2: toWei("10"),
+                },
+                shareLeft: toWei('90'), // total 100
+                shareToRemove: toWei('10'),
+                marginToRemove: toWei('900.254206888432336934'),
+                state1: 2,
+                state2: 3,
+                insuranceFund: toWei('100'),
+                donatedInsuranceFund: toWei('10')
+            },
+            {
+                name: 'all states CLEARED ',
+                amm: {
+                    cash: toWei('8138'),
+                    position1: toWei("10"),
+                    position2: toWei("10"),
+                },
+                shareLeft: toWei('90'), // total 100
+                shareToRemove: toWei('10'),
+                marginToRemove: toWei('824.8'),
+                state1: 4,
+                state2: 4,
+                insuranceFund: toWei('90'),
+                donatedInsuranceFund: toWei('9')
             }
         ]
 
@@ -298,7 +344,53 @@ describe('LiquidityPool2', () => {
                 await oracle2.setMarkPrice(toWei('100'), now);
                 await liquidityPool.updatePrice(now);
 
-                await liquidityPool.removeLiquidity(user1.address, element.shareToRemove);
+                await liquidityPool.setState(0, element.state1)
+                await liquidityPool.setState(1, element.state2)
+                await liquidityPool.setInsuranceFund(toWei("100"))
+                await liquidityPool.setDonatedInsuranceFund(toWei("10"))
+                await ctk.mint(liquidityPool.address, toWei("110"));
+                await liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0);
+                expect(await liquidityPool.getInsuranceFund()).approximateBigNumber(element.insuranceFund)
+                expect(await liquidityPool.getDonatedInsuranceFund()).approximateBigNumber(element.donatedInsuranceFund)
+                expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
+                expect(await stk.balanceOf(user1.address)).approximateBigNumber(toWei("0"));
+                expect(await stk.totalSupply()).approximateBigNumber(element.shareLeft);
+
+            })
+        })
+
+        successCases.forEach(element => {
+            it(element.name, async () => {
+
+                await liquidityPool.setState(0, 2);
+                await liquidityPool.setState(1, 2);
+
+                await ctk.mint(liquidityPool.address, element.marginToRemove);
+                await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+                await stk.debugMint(user1.address, element.shareToRemove);
+                await stk.debugMint(user2.address, element.shareLeft);
+
+                await liquidityPool.setPoolCash(element.amm.cash)
+                await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, element.amm.position1);
+                await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
+                await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
+                await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
+
+                let now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(toWei('100'), now);
+                await oracle1.setMarkPrice(toWei('100'), now);
+                await oracle2.setIndexPrice(toWei('100'), now);
+                await oracle2.setMarkPrice(toWei('100'), now);
+                await liquidityPool.updatePrice(now);
+
+                await liquidityPool.setState(0, element.state1)
+                await liquidityPool.setState(1, element.state2)
+                await liquidityPool.setInsuranceFund(toWei("100"))
+                await liquidityPool.setDonatedInsuranceFund(toWei("10"))
+                await ctk.mint(liquidityPool.address, toWei("110"));
+                await liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove);
+                expect(await liquidityPool.getInsuranceFund()).approximateBigNumber(element.insuranceFund)
+                expect(await liquidityPool.getDonatedInsuranceFund()).approximateBigNumber(element.donatedInsuranceFund)
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
                 expect(await stk.balanceOf(user1.address)).approximateBigNumber(toWei("0"));
                 expect(await stk.totalSupply()).approximateBigNumber(element.shareLeft);
@@ -307,19 +399,6 @@ describe('LiquidityPool2', () => {
         })
 
         const failCases = [
-            {
-                name: 'poolMargin = 0',
-                amm: {
-                    cash: toWei("0"),
-                    position1: toWei("0"),
-                    position2: toWei("0"),
-                },
-                shareLeft: toWei('90'), // total 100
-                shareBalance: toWei("10"),
-                shareToRemove: toWei("10"),
-                ammMaxLeverage: toWei("5"),
-                errorMsg: 'pool margin must be positive',
-            },
             {
                 name: 'zero share to remove',
                 amm: {
@@ -330,21 +409,9 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('100'), // total 100
                 shareBalance: toWei("0"),
                 shareToRemove: toWei("0"),
+                marginToRemove: toWei("0"),
                 ammMaxLeverage: toWei("5"),
-                errorMsg: 'share to remove must be positive',
-            },
-            {
-                name: 'insufficient share balance',
-                amm: {
-                    cash: toWei("0"),
-                    position1: toWei("0"),
-                    position2: toWei("0"),
-                },
-                shareLeft: toWei("0"), // total 100
-                shareBalance: toWei('100'),
-                shareToRemove: toWei('100.1'),
-                ammMaxLeverage: toWei("5"),
-                errorMsg: 'insufficient share balance',
+                errorMsg: 'invalid parameter',
             },
             {
                 name: 'short, before unsafe',
@@ -356,6 +423,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('90'), // total 100
                 shareBalance: toWei('10'),
                 shareToRemove: toWei('10'),
+                marginToRemove: toWei('10'),
                 ammMaxLeverage: toWei("5"),
                 errorMsg: 'AMM is unsafe before removing liquidity',
             },
@@ -369,6 +437,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('90'), // total 100
                 shareBalance: toWei('10'),
                 shareToRemove: toWei('10'),
+                marginToRemove: toWei('10'),
                 ammMaxLeverage: toWei("5"),
                 errorMsg: 'AMM is unsafe before removing liquidity',
             },
@@ -382,6 +451,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('9.999'), // total 100
                 shareBalance: toWei('90.001'),
                 shareToRemove: toWei('90.001'),
+                marginToRemove: toWei('8101'),
                 ammMaxLeverage: toWei("5"),
                 errorMsg: 'AMM is unsafe after removing liquidity',
             },
@@ -395,6 +465,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('9.999'), // total 100
                 shareBalance: toWei('90.001'),
                 shareToRemove: toWei('90.001'),
+                marginToRemove: toWei('8101'),
                 ammMaxLeverage: toWei("5"),
                 errorMsg: 'AMM is unsafe after removing liquidity',
             },
@@ -408,6 +479,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('99.999'), // total 100
                 shareBalance: toWei('0.001'),
                 shareToRemove: toWei('0.001'),
+                marginToRemove: toWei('0.001'),
                 ammMaxLeverage: toWei("5"),
                 errorMsg: 'AMM is unsafe after removing liquidity',
             },
@@ -421,6 +493,7 @@ describe('LiquidityPool2', () => {
                 shareLeft: toWei('99.999'), // total 100
                 shareBalance: toWei('0.001'),
                 shareToRemove: toWei('0.001'),
+                marginToRemove: toWei('0.001'),
                 ammMaxLeverage: toWei('0.1'),
                 errorMsg: 'AMM exceeds max leverage after removing liquidity',
             }
@@ -451,9 +524,77 @@ describe('LiquidityPool2', () => {
                 await oracle2.setMarkPrice(toWei('100'), now);
                 await liquidityPool.updatePrice(now);
 
-                await expect(liquidityPool.removeLiquidity(user1.address, element.shareToRemove)).to.be.revertedWith(element.errorMsg);
+                await expect(liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0)).to.be.revertedWith(element.errorMsg);
+                await expect(liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
-    })
 
+        it('pool margin = 0', async () => {
+            await liquidityPool.setState(0, 2);
+            await liquidityPool.setState(1, 2);
+            await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+            await stk.debugMint(user2.address, toWei('90'));
+            await stk.debugMint(user1.address, toWei("10"));
+
+            await liquidityPool.setPoolCash(0)
+            await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
+            await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
+
+            let now = Math.floor(Date.now() / 1000);
+            await oracle1.setIndexPrice(toWei('100'), now);
+            await oracle1.setMarkPrice(toWei('100'), now);
+            await oracle2.setIndexPrice(toWei('100'), now);
+            await oracle2.setMarkPrice(toWei('100'), now);
+            await liquidityPool.updatePrice(now);
+
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('pool margin must be positive');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('AMM is unsafe after removing liquidity');
+        })
+
+        it('zero index', async () => {
+            await liquidityPool.setState(0, 2);
+            await liquidityPool.setState(1, 2);
+            await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+            await stk.debugMint(user2.address, toWei('90'));
+            await stk.debugMint(user1.address, toWei("10"));
+
+            await liquidityPool.setPoolCash(toWei("10"))
+            await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
+            await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
+
+            let now = Math.floor(Date.now() / 1000);
+
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('index price must be positive');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('index price must be positive');
+        })
+
+        it('zero supply of share token', async () => {
+            await liquidityPool.setState(0, 2);
+            await liquidityPool.setState(1, 2);
+            await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
+            await stk.debugMint(user2.address, toWei('0'));
+            await stk.debugMint(user1.address, toWei("0"));
+
+            await liquidityPool.setPoolCash(toWei("10"))
+            await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
+            await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
+
+            let now = Math.floor(Date.now() / 1000);
+            await oracle1.setIndexPrice(toWei('100'), now);
+            await oracle1.setMarkPrice(toWei('100'), now);
+            await oracle2.setIndexPrice(toWei('100'), now);
+            await oracle2.setMarkPrice(toWei('100'), now);
+            await liquidityPool.updatePrice(now);
+
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('total supply of share token is zero when removing liquidity');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('total supply of share token is zero when removing liquidity');
+        })
+
+    })
 })
