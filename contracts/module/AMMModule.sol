@@ -329,7 +329,7 @@ library AMMModule {
             int256 removedDonatedInsuranceFund
         )
     {
-        int256 removedCash =
+        int256 removedCashFromPool =
             cashToReturn.wdiv(
                 liquidityPool
                     .insuranceFund
@@ -337,13 +337,13 @@ library AMMModule {
                     .wdiv(poolMargin)
                     .add(Constant.SIGNED_ONE)
             );
-        shareToRemove = removedCash.wfrac(shareTotalSupply, poolMargin);
-        removedInsuranceFund = removedCash.wfrac(
+        shareToRemove = removedCashFromPool.wfrac(shareTotalSupply, poolMargin);
+        removedInsuranceFund = removedCashFromPool.wfrac(
             liquidityPool.insuranceFund,
             poolMargin,
             Round.FLOOR
         );
-        removedDonatedInsuranceFund = removedCash.wfrac(
+        removedDonatedInsuranceFund = removedCashFromPool.wfrac(
             liquidityPool.donatedInsuranceFund,
             poolMargin,
             Round.FLOOR

@@ -732,16 +732,19 @@ library LiquidityPoolModule {
             shareToRemove.toUint256() <= shareToken.balanceOf(trader),
             "insufficient share balance"
         );
-        int256 deltaPoolCash =
+        int256 removedCashFromPool =
             cashToReturn.sub(removedInsuranceFund).sub(removedDonatedInsuranceFund);
-        require(deltaPoolCash <= getAvailablePoolCash(liquidityPool), "insufficient pool cash");
+        require(
+            removedCashFromPool <= getAvailablePoolCash(liquidityPool),
+            "insufficient pool cash"
+        );
         shareToken.burn(trader, shareToRemove.toUint256());
         liquidityPool.transferToUser(payable(trader), cashToReturn);
         liquidityPool.insuranceFund = liquidityPool.insuranceFund.sub(removedInsuranceFund);
         liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.sub(
             removedDonatedInsuranceFund
         );
-        decreasePoolCash(liquidityPool, deltaPoolCash);
+        decreasePoolCash(liquidityPool, removedCashFromPool);
         emit RemoveLiquidity(trader, cashToReturn, shareToRemove);
     }
 
