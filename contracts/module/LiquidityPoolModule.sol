@@ -686,7 +686,7 @@ library LiquidityPoolModule {
                 break;
             }
         }
-        require(allowAdd, "all perpetuals are not in NORMAL state");
+        require(allowAdd, "not all perpetuals are in NORMAL state");
         int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
         IShareToken shareToken = IShareToken(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
