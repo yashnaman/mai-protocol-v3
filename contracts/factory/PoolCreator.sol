@@ -26,6 +26,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         address indexed liquidityPool,
         address indexed governor,
         address indexed operator,
+        address shareToken, //  downward compatibility for offline infrastructure
         address collateral,
         uint256 collateralDecimals,
         bytes initData
@@ -186,6 +187,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             liquidityPool,
             governor,
             operator,
+            governor,
             collateral,
             collateralDecimals,
             initData
