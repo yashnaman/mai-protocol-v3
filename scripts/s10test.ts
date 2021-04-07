@@ -98,7 +98,7 @@ async function main(accounts: any[]) {
     const pool1 = await set1(accounts, poolCreator, weth, oracleAddresses);
     const pool2 = await set2(accounts, poolCreator, weth, oracleAddresses);
 
-    await reader(accounts, { pool1, pool2 });
+    await reader(accounts, poolCreator);
 }
 
 async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
@@ -224,38 +224,11 @@ async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
     return liquidityPool;
 }
 
-async function reader(accounts: any[], pools) {
-    var reader = await createContract("Reader");
+async function reader(accounts: any[], poolCreator) {
+    var reader = await createContract("Reader", poolCreator.address);
     const addresses = [["Reader", reader.address]];
     console.table(addresses);
-
-    console.log("reader test: pool1");
-    console.log(myDump(await reader.callStatic.getLiquidityPoolStorage(pools.pool1.address)));
-    console.log("reader test: pool2");
-    console.log(myDump(await reader.callStatic.getLiquidityPoolStorage(pools.pool2.address)));
-
     return { reader };
-}
-
-function myDump(o: any, prefix?: string) {
-    if (o === null) {
-        return "null";
-    }
-    if (typeof o !== "object") {
-        return o.toString();
-    }
-    if (ethers.BigNumber.isBigNumber(o)) {
-        return o.toString();
-    }
-    let s = "\n";
-    if (!prefix) {
-        prefix = "";
-    }
-    // prefix += '    '
-    // for (let k in o) {
-    //         s += prefix + `${k}: ${myDump(o[k], prefix)}, \n`
-    // }
-    return s;
 }
 
 ethers

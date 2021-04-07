@@ -272,7 +272,7 @@ async function main(accounts: any[]) {
     const pool2 = await set2(deployer, poolCreator, oracleAddresses);
 
     // 6. reader
-    await deployReader({});
+    await deployReader(poolCreator);
 }
 
 async function set1(deployer, poolCreator, oracleAddresses) {
@@ -432,16 +432,10 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     return liquidityPool
 }
 
-async function deployReader(pools) {
-    var reader = await createContract("Reader");
+async function deployReader(poolCreator) {
+    var reader = await createContract("Reader", poolCreator.address);
     const addresses = [["Reader", reader.address]]
     console.table(addresses)
-
-    for (let i in pools) {
-        console.log('reader test', i)
-        console.log(myDump(await reader.callStatic.getLiquidityPoolStorage(pools[i])))
-    }
-
     return { reader }
     // 2021 / 1 / 13 koven
     // ┌─────────┬──────────┬──────────────────────────────────────────────┐
@@ -449,27 +443,6 @@ async function deployReader(pools) {
     // ├─────────┼──────────┼──────────────────────────────────────────────┤
     // │    0    │ 'Reader' │ '0x90b24561Ba9cf98dC6bbA3aF0B19442AE37c1fcf' │
     // └─────────┴──────────┴──────────────────────────────────────────────┘
-}
-
-function myDump(o: any, prefix?: string) {
-    if (o === null) {
-        return 'null'
-    }
-    if ((typeof o) !== 'object') {
-        return o.toString()
-    }
-    if (ethers.BigNumber.isBigNumber(o)) {
-        return o.toString()
-    }
-    let s = '\n'
-    if (!prefix) {
-        prefix = ''
-    }
-    prefix += '  '
-    // for (let k in o) {
-    // s += prefix + `${k}: ${myDump(o[k], prefix)}, \n`
-    // }
-    return s
 }
 
 ethers.getSigners()

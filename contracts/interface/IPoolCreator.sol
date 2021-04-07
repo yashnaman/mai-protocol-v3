@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "./IProxyAdmin.sol";
+
 interface IPoolCreator {
     function activatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
@@ -40,4 +42,6 @@ interface IPoolCreator {
         external
         view
         returns (bool isCompatible);
+
+    function upgradeAdmin() external view returns (IProxyAdmin proxyAdmin);
 }

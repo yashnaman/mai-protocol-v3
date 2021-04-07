@@ -53,6 +53,12 @@ contract Reader {
         bool isSafe;
     }
 
+    address immutable public poolCreator;
+
+    constructor(address _poolCreator) public {
+        poolCreator = _poolCreator;
+    }
+
     /**
      * @notice Get the storage of the account in the perpetual
      * @param liquidityPool The address of the liquidity pool
@@ -111,7 +117,7 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        address imp = ILiquidityPool(liquidityPool).implementation();
+        address imp = getImplementation(liquidityPool);
         if (isV004(imp)) {
             (poolMargin, isSafe) = getPoolMarginV004(liquidityPool);
         } else {
@@ -174,7 +180,7 @@ contract Reader {
             isSynced = false;
         }
         // pool
-        address imp = ILiquidityPool(liquidityPool).implementation();
+        address imp = getImplementation(liquidityPool);
         if (isV004(imp)) {
             int256 vaultFeeRate;
             int256 poolCash;
@@ -255,6 +261,11 @@ contract Reader {
 
     ////////////////////////////////////////////////////////////////////////////////////
     // back-compatible: beta0.0.4
+
+    function getImplementation(address proxy) public view returns (address) {
+        IProxyAdmin proxyAdmin = IPoolCreator(poolCreator).upgradeAdmin();
+        return proxyAdmin.getProxyImplementation(proxy);
+    }
 
     function isV004(address imp) private pure returns (bool) {
         // kovan
