@@ -73,25 +73,26 @@ async function main(accounts: any[]) {
     var symbol = await createContract("SymbolService", [10000]);
     var wethFactory = await createFactory("WETH9");
     var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
-    var shareTokenTmpl = await createContract("LpGovernor");
-    var governorTmpl = await createContract("LpGovernor");
     var poolCreator = await createContract(
         "PoolCreator",
-        [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]);
+        [weth.address, symbol.address, vault.address, vaultFeeRate]);
     var broker = await createContract("Broker");
     const addresses = [
-        ["governorTmpl", governorTmpl.address],
-        ["shareTokenTmpl", shareTokenTmpl.address],
         ["poolCreator", poolCreator.address],
         ["symbol", symbol.address],
         ["broker", broker.address],
     ];
     console.table(addresses);
 
-    await symbol.addWhitelistedFactory(poolCreator.address);
+    await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
-    await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version");
+    var governorTmpl = await createContract("LpGovernor");
+    console.table([
+        ['liquidityPoolTmpl', liquidityPoolTmpl],
+        ["governorTmpl", governorTmpl.address],
+    ]);
+    await (await poolCreator.addVersion(liquidityPoolTmpl.address, governorTmpl.address, 0, "initial version")).wait();
 
     const pool1 = await set1(accounts, poolCreator, weth, oracleAddresses);
     const pool2 = await set2(accounts, poolCreator, weth, oracleAddresses);
@@ -100,7 +101,9 @@ async function main(accounts: any[]) {
 }
 
 async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
-    const tx = await poolCreator.createLiquidityPool(weth.address, 18 /* decimals */, false /* isFastCreationEnabled */, 998 /* nonce */, toWei("1000000") /* insuranceFundCap */);
+    const tx = await poolCreator.createLiquidityPool(weth.address, 18 /* decimals */, 998 /* nonce */,
+        // (isFastCreationEnabled, insuranceFundCap)
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]))
     await tx.wait();
 
     const n = await poolCreator.getLiquidityPoolCount();
@@ -146,7 +149,9 @@ async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
 async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
     var usd = await (await createFactory("CustomERC20")).attach("0x8B2c4Fa78FBA24e4cbB4B0cA7b06A29130317093");
 
-    const tx = await poolCreator.createLiquidityPool(usd.address, 6 /* decimals */, false /* isFastCreationEnabled */, 998 /* nonce */, toWei("1000000") /* insuranceFundCap */);
+    const tx = await poolCreator.createLiquidityPool(usd.address, 6 /* decimals */, 998 /* nonce */,
+        // (isFastCreationEnabled, insuranceFundCap)
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]))
     await tx.wait();
 
     const n = await poolCreator.getLiquidityPoolCount();

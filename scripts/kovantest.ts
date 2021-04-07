@@ -211,16 +211,12 @@ async function main(accounts: any[]) {
     // var symbol = await createContract("SymbolService", [10000]);
     // var weth = { address: "0xd0A1E359811322d97991E03f863a0C30C2cF029C" }
     // // var usdc = await createContract("CustomERC20", ["USDC", "USDC", 6])
-    // var shareTokenTmpl = await createContract("LpGovernor");
-    // var governorTmpl = shareTokenTmpl;
     // var poolCreator = await createContract(
     //     "PoolCreator",
-    //     [governorTmpl.address, shareTokenTmpl.address, weth.address, symbol.address, vault.address, vaultFeeRate]
+    //     [weth.address, symbol.address, vault.address, vaultFeeRate]
     // );
     // var broker = await createContract("Broker");
     // const addresses = [
-    //     ["governorTmpl", governorTmpl.address],
-    //     ["shareTokenTmpl", shareTokenTmpl.address],
     //     ["poolCreator", poolCreator.address],
     //     ["symbol", symbol.address],
     //     ["broker", broker.address],
@@ -264,7 +260,12 @@ async function main(accounts: any[]) {
     await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
-    await (await poolCreator.addVersion(liquidityPoolTmpl.address, 0, "initial version")).wait();
+    var governorTmpl = await createContract("LpGovernor");
+    console.table([
+        ['liquidityPoolTmpl', liquidityPoolTmpl],
+        ["governorTmpl", governorTmpl.address],
+    ]);
+    await (await poolCreator.addVersion(liquidityPoolTmpl.address, governorTmpl.address, 0, "initial version")).wait();
 
     // 5. pools
     const pool1 = await set1(deployer, poolCreator, oracleAddresses);
@@ -280,10 +281,10 @@ async function set1(deployer, poolCreator, oracleAddresses) {
     var eth = await (await createFactory("CustomERC20")).attach(ETH)
     const tx = await poolCreator.createLiquidityPool(
         eth.address,
-        18                             /* decimals */,
-        true                           /* isFastCreationEnabled */,
-        Math.floor(Date.now() / 1000)  /* nonce */,
-        toWei("1000000")               /* insuranceFundCap */,
+        18,                             /* decimals */
+        Math.floor(Date.now() / 1000),  /* nonce */
+        // (isFastCreationEnabled, insuranceFundCap)
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")])
     );
     await tx.wait()
 
@@ -339,7 +340,9 @@ async function set2(deployer, poolCreator, oracleAddresses) {
         usd.address,
         6,                              /* decimals */
         true,                           /* isFastCreationEnabled */
-        Math.floor(Date.now() / 1000)  /* nonce */
+        Math.floor(Date.now() / 1000),  /* nonce */
+        // (isFastCreationEnabled, insuranceFundCap)
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")])
     );
     await tx.wait()
 
