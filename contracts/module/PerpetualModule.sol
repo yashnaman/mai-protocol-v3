@@ -14,8 +14,6 @@ import "../libraries/Utils.sol";
 import "../Type.sol";
 import "./MarginAccountModule.sol";
 
-import "hardhat/console.sol";
-
 library PerpetualModule {
     using SafeMathUpgradeable for uint256;
     using SafeMathExt for int256;

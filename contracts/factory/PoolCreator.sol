@@ -16,8 +16,6 @@ import "./Variables.sol";
 import "./AccessControl.sol";
 import "./ReceivableTransparentUpgradeableProxy.sol";
 
-import "hardhat/console.sol";
-
 contract PoolCreator is Initializable, Tracer, VersionControl, Variables, AccessControl {
     using AddressUpgradeable for address;
 
