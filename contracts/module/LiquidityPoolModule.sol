@@ -686,6 +686,7 @@ library LiquidityPoolModule {
                 break;
             }
         }
+
         require(allowAdd, "not all perpetuals are in NORMAL state");
         int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
 

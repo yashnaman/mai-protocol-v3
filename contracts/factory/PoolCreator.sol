@@ -100,7 +100,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         );
     }
 
-    function updateToAndCall(
+    function upgradeToAndCall(
         bytes32 targetVersionKey,
         bytes memory dataForLiquidityPool,
         bytes memory dataForGovernor

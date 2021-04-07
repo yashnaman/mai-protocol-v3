@@ -21,7 +21,7 @@ describe("Reader", () => {
     var weth;
     var symbol;
     var ctk;
-    var lpTokenTemplate;
+    var perpTemplate;
     var govTemplate;
     var maker;
     var perp;
@@ -47,34 +47,38 @@ describe("Reader", () => {
         user3 = accounts[3];
         vault = accounts[9];
         none = "0x0000000000000000000000000000000000000000";
+        const LiquidityPoolFactory = await createLiquidityPoolFactory()
 
         // create components
         weth = await createContract("WETH9");
         symbol = await createContract("SymbolService", [10000]);
-        ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
-        lpTokenTemplate = await createContract("LpGovernor");
-        govTemplate = await createContract("TestGovernor");
-        maker = await createContract(
-            "PoolCreator",
-            [
-                govTemplate.address,
-                lpTokenTemplate.address,
-                weth.address,
-                symbol.address,
-                vault.address,
-                vaultFeeRate,
-            ]
+        ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        perpTemplate = await LiquidityPoolFactory.deploy();
+        govTemplate = await createContract("TestLpGovernor");
+        var poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            weth.address,
+            symbol.address,
+            vault.address,
+            toWei("0.001")
+        )
+        await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+        await symbol.addWhitelistedFactory(poolCreator.address);
+
+        const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
         );
-        const LiquidityPoolFactory = await createLiquidityPoolFactory()
+        await poolCreator.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        perp = await LiquidityPoolFactory.attach(liquidityPool);
 
-        await symbol.addWhitelistedFactory(maker.address);
-        var perpTemplate = await LiquidityPoolFactory.deploy();
-        await maker.addVersion(perpTemplate.address, 0, "initial version");
-
-        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 6, false, 998, toWei("1000000"));
-        await maker.createLiquidityPool(ctk.address, 6, false, 998, toWei("1000000"));
-
-        perp = await LiquidityPoolFactory.attach(perpAddr);
         reader = await createContract("Reader");
 
         // oracle

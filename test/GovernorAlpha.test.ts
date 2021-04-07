@@ -6,6 +6,8 @@ import {
     toBytes32,
     getAccounts,
     createContract,
+    createLiquidityPoolFactory,
+    createFactory
 } from '../scripts/utils';
 
 describe('GovernorAlpha.test', () => {
@@ -226,7 +228,7 @@ describe('GovernorAlpha.test', () => {
     it("quorum critical", async () => {
         await stk.mint(user1.address, toWei("1000"));
         await governor.connect(user1).propose(
-            ["upgradeTo(address)"],
+            ["upgradeToAndCall(bytes32,bytes,bytes)"],
             ["0x0000000000000000000000000000000000000000000000000000000000000001"],
             "setFastCreationEnabled to true"
         );
@@ -247,12 +249,85 @@ describe('GovernorAlpha.test', () => {
             "setFastCreationEnabled to true"
         );
         expect(await governor.getQuorumVotes(3)).to.equal(toWei("600"));
+
+    });
+
+    it("quorum critical - upgrade", async () => {
+
+        const versionKey = (lp, gov) => {
+            return ethers.utils.solidityKeccak256(["address", "address"], [lp, gov]);
+        }
+
+        const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+        var weth = await createContract("WETH9");
+        var symbol = await createContract("SymbolService", [10000]);
+        const ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        var perpTemplate = await LiquidityPoolFactory.deploy();
+        var govTemplate = await createContract("TestLpGovernor");
+        const poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            weth.address,
+            symbol.address,
+            user0.address,
+            toWei("0.001")
+        )
+        await symbol.addWhitelistedFactory(poolCreator.address);
+
+        var lpVersion1 = await LiquidityPoolFactory.deploy();
+        var govVersion1 = await createContract("TestLpGovernor");
+        await poolCreator.addVersion(
+            lpVersion1.address,
+            govVersion1.address,
+            1,
+            "version1"
+        );
+        const key1 = versionKey(lpVersion1.address, govVersion1.address);
+
+        const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+
+        const oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        await oracle.setIndexPrice(toWei("1000"), 1000)
+        await oracle.setMarkPrice(toWei("1000"), 1000)
+        const liquidityPool1 = await LiquidityPoolFactory.attach(deployed1[0]);
+        const governor1 = await ethers.getContractAt("TestLpGovernor", deployed1[1]);
+
+        await liquidityPool1.createPerpetual(oracle.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
+        )
+        await liquidityPool1.runLiquidityPool();
+
+        var lpVersion2 = await LiquidityPoolFactory.deploy();
+        var govVersion2 = await createContract("TestLpGovernor");
+        await poolCreator.addVersion(
+            lpVersion2.address,
+            govVersion2.address,
+            2,
+            "version2"
+        );
+        const key2 = versionKey(lpVersion2.address, govVersion2.address);
+
+        await ctk.mint(user0.address, toWei("1000"));
+        await ctk.connect(user0).approve(liquidityPool1.address, toWei("1000"));
+        await liquidityPool1.connect(user0).addLiquidity(toWei("1000"));
+
+        await governor1.connect(user0).proposeToUpgradeAndCall(
+            key2,
+            "0x",
+            "0x",
+            "upgrade to key2"
+        );
+        expect(await governor1.getQuorumVotes(1)).to.equal(toWei("200"));
     });
 
     it("quorum critical - mixed", async () => {
         await stk.mint(user1.address, toWei("1000"));
         await governor.connect(user1).propose(
-            ["setFastCreationEnabled(bool)", "upgradeTo(address)"],
+            ["setFastCreationEnabled(bool)", "upgradeToAndCall(bytes32,bytes,bytes)"],
             ["0x0000000000000000000000000000000000000000000000000000000000000001", "0x0000000000000000000000000000000000000000000000000000000000000001"],
             "setFastCreationEnabled to true"
         );

@@ -17,4 +17,12 @@ contract TestLpGovernor is LpGovernor {
     function unlockDelay() public pure virtual override returns (uint256) {
         return 20;
     }
+
+    function setCreator(address creator_) public {
+        _creator = IPoolCreator(creator_);
+    }
+
+    function setTarget(address creator_) public {
+        _creator = IPoolCreator(creator_);
+    }
 }

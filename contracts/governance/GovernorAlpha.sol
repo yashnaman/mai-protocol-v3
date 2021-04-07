@@ -74,9 +74,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
-    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE = keccak256(bytes("updateTo(bytes32)"));
     bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE_AND_CALL =
-        keccak256(bytes("updateToAndCall(bytes32,bytes,bytes)"));
+        keccak256(bytes("upgradeToAndCall(bytes32,bytes,bytes)"));
     bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
         keccak256(bytes("forceToSetEmergencyState(uint256,int256)"));
     bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
@@ -244,7 +243,6 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
         bytes32 functionHash = keccak256(bytes(functionSignature));
         return
-            functionHash == SIGNATURE_PERPETUAL_UPGRADE ||
             functionHash == SIGNATURE_PERPETUAL_UPGRADE_AND_CALL ||
             functionHash == SIGNATURE_PERPETUAL_SETTLE ||
             functionHash == SIGNATURE_PERPETUAL_TRANSFER_OPERATOR;
@@ -367,7 +365,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         _validateVersion(targetVersionKey);
         address proposer = _msgSender();
         string[] memory signatures = new string[](1);
-        signatures[0] = "updateToAndCall(bytes32,bytes,bytes)";
+        signatures[0] = "upgradeToAndCall(bytes32,bytes,bytes)";
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(targetVersionKey, dataForLiquidityPool, dataForGovernor);
         uint256 proposalId =
@@ -565,9 +563,9 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
         }
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = _target.call(callData);
+        (bool success, bytes memory returnData) = target.call(callData);
         require(success, "Transaction execution reverted.");
-        emit ExecuteTransaction(txHash, _target, signature, data, eta);
+        emit ExecuteTransaction(txHash, target, signature, data, eta);
         return returnData;
     }
 

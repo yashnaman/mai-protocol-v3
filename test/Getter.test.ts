@@ -20,34 +20,37 @@ describe("Getter", () => {
         const user3 = accounts[3];
         const vault = accounts[9];
         const none = "0x0000000000000000000000000000000000000000";
+        var LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("LpGovernor");
-        var govTemplate = await createContract("LpGovernor");
-        var maker = await createContract(
-            "PoolCreator",
-            [
-                govTemplate.address,
-                lpTokenTemplate.address,
-                weth.address,
-                symbol.address,
-                vault.address,
-                toWei("0.001")
-            ]
-        );
-        await symbol.addWhitelistedFactory(maker.address);
-        var LiquidityPoolFactory = await createLiquidityPoolFactory();
         var perpTemplate = await LiquidityPoolFactory.deploy();
-        await maker.addVersion(perpTemplate.address, 0, "initial version");
+        var govTemplate = await createContract("TestLpGovernor");
+        var poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            weth.address,
+            symbol.address,
+            vault.address,
+            toWei("0.001")
+        )
+        await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+        await symbol.addWhitelistedFactory(poolCreator.address);
 
-        const perpAddr = await maker.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
-        await maker.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
-
-        const perp = await LiquidityPoolFactory.attach(perpAddr);
-
+        const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        await poolCreator.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
         let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
@@ -67,14 +70,12 @@ describe("Getter", () => {
         }
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
 
-
         await perp.createPerpetual(oracle1.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
-
         await perp.createPerpetual(oracle2.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
@@ -108,7 +109,7 @@ describe("Getter", () => {
 
         // deposit
         perp.connect(user1).deposit(0, user1.address, toWei("100"));
-        perp.connect(user2).deposit(0, user1.address, toWei("100"));
+        perp.connect(user2).deposit(0, user2.address, toWei("100"));
 
         // console.log(await perp.listActiveAccounts(0, 0, 0));
         console.log(await perp.listActiveAccounts(0, 0, 1));

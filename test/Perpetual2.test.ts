@@ -32,26 +32,21 @@ describe('Perpetual2', () => {
     })
 
     beforeEach(async () => {
+        LiquidityPoolFactory = await createLiquidityPoolFactory();
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-        var lpTokenTemplate = await createContract("LpGovernor");
-        var govTemplate = await createContract("TestGovernor");
-        poolCreator = await createContract(
-            "PoolCreator",
-            [
-                govTemplate.address,
-                lpTokenTemplate.address,
-                weth.address,
-                symbol.address,
-                vault.address,
-                toWei("0.001")
-            ]
-        );
-        LiquidityPoolFactory = await createLiquidityPoolFactory();
-        await symbol.addWhitelistedFactory(poolCreator.address);
         var perpTemplate = await LiquidityPoolFactory.deploy();
-        await poolCreator.addVersion(perpTemplate.address, 0, "initial version");
+        var govTemplate = await createContract("TestLpGovernor");
+        poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            weth.address,
+            symbol.address,
+            vault.address,
+            toWei("0.001")
+        )
+        await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+        await symbol.addWhitelistedFactory(poolCreator.address);
     });
 
     describe("erc20", async () => {
@@ -62,10 +57,10 @@ describe('Perpetual2', () => {
 
         beforeEach(async () => {
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
-            const liquidityPoolAddr = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
-            await poolCreator.createLiquidityPool(ctk.address, 18, false, 998, toWei("1000000"));
+            const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+            await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
 
-            liquidityPool = await LiquidityPoolFactory.attach(liquidityPoolAddr);
+            liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
             await liquidityPool.createPerpetual(oracle.address,
                 [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
                 [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
