@@ -109,24 +109,20 @@ interface ILiquidityPool {
         );
 
     /**
-     * @notice Initialize the liquidity pool and set up its configuration
-     * @param operator The operator's address of the liquidity pool
-     * @param collateral The collateral's address of the liquidity pool
-     * @param collateralDecimals The collateral's decimals of the liquidity pool
-     * @param governor The governor's address of the liquidity pool
-     * @param shareToken The share token's address of the liquidity pool
-     * @param isFastCreationEnabled True if the operator of the liquidity pool is allowed to create new perpetual
-     *                              when the liquidity pool is running
-     * @param insuranceFundCap The max value of the insurance fund, if exceeds, the extra belongs to LP
+     * @notice Initialize the liquidity pool and set up its configuration.
+     *
+     * @param operator              The operator's address of the liquidity pool.
+     * @param collateral            The collateral's address of the liquidity pool.
+     * @param collateralDecimals    The collateral's decimals of the liquidity pool.
+     * @param governor              The governor's address of the liquidity pool.
+     * @param initData              A bytes array contains data to initialize new created liquidity pool.
      */
     function initialize(
         address operator,
         address collateral,
         uint256 collateralDecimals,
         address governor,
-        address shareToken,
-        bool isFastCreationEnabled,
-        int256 insuranceFundCap
+        bytes calldata initData
     ) external;
 
     /**

@@ -11,9 +11,9 @@ import "../libraries/Utils.sol";
 contract Tracer {
     using SafeMath for uint256;
     using SafeMathExt for uint256;
-    using Utils for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using Utils for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     struct PerpetualUID {
         address liquidityPool;
@@ -21,13 +21,13 @@ contract Tracer {
     }
 
     // liquidity pool address[]
-    EnumerableSet.AddressSet internal _liquidityPoolSet;
+    EnumerableSetUpgradeable.AddressSet internal _liquidityPoolSet;
     // hash(puid) => PerpetualUID {}
     mapping(bytes32 => PerpetualUID) internal _perpetualUIDs;
     // trader => hash(puid) []
-    mapping(address => EnumerableSet.Bytes32Set) internal _traderActiveLiquidityPools;
+    mapping(address => EnumerableSetUpgradeable.Bytes32Set) internal _traderActiveLiquidityPools;
     // operator => address
-    mapping(address => EnumerableSet.AddressSet) internal _operatorOwnedLiquidityPools;
+    mapping(address => EnumerableSetUpgradeable.AddressSet) internal _operatorOwnedLiquidityPools;
     mapping(address => address) internal _liquidityPoolOwners;
 
     modifier onlyLiquidityPool() {

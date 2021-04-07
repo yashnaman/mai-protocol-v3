@@ -9,13 +9,12 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IOracle.sol";
-
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Utils.sol";
-
+import "../Type.sol";
 import "./MarginAccountModule.sol";
 
-import "../Type.sol";
+import "hardhat/console.sol";
 
 library PerpetualModule {
     using SafeMathUpgradeable for uint256;

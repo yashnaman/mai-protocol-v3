@@ -8,6 +8,7 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "../interface/ILiquidityPool.sol";
+import "../interface/IPoolCreator.sol";
 
 /**
  * @notice Possible states that a proposal may be in.
@@ -30,6 +31,7 @@ enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Exp
 struct Proposal {
     // Unique id for looking up a proposal
     uint256 id;
+    address target;
     // Creator of the proposal
     address proposer;
     // The ordered list of function signatures to be called
@@ -72,12 +74,15 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
-    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE = keccak256(bytes("upgradeTo(address)"));
+    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE = keccak256(bytes("updateTo(bytes32)"));
+    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE_AND_CALL =
+        keccak256(bytes("updateToAndCall(bytes32,bytes,bytes)"));
     bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
         keccak256(bytes("forceToSetEmergencyState(uint256,int256)"));
     bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
         keccak256(bytes("transferOperator(address)"));
 
+    IPoolCreator internal _creator;
     address internal _target;
     mapping(address => uint256) internal _voteLocks;
     mapping(address => EnumerableSetUpgradeable.UintSet) internal _supportedProposals;
@@ -103,6 +108,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     event ProposalCreated(
         uint256 id,
         address proposer,
+        address target,
         string[] signatures,
         bytes[] calldatas,
         uint256 startBlock,
@@ -132,8 +138,13 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      */
     event ProposalExecuted(uint256 id);
 
-    function __GovernorAlpha_init_unchained(address target) internal initializer {
-        _target = target;
+    function __GovernorAlpha_init_unchained(address target_) internal initializer {
+        _target = target_;
+        _creator = IPoolCreator(_msgSender());
+    }
+
+    function getTarget() public view virtual returns (address) {
+        return _target;
     }
 
     /**
@@ -234,12 +245,15 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         bytes32 functionHash = keccak256(bytes(functionSignature));
         return
             functionHash == SIGNATURE_PERPETUAL_UPGRADE ||
+            functionHash == SIGNATURE_PERPETUAL_UPGRADE_AND_CALL ||
             functionHash == SIGNATURE_PERPETUAL_SETTLE ||
             functionHash == SIGNATURE_PERPETUAL_TRANSFER_OPERATOR;
     }
 
     /**
+     * @notice Execute a transction in 'queue' state.
      *
+     & @param   proposalId  The id of proposal to execute.
      */
     function execute(uint256 proposalId) public payable {
         require(
@@ -300,10 +314,57 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         require(signatures.length <= proposalMaxOperations(), "too many actions");
 
         address proposer = _msgSender();
-        uint256 proposalId = _createProposal(proposer, signatures, calldatas, description);
+        uint256 proposalId =
+            _createProposal(proposer, getTarget(), signatures, calldatas, description);
         latestProposalIds[proposer] = proposalId;
         _castVote(proposer, proposalId, true);
         return proposalId;
+    }
+
+    function proposeToUpgrade(bytes32 targetVersionKey, string memory description)
+        public
+        virtual
+        returns (uint256)
+    {
+        _validateVersion(targetVersionKey);
+        address proposer = _msgSender();
+        string[] memory signatures = new string[](1);
+        signatures[0] = "updateTo(bytes32)";
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encode(targetVersionKey);
+        uint256 proposalId =
+            _createProposal(proposer, getTarget(), signatures, calldatas, description);
+        latestProposalIds[proposer] = proposalId;
+        _castVote(proposer, proposalId, true);
+        return proposalId;
+    }
+
+    function proposeToUpgradeAndCall(
+        bytes32 targetVersionKey,
+        bytes memory dataForLiquidityPool,
+        bytes memory dataForGovernor,
+        string memory description
+    ) public virtual returns (uint256) {
+        _validateVersion(targetVersionKey);
+        address proposer = _msgSender();
+        string[] memory signatures = new string[](1);
+        signatures[0] = "updateToAndCall(bytes32,bytes,bytes)";
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = abi.encode(targetVersionKey, dataForLiquidityPool, dataForGovernor);
+        uint256 proposalId =
+            _createProposal(proposer, getTarget(), signatures, calldatas, description);
+        latestProposalIds[proposer] = proposalId;
+        _castVote(proposer, proposalId, true);
+        return proposalId;
+    }
+
+    function _validateVersion(bytes32 targetVersionKey) internal view {
+        require(_creator.isVersionKeyValid(targetVersionKey), "version to upgrade to is not valid");
+        bytes32 baseVersionKey = _creator.getAppliedVersionKey(getTarget(), address(this));
+        require(
+            _creator.isVersionCompatible(targetVersionKey, baseVersionKey),
+            "version to upgrade to is not compatible"
+        );
     }
 
     function _validateProposer(address proposer) internal view {
@@ -322,6 +383,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     function _createProposal(
         address proposer,
+        address target,
         string[] memory signatures,
         bytes[] memory calldatas,
         string memory description
@@ -335,6 +397,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
         Proposal storage proposal = proposals[proposalId];
         proposal.id = proposalId;
+        proposal.target = target;
         proposal.proposer = proposer;
         proposal.signatures = signatures;
         proposal.calldatas = calldatas;
@@ -346,6 +409,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         emit ProposalCreated(
             proposalId,
             proposer,
+            target,
             signatures,
             calldatas,
             startBlock,

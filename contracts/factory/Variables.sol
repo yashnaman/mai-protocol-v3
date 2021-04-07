@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-contract Variables {
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+
+contract Variables is Initializable {
     address internal _weth;
     address internal _symbolService;
     address internal _vault;
@@ -9,12 +11,12 @@ contract Variables {
 
     event SetVaultFeeRate(int256 prevFeeRate, int256 newFeeRate);
 
-    constructor(
+    function __Variables_init(
         address wethToken_,
         address symbolService_,
         address vault_,
         int256 vaultFeeRate_
-    ) {
+    ) internal initializer {
         require(wethToken_ != address(0), "invalid weth address");
         require(symbolService_ != address(0), "invalid weth address");
         require(vault_ != address(0), "invalid vault address");
@@ -97,5 +99,9 @@ contract Variables {
         return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
         // bsc testnet, heco testnet
         // return address(0x9CaDa02fC03671EA66BaAC7929Cb769214621947);
+    }
+
+    function getTimelock() public pure returns (address) {
+        return address(0x0);
     }
 }

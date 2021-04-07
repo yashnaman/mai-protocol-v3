@@ -18,7 +18,26 @@ interface IPoolCreator {
 
     function getSymbolService() external view returns (address);
 
-    function isVersionValid(address implementation) external view returns (bool);
+    function getLatestVersion() external view returns (bytes32 latestVersionKey);
 
-    function isVersionCompatible(address target, address base) external view returns (bool);
+    function getVersion(bytes32 versionKey)
+        external
+        view
+        returns (
+            address liquidityPoolTemplate,
+            address governorTemplate,
+            uint256 compatibility
+        );
+
+    function getAppliedVersionKey(address liquidityPool, address governor)
+        external
+        view
+        returns (bytes32 appliedVersionKey);
+
+    function isVersionKeyValid(bytes32 versionKey) external view returns (bool isValid);
+
+    function isVersionCompatible(bytes32 targetVersionKey, bytes32 baseVersionKey)
+        external
+        view
+        returns (bool isCompatible);
 }

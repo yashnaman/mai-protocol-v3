@@ -1,127 +1,222 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "../libraries/SafeMathExt.sol";
+import "../interface/IUpgradeableProxy.sol";
 
-contract VersionControl is Ownable {
-    using Address for address;
-    using SafeMath for uint256;
+contract VersionControl is OwnableUpgradeable {
+    using Utils for EnumerableSetUpgradeable.Bytes32Set;
     using SafeMathExt for uint256;
-    using Utils for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.AddressSet;
+    using AddressUpgradeable for address;
+    using SafeMathUpgradeable for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     struct VersionDescription {
-        address creator;
-        uint256 creationTime;
+        address liquidityPoolTemplate;
+        address governorTemplate;
         uint256 compatibility;
-        string note;
     }
 
-    EnumerableSet.AddressSet internal _versions;
-    mapping(address => VersionDescription) internal _descriptions;
+    EnumerableSetUpgradeable.Bytes32Set internal _versionKeys;
+    mapping(bytes32 => VersionDescription) internal _versionDescriptions;
+    mapping(bytes32 => bytes32) internal _deployedVersions;
 
-    event AddVersion(address implementation);
+    event AddVersion(
+        bytes32 versionKey,
+        address indexed liquidityPoolTemplate,
+        address indexed governorTemplate,
+        address indexed creator,
+        uint256 compatibility,
+        string note
+    );
 
-    constructor() Ownable() {}
+    function __VersionControl_init() internal initializer {
+        __Ownable_init();
+    }
 
     /**
-     * @notice Create the implementation of the liquidity pool by sender. The implementation should not be created before
-     * @param implementation The address of the implementation
-     * @param compatibility The compatibility of the implementation
-     * @param note The note of the implementation
+     * @notice  Create a new version with template of liquidity pool and governor.
+     *
+     * @param   liquidityPoolTemplate   The address of the liquidityPool implementation.
+     * @param   governorTemplate        The address of the governor implementation.
+     * @param   compatibility           The compatibility of the implementation
+     * @param   note                    The note of the version, only in log.
+     * @return  versionKey              The key of the version added.
      */
     function addVersion(
-        address implementation,
+        address liquidityPoolTemplate,
+        address governorTemplate,
         uint256 compatibility,
         string calldata note
-    ) external onlyOwner {
-        require(implementation != address(0), "invalid implementation");
-        require(implementation.isContract(), "implementation must be contract");
-        require(!_versions.contains(implementation), "implementation is already existed");
+    ) external onlyOwner returns (bytes32 versionKey) {
+        require(liquidityPoolTemplate.isContract(), "implementation must be contract");
+        require(governorTemplate.isContract(), "implementation must be contract");
 
-        _versions.add(implementation);
-        _descriptions[implementation] = VersionDescription({
-            creator: msg.sender,
-            creationTime: block.timestamp,
-            compatibility: compatibility,
-            note: note
+        versionKey = _getVersionHash(liquidityPoolTemplate, governorTemplate);
+        require(!isVersionKeyValid(versionKey), "implementation is already existed");
+
+        _versionDescriptions[versionKey] = VersionDescription({
+            liquidityPoolTemplate: liquidityPoolTemplate,
+            governorTemplate: governorTemplate,
+            compatibility: compatibility
         });
-        emit AddVersion(implementation);
+        _versionKeys.add(versionKey);
+
+        emit AddVersion(
+            versionKey,
+            liquidityPoolTemplate,
+            governorTemplate,
+            msg.sender,
+            compatibility,
+            note
+        );
     }
 
     /**
-     * @notice Get the latest created implementation of liquidity pool, revert if there is no implementation
-     * @return address The address of the latest implementation
+     * @notice  Get the latest created key of template. Revert if there is no key yet.
+     *
+     * @return  latestVersionKey    The key of the latest template of liquidity pool and governor.
      */
-    function getLatestVersion() public view returns (address) {
-        require(_versions.length() > 0, "no version");
-        return _versions.at(_versions.length() - 1);
+    function getLatestVersion() public view returns (bytes32 latestVersionKey) {
+        require(_versionKeys.length() > 0, "no version");
+        latestVersionKey = _versionKeys.at(_versionKeys.length() - 1);
     }
 
     /**
-     * @notice Get the description of the implementation of liquidity pool.
-     *         Description contains creator, create time, compatibility and note
-     * @param implementation The address of the implementation
-     * @return creator The creator of the implementation
-     * @return creationTime The create time of the implementation
-     * @return compatibility The compatibility of the implementation
-     * @return note The note of the implementation
+     * @notice  Get the details of the version.
+     *
+     * @param   versionKey              The key of the version to get.
+     * @return  liquidityPoolTemplate   The address of the liquidity pool template.
+     * @return  governorTemplate        The address of the governor template.
+     * @return  compatibility           The compatibility of the specified version.
      */
-    function getDescription(address implementation)
+    function getVersion(bytes32 versionKey)
         public
         view
         returns (
-            address creator,
-            uint256 creationTime,
-            uint256 compatibility,
-            string memory note
+            address liquidityPoolTemplate,
+            address governorTemplate,
+            uint256 compatibility
         )
     {
-        require(isVersionValid(implementation), "implementation is invalid");
-        creator = _descriptions[implementation].creator;
-        creationTime = _descriptions[implementation].creationTime;
-        compatibility = _descriptions[implementation].compatibility;
-        note = _descriptions[implementation].note;
+        require(isVersionKeyValid(versionKey), "implementation is invalid");
+        VersionDescription storage version = _versionDescriptions[versionKey];
+        liquidityPoolTemplate = version.liquidityPoolTemplate;
+        governorTemplate = version.governorTemplate;
+        compatibility = version.compatibility;
     }
 
     /**
-     * @notice Check if the implementation of liquidity pool is created
-     * @param implementation The address of the implementation
-     * @return bool True if the implementation is created
+     * @notice  Get the real logic contract address of given liquidity pool and governor.
+     *
+     * @param  liquidityPool    The address of the liquidity pool.
+     * @param  governor         The address of the governor.
+     * @return liquidityPoolTemplate    The address of template current applied on liquidity pool.
+     * @return governorTemplate         The address of template current applied on governor.
      */
-    function isVersionValid(address implementation) public view returns (bool) {
-        return _versions.contains(implementation);
+    function getRealImplementations(address liquidityPool, address governor)
+        public
+        view
+        returns (address liquidityPoolTemplate, address governorTemplate)
+    {
+        liquidityPoolTemplate = IUpgradeableProxy(liquidityPool).implementation();
+        governorTemplate = IUpgradeableProxy(governor).implementation();
     }
 
     /**
-     * @notice Check if the implementation of liquidity pool target is compatible with the implementation base.
-     *         Being compatible means having larger compatibility
-     * @param target The address of implementation target
-     * @param base The address of implementation base
-     * @return bool True if the implementation target is compatible with the implementation base
+     * @notice  Get the description of the implementation of liquidity pool.
+     *          Description contains creator, create time, compatibility and note
+     *
+     * @param  liquidityPool        The address of the liquidity pool.
+     * @param  governor             The address of the governor.
+     * @return appliedVersionKey    The version key of given liquidity pool and governor.
      */
-    function isVersionCompatible(address target, address base) public view returns (bool) {
-        require(isVersionValid(target), "target version is invalid");
-        require(isVersionValid(base), "base version is invalid");
-        return _descriptions[target].compatibility >= _descriptions[base].compatibility;
+    function getAppliedVersionKey(address liquidityPool, address governor)
+        public
+        view
+        returns (bytes32 appliedVersionKey)
+    {
+        bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
+        appliedVersionKey = _deployedVersions[deployedAddressHash];
     }
 
     /**
-     * @dev     Get a certain number of implementations of liquidity pool within range [begin, end)
-     * @param   begin   The index of first element to retrieve.
-     * @param   end     The end index of element, exclusive.
-     * @return  result  An array of addresses of current implementations.
+     * @notice  Check if a key is valid (exists).
+     *
+     * @param   versionKey  The key of the version to test.
+     * @return  isValid     Return true if the version of given key is valid.
+     */
+    function isVersionKeyValid(bytes32 versionKey) public view returns (bool isValid) {
+        isValid = _versionKeys.contains(versionKey);
+    }
+
+    /**
+     * @notice  Check if the implementation of liquidity pool target is compatible with the implementation base.
+     *          Being compatible means having larger compatibility.
+     *
+     * @param   targetVersionKey    The key of the version to be upgraded to.
+     * @param   baseVersionKey      The key of the version to be upgraded from.
+     * @return  isCompatible        True if the target version is compatible with the base version.
+     */
+    function isVersionCompatible(bytes32 targetVersionKey, bytes32 baseVersionKey)
+        public
+        view
+        returns (bool isCompatible)
+    {
+        require(isVersionKeyValid(targetVersionKey), "target version is invalid");
+        require(isVersionKeyValid(baseVersionKey), "base version is invalid");
+        isCompatible =
+            _versionDescriptions[targetVersionKey].compatibility >=
+            _versionDescriptions[baseVersionKey].compatibility;
+    }
+
+    /**
+     * @dev     Get a certain number of implementations of liquidity pool within range [begin, end).
+     *
+     * @param   begin       The index of first element to retrieve.
+     * @param   end         The end index of element, exclusive.
+     * @return  versionKeys An array contains current version keys.
      */
     function listAvailableVersions(uint256 begin, uint256 end)
         public
         view
-        returns (address[] memory result)
+        returns (bytes32[] memory versionKeys)
     {
-        result = _versions.toArray(begin, end);
+        versionKeys = _versionKeys.toArray(begin, end);
+    }
+
+    function _getVersionHash(address liquidityPoolTemplate, address governorTemplate)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(liquidityPoolTemplate, governorTemplate));
+    }
+
+    function _registerDeployedInstances(
+        bytes32 versionKeys,
+        address liquidityPool,
+        address governor
+    ) internal {
+        bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
+        _deployedVersions[deployedAddressHash] = versionKeys;
+    }
+
+    function _validateUpgradeVersion(
+        bytes32 targetVersionKey,
+        address liquidityPool,
+        address governor
+    ) internal view {
+        bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
+        bytes32 baseVersionKey = _deployedVersions[deployedAddressHash];
+        require(
+            isVersionCompatible(targetVersionKey, baseVersionKey),
+            "the target version is not compatible"
+        );
     }
 }

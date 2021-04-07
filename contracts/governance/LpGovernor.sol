@@ -45,6 +45,10 @@ contract LpGovernor is
         _target = target;
     }
 
+    function getMinter() public view returns (address) {
+        return _minter;
+    }
+
     /**
      * @notice  Mint token to account.
      */

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IAccessControl.sol";
 import "../interface/IPoolCreator.sol";
-import "../interface/IShareToken.sol";
+import "../interface/IGovernor.sol";
 import "../interface/ISymbolService.sol";
 
 import "../libraries/SafeMathExt.sol";
@@ -19,6 +19,8 @@ import "./MarginAccountModule.sol";
 import "./PerpetualModule.sol";
 
 import "../Type.sol";
+
+import "hardhat/console.sol";
 
 library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
@@ -162,15 +164,12 @@ library LiquidityPoolModule {
     /**
      * @dev     Initialize the liquidity pool and set up its configuration.
      *
-     * @param   liquidityPool           The reference of liquidity pool storage.
-     * @param   collateral              The collateral's address of the liquidity pool.
-     * @param   collateralDecimals      The collateral's decimals of the liquidity pool.
-     * @param   operator                The operator's address of the liquidity pool.
-     * @param   governor                The governor's address of the liquidity pool.
-     * @param   shareToken              The share token's address of the liquidity pool.
-     * @param   isFastCreationEnabled   True if the operator of the liquidity pool is allowed to create new perpetual
-     *                                  when the liquidity pool is running
-     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP
+     * @param   liquidityPool       The reference of liquidity pool storage.
+     * @param   collateral          The collateral's address of the liquidity pool.
+     * @param   collateralDecimals  The collateral's decimals of the liquidity pool.
+     * @param   operator            The operator's address of the liquidity pool.
+     * @param   governor            The governor's address of the liquidity pool.
+     * @param   initData            The byte array contains data to initialze new created liquidity pool.
      */
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
@@ -179,13 +178,13 @@ library LiquidityPoolModule {
         uint256 collateralDecimals,
         address operator,
         address governor,
-        address shareToken,
-        bool isFastCreationEnabled,
-        int256 insuranceFundCap
+        bytes memory initData
     ) public {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
-        require(shareToken != address(0), "shareToken is invalid");
+
+        (bool isFastCreationEnabled, int256 insuranceFundCap) =
+            abi.decode(initData, (bool, int256));
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = creator;
@@ -196,7 +195,7 @@ library LiquidityPoolModule {
         liquidityPool.operator = operator;
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.governor = governor;
-        liquidityPool.shareToken = shareToken;
+        liquidityPool.shareToken = governor;
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
         liquidityPool.insuranceFundCap = insuranceFundCap;
     }
@@ -689,14 +688,17 @@ library LiquidityPoolModule {
         }
         require(allowAdd, "not all perpetuals are in NORMAL state");
         int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
-        IShareToken shareToken = IShareToken(liquidityPool.shareToken);
+
+        IGovernor shareToken = IGovernor(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
 
         int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
         require(shareToMint > 0, "received share must be positive");
         // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
+
         increasePoolCash(liquidityPool, totalCashToAdd);
         shareToken.mint(trader, shareToMint.toUint256());
+
         emit AddLiquidity(trader, totalCashToAdd, shareToMint);
     }
 
@@ -714,7 +716,7 @@ library LiquidityPoolModule {
         int256 shareToRemove,
         int256 cashToReturn
     ) public {
-        IShareToken shareToken = IShareToken(liquidityPool.shareToken);
+        IGovernor shareToken = IGovernor(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
         int256 removedInsuranceFund;
         int256 removedDonatedInsuranceFund;

@@ -26,30 +26,20 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using AMMModule for LiquidityPoolStorage;
 
     /**
-     * @dev To receive eth from WETH contract.
-     */
-    receive() external payable {}
-
-    /**
      * @notice  Initialize the liquidity pool and set up its configuration
      *
      * @param   operator                The address of operator which should be pool creater currently.
      * @param   collateral              The address of collateral token.
      * @param   collateralDecimals      The decimals of collateral token, to support token without decimals interface.
      * @param   governor                The address of governor, who is able to call governance methods.
-     * @param   shareToken              The address of share token, which is the token for liquidity providers.
-     * @param   isFastCreationEnabled   True if the operator is able to create new perpetual without governor
-     *                                  when the liquidity pool is running.
-     * @param   insuranceFundCap        The max value of the insurance fund, if exceeds, the extra belongs to LP.
+     * @param   initData                A bytes array contains data to initialize new created liquidity pool.
      */
     function initialize(
         address operator,
         address collateral,
         uint256 collateralDecimals,
         address governor,
-        address shareToken,
-        bool isFastCreationEnabled,
-        int256 insuranceFundCap
+        bytes calldata initData
     ) external initializer {
         _liquidityPool.initialize(
             _msgSender(),
@@ -57,9 +47,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
             collateralDecimals,
             operator,
             governor,
-            shareToken,
-            isFastCreationEnabled,
-            insuranceFundCap
+            initData
         );
     }
 
@@ -160,7 +148,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         returns (int256 cashToAddResult, int256 shareToMintResult)
     {
         require(_liquidityPool.isRunning, "pool is not running");
-        int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
+        int256 shareTotalSupply = IGovernor(_liquidityPool.shareToken).totalSupply().toInt256();
         if (cashToAdd > 0 && shareToMint == 0) {
             shareToMintResult = _liquidityPool.getShareToMint(shareTotalSupply, cashToAdd);
             cashToAddResult = cashToAdd;
@@ -188,7 +176,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         returns (int256 shareToRemoveResult, int256 cashToReturnResult)
     {
         require(_liquidityPool.isRunning, "pool is not running");
-        int256 shareTotalSupply = IShareToken(_liquidityPool.shareToken).totalSupply().toInt256();
+        int256 shareTotalSupply = IGovernor(_liquidityPool.shareToken).totalSupply().toInt256();
         if (shareToRemove > 0 && cashToReturn == 0) {
             (cashToReturnResult, , ) = _liquidityPool.getCashToReturn(
                 shareTotalSupply,

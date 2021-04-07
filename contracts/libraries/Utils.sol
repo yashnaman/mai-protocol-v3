@@ -15,6 +15,7 @@ library Utils {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.Bytes32Set;
 
     /*
      * @dev Check if two numbers have the same sign. Zero has the same sign with any number
@@ -59,8 +60,26 @@ library Utils {
         }
     }
 
+    // function toArray(
+    //     EnumerableSet.AddressSet storage set,
+    //     uint256 begin,
+    //     uint256 end
+    // ) internal view returns (address[] memory result) {
+    //     require(end > begin, "begin should be lower than end");
+    //     uint256 length = set.length();
+    //     if (begin >= length) {
+    //         return result;
+    //     }
+    //     uint256 safeEnd = end.min(length);
+    //     result = new address[](safeEnd.sub(begin));
+    //     for (uint256 i = begin; i < safeEnd; i++) {
+    //         result[i.sub(begin)] = set.at(i);
+    //     }
+    //     return result;
+    // }
+
     function toArray(
-        EnumerableSet.AddressSet storage set,
+        EnumerableSetUpgradeable.AddressSet storage set,
         uint256 begin,
         uint256 end
     ) internal view returns (address[] memory result) {
@@ -78,17 +97,17 @@ library Utils {
     }
 
     function toArray(
-        EnumerableSetUpgradeable.AddressSet storage set,
+        EnumerableSetUpgradeable.Bytes32Set storage set,
         uint256 begin,
         uint256 end
-    ) internal view returns (address[] memory result) {
+    ) internal view returns (bytes32[] memory result) {
         require(end > begin, "begin should be lower than end");
         uint256 length = set.length();
         if (begin >= length) {
             return result;
         }
         uint256 safeEnd = end.min(length);
-        result = new address[](safeEnd.sub(begin));
+        result = new bytes32[](safeEnd.sub(begin));
         for (uint256 i = begin; i < safeEnd; i++) {
             result[i.sub(begin)] = set.at(i);
         }
