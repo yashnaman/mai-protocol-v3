@@ -100,6 +100,15 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         );
     }
 
+    /**
+     * @notice  Upgrade a liquidity pool and governor pair then call a patch function on the upgraded contract (optional).
+     *          This method checks the sender and forwards the request to ProxyAdmin to do upgrading.
+     *
+     * @param   targetVersionKey        The key of version to be upgrade up. The target version must be compatiable with
+     *                                  current version.
+     * @param   dataForLiquidityPool    The patch calldata for upgraded liquidity pool.
+     * @param   dataForGovernor         The patch calldata of upgraded governor.
+     */
     function upgradeToAndCall(
         bytes32 targetVersionKey,
         bytes memory dataForLiquidityPool,
@@ -124,30 +133,6 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         }
 
         emit UpgradeLiquidityPool(targetVersionKey, liquidityPool, governor);
-    }
-
-    function _getUpgradeContext(bytes32 targetVersionKey)
-        internal
-        view
-        returns (
-            address liquidityPool,
-            address governor,
-            address liquidityPoolTemplate,
-            address governorTemplate
-        )
-    {
-        governor = _msgSender();
-        require(governor.isContract(), "sender must be a contract");
-        liquidityPool = IGovernor(governor).getTarget();
-        require(isLiquidityPool(liquidityPool), "sender is not the governor of a registered pool");
-
-        bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
-        bytes32 baseVersionKey = _deployedVersions[deployedAddressHash];
-        require(
-            isVersionCompatible(targetVersionKey, baseVersionKey),
-            "the target version is not compatible"
-        );
-        (liquidityPoolTemplate, governorTemplate, ) = getVersion(targetVersionKey);
     }
 
     /**
@@ -228,5 +213,35 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             instance := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }
         require(instance != address(0), "create2 call failed");
+    }
+
+    /**
+     * @dev Validate sender:
+     *      - the trnasaction must be sent from a governor.
+     *      - the sender governor and its liquidity pool must be already registered.
+     *      - the target version must be compatiable with the current version.
+     */
+    function _getUpgradeContext(bytes32 targetVersionKey)
+        internal
+        view
+        returns (
+            address liquidityPool,
+            address governor,
+            address liquidityPoolTemplate,
+            address governorTemplate
+        )
+    {
+        governor = _msgSender();
+        require(governor.isContract(), "sender must be a contract");
+        liquidityPool = IGovernor(governor).getTarget();
+        require(isLiquidityPool(liquidityPool), "sender is not the governor of a registered pool");
+
+        bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
+        bytes32 baseVersionKey = _deployedVersions[deployedAddressHash];
+        require(
+            isVersionCompatible(targetVersionKey, baseVersionKey),
+            "the target version is not compatible"
+        );
+        (liquidityPoolTemplate, governorTemplate, ) = getVersion(targetVersionKey);
     }
 }
