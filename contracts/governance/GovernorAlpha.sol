@@ -9,7 +9,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "../interface/ILiquidityPool.sol";
 import "../interface/IPoolCreator.sol";
-
 /**
  * @notice Possible states that a proposal may be in.
  *
@@ -334,28 +333,6 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      * @return  proposalId          The id of new proposal.
      *
      */
-    function proposeToUpgrade(bytes32 targetVersionKey, string memory description)
-        public
-        virtual
-        returns (uint256 proposalId)
-    {
-        _validateVersion(targetVersionKey);
-        address proposer = _msgSender();
-        string[] memory signatures = new string[](1);
-        signatures[0] = "updateTo(bytes32)";
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = abi.encode(targetVersionKey);
-        proposalId = _createProposal(
-            proposer,
-            address(_creator),
-            signatures,
-            calldatas,
-            description
-        );
-        latestProposalIds[proposer] = proposalId;
-        _castVote(proposer, proposalId, true);
-    }
-
     function proposeToUpgradeAndCall(
         bytes32 targetVersionKey,
         bytes memory dataForLiquidityPool,

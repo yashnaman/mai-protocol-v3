@@ -23,7 +23,7 @@ describe("Reader", () => {
     var ctk;
     var perpTemplate;
     var govTemplate;
-    var maker;
+    var poolCreator;
     var perp;
     var oracle1;
     var oracle2;
@@ -52,10 +52,10 @@ describe("Reader", () => {
         // create components
         weth = await createContract("WETH9");
         symbol = await createContract("SymbolService", [10000]);
-        ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
         perpTemplate = await LiquidityPoolFactory.deploy();
         govTemplate = await createContract("TestLpGovernor");
-        var poolCreator = await createContract("PoolCreator");
+        poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
             weth.address,
             symbol.address,
@@ -67,39 +67,35 @@ describe("Reader", () => {
 
         const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
             ctk.address,
-            18,
+            6,
             998,
             ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
-            18,
+            6,
             998,
             ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
-
-        reader = await createContract("Reader");
+        reader = await createContract("Reader", [poolCreator.address]);
 
         // oracle
         oracle1 = await createContract("OracleWrapper", ["USD", "BTC"]);
         oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
         await updatePrice(toWei("500"), toWei("500"))
-
         await perp.createPerpetual(oracle1.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
-
         await perp.createPerpetual(oracle2.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
         )
-
         await perp.runLiquidityPool();
 
         // get initial coins
@@ -142,7 +138,7 @@ describe("Reader", () => {
         expect(pool.pool.isRunning).to.be.true;
 
         expect(pool.pool.isFastCreationEnabled).to.be.false;
-        expect(pool.pool.addresses[0]).to.equal(maker.address) // creator
+        expect(pool.pool.addresses[0]).to.equal(poolCreator.address) // creator
         expect(pool.pool.addresses[1]).to.equal(user0.address) // operator
         expect(pool.pool.addresses[2]).to.equal(none) // transferringOperator
         // expect(pool.pool.addresses[3]).to.equal(gov.address) // governor is a template
@@ -185,7 +181,7 @@ describe("Reader", () => {
         expect(pool.isSynced).to.be.false;
 
         expect(pool.pool.isFastCreationEnabled).to.be.false;
-        expect(pool.pool.addresses[0]).to.equal(maker.address) // creator
+        expect(pool.pool.addresses[0]).to.equal(poolCreator.address) // creator
         expect(pool.pool.addresses[1]).to.equal(user0.address) // operator
         expect(pool.pool.addresses[2]).to.equal(none) // transferringOperator
         // expect(pool.pool.addresses[3]).to.equal(gov.address) // governor is a template

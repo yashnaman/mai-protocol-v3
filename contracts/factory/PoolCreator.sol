@@ -16,6 +16,8 @@ import "./Variables.sol";
 import "./AccessControl.sol";
 import "./ReceivableTransparentUpgradeableProxy.sol";
 
+import "hardhat/console.sol";
+
 contract PoolCreator is Initializable, Tracer, VersionControl, Variables, AccessControl {
     using AddressUpgradeable for address;
 
@@ -112,8 +114,16 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             address governorTemplate
         ) = _getUpgradeContext(targetVersionKey);
 
-        upgradeAdmin.upgradeAndCall(liquidityPool, liquidityPoolTemplate, dataForLiquidityPool);
-        upgradeAdmin.upgradeAndCall(governor, governorTemplate, dataForGovernor);
+        if (dataForLiquidityPool.length > 0) {
+            upgradeAdmin.upgradeAndCall(liquidityPool, liquidityPoolTemplate, dataForLiquidityPool);
+        } else {
+            upgradeAdmin.upgrade(liquidityPool, liquidityPoolTemplate);
+        }
+        if (dataForGovernor.length > 0) {
+            upgradeAdmin.upgradeAndCall(governor, governorTemplate, dataForGovernor);
+        } else {
+            upgradeAdmin.upgrade(governor, governorTemplate);
+        }
 
         emit UpgradeLiquidityPool(targetVersionKey, liquidityPool, governor);
     }

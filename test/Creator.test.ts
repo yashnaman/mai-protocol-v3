@@ -166,7 +166,7 @@ describe('Creator', () => {
         const deployed1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         expect(await upgradeAdmin.getProxyImplementation(deployed1[0])).to.equal(lpVersion2.address);
-        expect(await upgradeAdmin.getProxyImplementation(deployed1[1])).to.equal(govVersion2.address);
+        expect(await upgradeAdmin.getProxyImplementation(deployed1[0])).to.equal(lpVersion2.address);
 
         const deployed2 = await poolCreator.callStatic.createLiquidityPoolWith(key1, ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await poolCreator.createLiquidityPoolWith(key1, ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
