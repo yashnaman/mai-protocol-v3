@@ -16,8 +16,6 @@ import "./Variables.sol";
 import "./AccessControl.sol";
 import "./ReceivableTransparentUpgradeableProxy.sol";
 
-import "hardhat/console.sol";
-
 contract PoolCreator is Initializable, Tracer, VersionControl, Variables, AccessControl {
     using AddressUpgradeable for address;
 
@@ -100,20 +98,6 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             nonce,
             initData
         );
-    }
-
-    function updateTo(bytes32 targetVersionKey) external {
-        (
-            address liquidityPool,
-            address governor,
-            address liquidityPoolTemplate,
-            address governorTemplate
-        ) = _getUpgradeContext(targetVersionKey);
-
-        upgradeAdmin.upgrade(liquidityPool, liquidityPoolTemplate);
-        upgradeAdmin.upgrade(governor, governorTemplate);
-
-        emit UpgradeLiquidityPool(targetVersionKey, liquidityPool, governor);
     }
 
     function updateToAndCall(

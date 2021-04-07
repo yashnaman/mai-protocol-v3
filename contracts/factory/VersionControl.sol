@@ -112,23 +112,6 @@ contract VersionControl is OwnableUpgradeable {
     }
 
     /**
-     * @notice  Get the real logic contract address of given liquidity pool and governor.
-     *
-     * @param  liquidityPool    The address of the liquidity pool.
-     * @param  governor         The address of the governor.
-     * @return liquidityPoolTemplate    The address of template current applied on liquidity pool.
-     * @return governorTemplate         The address of template current applied on governor.
-     */
-    function getRealImplementations(address liquidityPool, address governor)
-        public
-        view
-        returns (address liquidityPoolTemplate, address governorTemplate)
-    {
-        liquidityPoolTemplate = IUpgradeableProxy(liquidityPool).implementation();
-        governorTemplate = IUpgradeableProxy(governor).implementation();
-    }
-
-    /**
      * @notice  Get the description of the implementation of liquidity pool.
      *          Description contains creator, create time, compatibility and note
      *

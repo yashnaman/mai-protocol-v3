@@ -2,6 +2,8 @@
 pragma solidity 0.7.4;
 
 interface IProxyAdmin {
+    function getProxyImplementation(address proxy) external view returns (address);
+
     /**
      * @dev Upgrades `proxy` to `implementation`. See {TransparentUpgradeableProxy-upgradeTo}.
      *

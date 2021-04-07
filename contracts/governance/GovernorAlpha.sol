@@ -263,7 +263,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint256 i = 0; i < proposal.signatures.length; i++) {
-            _executeTransaction(proposal.signatures[i], proposal.calldatas[i], proposal.endBlock);
+            _executeTransaction(
+                proposal.target,
+                proposal.signatures[i],
+                proposal.calldatas[i],
+                proposal.endBlock
+            );
         }
         emit ProposalExecuted(proposalId);
     }
@@ -321,10 +326,20 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         return proposalId;
     }
 
+    /**
+     * @notice  Since the governor itself is upgradeable too and
+     *          the ProxyAdmin is a independent contract controlled by pool creator,
+     *          upgrade now is a special proposal.
+     *
+     * @param   targetVersionKey    The key of target version to be upgrade to.
+     * @param   description         A description of this proposal, only appears in transaction logs.
+     * @return  proposalId          The id of new proposal.
+     *
+     */
     function proposeToUpgrade(bytes32 targetVersionKey, string memory description)
         public
         virtual
-        returns (uint256)
+        returns (uint256 proposalId)
     {
         _validateVersion(targetVersionKey);
         address proposer = _msgSender();
@@ -332,11 +347,15 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         signatures[0] = "updateTo(bytes32)";
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(targetVersionKey);
-        uint256 proposalId =
-            _createProposal(proposer, getTarget(), signatures, calldatas, description);
+        proposalId = _createProposal(
+            proposer,
+            address(_creator),
+            signatures,
+            calldatas,
+            description
+        );
         latestProposalIds[proposer] = proposalId;
         _castVote(proposer, proposalId, true);
-        return proposalId;
     }
 
     function proposeToUpgradeAndCall(
@@ -352,7 +371,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(targetVersionKey, dataForLiquidityPool, dataForGovernor);
         uint256 proposalId =
-            _createProposal(proposer, getTarget(), signatures, calldatas, description);
+            _createProposal(proposer, address(_creator), signatures, calldatas, description);
         latestProposalIds[proposer] = proposalId;
         _castVote(proposer, proposalId, true);
         return proposalId;
@@ -523,11 +542,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     function _executeTransaction(
+        address target,
         string memory signature,
         bytes memory data,
         uint256 eta
     ) internal returns (bytes memory) {
-        bytes32 txHash = keccak256(abi.encode(_target, signature, data, eta));
+        bytes32 txHash = keccak256(abi.encode(target, signature, data, eta));
         uint256 blockNumber = _getBlockNumber();
         require(
             blockNumber >= eta.add(executionDelay()),
