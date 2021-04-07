@@ -208,14 +208,14 @@ async function main(accounts: any[]) {
     // return
 
     // 3. factory
-    // var symbol = await createContract("SymbolService", [10000]);
+    // var symbol = await createContract("SymbolService", [10000])
     // var weth = { address: "0xd0A1E359811322d97991E03f863a0C30C2cF029C" }
-    // // var usdc = await createContract("CustomERC20", ["USDC", "USDC", 6])
-    // var poolCreator = await createContract(
-    //     "PoolCreator",
-    //     [weth.address, symbol.address, vault.address, vaultFeeRate]
-    // );
-    // var broker = await createContract("Broker");
+    // var usdc = await createContract("CustomERC20", ["USDC", "USDC", 6])
+    // var poolCreator = await createContract("PoolCreator")
+    // await (await poolCreator.initialize(
+    //     weth.address, symbol.address, vault.address, vaultFeeRate
+    // )).wait()
+    // var broker = await createContract("Broker")
     // const addresses = [
     //     ["poolCreator", poolCreator.address],
     //     ["symbol", symbol.address],
@@ -262,7 +262,7 @@ async function main(accounts: any[]) {
     var liquidityPoolTmpl = await LiquidityPool.deploy();
     var governorTmpl = await createContract("LpGovernor");
     console.table([
-        ['liquidityPoolTmpl', liquidityPoolTmpl],
+        ['liquidityPoolTmpl', liquidityPoolTmpl.address],
         ["governorTmpl", governorTmpl.address],
     ]);
     await (await poolCreator.addVersion(liquidityPoolTmpl.address, governorTmpl.address, 0, "initial version")).wait();
@@ -279,14 +279,13 @@ async function set1(deployer, poolCreator, oracleAddresses) {
     const ETH = "0x025435ACD9A326fA25B4098887b38dD2CeDf6422"
     // var eth = await createContract("CustomERC20", ["ETH", "ETH", 18])
     var eth = await (await createFactory("CustomERC20")).attach(ETH)
-    const tx = await poolCreator.createLiquidityPool(
+    const tx = await (await poolCreator.createLiquidityPool(
         eth.address,
         18,                             /* decimals */
         Math.floor(Date.now() / 1000),  /* nonce */
         // (isFastCreationEnabled, insuranceFundCap)
         ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")])
-    );
-    await tx.wait()
+    )).wait()
 
     const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
@@ -326,7 +325,7 @@ async function set1(deployer, poolCreator, oracleAddresses) {
 
     console.log('add liquidity')
     await eth.mint(deployer.address, toWei("6000"));
-    await eth.approve(liquidityPool.address, toWei("6000"));
+    await (await eth.approve(liquidityPool.address, toWei("6000"))).wait();
     await liquidityPool.addLiquidity(toWei("6000"));
 
     return liquidityPool
@@ -336,15 +335,14 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     const USDC = "0xd4AC81D9FD2b28363eBD1D88a8364Ff3b3577e84"
     var usd = await (await createFactory("CustomERC20")).attach(USDC)
 
-    const tx = await poolCreator.createLiquidityPool(
+    const tx = await (await poolCreator.createLiquidityPool(
         usd.address,
         6,                              /* decimals */
         true,                           /* isFastCreationEnabled */
         Math.floor(Date.now() / 1000),  /* nonce */
         // (isFastCreationEnabled, insuranceFundCap)
         ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")])
-    );
-    await tx.wait()
+    )).wait()
 
     const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
@@ -428,7 +426,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
 
     console.log('add liquidity')
     await usd.mint(deployer.address, "10000000" + "000000");
-    await usd.approve(liquidityPool.address, "10000000" + "000000");
+    await (await usd.approve(liquidityPool.address, "10000000" + "000000")).wait();
     await liquidityPool.addLiquidity(toWei("10000000"));
 
     return liquidityPool
