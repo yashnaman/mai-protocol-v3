@@ -53,7 +53,7 @@ contract Reader {
         bool isSafe;
     }
 
-    address immutable public poolCreator;
+    address public immutable poolCreator;
 
     constructor(address _poolCreator) public {
         poolCreator = _poolCreator;
@@ -117,12 +117,7 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        address imp = getImplementation(liquidityPool);
-        if (isV004(imp)) {
-            (poolMargin, isSafe) = getPoolMarginV004(liquidityPool);
-        } else {
-            (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
-        }
+        (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
     }
 
     /**
@@ -180,46 +175,19 @@ contract Reader {
             isSynced = false;
         }
         // pool
-        address imp = getImplementation(liquidityPool);
-        if (isV004(imp)) {
-            int256 vaultFeeRate;
-            int256 poolCash;
-            (
-                pool.isRunning,
-                pool.isFastCreationEnabled,
-                pool.addresses,
-                vaultFeeRate,
-                poolCash,
-                pool.uintNums
-            ) = ILiquidityPool004(liquidityPool).getLiquidityPoolInfo();
-            pool.intNums[0] = vaultFeeRate;
-            pool.intNums[1] = poolCash;
-            // perpetual
-            uint256 perpetualCount = pool.uintNums[1];
-            address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
-            pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
-            for (uint256 i = 0; i < perpetualCount; i++) {
-                (int256 insuranceFundCap, int256 insuranceFund, int256 donatedInsuranceFund) =
-                    getPerpetualV004(pool.perpetuals[i], symbolService, liquidityPool, i);
-                pool.intNums[2] = pool.intNums[2] + insuranceFundCap;
-                pool.intNums[3] = pool.intNums[3] + insuranceFund;
-                pool.intNums[4] = pool.intNums[4] + donatedInsuranceFund;
-            }
-        } else {
-            (
-                pool.isRunning,
-                pool.isFastCreationEnabled,
-                pool.addresses,
-                pool.intNums,
-                pool.uintNums
-            ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
-            // perpetual
-            uint256 perpetualCount = pool.uintNums[1];
-            address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
-            pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
-            for (uint256 i = 0; i < perpetualCount; i++) {
-                getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
-            }
+        (
+            pool.isRunning,
+            pool.isFastCreationEnabled,
+            pool.addresses,
+            pool.intNums,
+            pool.uintNums
+        ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
+        // perpetual
+        uint256 perpetualCount = pool.uintNums[1];
+        address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
+        pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
+        for (uint256 i = 0; i < perpetualCount; i++) {
+            getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
         }
     }
 
