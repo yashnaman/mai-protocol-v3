@@ -371,11 +371,11 @@ describe("integration", () => {
         // console.log(fromWei(await ctkUser1.balanceOf(user1.address)));
         print(await perp.connect(user1).callStatic.getMarginAccount(0, user1.address));
 
-        // // remove lp
-        // await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
-        // await gs.collect("removeLiquidity", perpUser2.removeLiquidity(await shareUser2.balanceOf(user2.address)));
-        // console.log("share:", fromWei(await shareUser2.balanceOf(user2.address)));
-        // console.log("ctk  :", fromWei(await ctkUser2.balanceOf(user2.address)));
+        // remove lp
+        await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
+        await gs.collect("removeLiquidity", perp.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0));
+        console.log("share:", fromWei(await stk.balanceOf(user2.address)));
+        console.log("ctk  :", fromWei(await weth.balanceOf(user2.address)));
 
         gs.summary();
     })

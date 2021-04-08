@@ -176,7 +176,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             liquidityPool,
             liquidityPool,
             getMCBToken(),
-            getTimelock()
+            rewardDistributor()
         );
         // register pool to tracer
         _registerLiquidityPool(liquidityPool, operator);

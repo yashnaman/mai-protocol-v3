@@ -25,6 +25,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
+    receive() external payable {}
+
     /**
      * @notice  Initialize the liquidity pool and set up its configuration
      *
