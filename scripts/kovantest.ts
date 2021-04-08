@@ -424,7 +424,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
     console.log('run pool')
     await (await liquidityPool.runLiquidityPool()).wait();
 
-    console.log('add liquidity')
+    console.log('add liquidity')    
     await usd.mint(deployer.address, "10000000" + "000000");
     await (await usd.approve(liquidityPool.address, "10000000" + "000000")).wait();
     await liquidityPool.addLiquidity(toWei("10000000"));
@@ -433,7 +433,7 @@ async function set2(deployer, poolCreator, oracleAddresses) {
 }
 
 async function deployReader(poolCreator) {
-    var reader = await createContract("Reader", poolCreator.address);
+    var reader = await createContract("Reader", [poolCreator.address]);
     const addresses = [["Reader", reader.address]]
     console.table(addresses)
     return { reader }

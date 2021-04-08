@@ -225,7 +225,7 @@ async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
 }
 
 async function reader(accounts: any[], poolCreator) {
-    var reader = await createContract("Reader", poolCreator.address);
+    var reader = await createContract("Reader", [poolCreator.address]);
     const addresses = [["Reader", reader.address]];
     console.table(addresses);
     return { reader };
