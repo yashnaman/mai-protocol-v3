@@ -25,9 +25,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *          Can only called when the perpetual's state is "NORMAL".
      *          This method will always increase `cash` amount in trader's margin account.
      *
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
-     * @param   trader          The address of the trader
-     * @param   amount          The amount of collatetal to deposit. always use decimals 18.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
+     * @param   amount          The amount of collatetal to deposit. The amount always use decimals 18.
      */
     function deposit(
         uint256 perpetualIndex,
@@ -52,9 +52,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *          Need to update the funding state and the oracle price of each perpetual before
      *          and update the funding rate of each perpetual after
      *
-     * @param   perpetualIndex The index of the perpetual in the liquidity pool
-     * @param   trader The address of the trader
-     * @param   amount The amount of collatetal to withdraw. always use decimals 18.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
+     * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
      */
     function withdraw(
         uint256 perpetualIndex,
@@ -73,7 +73,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     /**
      * @notice  If the state of the perpetual is "CLEARED", anyone authorized withdraw privilege by trader can settle
      *          trader's account in the perpetual. Which means to calculate how much the collateral should be returned
-     *           to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
+     *          to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual.
+     *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      * @param   trader          The address of the trader.
      */
@@ -95,7 +96,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *          to sender. If all active accounts are cleared, the clear progress is done and the perpetual's state will
      *          change to "CLEARED". Active means the trader's account is not empty in the perpetual.
      *          Empty means cash and position are zero
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     *
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      */
     function clear(uint256 perpetualIndex) public nonReentrant {
         require(
@@ -125,16 +127,16 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *            - market order    do not check limit price during trading;
      *            - stop loss       only availble in brokerTrade mode;
      *            - take profit     only availble in brokerTrade mode;
-                For stop loss and take profit, see `validateTriggerPrice` in OrderModule.sol for details.
+     *          For stop loss and take profit, see `validateTriggerPrice` in OrderModule.sol for details.
      *
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   trader          The address of trader.
-     * @param   amount          The amount of position to trader, positive for buying and negative for selling.
+     * @param   amount          The amount of position to trader, positive for buying and negative for selling. The amount always use decimals 18.
      * @param   limitPrice      The worst price the trader accepts.
      * @param   deadline        The dealine of trade transaction.
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   flags           The flags of the trade.
-     * @return  tradeAmount     The amount of positions actually traded in the transaction.
+     * @return  tradeAmount     The amount of positions actually traded in the transaction. The amount always use decimals 18.
      */
     function trade(
         uint256 perpetualIndex,
@@ -162,8 +164,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *          See `trade` for details.
      * @param   orderData   The order data object
      * @param   amount      The amount of position to trader, positive for buying and negative for selling.
-     *                      This amount should be lower then or equal to amount in `orderData`.
-     * @return  tradeAmount The amount of positions actually traded in the transaction.
+     *                      This amount should be lower then or equal to amount in `orderData`. The amount always use decimals 18.
+     * @return  tradeAmount The amount of positions actually traded in the transaction. The amount always use decimals 18.
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
@@ -218,7 +220,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex      The index of the perpetual in liquidity pool
      * @param   trader              The address of trader to be liquidated.
-     * @return  liquidationAmount   The amount of positions actually liquidated in the transaction.
+     * @return  liquidationAmount   The amount of positions actually liquidated in the transaction. The amount always use decimals 18.
      */
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
@@ -242,7 +244,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex      The index of the perpetual in liquidity pool.
      * @param   trader              The address of trader to be liquidated.
-     * @param   amount              The amount of position to be taken from liquidated trader.
+     * @param   amount              The amount of position to be taken from liquidated trader. The amount always use decimals 18.
      * @param   limitPrice          The worst price liquidator accepts.
      * @param   deadline            The deadline of transaction.
      * @return  liquidationAmount   The amount of positions actually liquidated in the transaction.

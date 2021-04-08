@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Variables is Initializable {
+contract Variables is Initializable, OwnableUpgradeable {
     address internal _weth;
     address internal _symbolService;
     address internal _vault;
     int256 internal _vaultFeeRate;
 
     event SetVaultFeeRate(int256 prevFeeRate, int256 newFeeRate);
+    event SetVault(int256 prevFeeRate, int256 newFeeRate);
 
     function __Variables_init(
         address wethToken_,
