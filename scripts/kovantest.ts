@@ -185,8 +185,8 @@ async function deployOracle() {
 }
 
 async function main(accounts: any[]) {
-    var deployer = { address: "0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a", private: "0xd961926e05ae51949465139b95d91faf028de329278fa5db7462076dd4a245f4" }
-    var vault = { address: "0xd69c3820627daC4408CE629730EB8E891F8d5731", private: "0x55ebe4b701c11e6a04b5d77bb25276f090a6fd03a88c6d97ea85e40cd2a3926e" }
+    var deployer = { address: "0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a" }
+    var vault = { address: "0xd69c3820627daC4408CE629730EB8E891F8d5731" }
     var vaultFeeRate = toWei("0.00015");
 
     // 1. oracle
