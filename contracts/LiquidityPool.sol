@@ -57,8 +57,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          Otherwise a perpetual can only be create by governor (say, through voting).
      *
      * @param   oracle              The oracle's address of the perpetual.
-     * @param   baseParams          The base parameters of the perpetual, see TODO for details.
-     * @param   riskParams          The risk parameters of the perpetual,
+     * @param   baseParams          The base parameters of the perpetual. see Getter for details.
+     * @param   riskParams          The risk parameters of the perpetual. see Getter for details.
      *                              Must be within range [minRiskParamValues, maxRiskParamValues].
      * @param   minRiskParamValues  The minimum values of risk parameters.
      * @param   maxRiskParamValues  The maximum values of risk parameters.
@@ -120,8 +120,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          The index price, trading fee and positions holding by amm will affect the profitability of providers.
      *          Can only called when the pool is running.
      *
-     * @param   shareToRemove  The amount of share token to remove
-     * @param   cashToReturn   The amount of cash(collateral) to return
+     * @param   shareToRemove  The amount of share token to remove. always use decimals 18.
+     * @param   cashToReturn   The amount of cash(collateral) to return. always use decimals 18.
      */
     function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
         external
@@ -201,7 +201,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          Unexpected loss (backrupt) will be deducted from insurance fund then donated insurance fund.
      *          Until donated insurance fund is drained, the perpetual will not enter emergency state and shutdown.
      *
-     * @param   amount          The amount of collateral to donate.
+     * @param   amount          The amount of collateral to donate. always use decimals 18.
      */
     function donateInsuranceFund(int256 amount) external payable nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");

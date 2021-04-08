@@ -223,7 +223,7 @@ interface ILiquidityPool {
     /**
      * @notice Get claimable fee of the claimer in the liquidity pool
      * @param claimer The address of the claimer
-     * @return int256 The claimable fee of the claimer in the liquidity pool
+     * @return int256 The claimable fee of the claimer in the liquidity pool. always use decimals 18.
      */
     function getClaimableFee(address claimer) external view returns (int256);
 

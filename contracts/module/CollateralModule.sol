@@ -60,7 +60,7 @@ library CollateralModule {
      *          eth and weth at the same time
      * @param   liquidityPool   The liquidity pool object
      * @param   account         The address of the account
-     * @param   amount          The amount of erc20 token to transfer, the amount of eth is msg.value
+     * @param   amount          The amount of erc20 token to transfer. the amount of eth is msg.value. always use decimals 18.
      * @return  totalAmount     The total amount of collateral to transfer, eth amount + weth amount if the
      *                          liquidity pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
      */
@@ -102,7 +102,7 @@ library CollateralModule {
      *         Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
      * @param liquidityPool The liquidity pool object
      * @param account The address of the account
-     * @param amount The amount of collateral to transfer
+     * @param amount The amount of collateral to transfer. always use decimals 18.
      */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,

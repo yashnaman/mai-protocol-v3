@@ -27,7 +27,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      * @param   trader          The address of the trader
-     * @param   amount          The amount of collatetal to deposit
+     * @param   amount          The amount of collatetal to deposit. always use decimals 18.
      */
     function deposit(
         uint256 perpetualIndex,
@@ -54,7 +54,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex The index of the perpetual in the liquidity pool
      * @param   trader The address of the trader
-     * @param   amount The amount of collatetal to withdraw
+     * @param   amount The amount of collatetal to withdraw. always use decimals 18.
      */
     function withdraw(
         uint256 perpetualIndex,
