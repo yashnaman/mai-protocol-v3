@@ -47,7 +47,6 @@
   "dependencies": {
     "@openzeppelin/contracts": "3.4.0",
     "@openzeppelin/contracts-upgradeable": "3.4.0",
-    "@optionality.io/clone-factory": "^0.2.1",
     "@uniswap/lib": "^2.0.6",
     "@uniswap/v2-core": "^1.0.1",
     "bignumber.js": "^9.0.1"

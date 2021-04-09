@@ -132,6 +132,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         } else {
             upgradeAdmin.upgrade(governor, governorTemplate);
         }
+        _updateDeployedInstances(targetVersionKey, liquidityPool, governor);
 
         emit UpgradeLiquidityPool(targetVersionKey, liquidityPool, governor);
     }
@@ -180,7 +181,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         );
         // register pool to tracer
         _registerLiquidityPool(liquidityPool, operator);
-        _registerDeployedInstances(versionKey, liquidityPool, governor);
+        _updateDeployedInstances(versionKey, liquidityPool, governor);
         // [EVENT UPDATE]
         emit CreateLiquidityPool(
             versionKey,

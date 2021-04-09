@@ -181,7 +181,7 @@ contract VersionControl is OwnableUpgradeable {
         return keccak256(abi.encodePacked(liquidityPoolTemplate, governorTemplate));
     }
 
-    function _registerDeployedInstances(
+    function _updateDeployedInstances(
         bytes32 versionKeys,
         address liquidityPool,
         address governor
