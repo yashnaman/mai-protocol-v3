@@ -20,7 +20,7 @@ async function deployLibraries() {
     const OrderModule = await createContract("OrderModule");
     const PerpetualModule = await createContract("PerpetualModule");
     const LiquidityPoolModule = await createContract("LiquidityPoolModule", [], { CollateralModule, AMMModule, PerpetualModule });
-    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule, PerpetualModule });
+    const TradeModule = await createContract("TradeModule", [], { AMMModule, LiquidityPoolModule });
     console.table([
         ["AMMModule", AMMModule.address],
         ["CollateralModule", CollateralModule.address],
@@ -69,7 +69,13 @@ async function deployLibraries() {
     // │    4    │ 'LiquidityPoolModule' │ '0x349eFDf923EfC83d43377a85e5CCADe3147ebf32' │
     // │    5    │     'TradeModule'     │ '0x4592021F3AC4aaED5411f35c33175B2A3845C498' │
 
-
+    // 2021/4/8 kovan insurance
+    // │    0    │      'AMMModule'      │ '0x5c0d66d526b76d3bc98e4e91925980caac58d6b2' │
+    // │    1    │  'CollateralModule'   │ '0x18b93dc93eb9b3eca7997e02c52ec1d21336a20e' │
+    // │    2    │     'OrderModule'     │ '0xd8eb9a8bbf3bb27eebdaa39856eb25633961c0d1' │
+    // │    3    │   'PerpetualModule'   │ '0x974a6ec1fa9fb5dfb8587c0ee2216920caf6e8f1' │
+    // │    4    │ 'LiquidityPoolModule' │ '0xFFADf894f6520941970bf798e4c9379e398e4931' │
+    // │    5    │     'TradeModule'     │ '0xef3fa221d6485884aC2887f9D285963c86CbE89C' │
 }
 
 async function createLiquidityPoolFactory() {
@@ -77,10 +83,10 @@ async function createLiquidityPoolFactory() {
         "LiquidityPool",
         {
             libraries: {
-                AMMModule: "0x1B114EA6E969f817DFdb74D503128927936Ad715",
-                OrderModule: "0xB78E12f984bbe71897DbF6c3371119E31b24A989",
-                LiquidityPoolModule: "0x349eFDf923EfC83d43377a85e5CCADe3147ebf32",
-                TradeModule: "0x4592021F3AC4aaED5411f35c33175B2A3845C498",
+                AMMModule: "0x5c0d66d526b76d3bc98e4e91925980caac58d6b2",
+                OrderModule: "0xd8eb9a8bbf3bb27eebdaa39856eb25633961c0d1",
+                LiquidityPoolModule: "0xFFADf894f6520941970bf798e4c9379e398e4931",
+                TradeModule: "0xef3fa221d6485884aC2887f9D285963c86CbE89C",
             }
         }
     )
@@ -203,29 +209,44 @@ async function main(accounts: any[]) {
         ["TSLA - USD", "0x1e723a23324a61ceFD50e00dDa56B1d2388426E2"],
     ]);
 
+    // a new usdc
+    // var usdc = await createContract("CustomERC20", ["USDC", "USDC", 6])
+    // return
+
     // 2. libraries
     // await deployLibraries()
     // return
 
     // 3. factory
     // var symbol = await createContract("SymbolService", [10000])
-    // var weth = { address: "0xd0A1E359811322d97991E03f863a0C30C2cF029C" }
-    // var usdc = await createContract("CustomERC20", ["USDC", "USDC", 6])
-    // var poolCreator = await createContract("PoolCreator")
-    // await (await poolCreator.initialize(
-    //     weth.address, symbol.address, vault.address, vaultFeeRate
-    // )).wait()
+    // const symbol = await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
+    // var poolCreatorTmpl = await createContract("PoolCreator")
+    // const admin = '0x1a3F275b9Af71D597219899151140a0049DB557b'
+    // var poolCreator = await createContract("TransparentUpgradeableProxy", [
+    //     poolCreatorTmpl.address, // logic
+    //     admin,
+    //     '0x' // data
+    // ])
     // var broker = await createContract("Broker")
     // const addresses = [
-    //     ["poolCreator", poolCreator.address],
+    //     ["poolCreatorTmpl", poolCreatorTmpl.address],
+    //     ["poolCreator", `${poolCreator.address} @ ${poolCreator.blockNumber}`],
     //     ["symbol", symbol.address],
     //     ["broker", broker.address],
     // ];
     // console.table(addresses);
     // return
 
+    // white list
     const symbol = await (await createFactory("SymbolService")).attach('0x0A701c621210859eAbE2F47BE37456BEc2427462')
-    const poolCreator = await (await createFactory("PoolCreator")).attach('0xF55cF7BbaF548115DCea6DF10c57DF7c7eD88b9b')
+    const poolCreator = await (await createFactory("PoolCreator")).attach('0x0956a627788199bE312c9a1f2d8cBA70ec30fCb5')
+    var weth = { address: "0xd0A1E359811322d97991E03f863a0C30C2cF029C" }
+
+    // await (await poolCreator.initialize(
+    //     weth.address, symbol.address, vault.address, vaultFeeRate, { gasLimit: 5000000 }
+    // )).wait()
+    // await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
+    // return
 
     // 2021 / 1 / 13 kovan / https://kovan.etherscan.io/address/0xa2aAD83466241232290bEbcd43dcbFf6A7f8d23a
     // │    0    │    'weth'     │ '0xd0A1E359811322d97991E03f863a0C30C2cF029C' │
@@ -257,7 +278,6 @@ async function main(accounts: any[]) {
     // │    4    │     'broker'     │ '0x243d3bB879779911a5299592d38e84E54B83fd19' │
 
     // 4. add version
-    await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
     var governorTmpl = await createContract("LpGovernor");
@@ -266,10 +286,11 @@ async function main(accounts: any[]) {
         ["governorTmpl", governorTmpl.address],
     ]);
     await (await poolCreator.addVersion(liquidityPoolTmpl.address, governorTmpl.address, 0, "initial version")).wait();
+    // return
 
     // 5. pools
-    const pool1 = await set1(deployer, poolCreator, oracleAddresses);
-    const pool2 = await set2(deployer, poolCreator, oracleAddresses);
+    // const pool1 = await set1(deployer, poolCreator, oracleAddresses);
+    // const pool2 = await set2(deployer, poolCreator, oracleAddresses);
 
     // 6. reader
     await deployReader(poolCreator);
