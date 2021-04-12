@@ -68,4 +68,10 @@ contract LibraryEvents {
         int256 penaltyToLP
     );
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
+    event TransferFeeToReferrer(
+        uint256 perpetualIndex,
+        address indexed trader,
+        address indexed referrer,
+        int256 referralRebate
+    );
 }

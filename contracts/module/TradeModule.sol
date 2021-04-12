@@ -46,6 +46,12 @@ library TradeModule {
         int256 penaltyToLP
     );
     event TransferFeeToOperator(address indexed operator, int256 operatorFee);
+    event TransferFeeToReferrer(
+        uint256 perpetualIndex,
+        address indexed trader,
+        address indexed referrer,
+        int256 referralRebate
+    );
 
     /**
      * @dev     See `trade` in Perpetual.sol for details.
@@ -225,6 +231,7 @@ library TradeModule {
         address operator = liquidityPool.getOperator();
         liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee);
         emit TransferFeeToOperator(operator, operatorFee);
+        emit TransferFeeToReferrer(perpetual.id, trader, referrer, referralRebate);
     }
 
     /**
