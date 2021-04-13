@@ -373,6 +373,21 @@ describe('LiquidityPool', () => {
             expect(await tracer.isActiveLiquidityPoolOf(user0.address, liquidityPool.address, 0)).to.be.false;
         })
 
+        it("clear-no-account", async () => {
+            await liquidityPool.setState(0, 2);
+            const keeper = accounts[9];
+
+            expect(await liquidityPool.getPoolCash()).to.equal(toWei("0"))
+
+            await liquidityPool.setEmergencyState(0);
+            await liquidityPool.connect(keeper).clearP(0);
+
+            expect(await liquidityPool.getState(0)).to.equal(4)
+            expect(await ctk.balanceOf(liquidityPool.address)).to.equal(toWei("0"))
+            expect(await ctk.balanceOf(keeper.address)).to.equal(toWei("0"));
+            expect(await liquidityPool.getPoolCash()).to.equal(toWei("0"))
+        })
+
         it("clear", async () => {
             await liquidityPool.setState(0, 2);
             const keeper = accounts[9];

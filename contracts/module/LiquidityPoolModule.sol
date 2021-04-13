@@ -26,6 +26,7 @@ library LiquidityPoolModule {
     using SafeMathExt for int256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
@@ -657,7 +658,10 @@ library LiquidityPoolModule {
                 perpetual.keeperGasReward
             );
         }
-        if (perpetual.clear(perpetual.getNextActiveAccount())) {
+        if (
+            perpetual.activeAccounts.length() == 0 ||
+            perpetual.clear(perpetual.getNextActiveAccount())
+        ) {
             setClearedState(liquidityPool, perpetualIndex);
         }
     }

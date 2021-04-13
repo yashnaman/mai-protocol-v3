@@ -1,7 +1,6 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 import { BigNumber as BN } from "ethers";
-import { computePublicKey } from "_@ethersproject_signing-key@5.0.5@@ethersproject/signing-key";
 import {
     toWei,
     createContract,
