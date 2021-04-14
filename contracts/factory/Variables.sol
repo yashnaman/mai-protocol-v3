@@ -122,6 +122,8 @@ contract Variables is Initializable, OwnableUpgradeable {
     function getMCBToken() public pure returns (address) {
         // const MCB token
         // return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
+        // TODO: test only
+        // return address(0x3FA06FBBD051ef8185Df9191ae1dEBddcEE8efAd);
         // kovan
         return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
         // bsc testnet, heco testnet
