@@ -92,7 +92,9 @@ describe('Governance', () => {
         await expect(governance.connect(user1).transferOperator(user0.address)).to.be.revertedWith("can only be initiated by operator")
 
         await governance.connect(user1).claimOperator();
-        const pools = await creator.listLiquidityPoolOwnedBy(user1.address, 0, 1);
+        let pools = await creator.listLiquidityPoolOwnedBy(user0.address, 0, 1);
+        await expect(pools.length).to.equal(0);
+        pools = await creator.listLiquidityPoolOwnedBy(user1.address, 0, 1);
         await expect(pools[0]).to.equal(governance.address);
         await expect(governance.connect(user0).transferOperator(user1.address)).to.be.revertedWith("can only be initiated by operator")
 
@@ -104,6 +106,8 @@ describe('Governance', () => {
         await expect(governance.connect(user1).revokeOperator()).to.be.revertedWith("only operator is allowed")
         await governance.connect(user2).revokeOperator();
         await expect(governance.connect(user1).transferOperator(user0.address)).to.be.revertedWith("can only be initiated by governor")
+        pools = await creator.listLiquidityPoolOwnedBy(user2.address, 0, 1);
+        await expect(pools.length).to.equal(0);
 
         await governance.setGovernor(user2.address);
         await governance.connect(user2).transferOperator(user0.address);

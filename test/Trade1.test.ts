@@ -236,7 +236,7 @@ describe('TradeModule1', () => {
             await testTrade.validatePrice(true, toWei("90"), toWei("100"));
             await testTrade.validatePrice(false, toWei("110"), toWei("100"));
 
-            await expect(testTrade.validatePrice(true, toWei("-1"), toWei("100"))).to.be.revertedWith("negative price")
+            await expect(testTrade.validatePrice(true, toWei("-1"), toWei("100"))).to.be.revertedWith("price must be positive")
             await expect(testTrade.validatePrice(true, toWei("100.1"), toWei("100"))).to.be.revertedWith("price exceeds limit");
             await expect(testTrade.validatePrice(false, toWei("99.9"), toWei("100"))).to.be.revertedWith("price exceeds limit");
         })
