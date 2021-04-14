@@ -404,7 +404,7 @@ library TradeModule {
         int256 price,
         int256 priceLimit
     ) internal pure {
-        require(price >= 0, "negative price");
+        require(price > 0, "price must be positive");
         bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
         require(isPriceSatisfied, "price exceeds limit");
     }
