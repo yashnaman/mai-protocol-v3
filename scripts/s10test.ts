@@ -71,21 +71,33 @@ async function main(accounts: any[]) {
 
     // 2. factory
     var symbol = await createContract("SymbolService", [10000])
-    var wethFactory = await createFactory("WETH9");
-    var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
-    var poolCreator = await createContract("PoolCreator")
-    await (await poolCreator.initialize(
-        weth.address, symbol.address, vault.address, vaultFeeRate
-    )).wait()
+    var poolCreatorTmpl = await createContract("PoolCreator")
+    const admin = '0x1a3F275b9Af71D597219899151140a0049DB557b'
+    var poolCreator = await createContract("TransparentUpgradeableProxy", [
+        poolCreatorTmpl.address, // logic
+        admin,
+        '0x', // data
+        { gasLimit: 5000000 }
+    ])
+    poolCreator = await (await createFactory("PoolCreator")).attach(poolCreator.address)
     var broker = await createContract("Broker")
     const addresses = [
+        ["poolCreatorTmpl", poolCreatorTmpl.address],
         ["poolCreator", poolCreator.address],
         ["symbol", symbol.address],
         ["broker", broker.address],
     ];
     console.table(addresses);
-
+    
+    // white list
+    var wethFactory = await createFactory("WETH9");
+    var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
+    await (await poolCreator.initialize(
+        weth.address, symbol.address, vault.address, vaultFeeRate
+    )).wait()
     await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
+
+    // add version
     const LiquidityPool = await createLiquidityPoolFactory();
     var liquidityPoolTmpl = await LiquidityPool.deploy();
     var governorTmpl = await createContract("LpGovernor");
@@ -95,9 +107,11 @@ async function main(accounts: any[]) {
     ]);
     await (await poolCreator.addVersion(liquidityPoolTmpl.address, governorTmpl.address, 0, "initial version")).wait();
 
+    // pools
     const pool1 = await set1(accounts, poolCreator, weth, oracleAddresses);
     const pool2 = await set2(accounts, poolCreator, weth, oracleAddresses);
 
+    // reader
     await reader(accounts, poolCreator);
 }
 
