@@ -330,7 +330,7 @@ listLiquidityPoolOwnedBy(address operator, uint256 begin, uint256 end)
 Get the liquidity pools owned by the operator and whose index between begin and end.
 
 ```solidity
-setLiquidityPoolOwnership(address liquidityPool, address operator)
+registerOperatorOfLiquidityPool(address liquidityPool, address operator)
 ```
 
 Liquidity pool must call this method when changing its ownership to the new operator. Can only be called by a liquidity pool.

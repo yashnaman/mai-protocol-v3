@@ -395,7 +395,7 @@ library LiquidityPoolModule {
         require(claimer == liquidityPool.transferringOperator, "caller is not qualified");
         liquidityPool.operator = claimer;
         liquidityPool.transferringOperator = address(0);
-        IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), claimer);
+        IPoolCreator(liquidityPool.creator).registerOperatorOfLiquidityPool(address(this), claimer);
         emit ClaimOperator(claimer);
     }
 
@@ -405,7 +405,10 @@ library LiquidityPoolModule {
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
         liquidityPool.operator = address(0);
-        IPoolCreator(liquidityPool.creator).setLiquidityPoolOwnership(address(this), address(0));
+        IPoolCreator(liquidityPool.creator).registerOperatorOfLiquidityPool(
+            address(this),
+            address(0)
+        );
         emit RevokeOperator();
     }
 
