@@ -98,22 +98,19 @@ contract Tracer {
 
     /**
      * @notice  Liquidity pool must call this method when changing its ownership to the new operator.
-     *          Can only be called by a liquidity pool.
+     *          Can only be called by a liquidity pool. This method does not affect 'ownership' or privileges
+     *          of operator but only make a record for further query.
      *
      * @param   liquidityPool   The address of the liquidity pool.
      * @param   operator        The address of the new operator, must be different from the old operator.
      */
-    function setLiquidityPoolOwnership(address liquidityPool, address operator)
+    function registerOperatorOfLiquidityPool(address liquidityPool, address operator)
         public
         onlyLiquidityPool
     {
         address prevOperator = _liquidityPoolOwners[liquidityPool];
-        require(operator != prevOperator, "user is already operator of liquidity pool");
-        bool exist = _operatorOwnedLiquidityPools[prevOperator].remove(liquidityPool);
-        require(exist, "operator is not owned by previous owner");
-
-        bool success = _operatorOwnedLiquidityPools[operator].add(liquidityPool);
-        require(success, "operator is already owner of this liquidity pool");
+        _operatorOwnedLiquidityPools[prevOperator].remove(liquidityPool);
+        _operatorOwnedLiquidityPools[operator].add(liquidityPool);
         _liquidityPoolOwners[liquidityPool] = operator;
     }
 
