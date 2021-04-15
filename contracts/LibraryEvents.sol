@@ -67,6 +67,6 @@ contract LibraryEvents {
         int256[6] riskParams
     );
     event RunLiquidityPool();
-    event OperatorCheckIn();
+    event OperatorCheckIn(address indexed operator);
     event SetOracle(address indexed oldOralce, address indexed newOracle);
 }
