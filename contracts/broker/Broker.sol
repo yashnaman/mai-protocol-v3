@@ -214,6 +214,7 @@ contract Broker is ReentrancyGuard {
         address recipient,
         uint256 amount
     ) internal {
+        require(recipient != address(0), "the recipient is zero address");
         if (amount == 0) {
             return;
         }

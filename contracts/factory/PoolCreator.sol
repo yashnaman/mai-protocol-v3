@@ -114,7 +114,10 @@ contract PoolCreator is Tracer, VersionControl, Variables, AccessControl, CloneF
         bool isFastCreationEnabled,
         int256 nonce
     ) internal returns (address liquidityPool) {
+        require(implementation.isContract(), "the implementation must be a contract");
+        require(collateral.isContract(), "the collateral must be a contract");
         require(isVersionValid(implementation), "invalid implementation");
+
         address governor = _createClone(_shareTokenTemplate);
         address shareToken = governor;
         bytes32 argsHash =
