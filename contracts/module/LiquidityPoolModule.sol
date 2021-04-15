@@ -799,21 +799,21 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Check if the trader is authorized the privilege by the grantor. Any trader is authorized by himself
+     * @dev Check if the trader is authorized the privilege by the grantee. Any trader is authorized by himself
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param trader The address of the trader
-     * @param grantor The address of the grantor
+     * @param grantee The address of the grantee
      * @param privilege The privilege
      * @return isGranted True if the trader is authorized
      */
     function isAuthorized(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
-        address grantor,
+        address grantee,
         uint256 privilege
     ) public view returns (bool isGranted) {
         isGranted =
-            trader == grantor ||
-            IAccessControll(liquidityPool.accessController).isGranted(trader, grantor, privilege);
+            trader == grantee ||
+            IAccessControll(liquidityPool.accessController).isGranted(trader, grantee, privilege);
     }
 }
