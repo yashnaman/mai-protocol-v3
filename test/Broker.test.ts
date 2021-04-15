@@ -56,7 +56,7 @@ describe('Broker', () => {
             ]
         );
 
-        LiquidityPoolFactory = await createLiquidityPoolFactory("LiquidityPoolRelayable");
+        LiquidityPoolFactory = await createLiquidityPoolFactory("LiquidityPool");
         await symbol.addWhitelistedFactory(poolCreator.address);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         await poolCreator.addVersion(perpTemplate.address, 0, "initial version");
@@ -276,79 +276,5 @@ describe('Broker', () => {
 
         await broker.connect(user1).withdraw("999999980000000000");
         expect(await broker.balanceOf(user1.address)).to.equal("0")
-    })
-
-
-    it("relay call", async () => {
-        // test user0 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, pk = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-        // test user1 0x70997970c51812dc3a010c7d01b50e0d17dc79c8, pk = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("1000"), now);
-        await oracle.setIndexPrice(toWei("1000"), now);
-
-        await ctk.mint(user1.address, toWei("10000"))
-        await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
-
-        const method = "deposit(uint256,address,int256)"
-        const callData = ethers.utils.defaultAbiCoder.encode(["uint256", "address", "int256"], [0, user1.address, 1000])
-        const from = user1.address;
-        const to = liquidityPool.address;
-        const nonce = await broker.getNonce(user1.address);
-        const expiration = now + 86400
-        const gasLimit = 0
-
-        const typedData = {
-            types: {
-                EIP712Domain: [
-                    { name: "name", type: "string" },
-                    { name: "version", type: "string" }
-                ],
-                Call: [
-                    { name: 'chainId', type: 'uint256' },
-                    { name: 'method', type: 'string' },
-                    { name: 'broker', type: 'address' },
-                    { name: 'from', type: 'address' },
-                    { name: 'to', type: 'address' },
-                    { name: 'callData', type: 'bytes' },
-                    { name: 'nonce', type: 'uint32' },
-                    { name: 'expiration', type: 'uint32' },
-                    { name: 'gasLimit', type: 'uint64' }
-                ]
-            },
-            primaryType: 'Call' as const,
-            domain: {
-                name: 'Mai L2 Call',
-                version: 'v3.0'
-            },
-            message: {
-                'chainId': 31337,
-                'method': method,
-                'broker': broker.address,
-                'from': from,
-                'to': to,
-                'callData': callData,
-                'nonce': nonce,
-                'expiration': expiration,
-                'gasLimit': gasLimit,
-            }
-        }
-
-        const digest = TypedDataUtils.encodeDigest(typedData)
-        var sigRaw = ecsign(Buffer.from(ethers.utils.hexlify(digest).slice(2), 'hex'), Buffer.from("59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d", 'hex'))
-        var sig = ethers.utils.joinSignature({ r: "0x" + sigRaw.r.toString('hex'), s: "0x" + sigRaw.s.toString('hex'), v: sigRaw.v });
-
-        const userData1 = ethers.utils.solidityPack(["address", "uint32", "uint32", "uint32"], [from, nonce, expiration, gasLimit])
-        const userData2 = ethers.utils.solidityPack(["address", "uint32", "uint64"], [to, 0, 0])
-        await broker.callFunction(
-            userData1,
-            userData2,
-            method,
-            callData,
-            sig
-        );
-
-        var result = await liquidityPool.getMarginAccount(0, user1.address);
-        console.log(result.cash.toString());
-        expect(result.cash).to.equal(1000)
     })
 })
