@@ -257,7 +257,14 @@ library TradeModule {
         );
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =
-            postLiquidate(liquidityPool, perpetual, address(this), trader, position, deltaPosition);
+            postLiquidate(
+                liquidityPool,
+                perpetual,
+                address(this),
+                trader,
+                position,
+                deltaPosition.neg()
+            );
         emit Liquidate(
             perpetualIndex,
             address(this),
@@ -295,14 +302,21 @@ library TradeModule {
         // 0. price / amount
         validatePrice(amount >= 0, markPrice, limitPrice);
         int256 position = perpetual.getPosition(trader);
-        int256 deltaPosition = getMaxPositionToClose(position, amount.neg());
+        int256 deltaPosition = getMaxPositionToClose(position, amount.neg()).neg();
         int256 deltaCash = markPrice.wmul(deltaPosition).neg();
         // 1. execute
-        perpetual.updateMargin(trader, deltaPosition, deltaCash);
-        perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
+        perpetual.updateMargin(liquidator, deltaPosition, deltaCash);
+        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =
-            postLiquidate(liquidityPool, perpetual, liquidator, trader, position, deltaPosition);
+            postLiquidate(
+                liquidityPool,
+                perpetual,
+                liquidator,
+                trader,
+                position,
+                deltaPosition.neg()
+            );
         // 3. safe
         if (hasOpenedPosition(perpetual.getPosition(liquidator), deltaPosition.neg())) {
             require(
