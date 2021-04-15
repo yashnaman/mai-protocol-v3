@@ -672,24 +672,30 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev To keep the AMM's margin equal to initial margin in the perpetual as posiible.
-     *         Transfer collateral between the perpetual and the liquidity pool's cash, then
-     *         update the AMM's cash in perpetual. The liquidity pool's cash can be negative,
-     *         but the available cash can't. If AMM need to transfer and the available cash
-     *         is not enough, transfer all the rest available cash of collateral
+     * @dev     To keep the AMM's margin equal to initial margin in the perpetual as posiible.
+     *          Transfer collateral between the perpetual and the liquidity pool's cash, then
+     *          update the AMM's cash in perpetual. The liquidity pool's cash can be negative,
+     *          but the available cash can't. If AMM need to transfer and the available cash
+     *          is not enough, transfer all the rest available cash of collateral
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
+     * @return  The amount of rebalanced margin. A positive amount indicates the collaterals
+     *          are moved from perpetual to pool, and a negative amount indicates the opposite.
+     *          0 means no rebalance happened.
      */
-    function rebalance(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex) public {
+    function rebalance(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
+        public
+        returns (int256)
+    {
         require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         if (perpetual.state != PerpetualState.NORMAL) {
-            return;
+            return 0;
         }
         int256 rebalanceMargin = perpetual.getRebalanceMargin();
         if (rebalanceMargin == 0) {
             // nothing to rebalance
-            return;
+            return 0;
         } else if (rebalanceMargin > 0) {
             // from perp to pool
             perpetual.updateCash(address(this), rebalanceMargin.neg());
@@ -697,14 +703,15 @@ library LiquidityPoolModule {
         } else {
             // from pool to perp
             int256 availablePoolCash = getAvailablePoolCash(liquidityPool, perpetualIndex);
-            if (availablePoolCash < 0) {
+            if (availablePoolCash <= 0) {
                 // pool has no more collateral, nothing to rebalance
-                return;
+                return 0;
             }
             rebalanceMargin = rebalanceMargin.abs().min(availablePoolCash);
             perpetual.updateCash(address(this), rebalanceMargin);
             transferFromPoolToPerpetual(liquidityPool, perpetualIndex, rebalanceMargin);
         }
+        return rebalanceMargin;
     }
 
     /**
