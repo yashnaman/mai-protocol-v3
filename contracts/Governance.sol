@@ -42,6 +42,7 @@ contract Governance is Storage {
      * @param   newOperator The address of new operator to transfer to.
      */
     function transferOperator(address newOperator) public {
+        require(newOperator != address(0), "new operator is zero address");
         address operator = _liquidityPool.getOperator();
         if (operator != address(0)) {
             // has operator

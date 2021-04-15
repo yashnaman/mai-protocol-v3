@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../interface/ILiquidityPool.sol";
 
 contract SymbolService is Ownable {
+    using Address for address;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -46,6 +47,7 @@ contract SymbolService is Ownable {
      * @param factory The address of the factory
      */
     function addWhitelistedFactory(address factory) public onlyOwner {
+        require(factory.isContract(), "factory must be a contract");
         require(!isWhitelistedFactory(factory), "factory already exists");
         _whitelistedFactories.add(factory);
         emit AddWhitelistedFactory(factory);
