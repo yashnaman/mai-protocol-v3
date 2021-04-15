@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -10,6 +11,7 @@ import "../interface/ILiquidityPool.sol";
 
 contract SymbolService is Ownable {
     using Address for address;
+    using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -132,7 +134,7 @@ contract SymbolService is Ownable {
             perpetualIndex: perpetualIndex
         });
         _perpetualSymbols[key].add(symbol);
-        _nextSymbol = _nextSymbol + 1;
+        _nextSymbol = _nextSymbol.add(1);
         emit AllocateSymbol(liquidityPool, perpetualIndex, symbol);
     }
 
