@@ -226,6 +226,25 @@ describe('Minging', () => {
 
         expect(await miner.earned(user1.address)).to.equal(toWei("5.2"))
         expect(await miner.earned(user2.address)).to.equal(toWei("4.4"))
+    })
 
+    it("rewardPerToken - reward tuncation", async () => {
+        await miner.connect(user1).setRewardRate(toWei("3"));
+
+        await rtk.mint(miner.address, toWei("10000"));
+        await stk.mint(user1.address, toWei("100"));
+        await stk.mint(user2.address, toWei("25"));
+
+        const tx = await miner.connect(user1).notifyRewardAmount(toWei("40"));
+        // period = 13
+        expect(await miner.periodFinish()).to.equal(tx.blockNumber + 13)
+
+
+        for (let i = 0; i < 20; i++) {
+            await miner.connect(user1).getReward()
+            await miner.connect(user2).getReward()
+        }
+        expect(await rtk.balanceOf(user1.address)).to.equal(toWei("31.2"))
+        expect(await rtk.balanceOf(user2.address)).to.equal(toWei("7.8"))
     })
 })
