@@ -757,7 +757,7 @@ library PerpetualModule {
 
         require(baseParams[INDEX_LIQUIDATION_PENALTY_RATE] >= 0, "liquidationPenaltyRate < 0");
         require(
-            baseParams[INDEX_LIQUIDATION_PENALTY_RATE] <= baseParams[INDEX_OPEN_SLIPPAGE_FACTOR],
+            baseParams[INDEX_LIQUIDATION_PENALTY_RATE] <= baseParams[INDEX_MAINTENANCE_MARGIN_RATE],
             "liquidationPenaltyRate > maintenanceMarginRate"
         );
         require(baseParams[INDEX_KEEPER_GAS_REWARD] >= 0, "keeperGasReward < 0");
