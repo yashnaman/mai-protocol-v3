@@ -270,7 +270,8 @@ describe('GovernorAlpha.test', () => {
             weth.address,
             symbol.address,
             user0.address,
-            toWei("0.001")
+            toWei("0.001"),
+            user0.address
         )
         await symbol.addWhitelistedFactory(poolCreator.address);
 

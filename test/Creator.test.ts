@@ -51,7 +51,8 @@ describe('Creator', () => {
             weth.address,
             symbol.address,
             vault.address,
-            toWei("0.001")
+            toWei("0.001"),
+            vault.address
         )
         await symbol.addWhitelistedFactory(poolCreator.address);
         // await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");

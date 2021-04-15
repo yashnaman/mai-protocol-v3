@@ -32,8 +32,8 @@ async function main(deployer) {
 
     // infrastructure
     await deployer.deploy("Broker")
-    await deployer.deploy("WETH9")
     await deployer.deploy("SymbolService", 10000)
+    // await deployer.deploy("WETH9")
     await deployer.deploy("CustomERC20", "USDC", "USDC", 6)
 
     // upgradeable pool / add whitelist
@@ -43,7 +43,8 @@ async function main(deployer) {
         deployer.addressOf("WETH9"),
         deployer.addressOf("SymbolService"),
         vault,
-        vaultFeeRate
+        vaultFeeRate,
+        vault
     )
     const symbolService = await deployer.getDeployedContract("SymbolService")
     await symbolService.addWhitelistedFactory(poolCreator.address)

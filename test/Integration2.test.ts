@@ -51,7 +51,8 @@ describe("integration2", () => {
             weth.address,
             symbol.address,
             vault.address,
-            toWei("0.001")
+            toWei("0.001"),
+            vault.address
         )
         await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
         await symbol.addWhitelistedFactory(poolCreator.address);

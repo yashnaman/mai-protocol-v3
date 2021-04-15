@@ -93,7 +93,7 @@ async function main(accounts: any[]) {
     var wethFactory = await createFactory("WETH9");
     var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
     await (await poolCreator.initialize(
-        weth.address, symbol.address, vault.address, vaultFeeRate
+        weth.address, symbol.address, vault.address, vaultFeeRate, vault.address
     )).wait()
     await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
 
