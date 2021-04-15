@@ -35,6 +35,7 @@ library LiquidityPoolModule {
     using PerpetualModule for PerpetualStorage;
 
     uint256 public constant OPERATOR_CHECK_IN_TIMEOUT = 10 days;
+    uint256 public constant MAX_PERPETUAL_COUNT = 48;
 
     event AddLiquidity(address indexed trader, int256 addedCash, int256 mintedShare);
     event RemoveLiquidity(address indexed trader, int256 returnedCash, int256 burnedShare);
@@ -216,6 +217,10 @@ library LiquidityPoolModule {
         int256[6] calldata minRiskParamValues,
         int256[6] calldata maxRiskParamValues
     ) public {
+        require(
+            liquidityPool.perpetuals.length < MAX_PERPETUAL_COUNT,
+            "perpetual count exceeds limit"
+        );
         uint256 perpetualIndex = liquidityPool.perpetuals.length;
         PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
         perpetual.initialize(
