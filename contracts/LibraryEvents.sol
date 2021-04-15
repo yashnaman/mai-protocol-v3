@@ -68,4 +68,5 @@ contract LibraryEvents {
     );
     event RunLiquidityPool();
     event OperatorCheckIn();
+    event SetOracle(address indexed oldOralce, address indexed newOracle);
 }
