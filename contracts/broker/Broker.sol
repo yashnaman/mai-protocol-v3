@@ -112,14 +112,6 @@ contract Broker is ReentrancyGuard {
     }
 
     /**
-     * @notice  Get next avilable nonce for account. Nonce in an relayed call must match
-     *          record on chain and will be increased on a successful call, to prevent replay attack.
-     */
-    function getNonce(address account) public view returns (uint32 nonce) {
-        return _nonces[account];
-    }
-
-    /**
      * @notice  Cancel an order to prevent any further trade.
      *          Currently, Only trader or elayer and anthorized account (by order.trader)
      *          are able to cancel an order.
@@ -140,47 +132,6 @@ contract Broker is ReentrancyGuard {
         require(!_orderCanceled[orderHash], "order is already canceled");
         _orderCanceled[orderHash] = true;
         emit CancelOrder(orderHash);
-    }
-
-    /**
-     * @notice  Making general function call to a contract who implements the IRelayRecipient interface.
-     *          Relay (the one sends transaction for real signer) will get reward for successful relay call.
-     *          The reward is desided by relayer but will not exceed gasFeeLimit set by user.
-     *
-     * @param   userData1   Compact bytes32 data, see `_decodeUserData1`.
-     * @param   userData2   Compact bytes32 data, see `_decodeUserData2`.
-     * @param   method      A string indicates the function to call, eg. 'deposit(uint256)'.
-     * @param   callData    The calldata of method, using abi encode format.
-     * @param   signature   The r-s-v combined format signature.
-     */
-    function callFunction(
-        bytes32 userData1,
-        bytes32 userData2,
-        string memory method,
-        bytes memory callData,
-        bytes memory signature
-    ) public {
-        (address account, uint32 nonce, uint32 expiration, uint32 gasFeeLimit) =
-            _decodeUserData1(userData1);
-        (address to, uint32 gasFee) = _decodeUserData2(userData2);
-        require(_getGasFee(gasFee) <= balanceOf(account), "insufficient gas fee");
-        require(gasFee <= gasFeeLimit, "fee exceeds limit");
-        require(expiration >= block.timestamp, "expired");
-        require(nonce == _nonces[account], "non-continuous nonce");
-        IRelayRecipient(to).callFunction(
-            account,
-            method,
-            callData,
-            nonce,
-            expiration,
-            _getGasFee(gasFeeLimit),
-            signature
-        );
-        _nonces[account]++;
-        if (gasFee > 0) {
-            Address.sendValue(payable(msg.sender), _getGasFee(gasFee));
-        }
-        emit CallFunction(userData1, userData2, method, callData, signature);
     }
 
     /**
@@ -270,54 +221,5 @@ contract Broker is ReentrancyGuard {
         _balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
-    }
-
-    /**
-     * @dev     Decode compact userData, which contains:
-     *            - A 20 bytes address, indicates the address of account to operate on;
-     *            - A  4 bytes nonce, see `getNonce` for details;
-     *            - A  4 bytes unix timestamp expiration;
-     *            - A  4 bytes gasFeeLimit, multiply by 1e11 to get realy limit in 'wei';
-     *          The gasFeeLimit is the max amount user wish to pay for the transaction.
-     *
-     * @param   userData    Compact userdata.
-     */
-    function _decodeUserData1(bytes32 userData)
-        internal
-        pure
-        returns (
-            address account,
-            uint32 nonce,
-            uint32 expiration,
-            uint32 gasFeeLimit
-        )
-    {
-        account = address(bytes20(userData));
-        nonce = uint32(bytes4(userData << 160));
-        expiration = uint32(bytes4(userData << 192));
-        gasFeeLimit = uint32(bytes4(userData << 224));
-    }
-
-    /**
-     * @dev     Decode compact userData, which contains:
-     *            - A 20 bytes address, indicates the final address of transaction to send to;
-     *            - A  4 bytes gasFee, multiply by 1e11 to get realy fee in 'wei'.
-     *          The gasFee is the actual fee claiming from pre-deposited funds by user, which should
-     *          alway be lower than the gasFeeLimit.
-     *
-     * @param   userData    Compact userdata.
-     */
-    function _decodeUserData2(bytes32 userData) internal pure returns (address to, uint32 gasFee) {
-        to = address(bytes20(userData));
-        gasFee = uint32(bytes4(userData << 160));
-    }
-
-    /**
-     * @dev     Convert gasFee in userData to wei.
-     *
-     * @param   gasFee  The amount from userData.
-     */
-    function _getGasFee(uint32 gasFee) internal pure returns (uint64) {
-        return uint64(gasFee) * uint64(1e11);
     }
 }

@@ -69,7 +69,7 @@ A governor is driven by a self-contained voting system. Liquidity providers is a
 - **governance**  Implement of `Governance`
 
 - **interface** Interfaces of contracts, external or internal;
-- **l2adapter** Special methods to serve different eth-like L2 network;
+- **l2adapter** Special methods to serve different eth-like L2 network; (removed)
 - **libraries** Library contracts;
 - **module** To avoid oversize of main contract, all the logics (perpetual, liquidity pool, AMM, trade and margin account) are splitted into libraries;
 - **oracle** Code of oracle used in perpetual;

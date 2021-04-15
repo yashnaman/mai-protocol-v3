@@ -11,7 +11,6 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    // admin:  to mint/burn token
     address internal _distributor;
 
     IERC20Upgradeable public rewardToken;
