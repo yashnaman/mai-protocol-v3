@@ -27,13 +27,6 @@ library Utils {
     }
 
     /*
-     * @dev Get the sign of the number. 1 means the number is positive. -1 means the number is negative
-     */
-    function extractSign(int256 x) internal pure returns (int256) {
-        return x >= 0 ? int256(1) : int256(-1);
-    }
-
-    /*
      * @dev Split the delta to two numbers.
      *      Use for splitting the trading amount to the amount to close position and the amount to open position.
      *      Examples: 2, 1 => 0, 1; 2, -1 => -1, 0; 2, -3 => -2, -1

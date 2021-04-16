@@ -52,12 +52,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    )
-        external
-        payable
-        onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSTI)
-        nonReentrant
-    {
+    ) external payable onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"

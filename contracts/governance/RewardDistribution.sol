@@ -47,7 +47,7 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice  Set reward distribution rate. If there is unfinished distribution, the end time will be changed
+     * @notice  Set reward distribution rate. If there is unfinished distribution, the end block will be changed
      *          according to change of newRewardRate.
      *
      * @param   newRewardRate   New reward distribution rate.
@@ -88,9 +88,9 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice  Return end time if last distribution is done or current timestamp.
+     * @notice  Return end block if last distribution is done or current timestamp.
      */
-    function lastTimeRewardApplicable() public view returns (uint256) {
+    function lastBlockRewardApplicable() public view returns (uint256) {
         return block.number <= periodFinish ? block.number : periodFinish;
     }
 
@@ -104,7 +104,7 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(
+                lastBlockRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(
                     totalSupply()
                 )
             );
@@ -136,7 +136,7 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
 
     function _updateReward(address account) internal {
         rewardPerTokenStored = rewardPerToken();
-        lastUpdateTime = lastTimeRewardApplicable();
+        lastUpdateTime = lastBlockRewardApplicable();
         if (account != address(0)) {
             rewards[account] = earned(account);
             userRewardPerTokenPaid[account] = rewardPerTokenStored;

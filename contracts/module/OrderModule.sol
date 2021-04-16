@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../interface/IAccessControll.sol";
+import "../interface/IAccessControl.sol";
 
 import "../libraries/Utils.sol";
 import "../libraries/OrderData.sol";
@@ -40,7 +40,7 @@ library OrderModule {
         address signer = Signature.getSigner(orderHash, signature);
         if (signer != order.trader) {
             bool isAuthorized =
-                IAccessControll(liquidityPool.accessController).isGranted(
+                IAccessControl(liquidityPool.accessController).isGranted(
                     order.trader,
                     signer,
                     Constant.PRIVILEGE_TRADE

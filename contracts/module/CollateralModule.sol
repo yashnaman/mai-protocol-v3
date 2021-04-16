@@ -85,11 +85,16 @@ library CollateralModule {
         }
         if (amount > 0) {
             uint256 rawAmount = _toRawAmount(liquidityPool, amount);
-            IERC20Upgradeable(liquidityPool.collateralToken).safeTransferFrom(
-                account,
-                address(this),
-                rawAmount
+
+            IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
+            uint256 previousBalance = collateralToken.balanceOf(address(this));
+            collateralToken.safeTransferFrom(account, address(this), rawAmount);
+            uint256 postBalance = collateralToken.balanceOf(address(this));
+            require(
+                postBalance.sub(previousBalance) == rawAmount,
+                "incorrect transferred in amount"
             );
+
             totalAmount = totalAmount.add(amount);
         }
     }
@@ -110,6 +115,9 @@ library CollateralModule {
             return;
         }
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
+
+        IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
+        uint256 previousBalance = collateralToken.balanceOf(address(this));
         if (liquidityPool.isWrapped) {
             IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
             weth.withdraw(rawAmount);
@@ -117,6 +125,8 @@ library CollateralModule {
         } else {
             IERC20Upgradeable(liquidityPool.collateralToken).safeTransfer(account, rawAmount);
         }
+        uint256 postBalance = collateralToken.balanceOf(address(this));
+        require(previousBalance.sub(postBalance) == rawAmount, "incorrect transferred out amount");
     }
 
     function _toInternalAmount(LiquidityPoolStorage storage liquidityPool, uint256 amount)

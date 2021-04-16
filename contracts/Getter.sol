@@ -296,7 +296,7 @@ contract Getter is Storage {
      *          To get the latest status, call `syncState` first.
      *
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
-     * @param   amount          The expected(max) amoun of position to trade.
+     * @param   amount          The expected(max) amount of position to trade.
      * @return  deltaCash       The cost of cash of trade.
      * @return  deltaPosition   The update position of the trader after the trade
      */
