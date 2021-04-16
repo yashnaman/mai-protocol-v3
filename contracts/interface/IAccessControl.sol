@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
 
-interface IAccessControll {
+interface IAccessControl {
     function grantPrivilege(address trader, uint256 privilege) external;
 
     function revokePrivilege(address trader, uint256 privilege) external;

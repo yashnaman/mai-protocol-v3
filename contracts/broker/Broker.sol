@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 
 import "../interface/ILiquidityPool.sol";
-import "../interface/IAccessControll.sol";
+import "../interface/IAccessControl.sol";
 import "../interface/IPoolCreator.sol";
 import "../interface/IRelayRecipient.sol";
 
@@ -122,8 +122,8 @@ contract Broker is ReentrancyGuard {
         if (msg.sender != order.trader && msg.sender != order.relayer) {
             (, , address[7] memory addresses, , , ) =
                 ILiquidityPool(order.liquidityPool).getLiquidityPoolInfo();
-            IAccessControll accessControl =
-                IAccessControll(IPoolCreator(addresses[0]).getAccessController());
+            IAccessControl accessControl =
+                IAccessControl(IPoolCreator(addresses[0]).getAccessController());
             bool isGranted =
                 accessControl.isGranted(order.trader, msg.sender, Constant.PRIVILEGE_TRADE);
             require(isGranted, "sender must be trader or relayer or authorized");

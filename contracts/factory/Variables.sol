@@ -58,6 +58,7 @@ contract Variables {
 
     /**
      * @notice  Return address of weth.
+     * @dev     [ConfirmBeforeDeployment]
      *
      * @return  address The address of weth
      */
@@ -84,13 +85,13 @@ contract Variables {
     }
 
     /**
-     * @notice  Get the address of the symbol service.
+     * @notice  Get the address of the mcb token.
+     * @dev     [ConfirmBeforeDeployment]
      *
-     * @return  Address The address of the symbol service.
+     * @return  Address The address of the mcb token.
      */
     function getMCBToken() public pure returns (address) {
         // const MCB token
-        // TODO: test only
         // return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
         // kovan
         return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);

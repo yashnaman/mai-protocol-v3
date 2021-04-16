@@ -135,8 +135,6 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
 
     /**
      * @notice  Add liquidity to the liquidity pool without getting shares.
-     *          Liquidity provider deposits collaterals then gets share tokens back.
-     *          The ratio of added cash to share token is determined by current liquidity.
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */

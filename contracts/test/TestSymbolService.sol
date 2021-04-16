@@ -35,8 +35,8 @@ contract TestSymbolService {
     address public factory;
     address public symbolService;
 
-    constructor(address _factory, address _symbolService) {
-        factory = _factory;
+    constructor(address _symbolService) {
+        factory = address(this);
         symbolService = _symbolService;
     }
 

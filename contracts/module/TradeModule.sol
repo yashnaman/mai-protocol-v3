@@ -149,7 +149,6 @@ library TradeModule {
             operatorFee = 0;
             vaultFee = 0;
         } else {
-            int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
             if (totalFee > availableMargin) {
                 // maker sure the sum of fees < available margin
                 int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);

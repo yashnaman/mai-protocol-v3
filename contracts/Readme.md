@@ -20,11 +20,11 @@ Every liquidity pool will be created by the trader who wants to be the operator 
 
 Since the design of MCDEX v3 is totally follow the rule of 'Permissionless', the pool creator does not directly manage the implementation (contract) of liquidity pools, but supplies different implementations for operators to create with.
 
-Pool create also manages global variables for all created liquidity pools.
+Pool creator also manages global variables for all created liquidity pools.
 
 ### LiquidityPool
 
-Contracts of pool creator is located in `contracts/LiquidityPool.sol`.
+Contracts of liquidity pool is located in `contracts/LiquidityPool.sol`.
 
 In MCDEX v3, a single liquidity pools is able to provide liquidity for multiple perpetuals using the same collateral with liquidity pool. This is so called 'shared liquidity pool'.
 
@@ -36,7 +36,7 @@ Liquidity provider will receive share tokens in return which is used in voting s
 
 ### Perpetual
 
-Contracts of pool creator is located in `contracts/Perpetual.sol`.
+Contracts of perpetual is located in `contracts/Perpetual.sol`.
 
 A perpetual, like a market, defines the rule of trade and stores the status of market and the data of traders.
 
@@ -46,7 +46,7 @@ Every trader to trade in the perpetual have a margin account to store personal i
 
 ### AMM
 
-Contracts of pool creator is located in `contracts/module/AMMModule.sol`.
+Contracts of AMM is located in `contracts/module/AMMModule.sol`.
 
 The AMM is the counterparty of the traders. One liquidity pool has one AMM.
 
@@ -54,7 +54,7 @@ It offers the trading price when trading and determines the funding rate. AMM al
 
 ### Governor
 
-Contracts of pool creator is located in `contracts/governance`.
+Contracts of governance is located in `contracts/governance`.
 
 Each liquidity pool has a unique governor to manage itself, performing administrator operations such as updating parameters, close perpetual, update perpetual and so on.
 

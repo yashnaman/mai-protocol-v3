@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../interface/IAccessControll.sol";
+import "../interface/IAccessControl.sol";
 import "../interface/IPoolCreator.sol";
 import "../interface/IShareToken.sol";
 import "../interface/ISymbolService.sol";
@@ -29,8 +29,6 @@ library LiquidityPoolModule {
 
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
-    using MarginAccountModule for PerpetualStorage;
-    using AMMModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -304,12 +302,13 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
+     * @dev     Set the risk parameter of the perpetual, including minimum value and maximum value.
+     *          Can only called by the governor
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param perpetualIndex The index of perpetual in the liquidity pool
-     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
-     * @param minRiskParamValues The minimum value of the risk parameter
-     * @param maxRiskParamValues The maximum value of the risk parameter
+     * @param   perpetualIndex The index of perpetual in the liquidity pool
+     * @param   riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @param   minRiskParamValues The minimum value of the risk parameter
+     * @param   maxRiskParamValues The maximum value of the risk parameter
      */
     function setPerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
@@ -324,10 +323,10 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Set the risk parameter of the perpetual, including minimum value and maximum value. Can only called by the governor
+     * @dev Set the risk parameter of the perpetual. Can only called by the governor
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param perpetualIndex The index of perpetual in the liquidity pool
-     * @param riskParams The new value of the risk parameter, must between minimum value and maximum value
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     * @param   riskParams      The new value of the risk parameter, must between minimum value and maximum value
      */
     function updatePerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
@@ -340,12 +339,12 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Set the state of the perpetual to "EMERGENCY". Must rebalance first.
-     *         Can only called when AMM is not maintenance margin safe in the perpetual.
-     *         After that the perpetual is not allowed to trade, deposit and withdraw.
-     *         The price of the perpetual is freezed to the settlement price
+     * @dev     Set the state of the perpetual to "EMERGENCY". Must rebalance first.
+     *          Can only called when AMM is not maintenance margin safe in the perpetual.
+     *          After that the perpetual is not allowed to trade, deposit and withdraw.
+     *          The price of the perpetual is freezed to the settlement price
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      */
     function setEmergencyState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
@@ -356,10 +355,10 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev Set the state of the perpetual to "CLEARED". Add the collateral of AMM in the perpetual to the pool cash.
-     *         Can only called when all the active accounts in the perpetual are cleared
+     * @dev     Set the state of the perpetual to "CLEARED". Add the collateral of AMM in the perpetual to the pool cash.
+     *          Can only called when all the active accounts in the perpetual are cleared
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param perpetualIndex The index of the perpetual in the liquidity pool
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      */
     function setClearedState(LiquidityPoolStorage storage liquidityPool, uint256 perpetualIndex)
         public
@@ -826,6 +825,6 @@ library LiquidityPoolModule {
     ) public view returns (bool isGranted) {
         isGranted =
             trader == grantee ||
-            IAccessControll(liquidityPool.accessController).isGranted(trader, grantee, privilege);
+            IAccessControl(liquidityPool.accessController).isGranted(trader, grantee, privilege);
     }
 }

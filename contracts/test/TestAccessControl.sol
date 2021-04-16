@@ -19,7 +19,7 @@ contract TestAccessControl is AccessControl {
         _;
     }
 
-    function deposit(address trader) public auth(trader, Constant.PRIVILEGE_DEPOSTI) {}
+    function deposit(address trader) public auth(trader, Constant.PRIVILEGE_DEPOSIT) {}
 
     function withdraw(address trader) public auth(trader, Constant.PRIVILEGE_WITHDRAW) {}
 

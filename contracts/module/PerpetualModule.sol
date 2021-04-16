@@ -40,7 +40,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_INSURANCE_FUND_CAP = 8;
     uint256 internal constant INDEX_SYNC_FUNDING_INTERVAL = 9;
 
-    uint256 internal constant INDEX_HARF_SPREAD = 0;
+    uint256 internal constant INDEX_HALF_SPREAD = 0;
     uint256 internal constant INDEX_OPEN_SLIPPAGE_FACTOR = 1;
     uint256 internal constant INDEX_CLOSE_SLIPPAGE_FACTOR = 2;
     uint256 internal constant INDEX_FUNDING_RATE_LIMIT = 3;
@@ -204,9 +204,9 @@ library PerpetualModule {
         validateRiskParameters(perpetual, riskParams);
         setOption(
             perpetual.halfSpread,
-            riskParams[INDEX_HARF_SPREAD],
-            minRiskParamValues[INDEX_HARF_SPREAD],
-            maxRiskParamValues[INDEX_HARF_SPREAD]
+            riskParams[INDEX_HALF_SPREAD],
+            minRiskParamValues[INDEX_HALF_SPREAD],
+            maxRiskParamValues[INDEX_HALF_SPREAD]
         );
         setOption(
             perpetual.openSlippageFactor,
@@ -256,7 +256,7 @@ library PerpetualModule {
         public
     {
         validateRiskParameters(perpetual, riskParams);
-        updateOption(perpetual.halfSpread, riskParams[INDEX_HARF_SPREAD]);
+        updateOption(perpetual.halfSpread, riskParams[INDEX_HALF_SPREAD]);
         updateOption(perpetual.openSlippageFactor, riskParams[INDEX_OPEN_SLIPPAGE_FACTOR]);
         updateOption(perpetual.closeSlippageFactor, riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR]);
         updateOption(perpetual.fundingRateLimit, riskParams[INDEX_FUNDING_RATE_LIMIT]);
@@ -783,8 +783,8 @@ library PerpetualModule {
     {
         // must set risk parameters after setting base parameters
         require(perpetual.initialMarginRate > 0, "need to set base parameters first");
-        require(riskParams[INDEX_HARF_SPREAD] >= 0, "halfSpread < 0");
-        require(riskParams[INDEX_HARF_SPREAD] < Constant.SIGNED_ONE, "halfSpread >= 100%");
+        require(riskParams[INDEX_HALF_SPREAD] >= 0, "halfSpread < 0");
+        require(riskParams[INDEX_HALF_SPREAD] < Constant.SIGNED_ONE, "halfSpread >= 100%");
         require(riskParams[INDEX_OPEN_SLIPPAGE_FACTOR] > 0, "openSlippageFactor < 0");
         require(riskParams[INDEX_CLOSE_SLIPPAGE_FACTOR] > 0, "closeSlippageFactor < 0");
         require(

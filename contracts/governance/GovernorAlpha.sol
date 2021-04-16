@@ -227,7 +227,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  Return true if a signature matches critical functions, which means a proposal with critical actions
-     *          will require more share (governance) token to create.
+     *          will require more share (governance) token to reach quorum.
      *
      * @param   functionSignature   The string signature of function to test.
      */

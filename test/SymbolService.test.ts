@@ -12,17 +12,20 @@ import {
 import { SymbolServiceFactory } from "../typechain/SymbolServiceFactory"
 
 describe('SymbolService', () => {
-    let symbolService;
     let accounts;
+    let symbolService;
+    let testSymbolService;
 
     beforeEach(async () => {
-        symbolService = await createContract("SymbolService", [10000]);
         accounts = await ethers.getSigners();
+
+        symbolService = await createContract("SymbolService", [10000]);
+        testSymbolService = await createContract("TestSymbolService", [symbolService.address]);
     });
 
     describe('whitelisted factory', function () {
         it('add and remove', async () => {
-            const factory = accounts[1].address;
+            const factory = testSymbolService.address;
             expect(await symbolService.isWhitelistedFactory(factory)).to.be.false;
             await symbolService.addWhitelistedFactory(factory);
             expect(await symbolService.isWhitelistedFactory(factory)).to.be.true;
@@ -32,7 +35,7 @@ describe('SymbolService', () => {
             await expect(symbolService.removeWhitelistedFactory(accounts[2].address)).to.be.revertedWith('factory not found');
         })
         it('not owner', async () => {
-            const factory = accounts[1].address;
+            const factory = testSymbolService.address;
             const user = accounts[2];
             const symbolServiceUser = await SymbolServiceFactory.connect(symbolService.address, user);
             await expect(symbolServiceUser.addWhitelistedFactory(factory)).to.be.revertedWith('Ownable: caller is not the owner');
@@ -42,10 +45,10 @@ describe('SymbolService', () => {
     describe('allocate symbol', function () {
 
         it('normal', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             expect((await testSymbolService.getSymbols(0)).length).to.equal(0);
             await testSymbolService.allocateSymbol(0);
+
             expect((await testSymbolService.getSymbols(0))[0]).to.equal(10000);
             var context = await testSymbolService.getPerpetualUID(10000);
             expect(context.liquidityPool).to.equal(testSymbolService.address);
@@ -64,21 +67,19 @@ describe('SymbolService', () => {
         })
 
         it('wrong factory', async () => {
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
             await expect(testSymbolService.allocateSymbol(0)).to.be.revertedWith("wrong factory");
         })
 
         it('perpetual exists', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             await expect(testSymbolService.allocateSymbol(0)).to.be.revertedWith("perpetual already exists");
         })
 
         it('not enough symbol', async () => {
             symbolService = await createContract("SymbolService", ["115792089237316195423570985008687907853269984665640564039457584007913129639934"]);
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            testSymbolService = await createContract("TestSymbolService", [symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             await expect(testSymbolService.allocateSymbol(1)).to.be.revertedWith("not enough symbol");
         })
@@ -88,8 +89,7 @@ describe('SymbolService', () => {
     describe('assign reserved symbol', function () {
 
         it('normal', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             await symbolService.assignReservedSymbol(testSymbolService.address, 0, 888);
             const symbols = await testSymbolService.getSymbols(0);
@@ -104,8 +104,7 @@ describe('SymbolService', () => {
         })
 
         it('not owner', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             const user = accounts[2];
             const symbolServiceUser = await SymbolServiceFactory.connect(symbolService.address, user);
@@ -118,20 +117,17 @@ describe('SymbolService', () => {
         })
 
         it('wrong factory', async () => {
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
             await expect(symbolService.assignReservedSymbol(testSymbolService.address, 0, 888)).to.be.revertedWith("wrong factory");
         })
 
         it('symbol too large', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             await expect(symbolService.assignReservedSymbol(testSymbolService.address, 0, 10000)).to.be.revertedWith("symbol exceeds reserved symbol count");
         })
 
         it('symbol exists', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);
             await symbolService.assignReservedSymbol(testSymbolService.address, 0, 888);
             await testSymbolService.allocateSymbol(1);
@@ -139,8 +135,7 @@ describe('SymbolService', () => {
         })
 
         it('invalid symbol', async () => {
-            await symbolService.addWhitelistedFactory(accounts[1].address);
-            const testSymbolService = await createContract("TestSymbolService", [accounts[1].address, symbolService.address]);
+            await symbolService.addWhitelistedFactory(testSymbolService.address);
             await expect(symbolService.assignReservedSymbol(testSymbolService.address, 0, 888)).to.be.revertedWith("perpetual must have normal symbol and mustn't have reversed symbol");
             await testSymbolService.allocateSymbol(0);
             await symbolService.assignReservedSymbol(testSymbolService.address, 0, 888);
