@@ -39,7 +39,7 @@ describe('Broker', () => {
     })
 
     beforeEach(async () => {
-        LiquidityPoolFactory = await createLiquidityPoolFactory("LiquidityPoolRelayable");
+        LiquidityPoolFactory = await createLiquidityPoolFactory("LiquidityPool");
 
         var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);

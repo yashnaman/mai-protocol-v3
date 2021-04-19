@@ -329,8 +329,8 @@ library TradeModule {
         int256 deltaPosition = getMaxPositionToClose(position, amount.neg()).neg();
         int256 deltaCash = markPrice.wmul(deltaPosition).neg();
         // 1. execute
-        perpetual.updateMargin(trader, deltaPosition, deltaCash);
-        perpetual.updateMargin(liquidator, deltaPosition.neg(), deltaCash.neg());
+        perpetual.updateMargin(liquidator, deltaPosition, deltaCash);
+        perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         require(perpetual.openInterest >= 0, "negative open interest");
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =

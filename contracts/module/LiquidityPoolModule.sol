@@ -218,17 +218,12 @@ library LiquidityPoolModule {
         int256[7] calldata minRiskParamValues,
         int256[7] calldata maxRiskParamValues
     ) public {
-<<<<<<< HEAD
         require(
-            liquidityPool.perpetuals.length < MAX_PERPETUAL_COUNT,
+            liquidityPool.perpetualCount < MAX_PERPETUAL_COUNT,
             "perpetual count exceeds limit"
         );
-        uint256 perpetualIndex = liquidityPool.perpetuals.length;
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals.push();
-=======
         uint256 perpetualIndex = liquidityPool.perpetualCount;
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
->>>>>>> perpetuals: array => map to avoid storage collisions
         perpetual.initialize(
             perpetualIndex,
             oracle,
@@ -810,7 +805,7 @@ library LiquidityPoolModule {
         public
         returns (int256)
     {
-        require(perpetualIndex < liquidityPool.perpetuals.length, "perpetual index out of range");
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         if (perpetual.state != PerpetualState.NORMAL) {
             return 0;
