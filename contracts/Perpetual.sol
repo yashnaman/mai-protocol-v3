@@ -55,11 +55,14 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
      * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
+     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
+     *                          otherwise the ERC20 will be transferred.
      */
     function withdraw(
         uint256 perpetualIndex,
         address trader,
-        int256 amount
+        int256 amount,
+        bool needUnwrap
     ) external syncState(false) onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
@@ -67,7 +70,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
         require(trader != address(0), "invalid trader");
         require(amount > 0, "invalid amount");
-        _liquidityPool.withdraw(perpetualIndex, trader, amount);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount, needUnwrap);
     }
 
     /**
@@ -77,18 +80,20 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      * @param   trader          The address of the trader.
+     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
+     *                          otherwise the ERC20 will be transferred.
      */
-    function settle(uint256 perpetualIndex, address trader)
-        public
-        onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        nonReentrant
-    {
+    function settle(
+        uint256 perpetualIndex,
+        address trader,
+        bool needUnwrap
+    ) public onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW) nonReentrant {
         require(trader != address(0), "invalid trader");
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.CLEARED,
             "perpetual should be in CLEARED state"
         );
-        _liquidityPool.settle(perpetualIndex, trader);
+        _liquidityPool.settle(perpetualIndex, trader, needUnwrap);
     }
 
     /**

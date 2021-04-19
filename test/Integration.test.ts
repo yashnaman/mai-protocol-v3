@@ -225,7 +225,7 @@ describe("integration", () => {
 
         // withdraw
         await updatePrice(toWei("506"), toWei("607"), toWei("708"), toWei("809"))
-        await gs.collect("withdraw", perp.connect(user1).withdraw(0, user1.address, toWei("10")));
+        await gs.collect("withdraw", perp.connect(user1).withdraw(0, user1.address, toWei("10"), true));
         // console.log(fromWei(await ctk.connect(user1).balanceOf(user1.address)));
 
         var { cash, position } = await perp.connect(user2).callStatic.getMarginAccount(0, perp.address);
@@ -233,7 +233,7 @@ describe("integration", () => {
 
         // remove lp
         await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
-        await gs.collect("removeLiquidity", perp.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0));
+        await gs.collect("removeLiquidity", perp.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true));
         console.log("share:", fromWei(await stk.balanceOf(user2.address)));
         console.log("ctk  :", fromWei(await ctk.connect(user2).balanceOf(user2.address)));
 
@@ -375,7 +375,7 @@ describe("integration", () => {
 
         // remove lp
         await updatePrice(toWei("507"), toWei("608"), toWei("709"), toWei("800"))
-        await gs.collect("removeLiquidity", perp.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0));
+        await gs.collect("removeLiquidity", perp.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true));
         console.log("share:", fromWei(await stk.balanceOf(user2.address)));
         console.log("ctk  :", fromWei(await weth.balanceOf(user2.address)));
 
@@ -642,9 +642,9 @@ describe("integration", () => {
 
         // withdraw
         var { cash } = await perp.getMarginAccount(0, user1.address);
-        await perp.connect(user1).withdraw(0, user1.address, cash);
-        await perp.connect(user3).withdraw(0, user3.address, toWei("100"));
-        await perp.connect(user2).removeLiquidity(toWei("1000"), 0);
+        await perp.connect(user1).withdraw(0, user1.address, cash, true);
+        await perp.connect(user3).withdraw(0, user3.address, toWei("100"), true);
+        await perp.connect(user2).removeLiquidity(toWei("1000"), 0, true);
 
         console.log(fromWei(await ctk.balanceOf(perp.address)));
     })

@@ -614,38 +614,5 @@ describe('LiquidityPool', () => {
 
     })
 
-    // it("setEmergencyState", async () => {
-    //     await liquidityPool.setState(0, 2);
-    //     expect(await liquidityPool.getState(0)).to.equal(2);
-
-    //     await liquidityPool.setEmergencyState(0);
-    //     expect(await liquidityPool.getState(0)).to.equal(3);
-
-    //     await liquidityPool.setState(0, 0);
-    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 1);
-    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 3);
-    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 4);
-    //     await expect(liquidityPool.setEmergencyState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    // });
-
-    // it("setClearedState", async () => {
-    //     await liquidityPool.setState(0, 3);
-    //     expect(await liquidityPool.getState(0)).to.equal(3);
-
-    //     await liquidityPool.setClearedState(0);
-    //     expect(await liquidityPool.getState(0)).to.equal(4);
-
-    //     await liquidityPool.setState(0, 0);
-    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 1);
-    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 2);
-    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    //     await liquidityPool.setState(0, 4);
-    //     await expect(liquidityPool.setClearedState(0)).to.be.revertedWith("liquidityPool should be in normal state");
-    // })
 })
 

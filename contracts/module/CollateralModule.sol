@@ -98,25 +98,27 @@ library CollateralModule {
     }
 
     /**
-     * @notice Transfer collateral from the liquidity pool to the account.
-     *         Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
-     * @param liquidityPool The liquidity pool object
-     * @param account The address of the account
-     * @param amount The amount of collateral to transfer. always use decimals 18.
+     * @notice  Transfer collateral from the liquidity pool to the account.
+     *          Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
+     * @param   liquidityPool   The liquidity pool object
+     * @param   account         The address of the account
+     * @param   amount          The amount of collateral to transfer. always use decimals 18.
+     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
+     *                          otherwise the ERC20 will be transferred.
      */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,
         address payable account,
-        int256 amount
+        int256 amount,
+        bool needUnwrap
     ) public {
         if (amount == 0) {
             return;
         }
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
-
         IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
         uint256 previousBalance = collateralToken.balanceOf(address(this));
-        if (liquidityPool.isWrapped) {
+        if (liquidityPool.isWrapped && needUnwrap) {
             IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
             weth.withdraw(rawAmount);
             AddressUpgradeable.sendValue(account, rawAmount);

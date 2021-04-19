@@ -226,10 +226,15 @@ library TradeModule {
         perpetual.updateCash(address(this), lpFee);
         // safety
         require(perpetual.isMarginSafe(trader, perpetual.getMarkPrice()), "margin unsafe");
-        liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate);
-        liquidityPool.transferFromPerpetualToUser(perpetual.id, liquidityPool.getVault(), vaultFee);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate, true);
+        liquidityPool.transferFromPerpetualToUser(
+            perpetual.id,
+            liquidityPool.getVault(),
+            vaultFee,
+            true
+        );
         address operator = liquidityPool.getOperator();
-        liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee, true);
         emit TransferFeeToOperator(operator, operatorFee);
         emit TransferFeeToReferrer(perpetual.id, trader, referrer, referralRebate);
     }
@@ -271,7 +276,8 @@ library TradeModule {
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidator,
-            perpetual.keeperGasReward
+            perpetual.keeperGasReward,
+            true
         );
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =
@@ -393,7 +399,8 @@ library TradeModule {
                 liquidityPool.transferFromPerpetualToUser(
                     perpetual.id,
                     liquidityPool.getVault(),
-                    vaultFee
+                    vaultFee,
+                    true
                 );
             }
         }

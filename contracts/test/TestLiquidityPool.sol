@@ -163,7 +163,7 @@ contract TestLiquidityPool is TestPerpetual {
         address trader,
         int256 amount
     ) public {
-        _liquidityPool.withdraw(perpetualIndex, trader, amount);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount, true);
     }
 
     function clearP(uint256 perpetualIndex) public {
@@ -171,7 +171,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function settleP(uint256 perpetualIndex, address trader) public {
-        _liquidityPool.settle(perpetualIndex, trader);
+        _liquidityPool.settle(perpetualIndex, trader, true);
     }
 
     function addLiquidity(address trader, int256 cashToAdd) public {
@@ -181,9 +181,10 @@ contract TestLiquidityPool is TestPerpetual {
     function removeLiquidity(
         address trader,
         int256 shareToRemove,
-        int256 cashToReturn
+        int256 cashToReturn,
+        bool needUnwrap
     ) public {
-        _liquidityPool.removeLiquidity(trader, shareToRemove, cashToReturn);
+        _liquidityPool.removeLiquidity(trader, shareToRemove, cashToReturn, needUnwrap);
     }
 
     function donateLiquidity(address trader, int256 cashToAdd) public {

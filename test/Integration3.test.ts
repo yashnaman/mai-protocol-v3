@@ -1,0 +1,116 @@
+const { ethers } = require("hardhat");
+import { expect } from "chai";
+
+import "./helper";
+import {
+    toWei,
+    createFactory,
+    createContract,
+    createLiquidityPoolFactory
+} from "../scripts/utils";
+
+describe("integration2", () => {
+
+    let user0;
+    let user1;
+    let user2;
+    let user3;
+    let vault;
+    let weth;
+    const none = "0x0000000000000000000000000000000000000000";
+    let perp;
+    let ctk;
+    let stk;
+    let oracle1;
+    let oracle2;
+    let updatePrice = async (price1, price2) => {
+        let now = Math.floor(Date.now() / 1000);
+        await oracle1.setMarkPrice(price1, now);
+        await oracle1.setIndexPrice(price1, now);
+        await oracle2.setMarkPrice(price2, now);
+        await oracle2.setIndexPrice(price2, now);
+    }
+
+    beforeEach(async () => {
+        // users
+        const accounts = await ethers.getSigners();
+        user0 = accounts[0];
+        user1 = accounts[1];
+        user2 = accounts[2];
+        user3 = accounts[3];
+        vault = accounts[9];
+        const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+        // create components
+        weth = await createContract("WETH9");
+        var symbol = await createContract("SymbolService", [10000]);
+        ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        var perpTemplate = await LiquidityPoolFactory.deploy();
+        var govTemplate = await createContract("TestLpGovernor");
+        var poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            weth.address,
+            symbol.address,
+            vault.address,
+            toWei("0.001"),
+            vault.address
+        )
+        await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+        await symbol.addWhitelistedFactory(poolCreator.address);
+
+        const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+            weth.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        await poolCreator.createLiquidityPool(
+            weth.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        perp = await LiquidityPoolFactory.attach(liquidityPool);
+
+
+        // oracle
+        oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        await updatePrice(toWei("1000"), toWei("1000"))
+
+        // create perpetual
+        await perp.createPerpetual(oracle1.address,
+            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("4")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
+        )
+        await perp.createPerpetual(oracle2.address,
+            [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("4")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1")],
+        )
+
+        // share token
+        const info = await perp.getLiquidityPoolInfo();
+        stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
+
+        // get initial coins
+    });
+
+    it("normal case", async () => {
+        await perp.runLiquidityPool();
+        // add liquidity
+        await perp.connect(user1).addLiquidity(toWei("0"), { value: toWei("10") });
+        expect(await stk.balanceOf(user1.address)).to.equal(toWei("10"))
+
+        await perp.connect(user1).removeLiquidity(toWei("5"), 0, true);
+        expect(await stk.balanceOf(user1.address)).to.equal(toWei("5"))
+        expect(await weth.balanceOf(user1.address)).to.equal(toWei("0"))
+
+        await perp.connect(user1).removeLiquidity(toWei("5"), 0, false);
+        expect(await stk.balanceOf(user1.address)).to.equal(toWei("0"))
+        expect(await weth.balanceOf(user1.address)).to.equal(toWei("5"))
+    })
+})

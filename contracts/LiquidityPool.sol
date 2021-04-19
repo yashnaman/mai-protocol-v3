@@ -122,16 +122,18 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *          The index price, trading fee and positions holding by amm will affect the profitability of providers.
      *          Can only called when the pool is running.
      *
-     * @param   shareToRemove  The amount of share token to remove. The amount always use decimals 18.
-     * @param   cashToReturn   The amount of cash(collateral) to return. The amount always use decimals 18.
+     * @param   shareToRemove   The amount of share token to remove. The amount always use decimals 18.
+     * @param   cashToReturn    The amount of cash(collateral) to return. The amount always use decimals 18.
+     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
+     *                          otherwise the ERC20 will be transferred.
      */
-    function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
-        external
-        syncState(false)
-        nonReentrant
-    {
+    function removeLiquidity(
+        int256 shareToRemove,
+        int256 cashToReturn,
+        bool needUnwrap
+    ) external syncState(false) nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
-        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
+        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn, needUnwrap);
     }
 
     /**
