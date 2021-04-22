@@ -158,6 +158,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     /**
      * @notice The number of votes in support of a proposal required in order for a quorum to be reached
      *         and for a vote to succeed.
+     * @dev    [ConfirmBeforeDeployment]
      */
     function quorumRate() public pure virtual returns (uint256) {
         return 1e17;
@@ -165,7 +166,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The number of votes in support of a proposal required in order for a quorum to be reached
-     *         and for a vote to succeed.
+     *          and for a vote to succeed.
+     * @dev     [ConfirmBeforeDeployment]
      */
     function criticalQuorumRate() public pure virtual returns (uint256) {
         return 2e17;
@@ -173,6 +175,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The number of votes required in order for a account to become a proposer.
+     * @dev     [ConfirmBeforeDeployment]
      */
     function proposalThresholdRate() public pure virtual returns (uint256) {
         return 1e16;
@@ -180,6 +183,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice The maximum number of actions that can be included in a proposal.
+     * @dev    [ConfirmBeforeDeployment]
      */
     function proposalMaxOperations() public pure virtual returns (uint256) {
         return 10;
@@ -188,6 +192,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     /**
      * @notice  The delay before voting on a proposal may take place, once proposed.
      *          See `ProposalState` for details;
+     * @dev     [ConfirmBeforeDeployment]
      */
     function votingDelay() public pure virtual returns (uint256) {
         return 1;
@@ -196,6 +201,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     /**
      * @notice  The duration of voting on a proposal, in blocks.
      *          See `ProposalState` for details;
+     * @dev     [ConfirmBeforeDeployment]
      */
     function votingPeriod() public pure virtual returns (uint256) {
         return 17280;
@@ -204,6 +210,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     /**
      * @notice  The delay before a succeeded proposal being executed (say, proposal in queued state).
      *          See `ProposalState` for details;
+     * @dev     [ConfirmBeforeDeployment]
      */
     function executionDelay() public pure virtual returns (uint256) {
         return 11520;
@@ -211,6 +218,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     /**
      * @notice  The duration after a proposal can be executed. See `ProposalState` for details;
+     * @dev     [ConfirmBeforeDeployment]
      */
     function unlockDelay() public pure virtual returns (uint256) {
         return 17280;
