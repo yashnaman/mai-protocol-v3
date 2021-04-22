@@ -126,6 +126,43 @@ interface ILiquidityPool {
     ) external;
 
     /**
+     * @notice  Deposit collateral to the perpetual.
+     *          Can only called when the perpetual's state is "NORMAL".
+     *          This method will always increase `cash` amount in trader's margin account.
+     *
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
+     * @param   amount          The amount of collatetal to deposit. The amount always use decimals 18.
+     */
+    function deposit(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount
+    ) external;
+
+    /**
+     * @notice  Withdraw collateral from the trader's account of the perpetual.
+     *          After withdrawn, trader shall at least has maintenance margin left in account.
+     *          Can only called when the perpetual's state is "NORMAL".
+     *          Margin account must at least keep
+     *          The trader's cash will decrease in the perpetual.
+     *          Need to update the funding state and the oracle price of each perpetual before
+     *          and update the funding rate of each perpetual after
+     *
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
+     * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
+     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
+     *                          otherwise the ERC20 will be transferred.
+     */
+    function withdraw(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        bool needUnwrap
+    ) external;
+
+    /**
      * @notice Trade with AMM in the perpetual, require sender is granted the trade privilege by the trader.
      *         The trading price is determined by the AMM based on the index price of the perpetual.
      *         Trader must be initial margin safe if opening position and margin safe if closing position

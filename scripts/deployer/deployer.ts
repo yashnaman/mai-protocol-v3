@@ -1,14 +1,7 @@
-const { ethers } = require("hardhat");
 import * as fs from 'fs';
+const chalk = require('chalk')
 
 import { retrieveLinkReferences } from "./linkReferenceParser"
-
-export function toWei(n) { return ethers.utils.parseEther(n) };
-export function fromWei(n) { return ethers.utils.formatEther(n); }
-
-export interface AddressBook {
-
-}
 
 export interface DeploymentOptions {
     network: string
@@ -27,6 +20,7 @@ export class Deployer {
 
     public SAVE_POSTFIX = '.deployment.js'
 
+    public ethers: any
     public options: DeploymentOptions
     public linkReferences = {}
     public deployedContracts = {}
@@ -35,21 +29,19 @@ export class Deployer {
     public beforeDeployed = null
     public afterDeployed = null
 
-    constructor(options: DeploymentOptions, signer: any) {
+    constructor(ethers, options: DeploymentOptions) {
+        this.ethers = ethers
         this.options = options
-        this.signer = signer
     }
 
     public async initialize(...args) {
         this.linkReferences = await retrieveLinkReferences(this.options.artifactDirectory)
         this.load()
         for (var contractName in this.options.addressOverride) {
-            if (contractName in this.deployedContracts) {
-                this.deployedContracts[contractName] = {
-                    type: "preset",
-                    name: contractName,
-                    address: this.options.addressOverride[contractName],
-                }
+            this.deployedContracts[contractName] = {
+                type: "preset",
+                name: contractName,
+                address: this.options.addressOverride[contractName],
             }
         }
     }
@@ -65,7 +57,7 @@ export class Deployer {
             )
             this.deployedContracts = savedProgress
         } catch (err) {
-            console.log("[DEPLOYER] save not found")
+            this._log("[DEPLOYER] save not found")
         }
     }
 
@@ -76,12 +68,37 @@ export class Deployer {
         )
     }
 
-    private async deploy(contractName: string, ...args): Promise<any> {
-        const deployed = await this._deploy(contractName, ...args)
+    public async deploy(contractName: string, ...args): Promise<any> {
+        const { deployed, receipt } = await this._deploy(contractName, ...args)
         this.deployedContracts[contractName] = {
             type: "plain",
             name: contractName,
             address: deployed.address,
+            deployedAt: receipt.blockNumber,
+        }
+        this._logDeployment(contractName, deployed)
+        return deployed
+    }
+
+    public async deployAs(contractName: string, aliasName: string, ...args): Promise<any> {
+        const { deployed, receipt } = await this._deploy(contractName, ...args)
+        this.deployedContracts[aliasName] = {
+            type: "plain",
+            name: aliasName,
+            address: deployed.address,
+            deployedAt: receipt.blockNumber,
+        }
+        this._logDeployment(aliasName, deployed)
+        return deployed
+    }
+
+    public async deployWith(signer: any, contractName: string, ...args): Promise<any> {
+        const { deployed, receipt } = await this._deployWith(signer, contractName, ...args)
+        this.deployedContracts[contractName] = {
+            type: "plain",
+            name: contractName,
+            address: deployed.address,
+            deployedAt: receipt.blockNumber,
         }
         this._logDeployment(contractName, deployed)
         return deployed
@@ -95,13 +112,18 @@ export class Deployer {
     }
 
     public async deployAsUpgradeable(contractName: string, admin: string): Promise<any> {
-        const implementation = await this._deploy(contractName)
-        const deployed = await this._deploy("TransparentUpgradeableProxy", implementation.address, admin, "0x")
+        let implementation
+        {
+            const { deployed } = await this._deploy(contractName)
+            implementation = deployed
+        }
+        const { deployed, receipt } = await this._deploy("TransparentUpgradeableProxy", implementation.address, admin, "0x")
         this.deployedContracts[contractName] = {
             type: "upgradeable",
             name: contractName,
             address: deployed.address,
-            dependencies: { admin, implementation: implementation.address }
+            dependencies: { admin, implementation: implementation.address },
+            deployedAt: receipt.blockNumber,
         }
         this._logDeployment(contractName, deployed, `(implementation[${implementation.address}] admin[${admin}]`)
         return deployed
@@ -111,8 +133,16 @@ export class Deployer {
         if (!(contractName in this.deployedContracts)) {
             throw `${contractName} has not yet been deployed`
         }
+        return this.getContractAt(contractName, this.deployedContracts[contractName].address)
+    }
+
+    public async getContractAt(contractName: string, address: string): Promise<any> {
         const factory = await this._getFactory(contractName)
-        return await factory.attach(this.deployedContracts[contractName].address)
+        return await factory.attach(address)
+    }
+
+    public async getFactory(contractName: string): Promise<any> {
+        return await this._getFactory(contractName)
     }
 
     public addressOf(contractName: string) {
@@ -120,19 +150,25 @@ export class Deployer {
     }
 
     private async _deploy(contractName: string, ...args): Promise<any> {
-        return this._deployWith(this.signer, contractName, ...args)
+        return this._deployWith(null, contractName, ...args)
     }
 
     private async _deployWith(signer, contractName: string, ...args): Promise<any> {
         const factory = await this._getFactory(contractName)
         if (this.beforeDeployed != null) {
-            this.beforeDeployed(contractName, factory, ...args)
+            await this.beforeDeployed(contractName, factory, ...args)
         }
-        const deployed = await factory.connect(signer).deploy(...args)
+        let deployed
+        if (signer == null) {
+            deployed = await factory.deploy(...args)
+        } else {
+            deployed = await factory.connect(signer).deploy(...args)
+        }
+        const receipt = await deployed.deployTransaction.wait()
         if (this.afterDeployed != null) {
-            this.afterDeployed(contractName, deployed, ...args)
+            await this.afterDeployed(contractName, deployed, ...args)
         }
-        return deployed
+        return { deployed, receipt }
     }
 
     private async _getFactory(contractName: string): Promise<any> {
@@ -148,22 +184,14 @@ export class Deployer {
                 }
             }
         }
-        return await ethers.getContractFactory(contractName, { libraries: links })
+        return await this.ethers.getContractFactory(contractName, { libraries: links })
+    }
+
+    private _log(...message) {
+        console.log(chalk.underline.bgBlue("Deployer =>"), ...message)
     }
 
     private _logDeployment(contractName, deployed, message = null) {
-        console.log(`[DEPLOYER] ${contractName} has been deployed to ${deployed.address} ${message == null ? "" : message}`)
-    }
-}
-
-export class MirrorDeployer extends Deployer {
-
-    public l1Provider
-    public l2Provider
-
-    public async initialize(...args) {
-        super.initialize(...args)
-
-
+        this._log(`${contractName} has been deployed to ${deployed.address} ${message == null ? "" : message}`)
     }
 }
