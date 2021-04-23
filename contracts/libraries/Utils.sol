@@ -27,6 +27,20 @@ library Utils {
         return (x ^ y) >> 255 == 0;
     }
 
+    /**
+     * @dev     Check if the trader has opened position in the trade.
+     *          Example: 2, 1 => true; 2, -1 => false; -2, -3 => true
+     * @param   amount  The position of the trader after the trade
+     * @param   delta   The update position amount of the trader after the trade
+     * @return  True if the trader has opened position in the trade
+     */
+    function hasOpenedPosition(int256 amount, int256 delta) internal pure returns (bool) {
+        if (amount == 0) {
+            return false;
+        }
+        return Utils.hasTheSameSign(amount, delta);
+    }
+
     /*
      * @dev Split the delta to two numbers.
      *      Use for splitting the trading amount to the amount to close position and the amount to open position.

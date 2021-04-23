@@ -11,6 +11,7 @@ import "../interface/IGovernor.sol";
 import "../interface/ISymbolService.sol";
 
 import "../libraries/SafeMathExt.sol";
+import "../libraries/OrderData.sol";
 import "../libraries/Utils.sol";
 
 import "./AMMModule.sol";
@@ -28,6 +29,7 @@ library LiquidityPoolModule {
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
+    using OrderData for uint32;
     using AMMModule for LiquidityPoolStorage;
     using CollateralModule for LiquidityPoolStorage;
     using MarginAccountModule for PerpetualStorage;
@@ -158,6 +160,28 @@ library LiquidityPoolModule {
             address(this),
             perpetual.getMarkPrice()
         );
+    }
+
+    /**
+     * @dev     Check if AMM is maintenance margin safe in the perpetual, need to rebalance before checking.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @return  isSafe          True if AMM is maintenance margin safe in the perpetual.
+     */
+    function isTraderMarginSafe(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 tradeAmount
+    ) public view returns (bool isSafe) {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        bool hasOpened = Utils.hasOpenedPosition(perpetual.getPosition(trader), tradeAmount);
+        int256 markPrice = perpetual.getMarkPrice();
+        return
+            hasOpened
+                ? perpetual.isInitialMarginSafe(trader, markPrice)
+                : perpetual.isMarginSafe(trader, markPrice);
     }
 
     /**
@@ -942,5 +966,22 @@ library LiquidityPoolModule {
         isGranted =
             trader == grantee ||
             IAccessControl(liquidityPool.accessController).isGranted(trader, grantee, privilege);
+    }
+
+    function adjustMarginLeverage(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 tradeAmount,
+        uint32 flags
+    ) public {
+        int256 leverage = flags.getTargetLeverage();
+        int256 amount = 0;
+        int256 adjustAmount = 0;
+        if (adjustAmount > 0) {
+            deposit(liquidityPool, perpetualIndex, trader, amount);
+        } else if (adjustAmount < 0) {
+            withdraw(liquidityPool, perpetualIndex, trader, amount, flags.needUnwrap());
+        }
     }
 }

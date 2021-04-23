@@ -212,7 +212,8 @@ library TradeModule {
         int256 operatorFee;
         int256 vaultFee;
         int256 referralRebate;
-        bool hasOpened = hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
+        bool hasOpened =
+            Utils.hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
         (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
             liquidityPool,
             perpetual,
@@ -225,7 +226,6 @@ library TradeModule {
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
         // safety
-        require(perpetual.isMarginSafe(trader, perpetual.getMarkPrice()), "margin unsafe");
         liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate, true);
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
@@ -342,25 +342,12 @@ library TradeModule {
                 position,
                 deltaPosition.neg()
             );
-        // 3. safe
-        if (hasOpenedPosition(perpetual.getPosition(liquidator), deltaPosition.neg())) {
-            require(
-                perpetual.isInitialMarginSafe(liquidator, markPrice),
-                "trader initial margin unsafe"
-            );
-        } else {
-            require(perpetual.isMarginSafe(liquidator, markPrice), "trader margin unsafe");
-        }
-        emit Liquidate(
-            perpetualIndex,
-            liquidator,
-            trader,
-            deltaPosition.neg(),
-            markPrice,
-            penalty,
-            0
-        );
         liquidatedAmount = deltaPosition.neg();
+        require(
+            liquidityPool.isTraderMarginSafe(perpetualIndex, liquidator, liquidatedAmount),
+            "liquidator margin unsafe"
+        );
+        emit Liquidate(perpetualIndex, liquidator, trader, liquidatedAmount, markPrice, penalty, 0);
     }
 
     /**
@@ -464,19 +451,5 @@ library TradeModule {
         require(price > 0, "price must be positive");
         bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
         require(isPriceSatisfied, "price exceeds limit");
-    }
-
-    /**
-     * @dev     Check if the trader has opened position in the trade.
-     *          Example: 2, 1 => true; 2, -1 => false; -2, -3 => true
-     * @param   amount  The position of the trader after the trade
-     * @param   delta   The update position amount of the trader after the trade
-     * @return  True if the trader has opened position in the trade
-     */
-    function hasOpenedPosition(int256 amount, int256 delta) internal pure returns (bool) {
-        if (amount == 0) {
-            return false;
-        }
-        return Utils.hasTheSameSign(amount, delta);
     }
 }

@@ -16,9 +16,10 @@ import "./Type.sol";
 
 contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using OrderData for bytes;
-    using LiquidityPoolModule for LiquidityPoolStorage;
+    using OrderData for uint32;
     using OrderModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
+    using LiquidityPoolModule for LiquidityPoolStorage;
 
     /**
      * @notice  Deposit collateral to the perpetual.
@@ -151,16 +152,24 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 deadline,
         address referrer,
         uint32 flags
-    )
-        external
-        syncState(false)
-        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
-        returns (int256 tradeAmount)
-    {
+    ) external onlyAuthorized(trader, Constant.PRIVILEGE_TRADE) returns (int256 tradeAmount) {
         require(trader != address(0), "invalid trader");
         require(amount != 0, "invalid amount");
         require(deadline >= block.timestamp, "deadline exceeded");
         tradeAmount = _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+        if (flags.getTargetLeverage() != 0) {
+            _tryAdjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
+        }
+
+        // flag isETH:
+        // true =>  must be ETH
+        //          1. value deposit
+        //          2. open: initial margin, 可以不管 target lev
+        //          3. close： 等比例退回去
+        require(
+            _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
+            "trader margin unsafe"
+        );
     }
 
     /**
@@ -174,7 +183,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
-        syncState(false)
         returns (int256 tradeAmount)
     {
         Order memory order = orderData.decodeOrderData();
@@ -190,21 +198,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             order.referrer,
             order.flags
         );
-    }
-
-    function _trade(
-        uint256 perpetualIndex,
-        address trader,
-        int256 amount,
-        int256 limitPrice,
-        address referrer,
-        uint32 flags
-    ) internal returns (int256) {
         require(
-            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
-            "perpetual should be in NORMAL state"
+            _liquidityPool.isTraderMarginSafe(order.perpetualIndex, order.trader, tradeAmount),
+            "trader margin unsafe"
         );
-        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
     /**
@@ -277,6 +274,30 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             amount,
             limitPrice
         );
+    }
+
+    function _tryAdjustMarginLeverage(
+        uint256 perpetualIndex,
+        address trader,
+        int256 tradeAmount,
+        uint32 flags
+    ) internal onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT | Constant.PRIVILEGE_WITHDRAW) {
+        _liquidityPool.adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
+    }
+
+    function _trade(
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        int256 limitPrice,
+        address referrer,
+        uint32 flags
+    ) internal syncState(false) returns (int256) {
+        require(
+            _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
+            "perpetual should be in NORMAL state"
+        );
+        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
     }
 
     bytes32[50] private __gap;

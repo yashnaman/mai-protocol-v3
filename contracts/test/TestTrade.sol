@@ -8,6 +8,7 @@ import "../module/TradeModule.sol";
 import "../module/OrderModule.sol";
 
 import "../libraries/OrderData.sol";
+import "../libraries/Utils.sol";
 
 import "../Type.sol";
 
@@ -146,7 +147,7 @@ contract TestTrade is TestLiquidityPool {
     }
 
     function hasOpenedPosition(int256 amount, int256 delta) public pure returns (bool hasOpened) {
-        hasOpened = TradeModule.hasOpenedPosition(amount, delta);
+        hasOpened = Utils.hasOpenedPosition(amount, delta);
     }
 
     function getMargin(uint256 perpetualIndex, address trader) public view returns (int256) {
