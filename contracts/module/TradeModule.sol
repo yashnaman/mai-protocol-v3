@@ -62,7 +62,7 @@ library TradeModule {
      * @param   amount          The amount of position to trader, positive for buying and negative for selling.
      * @param   limitPrice      The worst price the trader accepts.
      * @param   referrer        The address of referrer who will get rebate in the deal.
-     * @param   flags           The flags of the trade.
+     * @param   flags           The flags of the trade, contains extra config for trading.
      * @return  tradeAmount     The amount of positions actually traded in the transaction.
      */
     function trade(
@@ -74,37 +74,19 @@ library TradeModule {
         address referrer,
         uint32 flags
     ) public returns (int256 tradeAmount) {
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
-        // handle close only flag
-        if (flags.isCloseOnly()) {
-            amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
-            require(amount != 0, "no amount to close");
-        }
-        // query price from AMM
         (int256 deltaCash, int256 deltaPosition) =
-            liquidityPool.queryTradeWithAMM(perpetualIndex, amount.neg(), false);
-        // check price
-        if (!flags.isMarketOrder()) {
-            int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
-            validatePrice(amount >= 0, tradePrice, limitPrice);
-        }
-        int256 deltaOpenInterest1 = perpetual.updateMargin(address(this), deltaPosition, deltaCash);
-        int256 deltaOpenInterest2 =
-            perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
-        require(perpetual.openInterest >= 0, "negative open interest");
-        // handle trading fee
+            preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
+        doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
         (int256 lpFee, int256 totalFee) =
-            postTrade(liquidityPool, perpetual, trader, referrer, deltaCash, deltaPosition);
-        if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
-            // open interest will increase, check limit
-            (int256 poolMargin, ) = liquidityPool.getPoolMargin();
-            require(
-                perpetual.openInterest <=
-                    perpetual.maxOpenInterestRate.wfrac(poolMargin, perpetual.getIndexPrice()),
-                "open interest exceeds limit"
+            postTrade(
+                liquidityPool,
+                perpetualIndex,
+                trader,
+                referrer,
+                deltaCash,
+                deltaPosition,
+                flags
             );
-        }
         emit Trade(
             perpetualIndex,
             trader,
@@ -160,13 +142,13 @@ library TradeModule {
         }
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-        require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
+        // require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
         if (availableMargin <= 0) {
             lpFee = 0;
             operatorFee = 0;
             vaultFee = 0;
         } else {
-            if (totalFee > availableMargin) {
+            if (totalFee > availableMargin && !hasOpened) {
                 // maker sure the sum of fees < available margin
                 int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
                 lpFee = lpFee.wmul(rate, Round.FLOOR);
@@ -187,27 +169,82 @@ library TradeModule {
         }
     }
 
+    function preTrade(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        int256 limitPrice,
+        uint32 flags
+    ) internal returns (int256 deltaCash, int256 deltaPosition) {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(!IOracle(perpetual.oracle).isMarketClosed(), "market is closed now");
+        // handle close only flag
+        if (flags.isCloseOnly()) {
+            amount = getMaxPositionToClose(perpetual.getPosition(trader), amount);
+            require(amount != 0, "no amount to close");
+        }
+        // query price from AMM
+        (deltaCash, deltaPosition) = liquidityPool.queryTradeWithAMM(
+            perpetualIndex,
+            amount.neg(),
+            false
+        );
+        // check price
+        if (!flags.isMarketOrder()) {
+            int256 tradePrice = deltaCash.wdiv(deltaPosition).abs();
+            validatePrice(amount >= 0, tradePrice, limitPrice);
+        }
+    }
+
+    function doTrade(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 deltaCash,
+        int256 deltaPosition
+    ) internal {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        int256 deltaOpenInterest1 = perpetual.updateMargin(address(this), deltaPosition, deltaCash);
+        int256 deltaOpenInterest2 =
+            perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        require(perpetual.openInterest >= 0, "negative open interest");
+        if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
+            // open interest will increase, check limit
+            (int256 poolMargin, ) = liquidityPool.getPoolMargin();
+            require(
+                perpetual.openInterest <=
+                    perpetual.maxOpenInterestRate.wfrac(poolMargin, perpetual.getIndexPrice()),
+                "open interest exceeds limit"
+            );
+        }
+    }
+
     /**
      * @dev Execute the trade. If the trader has opened position in the trade, his account should be
      *          initial margin safe after the trade. If not, his account should be margin safe
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param   perpetual       The reference of pereptual storage.
+     * @param   perpetualIndex  The index of pereptual storage.
      * @param   trader          The address of trader.
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   deltaCash       The amount of cash changes in a trade.
      * @param   deltaPosition   The amount of position changes in a trade.
+     * @param   flags           The flags of the trade, contains extra config for trading.
      * @return  lpFee           The amount of fee for lp provider
      * @return  totalFee        The total fee collected from the trader after the trade
      */
+
     function postTrade(
         LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual,
+        uint256 perpetualIndex,
         address trader,
         address referrer,
         int256 deltaCash,
-        int256 deltaPosition
-    ) public returns (int256 lpFee, int256 totalFee) {
+        int256 deltaPosition,
+        uint32 flags
+    ) internal returns (int256 lpFee, int256 totalFee) {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // fees
         int256 operatorFee;
         int256 vaultFee;
@@ -222,16 +259,40 @@ library TradeModule {
             deltaCash.abs(),
             hasOpened
         );
+        liquidityPool.adjustMarginLeverage(perpetual.id, trader, deltaPosition.neg(), flags);
+        // fee
+        totalFee = transferFee(
+            liquidityPool,
+            perpetualIndex,
+            trader,
+            referrer,
+            lpFee,
+            operatorFee,
+            vaultFee,
+            referralRebate
+        );
+    }
+
+    function transferFee(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        address referrer,
+        int256 lpFee,
+        int256 operatorFee,
+        int256 vaultFee,
+        int256 referralRebate
+    ) internal returns (int256 totalFee) {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
-        // safety
         liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate, true);
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidityPool.getVault(),
             vaultFee,
-            true
+            false
         );
         address operator = liquidityPool.getOperator();
         liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee, true);

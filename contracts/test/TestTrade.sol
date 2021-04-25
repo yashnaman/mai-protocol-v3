@@ -128,13 +128,13 @@ contract TestTrade is TestLiquidityPool {
         int256 deltaCash,
         int256 deltaPosition
     ) public returns (int256 lpFee, int256 totalFee) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         (lpFee, totalFee) = _liquidityPool.postTrade(
-            perpetual,
+            perpetualIndex,
             trader,
             referrer,
             deltaCash,
-            deltaPosition
+            deltaPosition,
+            0
         );
     }
 
