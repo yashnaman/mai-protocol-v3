@@ -152,7 +152,12 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 deadline,
         address referrer,
         uint32 flags
-    ) external onlyAuthorized(trader, Constant.PRIVILEGE_TRADE) returns (int256 tradeAmount) {
+    )
+        external
+        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
+        syncState(false)
+        returns (int256 tradeAmount)
+    {
         require(trader != address(0), "invalid trader");
         require(amount != 0, "invalid amount");
         require(deadline >= block.timestamp, "deadline exceeded");
@@ -177,6 +182,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
+        syncState(false)
         returns (int256 tradeAmount)
     {
         Order memory order = orderData.decodeOrderData();
@@ -282,7 +288,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    ) internal syncState(false) returns (int256 tradeAmount) {
+    ) internal returns (int256 tradeAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
