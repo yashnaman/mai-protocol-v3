@@ -231,10 +231,9 @@ library TradeModule {
      * @param   deltaCash       The amount of cash changes in a trade.
      * @param   deltaPosition   The amount of position changes in a trade.
      * @param   flags           The flags of the trade, contains extra config for trading.
-     * @return  lpFee           The amount of fee for lp provider
-     * @return  totalFee        The total fee collected from the trader after the trade
+     * @return  lpFee           The fee collected to lp provider.
+     * @return  totalFee        The total fee (including lpFee) collected from the trader after the trade.
      */
-
     function postTrade(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,

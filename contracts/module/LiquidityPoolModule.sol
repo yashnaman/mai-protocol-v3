@@ -163,11 +163,13 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     Check if AMM is maintenance margin safe in the perpetual, need to rebalance before checking.
+     * @dev     Check if Trader is maintenance margin safe in the perpetual, need to rebalance before checking.
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
-     * @return  isSafe          True if AMM is maintenance margin safe in the perpetual.
+     * @param   trader          The address of the trader
+     * @param   tradeAmount     The amount of positions actually traded in the transaction
+     * @return  isSafe          True if Trader is maintenance margin safe in the perpetual.
      */
     function isTraderMarginSafe(
         LiquidityPoolStorage storage liquidityPool,
@@ -951,7 +953,7 @@ library LiquidityPoolModule {
 
     /**
      * @dev Check if the trader is authorized the privilege by the grantee. Any trader is authorized by himself
-     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param liquidityPool The reference of liquidity pool storage.
      * @param trader The address of the trader
      * @param grantee The address of the grantee
      * @param privilege The privilege
