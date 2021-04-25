@@ -158,14 +158,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         require(deadline >= block.timestamp, "deadline exceeded");
         tradeAmount = _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
         if (flags.getTargetLeverage() != 0) {
-            _tryAdjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
+            _adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
         }
-
-        // flag isETH:
-        // true =>  must be ETH
-        //          1. value deposit
-        //          2. open: initial margin, 可以不管 target lev
-        //          3. close： 等比例退回去
         require(
             _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
             "trader margin unsafe"
@@ -197,10 +191,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             order.limitPrice,
             order.referrer,
             order.flags
-        );
-        require(
-            _liquidityPool.isTraderMarginSafe(order.perpetualIndex, order.trader, tradeAmount),
-            "trader margin unsafe"
         );
     }
 
@@ -276,7 +266,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
     }
 
-    function _tryAdjustMarginLeverage(
+    function _adjustMarginLeverage(
         uint256 perpetualIndex,
         address trader,
         int256 tradeAmount,
@@ -292,12 +282,26 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    ) internal syncState(false) returns (int256) {
+    ) internal syncState(false) returns (int256 tradeAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        return _liquidityPool.trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
+        tradeAmount = _liquidityPool.trade(
+            perpetualIndex,
+            trader,
+            amount,
+            limitPrice,
+            referrer,
+            flags
+        );
+        if (flags.getTargetLeverage() != 0) {
+            _adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
+        }
+        require(
+            _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
+            "trader margin unsafe"
+        );
     }
 
     bytes32[50] private __gap;
