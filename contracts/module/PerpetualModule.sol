@@ -177,6 +177,7 @@ library PerpetualModule {
         perpetual.liquidationPenaltyRate = baseParams[INDEX_LIQUIDATION_PENALTY_RATE];
         perpetual.keeperGasReward = baseParams[INDEX_KEEPER_GAS_REWARD];
         perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
+        perpetual.maxOpenInterestRate = baseParams[INDEX_MAX_OPEN_INTEREST_RATE];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
 
