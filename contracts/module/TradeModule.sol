@@ -78,15 +78,7 @@ library TradeModule {
             preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
         (int256 lpFee, int256 totalFee) =
-            postTrade(
-                liquidityPool,
-                perpetualIndex,
-                trader,
-                referrer,
-                deltaCash,
-                deltaPosition,
-                flags
-            );
+            postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition);
         emit Trade(
             perpetualIndex,
             trader,
@@ -96,77 +88,6 @@ library TradeModule {
             lpFee
         );
         tradeAmount = deltaPosition.neg();
-    }
-
-    /**
-     * @dev     Get the fees of the trade. If the margin of the trader is not enough for fee:
-     *            1. If trader open position, the trade will be reverted.
-     *            2. If trader close position, the fee will be decreasing in proportion according to
-     *               the margin left in the trader's account
-     *          The rebate of referral will only calculate the lpFee and operatorFee.
-     *          The vault fee will not be counted in.
-     *
-     * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param   perpetual       The reference of pereptual storage.
-     * @param   trader          The address of trader.
-     * @param   referrer        The address of referrer who will get rebate from the deal.
-     * @param   tradeValue      The amount of trading value, measured by collateral, abs of deltaCash.
-     * @param   hasOpened       True if the trader has opened position during trading.
-     * @return  lpFee           The amount of fee to the Liquidity provider.
-     * @return  operatorFee     The amount of fee to the operator.
-     * @return  vaultFee        The amount of fee to the vault.
-     * @return  referralRebate  The amount of rebate of the refferral.
-     */
-    function getFees(
-        LiquidityPoolStorage storage liquidityPool,
-        PerpetualStorage storage perpetual,
-        address trader,
-        address referrer,
-        int256 tradeValue,
-        bool hasOpened
-    )
-        public
-        view
-        returns (
-            int256 lpFee,
-            int256 operatorFee,
-            int256 vaultFee,
-            int256 referralRebate
-        )
-    {
-        require(tradeValue >= 0, "trade value is negative");
-        vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
-        lpFee = tradeValue.wmul(perpetual.lpFeeRate);
-        if (liquidityPool.getOperator() != address(0)) {
-            operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
-        }
-        int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
-        int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-        // require(availableMargin >= totalFee || !hasOpened, "insufficient margin for fee");
-        if (availableMargin <= 0) {
-            lpFee = 0;
-            operatorFee = 0;
-            vaultFee = 0;
-        } else {
-            if (totalFee > availableMargin && !hasOpened) {
-                // maker sure the sum of fees < available margin
-                int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
-                lpFee = lpFee.wmul(rate, Round.FLOOR);
-                operatorFee = operatorFee.wmul(rate, Round.FLOOR);
-                vaultFee = vaultFee.wmul(rate, Round.FLOOR);
-            }
-            if (
-                referrer != address(0) &&
-                perpetual.referralRebateRate > 0 &&
-                lpFee.add(operatorFee) > 0
-            ) {
-                int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
-                int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
-                referralRebate = lpFeeRebate.add(operatorFeeRabate);
-                lpFee = lpFee.sub(lpFeeRebate);
-                operatorFee = operatorFee.sub(operatorFeeRabate);
-            }
-        }
     }
 
     function preTrade(
@@ -230,9 +151,8 @@ library TradeModule {
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   deltaCash       The amount of cash changes in a trade.
      * @param   deltaPosition   The amount of position changes in a trade.
-     * @param   flags           The flags of the trade, contains extra config for trading.
-     * @return  lpFee           The fee collected to lp provider.
-     * @return  totalFee        The total fee (including lpFee) collected from the trader after the trade.
+     * @return  lpFee           The amount of fee for lp provider
+     * @return  totalFee        The total fee collected from the trader after the trade
      */
     function postTrade(
         LiquidityPoolStorage storage liquidityPool,
@@ -240,8 +160,7 @@ library TradeModule {
         address trader,
         address referrer,
         int256 deltaCash,
-        int256 deltaPosition,
-        uint32 flags
+        int256 deltaPosition
     ) internal returns (int256 lpFee, int256 totalFee) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // fees
@@ -258,18 +177,90 @@ library TradeModule {
             deltaCash.abs(),
             hasOpened
         );
-        liquidityPool.adjustMarginLeverage(perpetual.id, trader, deltaPosition.neg(), flags);
-        // fee
-        totalFee = transferFee(
-            liquidityPool,
-            perpetualIndex,
-            trader,
-            referrer,
-            lpFee,
-            operatorFee,
-            vaultFee,
-            referralRebate
-        );
+        totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
+        // send fee
+        perpetual.updateCash(trader, totalFee.neg());
+        // lp -> pool
+        liquidityPool.increasePoolCash(totalFee);
+        // pool -> referrer
+        liquidityPool.transferFromPoolToUser(referrer, referralRebate, true);
+        // pool -> vault (WETH)
+        liquidityPool.transferFromPoolToUser(liquidityPool.getVault(), vaultFee, false);
+        // pool -> operator
+        address operator = liquidityPool.getOperator();
+        liquidityPool.transferFromPoolToUser(operator, operatorFee, true);
+        emit TransferFeeToOperator(operator, operatorFee);
+        emit TransferFeeToReferrer(perpetual.id, trader, referrer, referralRebate);
+    }
+
+    /**
+     * @dev     Get the fees of the trade. If the margin of the trader is not enough for fee:
+     *            1. If trader open position, the trade will be reverted.
+     *            2. If trader close position, the fee will be decreasing in proportion according to
+     *               the margin left in the trader's account
+     *          The rebate of referral will only calculate the lpFee and operatorFee.
+     *          The vault fee will not be counted in.
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetual       The reference of pereptual storage.
+     * @param   trader          The address of trader.
+     * @param   referrer        The address of referrer who will get rebate from the deal.
+     * @param   tradeValue      The amount of trading value, measured by collateral, abs of deltaCash.
+     * @return  lpFee           The amount of fee to the Liquidity provider.
+     * @return  operatorFee     The amount of fee to the operator.
+     * @return  vaultFee        The amount of fee to the vault.
+     * @return  referralRebate  The amount of rebate of the refferral.
+     */
+    function getFees(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        address trader,
+        address referrer,
+        int256 tradeValue,
+        bool hasOpened
+    )
+        public
+        view
+        returns (
+            int256 lpFee,
+            int256 operatorFee,
+            int256 vaultFee,
+            int256 referralRebate
+        )
+    {
+        require(tradeValue >= 0, "trade value is negative");
+        int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
+        if (availableMargin <= 0) {
+            lpFee = 0;
+            operatorFee = 0;
+            vaultFee = 0;
+            referralRebate = 0;
+        } else {
+            vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
+            lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+            if (liquidityPool.getOperator() != address(0)) {
+                operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
+            }
+            int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
+            if (totalFee > availableMargin && !hasOpened) {
+                // maker sure the sum of fees < available margin
+                int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
+                lpFee = lpFee.wmul(rate, Round.FLOOR);
+                operatorFee = operatorFee.wmul(rate, Round.FLOOR);
+                vaultFee = vaultFee.wmul(rate, Round.FLOOR);
+            }
+            if (
+                referrer != address(0) &&
+                perpetual.referralRebateRate > 0 &&
+                lpFee.add(operatorFee) > 0
+            ) {
+                int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
+                int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
+                referralRebate = lpFeeRebate.add(operatorFeeRabate);
+                lpFee = lpFee.sub(lpFeeRebate);
+                operatorFee = operatorFee.sub(operatorFeeRabate);
+            }
+        }
     }
 
     function transferFee(

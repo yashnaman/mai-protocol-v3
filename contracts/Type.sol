@@ -37,6 +37,7 @@ struct OraclePriceData {
 struct MarginAccount {
     int256 cash;
     int256 position;
+    int256 leverage;
 }
 
 /**
@@ -130,6 +131,7 @@ struct PerpetualStorage {
     Option fundingRateFactor;
     Option ammMaxLeverage;
     Option maxClosePriceDiscount;
+    Option defaultTargetLeverage;
     // users
     uint256 totalAccount;
     int256 totalMarginWithoutPosition;

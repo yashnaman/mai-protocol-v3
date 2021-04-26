@@ -10,8 +10,8 @@ library OrderData {
     uint32 internal constant MASK_MARKET_ORDER = 0x40000000;
     uint32 internal constant MASK_STOP_LOSS_ORDER = 0x20000000;
     uint32 internal constant MASK_TAKE_PROFIT_ORDER = 0x10000000;
-    uint32 internal constant MASK_TARGET_LEVERAGE = 0x0FFFF000;
-    uint32 internal constant MASK_NEED_UNWRAP = 0x00000800;
+    uint32 internal constant MASK_USE_TARGET_LEVERAGE = 0x0800000;
+    uint32 internal constant MASK_USE_ETH = 0x04000000;
 
     // old domain, will be removed in future
     string internal constant DOMAIN_NAME = "Mai Protocol v3";
@@ -104,12 +104,12 @@ library OrderData {
         return (flags & MASK_TAKE_PROFIT_ORDER) > 0;
     }
 
-    function getTargetLeverage(uint32 flags) internal pure returns (int256) {
-        return int256((flags & MASK_TARGET_LEVERAGE) >> 12);
+    function useTargetLeverage(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_USE_TARGET_LEVERAGE) > 0;
     }
 
-    function needUnwrap(uint32 flags) internal pure returns (bool) {
-        return (flags & MASK_NEED_UNWRAP) > 0;
+    function useETH(uint32 flags) internal pure returns (bool) {
+        return (flags & MASK_USE_ETH) > 0;
     }
 
     /*

@@ -162,13 +162,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         require(amount != 0, "invalid amount");
         require(deadline >= block.timestamp, "deadline exceeded");
         tradeAmount = _trade(perpetualIndex, trader, amount, limitPrice, referrer, flags);
-        if (flags.getTargetLeverage() != 0) {
-            _adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
-        }
-        require(
-            _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
-            "trader margin unsafe"
-        );
     }
 
     /**
@@ -272,15 +265,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         );
     }
 
-    function _adjustMarginLeverage(
-        uint256 perpetualIndex,
-        address trader,
-        int256 tradeAmount,
-        uint32 flags
-    ) internal onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT | Constant.PRIVILEGE_WITHDRAW) {
-        _liquidityPool.adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
-    }
-
     function _trade(
         uint256 perpetualIndex,
         address trader,
@@ -301,13 +285,22 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             referrer,
             flags
         );
-        if (flags.getTargetLeverage() != 0) {
+        if (flags.useTargetLeverage()) {
             _adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
         }
         require(
             _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
             "trader margin unsafe"
         );
+    }
+
+    function _adjustMarginLeverage(
+        uint256 perpetualIndex,
+        address trader,
+        int256 tradeAmount,
+        uint32 flags
+    ) internal onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT | Constant.PRIVILEGE_WITHDRAW) {
+        _liquidityPool.adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
     }
 
     bytes32[50] private __gap;

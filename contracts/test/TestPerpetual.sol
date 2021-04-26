@@ -23,7 +23,7 @@ contract TestPerpetual is Storage {
     function createPerpetual(
         address oracle,
         int256[9] calldata baseParams,
-        int256[7] calldata riskParams
+        int256[8] calldata riskParams
     ) external {
         uint256 perpetualIndex = _liquidityPool.perpetualCount;
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];

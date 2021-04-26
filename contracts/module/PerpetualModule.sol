@@ -43,6 +43,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_AMM_MAX_LEVERAGE = 4;
     uint256 internal constant INDEX_AMM_CLOSE_PRICE_DISCOUNT = 5;
     uint256 internal constant INDEX_FUNDING_RATE_FACTOR = 6;
+    uint256 internal constant INDEX_DEFAULT_TARGETR_LEVERAGE = 6;
 
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
@@ -55,11 +56,11 @@ library PerpetualModule {
     event SetPerpetualBaseParameter(uint256 perpetualIndex, int256[9] baseParams);
     event SetPerpetualRiskParameter(
         uint256 perpetualIndex,
-        int256[7] riskParams,
-        int256[7] minRiskParamValues,
-        int256[7] maxRiskParamValues
+        int256[8] riskParams,
+        int256[8] minRiskParamValues,
+        int256[8] maxRiskParamValues
     );
-    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[7] riskParams);
+    event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[8] riskParams);
     event SetOracle(address indexed oldOralce, address indexed newOracle);
 
     /**
@@ -130,9 +131,9 @@ library PerpetualModule {
         uint256 id,
         address oracle,
         int256[9] calldata baseParams,
-        int256[7] calldata riskParams,
-        int256[7] calldata minRiskParamValues,
-        int256[7] calldata maxRiskParamValues
+        int256[8] calldata riskParams,
+        int256[8] calldata minRiskParamValues,
+        int256[8] calldata maxRiskParamValues
     ) public {
         perpetual.id = id;
         perpetual.oracle = oracle;
@@ -176,7 +177,6 @@ library PerpetualModule {
         perpetual.liquidationPenaltyRate = baseParams[INDEX_LIQUIDATION_PENALTY_RATE];
         perpetual.keeperGasReward = baseParams[INDEX_KEEPER_GAS_REWARD];
         perpetual.insuranceFundRate = baseParams[INDEX_INSURANCE_FUND_RATE];
-        perpetual.maxOpenInterestRate = baseParams[INDEX_MAX_OPEN_INTEREST_RATE];
         emit SetPerpetualBaseParameter(perpetual.id, baseParams);
     }
 
@@ -191,9 +191,9 @@ library PerpetualModule {
      */
     function setRiskParameter(
         PerpetualStorage storage perpetual,
-        int256[7] memory riskParams,
-        int256[7] memory minRiskParamValues,
-        int256[7] memory maxRiskParamValues
+        int256[8] memory riskParams,
+        int256[8] memory minRiskParamValues,
+        int256[8] memory maxRiskParamValues
     ) public {
         validateRiskParameters(perpetual, riskParams);
         setOption(
@@ -238,6 +238,12 @@ library PerpetualModule {
             minRiskParamValues[INDEX_FUNDING_RATE_FACTOR],
             maxRiskParamValues[INDEX_FUNDING_RATE_FACTOR]
         );
+        setOption(
+            perpetual.defaultTargetLeverage,
+            riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE],
+            minRiskParamValues[INDEX_DEFAULT_TARGETR_LEVERAGE],
+            maxRiskParamValues[INDEX_DEFAULT_TARGETR_LEVERAGE]
+        );
         emit SetPerpetualRiskParameter(
             perpetual.id,
             riskParams,
@@ -252,7 +258,7 @@ library PerpetualModule {
      * @param   perpetual   The reference of perpetual storage.
      * @param   riskParams  An int array of risk parameter values.
      */
-    function updateRiskParameter(PerpetualStorage storage perpetual, int256[7] memory riskParams)
+    function updateRiskParameter(PerpetualStorage storage perpetual, int256[8] memory riskParams)
         public
     {
         validateRiskParameters(perpetual, riskParams);
@@ -263,6 +269,7 @@ library PerpetualModule {
         updateOption(perpetual.ammMaxLeverage, riskParams[INDEX_AMM_MAX_LEVERAGE]);
         updateOption(perpetual.maxClosePriceDiscount, riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT]);
         updateOption(perpetual.fundingRateFactor, riskParams[INDEX_FUNDING_RATE_FACTOR]);
+        updateOption(perpetual.defaultTargetLeverage, riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE]);
         emit UpdatePerpetualRiskParameter(perpetual.id, riskParams);
     }
 
@@ -654,17 +661,22 @@ library PerpetualModule {
         public
         view
     {
+        require(baseParams[INDEX_INITIAL_MARGIN_RATE] > 0, "initialMarginRate <= 0");
         require(
             perpetual.initialMarginRate == 0 ||
                 baseParams[INDEX_INITIAL_MARGIN_RATE] <= perpetual.initialMarginRate,
             "cannot increase initialMarginRate"
+        );
+        int256 maxLeverage = Constant.SIGNED_ONE.wdiv(baseParams[INDEX_INITIAL_MARGIN_RATE]);
+        require(
+            perpetual.defaultTargetLeverage.value <= maxLeverage,
+            "default target leverage exceeds max leverage"
         );
         require(
             perpetual.maintenanceMarginRate == 0 ||
                 baseParams[INDEX_MAINTENANCE_MARGIN_RATE] <= perpetual.maintenanceMarginRate,
             "cannot increase maintenanceMarginRate"
         );
-        require(baseParams[INDEX_INITIAL_MARGIN_RATE] > 0, "initialMarginRate <= 0");
         require(baseParams[INDEX_MAINTENANCE_MARGIN_RATE] > 0, "maintenanceMarginRate <= 0");
         require(
             baseParams[INDEX_MAINTENANCE_MARGIN_RATE] <= baseParams[INDEX_INITIAL_MARGIN_RATE],
@@ -705,7 +717,7 @@ library PerpetualModule {
      *
      * @param   perpetual   The reference of perpetual storage.
      */
-    function validateRiskParameters(PerpetualStorage storage perpetual, int256[7] memory riskParams)
+    function validateRiskParameters(PerpetualStorage storage perpetual, int256[8] memory riskParams)
         public
         view
     {
@@ -731,6 +743,12 @@ library PerpetualModule {
         require(
             riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT] < Constant.SIGNED_ONE,
             "maxClosePriceDiscount >= 100%"
+        );
+        require(perpetual.initialMarginRate != 0, "initialMarginRate is not set");
+        int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
+        require(
+            riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE] <= maxLeverage,
+            "default target leverage exceeds max leverage"
         );
     }
 }

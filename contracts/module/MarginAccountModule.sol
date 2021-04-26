@@ -272,4 +272,13 @@ library MarginAccountModule {
         account.cash = 0;
         account.position = 0;
     }
+
+    function getUserLeverage(PerpetualStorage storage perpetual, address trader)
+        internal
+        view
+        returns (int256)
+    {
+        int256 userLeverage = perpetual.marginAccounts[trader].leverage;
+        return userLeverage == 0 ? perpetual.defaultTargetLeverage.value : userLeverage;
+    }
 }

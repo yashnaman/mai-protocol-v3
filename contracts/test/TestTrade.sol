@@ -133,8 +133,7 @@ contract TestTrade is TestLiquidityPool {
             trader,
             referrer,
             deltaCash,
-            deltaPosition,
-            0
+            deltaPosition
         );
     }
 

@@ -101,9 +101,9 @@ contract Governance is Storage {
      */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
-        int256[7] calldata riskParams,
-        int256[7] calldata minRiskParamValues,
-        int256[7] calldata maxRiskParamValues
+        int256[8] calldata riskParams,
+        int256[8] calldata minRiskParamValues,
+        int256[8] calldata maxRiskParamValues
     ) external onlyGovernor {
         _liquidityPool.setPerpetualRiskParameter(
             perpetualIndex,
@@ -118,7 +118,7 @@ contract Governance is Storage {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   riskParams      The new value of the risk parameter, must between minimum value and maximum value
      */
-    function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[7] calldata riskParams)
+    function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[8] calldata riskParams)
         external
         onlyOperator
     {
