@@ -27,7 +27,7 @@ contract Reader {
         PerpetualState state;
         address oracle;
         // check Getter.sol for detail
-        int256[36] nums;
+        int256[39] nums;
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;
         bool isMarketClosed;

@@ -75,10 +75,10 @@ describe('Broker', () => {
         await liquidityPool.createPerpetual(
             oracle.address,
             // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur            oi
-            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0008"), toWei("0"), toWei("0.005"), toWei("2"), toWei("0.0001"), toWei("1")],
-            [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05"), toWei("0.01")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")],
+            [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0008"), toWei("0"), toWei("0.005"), toWei("2"), toWei("0.0001"), toWei("2")],
+            [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
         )
         await liquidityPool.runLiquidityPool();
         broker = await createContract("Broker");
@@ -101,10 +101,10 @@ describe('Broker', () => {
 
         const order = {
             trader: user1.address, // trader
-            broker: broker.address, // broker
-            relayer: user0.address, // relayer
-            // broker: user0.address,
-            // relayer: user0.address,
+            // broker: broker.address, // broker
+            // relayer: user0.address, // relayer
+            broker: user0.address,
+            relayer: user0.address,
             liquidityPool: liquidityPool.address, // liquidityPool
             referrer: "0x0000000000000000000000000000000000000000", // referrer
             minTradeAmount: toWei("0.1"),
@@ -123,8 +123,8 @@ describe('Broker', () => {
         var { r, s, v } = ethers.utils.splitSignature(sig);
         var compressed = await testOrder.compress(order, r, s, v, 0);
         expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
-        await broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
-        // await liquidityPool.brokerTrade(compressed, toWei("-0.5"));
+        // await broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
+        await liquidityPool.brokerTrade(compressed, toWei("-0.5"));
 
         var { position } = await liquidityPool.getMarginAccount(0, user1.address);
         expect(position).to.equal(toWei("-0.5"));
