@@ -93,44 +93,37 @@ describe('TradeModule3', () => {
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, USE_TARGET_LEVERAGE);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).approximateBigNumber(toWei("0"), toWei("10000000000")) // -1000 -1
+            expect(cash).approximateBigNumber(toWei("0"))
             expect(position).to.equal(toWei("1"))
             expect(await ctk.balanceOf(user1.address)).approximateBigNumber(toWei("8999"))
         })
 
-        //     it("close", async () => {
-        //         let now = Math.floor(Date.now() / 1000);
-        //         await oracle.setMarkPrice(toWei("1000"), now);
-        //         await oracle.setIndexPrice(toWei("1000"), now);
-        //         await testTrade.updatePrice(now);
+        it("close", async () => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
+            await testTrade.updatePrice(now);
+            await mocker.setPrice(toWei("1000"));
 
-        //         await mocker.setPrice(toWei("1000"));
-        //         await ctk.mint(testTrade.address, toWei("1000"));
-        //         await testTrade.setTotalCollateral(0, toWei("1000"));
+            await ctk.mint(testTrade.address, toWei("100000"));
+            await testTrade.setTotalCollateral(0, toWei("100000"));
 
-        //         await testTrade.setMarginAccount(0, user1.address, toWei("10000"), toWei("10"));
-        //         await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+            await testTrade.setMarginAccount(0, user1.address, toWei("10000"), toWei("10")); // 10000 + 10 * 1000 / 10000 = 2:1
+            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
-        //         // close only
-        //         await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0x80000000)).to.be.revertedWith("trader must be close only");
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
-        //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-        //         expect(cash).to.equal(toWei("10999"))
-        //         expect(position).to.equal(toWei("9"))
-        //         var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-        //         expect(cash).to.equal(toWei("9000"))
-        //         expect(position).to.equal(toWei("1"))
-        //         expect(await testTrade.getPoolCash()).to.equal(toWei("0.7"))
+            // close only
+            await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0x80000000)).to.be.revertedWith("trader must be close only");
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x88000000);
+            var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
+            expect(cash).to.equal(toWei("9000"))  // 9000 + 9 * 1000 : 9000
+            expect(position).to.equal(toWei("9"))
+            expect(await ctk.balanceOf(user1.address)).to.equal(toWei("1999"))
 
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("- "), toWei("0"), none, 0x80000000);
-        //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-        //         expect(cash).to.equal(toWei("19990"))
-        //         expect(position).to.equal(toWei("0"))
-        //         var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-        //         expect(cash).to.equal(toWei("0"))
-        //         expect(position).to.equal(toWei("10"))
-        //         expect(await testTrade.getPoolCash()).to.equal(toWei("7"))
-        //     })
+            var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
+            expect(position).to.equal(toWei("1"))
+            expect(cash).to.equal(toWei("-900")) // 9000 rebalance 9900 => pool
+            expect(await testTrade.getPoolCash()).to.equal(toWei("9900.7")) // 0.7 + 9900
+        })
 
         //     it("close - but no fee", async () => {
         //         let now = Math.floor(Date.now() / 1000);

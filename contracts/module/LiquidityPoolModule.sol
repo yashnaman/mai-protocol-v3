@@ -21,8 +21,6 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for int256;

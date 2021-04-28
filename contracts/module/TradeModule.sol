@@ -17,8 +17,6 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
-import "hardhat/console.sol";
-
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
