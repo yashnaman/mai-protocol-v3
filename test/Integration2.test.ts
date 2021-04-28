@@ -9,7 +9,7 @@ import {
     createLiquidityPoolFactory
 } from "../scripts/utils";
 
-describe("integration2", () => {
+describe("integration2 - 2 perps, special pool states", () => {
 
     let user0;
     let user1;
@@ -104,7 +104,7 @@ describe("integration2", () => {
         await ctk.connect(user3).approve(perp.address, toWei("100000"));
     });
 
-    it("normal case", async () => {
+    it("trade + liquidate", async () => {
         await perp.runLiquidityPool();
         // deposit
         await perp.connect(user1).deposit(0, user1.address, toWei("500"));

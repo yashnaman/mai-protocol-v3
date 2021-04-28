@@ -11,7 +11,7 @@ import {
 
 import "./helper";
 
-describe('TradeModule3', () => {
+describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
     let accounts;
 
     before(async () => {

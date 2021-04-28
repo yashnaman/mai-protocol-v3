@@ -29,7 +29,7 @@ class GasStat {
     }
 }
 
-describe("integration", () => {
+describe("integration - 4 perps, 1 trader. open + close", () => {
 
     function toString(n) {
         if (n instanceof BN) {
@@ -109,7 +109,7 @@ describe("integration", () => {
             await oracle4.setIndexPrice(price4, now);
         }
         await updatePrice(toWei("500"), toWei("500"), toWei("500"), toWei("500"))
-
+        
         await perp.createPerpetual(oracle1.address,
             // imr          mmr           operatorfr      lpfr            rebate        penalty        keeper               insur         oi
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("5")],
@@ -168,6 +168,7 @@ describe("integration", () => {
         // print(await perp.callStatic.getLiquidityPoolInfo());
 
         let now = Math.floor(Date.now() / 1000);
+        
         // trade 1
         await updatePrice(toWei("502"), toWei("603"), toWei("704"), toWei("805"))
         await gs.collect("trade 1 - open", perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0));
@@ -752,7 +753,7 @@ describe("integration", () => {
 
     })
 
-    it("accesscontrol", async () => {
+    it("access control", async () => {
         // users
         const accounts = await ethers.getSigners();
         const user0 = accounts[0];

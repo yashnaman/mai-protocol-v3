@@ -9,7 +9,7 @@ import {
     createLiquidityPoolFactory
 } from "../scripts/utils";
 
-describe("integration2", () => {
+describe("integration3 - 2 perps. add/remove liquidity", () => {
 
     let user0;
     let user1;
