@@ -144,7 +144,6 @@ describe('Perpetual2', () => {
             await oracle.setIndexPrice(toWei("1000"), 10000);
             await oracle.setMarkPrice(toWei("1000"), 10000);
 
-
             const info = await liquidityPool.getLiquidityPoolInfo();
             stk = (await createFactory("LpGovernor")).attach(info.addresses[3]);
         })
@@ -332,14 +331,14 @@ describe('Perpetual2', () => {
             await liquidityPool.setEmergencyState(0);
             await liquidityPool.clear(0);
             await liquidityPool.connect(user1).settle(0, user1.address, true);
-            const info = await liquidityPool.getLiquidityPoolInfo();
+            // const info = await liquidityPool.getLiquidityPoolInfo();
             await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true);
 
-            console.log(fromWei(await ctk.balanceOf(user1.address)));
-            console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));
-            console.log(fromWei(await ctk.balanceOf(vault.address)));
-            console.log(fromWei(await ctk.balanceOf(user0.address)));
-            console.log(fromWei(await ctk.balanceOf(user2.address)));
+            // console.log(fromWei(await ctk.balanceOf(user1.address)));
+            // console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));
+            // console.log(fromWei(await ctk.balanceOf(vault.address)));
+            // console.log(fromWei(await ctk.balanceOf(user0.address)));
+            // console.log(fromWei(await ctk.balanceOf(user2.address)));
         })
     });
 })

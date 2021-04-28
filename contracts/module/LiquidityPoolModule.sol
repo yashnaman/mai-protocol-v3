@@ -788,6 +788,7 @@ library LiquidityPoolModule {
             "insufficient pool cash"
         );
         shareToken.burn(trader, shareToRemove.toUint256());
+
         liquidityPool.transferToUser(payable(trader), cashToReturn, needUnwrap);
         liquidityPool.insuranceFund = liquidityPool.insuranceFund.sub(removedInsuranceFund);
         liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.sub(
@@ -970,24 +971,109 @@ library LiquidityPoolModule {
             IAccessControl(liquidityPool.accessController).isGranted(trader, grantee, privilege);
     }
 
+    /**
+     * @dev     Deposit or withdraw to let effective leverage == target leverage
+     *
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
+     * @param   deltaPosition   The update position of the trader's account in the perpetual.
+     * @param   deltaCash       The update cash(collateral) of the trader's account in the perpetual.
+     * @param   totalFee        The total fee collected from the trader after the trade.
+     * @param   flags           The flags of the trade.
+     */
     function adjustMarginLeverage(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
-        int256 tradeAmount,
+        int256 deltaPosition,
+        int256 deltaCash,
+        int256 totalFee,
         uint32 flags
     ) public {
-        if (!flags.useTargetLeverage()) {
-            return;
-        }
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        int256 userLeverage = perpetual.getUserLeverage(trader);
-        int256 amount = 0;
-        int256 adjustAmount = 0;
-        if (adjustAmount > 0) {
-            deposit(liquidityPool, perpetualIndex, trader, amount);
-        } else if (adjustAmount < 0) {
-            withdraw(liquidityPool, perpetualIndex, trader, amount, flags.useETH());
+        // read perp
+        int256 position2 = perpetual.getPosition(trader);
+        int256 markPrice = perpetual.getMarkPrice();
+        int256 marginBalance2 = perpetual.getMargin(trader, markPrice);
+        int256 position1 = position2.sub(deltaPosition);
+        int256 adjustCollateral;
+        (int256 closePosition, int256 openPosition) = Utils.splitAmount(position1, deltaPosition);
+        if (closePosition != 0 && openPosition == 0) {
+            adjustCollateral = adjustClosedMargin(
+                perpetual,
+                trader,
+                closePosition,
+                deltaCash,
+                totalFee
+            );
+        } else if (openPosition != 0) {
+            adjustCollateral = adjustOpenedMargin(
+                perpetual,
+                trader,
+                closePosition,
+                openPosition,
+                flags
+            );
+        }
+        // real deposit/withdraw
+        if (adjustCollateral > 0) {
+            if (adjustCollateral > 0 && liquidityPool.isWrapped && flags.useETH()) {
+                deposit(liquidityPool, perpetualIndex, trader, 0); // collateral module will handle msg.value
+            } else {
+                deposit(liquidityPool, perpetualIndex, trader, adjustCollateral);
+            }
+        } else if (adjustCollateral < 0) {
+            withdraw(liquidityPool, perpetualIndex, trader, adjustCollateral.neg(), flags.useETH());
+        }
+    }
+
+    function adjustClosedMargin(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 closePosition,
+        int256 deltaCash,
+        int256 totalFee
+    ) public view returns (int256 adjustCollateral) {
+        int256 markPrice = perpetual.getMarkPrice();
+        int256 position = perpetual.getPosition(trader);
+        // close only
+        // withdraw only when IM is satisfied
+        if (!perpetual.isInitialMarginSafe(trader, markPrice)) {
+            adjustCollateral = 0;
+        } else {
+            // when close, keep the effective leverage
+            // -withdraw == (availableCash2 * close + (- deltaCash + fee) * position2) / position1
+            adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
+            adjustCollateral = adjustCollateral.add(totalFee.sub(deltaCash).wmul(position));
+            adjustCollateral = adjustCollateral.wdiv(position.sub(closePosition));
+            adjustCollateral = adjustCollateral.min(0);
+        }
+    }
+
+    function adjustOpenedMargin(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 closePosition,
+        int256 openPosition,
+        int256 totalFee
+    ) public view returns (int256 adjustCollateral) {
+        int256 markPrice = perpetual.getMarkPrice();
+        int256 position = perpetual.getPosition(trader);
+        // open only or close + open
+        // when open, deposit mark * | openPosition | / lev
+        int256 leverage = perpetual.getTargetLeverage(trader);
+        require(leverage > 0, "target leverage = 0");
+        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
+        if (position.sub(closePosition) == 0 || closePosition != 0) {
+            // strategy: let new margin balance = openPositionMargin
+            // strategy: let new margin balance = openPositionMargin. note that marginBalance2
+            //           already contains -totalFee
+            adjustCollateral = openPositionMargin.sub(perpetual.getMargin(trader, markPrice));
+        } else {
+            // strategy: always append positionMargin of openPosition
+            adjustCollateral = openPositionMargin;
+            adjustCollateral = openPositionMargin.add(totalFee);
         }
     }
 }

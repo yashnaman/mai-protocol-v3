@@ -161,8 +161,11 @@ describe('TradeModule1', () => {
             expect(referralRebate).to.equal(toWei("0.04"));
 
             await testTrade.setMarginAccount(0, user0.address, toWei("0.09"), toWei("0"));
-            await expect(testTrade.getFees(0, user0.address, none, toWei("100"), true)).to.be.revertedWith("insufficient margin for fee");
-            await expect(testTrade.getFees(0, user0.address, user2.address, toWei("100"), true)).to.be.revertedWith("insufficient margin for fee");
+            var { lpFee, operatorFee, vaultFee, referralRebate } = await testTrade.getFees(0, user0.address, none, toWei("100"), true);
+            expect(lpFee).to.equal(toWei("0.07"));
+            expect(operatorFee).to.equal(toWei("0.01"));
+            expect(vaultFee).to.equal(toWei("0.02"));
+            expect(referralRebate).to.equal(toWei("0"));
         })
 
         describe('postTrade', async () => {
@@ -197,36 +200,39 @@ describe('TradeModule1', () => {
                 await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.1"), toWei("1"));
                 await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1")) // close
+                expect(await testTrade.getPoolCash()).to.equal(toWei("0.035")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
-                expect(cash).to.equal(toWei("0.035")); // lp
+                expect(cash).to.equal(toWei("0")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0.04")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.02")); // vault
                 expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.005")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.935"));  //
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.9"));  //
                 expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.935")); // op + lp
             });
 
             it("postTrade - 2", async () => {
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.1"), toWei("1"));
                 await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1")) // close
+                expect(await testTrade.getPoolCash()).to.equal(toWei("0.07")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
-                expect(cash).to.equal(toWei("0.07")); // lp
+                expect(cash).to.equal(toWei("0")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.02")); // vault
                 expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.01")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.97"));  //
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.9"));  //
                 expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.97")); // op + lp
             });
 
             it("postTrade - 3", async () => {
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.05"), toWei("1"));
                 await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("1")) // close
+                expect(await testTrade.getPoolCash()).to.equal(toWei("0.035")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
-                expect(cash).to.equal(toWei("0.035")); // lp
+                expect(cash).to.equal(toWei("0")); // lp
                 expect(await ctk.balanceOf(user2.address)).to.equal(toWei("0")); // referrer
                 expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0.01")); // vault
                 expect(await ctk.balanceOf(user1.address)).to.equal(toWei("0.005")); // operator
-                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.985"));  //
+                expect(await testTrade.getTotalCollateral(0)).to.equal(toWei("99.95"));  //
                 expect(await ctk.balanceOf(testTrade.address)).to.equal(toWei("10000000099.985")); // op + lp
             });
         })

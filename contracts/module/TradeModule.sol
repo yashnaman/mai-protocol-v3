@@ -79,6 +79,16 @@ library TradeModule {
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
         (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition);
+        if (flags.useTargetLeverage()) {
+            liquidityPool.adjustMarginLeverage(
+                perpetualIndex,
+                trader,
+                deltaPosition,
+                deltaCash,
+                totalFee,
+                flags
+            );
+        }
         emit Trade(
             perpetualIndex,
             trader,
@@ -177,18 +187,16 @@ library TradeModule {
             deltaCash.abs(),
             hasOpened
         );
-        totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
+
         // send fee
+        totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
-        // lp -> pool
-        liquidityPool.increasePoolCash(totalFee);
-        // pool -> referrer
+        liquidityPool.transferFromPerpetualToPool(perpetualIndex, totalFee);
         liquidityPool.transferFromPoolToUser(referrer, referralRebate, true);
-        // pool -> vault (WETH)
         liquidityPool.transferFromPoolToUser(liquidityPool.getVault(), vaultFee, false);
-        // pool -> operator
         address operator = liquidityPool.getOperator();
         liquidityPool.transferFromPoolToUser(operator, operatorFee, true);
+
         emit TransferFeeToOperator(operator, operatorFee);
         emit TransferFeeToReferrer(perpetual.id, trader, referrer, referralRebate);
     }

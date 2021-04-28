@@ -147,7 +147,7 @@ describe("Reader", () => {
         expect(pool.pool.addresses[5]).to.equal(ctk.address) // collateralToken
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
         expect(pool.pool.intNums[0]).approximateBigNumber(vaultFeeRate);
-        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000"));
+        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000.050702")); //update: +0.050702
         expect(pool.pool.intNums[2]).approximateBigNumber(toWei("1000000"));
         expect(pool.pool.intNums[3]).approximateBigNumber(toWei("0"));
         expect(pool.pool.intNums[4]).approximateBigNumber(toWei("0"));
@@ -190,7 +190,7 @@ describe("Reader", () => {
         expect(pool.pool.addresses[5]).to.equal(ctk.address) // collateralToken
         expect(pool.pool.addresses[6]).to.equal(vault.address) // vault
         expect(pool.pool.intNums[0]).approximateBigNumber(vaultFeeRate);
-        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000"));
+        expect(pool.pool.intNums[1]).approximateBigNumber(toWei("1000.050702"));
         expect(pool.pool.intNums[2]).approximateBigNumber(toWei("1000000"));
         expect(pool.pool.intNums[3]).approximateBigNumber(toWei("0"));
         expect(pool.pool.intNums[4]).approximateBigNumber(toWei("0"));

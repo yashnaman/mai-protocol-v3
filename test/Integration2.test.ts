@@ -150,18 +150,17 @@ describe("integration2", () => {
         expect(margin).to.equal(toWei("39.65"));
         expect(isMaintenanceMarginSafe).to.be.true;
         var { cash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account
-        expect(cash).to.equal(toWei("3450")); // lp fee = 3.45 (x), 3450 + 3.45 = 3453.45
+        expect(cash).to.equal(toWei("3450")); // lp fee = 3.45 (x), 3450 + 3.45 = 3453.45 // update: -3.45 since fee no long added to amm account
         expect(position).to.equal(toWei("-3"));
         expect(margin).to.equal(toWei("450"));
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("3.45")); // vault fee = 3.45
         var { poolMargin } = await perp.getPoolMargin();
-        // expect(poolMargin).approximateBigNumber(toWei("1006.241056113061240366"));
         expect(poolMargin).approximateBigNumber(toWei("1006.241056113061240366"));
         var { intNums } = await perp.getLiquidityPoolInfo();
         expect(intNums[1]).to.equal(toWei("1003.45")); // no rebalance, pool cash doesn't change
         var { nums } = await perp.getPerpetualInfo(0);
-        expect(nums[0]).to.equal(toWei("500")); // total collateral of perpetual
+        expect(nums[0]).to.equal(toWei("489.65")); // total collateral of perpetual // update: -10.35 (totalFee)  since fee no long added to amm account
         expect(nums[31]).to.equal(toWei("3")); // open interest of perpetual
 
         await perp.connect(user1).trade(1, user1.address, toWei("-1"), toWei("950"), now + 999999, none, 0);
@@ -181,7 +180,7 @@ describe("integration2", () => {
         var { intNums } = await perp.getLiquidityPoolInfo();
         expect(intNums[1]).to.equal(toWei("1004.400310117345895693")); // 1000 + 3.45 + 0.950310117345895693
         var { nums } = await perp.getPerpetualInfo(1);
-        expect(nums[0]).approximateBigNumber(toWei("100")); // total collateral of perpetual, 100 - 0.950310117345895693(operator fee) - 0.950310117345895693(vault fee)
+        expect(nums[0]).approximateBigNumber(toWei("97.149069647962312921")); // total collateral of perpetual, 100 - 0.950310117345895693(operator fee) - 0.950310117345895693(vault fee)
         expect(nums[31]).to.equal(toWei("1")); // open interest of perpetual
 
         // remove liquidity
@@ -189,13 +188,13 @@ describe("integration2", () => {
         expect(await stk.balanceOf(user2.address)).to.equal(toWei("800"));
         expect(await ctk.balanceOf(user2.address)).approximateBigNumber(toWei("9077.629229450671180548"));
         var { intNums } = await perp.getLiquidityPoolInfo();
-        expect(intNums[1]).approximateBigNumber(toWei("922.37077054932881945"));
+        expect(intNums[1]).approximateBigNumber(toWei("926.771080666674715143")); // update: +3.45 +0.950310117345895693 
         var { poolMargin } = await perp.getPoolMargin();
         expect(poolMargin).approximateBigNumber(toWei("806.492049144059966449"));
         var { nums } = await perp.getPerpetualInfo(0);
-        expect(nums[0]).to.equal(toWei("493.1")); // total collateral of perpetual, remove liquidity don't change collateral of perpetual
+        expect(nums[0]).to.equal(toWei("489.65")); // total collateral of perpetual, remove liquidity don't change collateral of perpetual // update -3.45
         var { nums } = await perp.getPerpetualInfo(1);
-        expect(nums[0]).approximateBigNumber(toWei("98.09937976530821")); // total collateral of perpetual, remove liquidity don't change collateral of perpetual
+        expect(nums[0]).approximateBigNumber(toWei("97.149069647962314307")); // total collateral of perpetual, remove liquidity don't change collateral of perpetual // update: -0.950310117345895693 
 
         // withdraw
         await perp.connect(user1).withdraw(0, user1.address, toWei("9"), true);

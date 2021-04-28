@@ -88,11 +88,12 @@ describe('TradeModule3', () => {
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("8999"))
             expect(position).to.equal(toWei("1"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("11000.7")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("11000"))
             expect(position).to.equal(toWei("-1"))
+            expect(await testTrade.getPoolCash()).to.equal(toWei("0.7"))
         })
 
         it("close", async () => {
@@ -115,16 +116,18 @@ describe('TradeModule3', () => {
             expect(cash).to.equal(toWei("10999"))
             expect(position).to.equal(toWei("9"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("9000.7"))
+            expect(cash).to.equal(toWei("9000"))
             expect(position).to.equal(toWei("1"))
+            expect(await testTrade.getPoolCash()).to.equal(toWei("0.7"))
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
             expect(cash).to.equal(toWei("19990"))
             expect(position).to.equal(toWei("0"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("7"))
+            expect(cash).to.equal(toWei("0"))
             expect(position).to.equal(toWei("10"))
+            expect(await testTrade.getPoolCash()).to.equal(toWei("7"))
         })
 
         it("close - but no fee", async () => {
@@ -146,7 +149,7 @@ describe('TradeModule3', () => {
             expect(cash).to.equal(toWei("-8100")) // 1000 + fee = 0.001 //
             expect(position).to.equal(toWei("9"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("9000.35")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("9000")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("1"))
 
             // close only + no fee
@@ -209,7 +212,7 @@ describe('TradeModule3', () => {
             expect(cash).to.equal(toWei("8999")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("11"))
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
-            expect(cash).to.equal(toWei("11000.7")) // 1000 + fee = 0.001
+            expect(cash).to.equal(toWei("11000")) // 1000 + fee = 0.001
             expect(position).to.equal(toWei("-1"))
         })
     })

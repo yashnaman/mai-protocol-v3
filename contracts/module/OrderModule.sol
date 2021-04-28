@@ -22,6 +22,7 @@ library OrderModule {
     using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
     using OrderData for Order;
+    using OrderData for uint32;
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -43,7 +44,11 @@ library OrderModule {
                 IAccessControl(liquidityPool.accessController).isGranted(
                     order.trader,
                     signer,
-                    Constant.PRIVILEGE_TRADE
+                    order.flags.useTargetLeverage()
+                        ? Constant.PRIVILEGE_TRADE |
+                            Constant.PRIVILEGE_DEPOSIT |
+                            Constant.PRIVILEGE_WITHDRAW
+                        : Constant.PRIVILEGE_TRADE
                 );
             require(isAuthorized, "signer is unauthorized");
         }

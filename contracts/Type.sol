@@ -37,7 +37,7 @@ struct OraclePriceData {
 struct MarginAccount {
     int256 cash;
     int256 position;
-    int256 leverage;
+    int256 targetLeverage;
 }
 
 /**

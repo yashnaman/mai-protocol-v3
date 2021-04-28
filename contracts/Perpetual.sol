@@ -154,7 +154,14 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint32 flags
     )
         external
-        onlyAuthorized(trader, Constant.PRIVILEGE_TRADE)
+        onlyAuthorized(
+            trader,
+            flags.useTargetLeverage()
+                ? Constant.PRIVILEGE_TRADE |
+                    Constant.PRIVILEGE_DEPOSIT |
+                    Constant.PRIVILEGE_WITHDRAW
+                : Constant.PRIVILEGE_TRADE
+        )
         syncState(false)
         returns (int256 tradeAmount)
     {
@@ -285,22 +292,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
             referrer,
             flags
         );
-        if (flags.useTargetLeverage()) {
-            _adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
-        }
         require(
             _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
             "trader margin unsafe"
         );
-    }
-
-    function _adjustMarginLeverage(
-        uint256 perpetualIndex,
-        address trader,
-        int256 tradeAmount,
-        uint32 flags
-    ) internal onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT | Constant.PRIVILEGE_WITHDRAW) {
-        _liquidityPool.adjustMarginLeverage(perpetualIndex, trader, tradeAmount, flags);
     }
 
     bytes32[50] private __gap;
