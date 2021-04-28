@@ -1058,7 +1058,6 @@ library LiquidityPoolModule {
         int256 adjustCollateral;
         (int256 closePosition, int256 openPosition) =
             Utils.splitAmount(position.sub(deltaPosition), deltaPosition);
-
         if (closePosition != 0 && openPosition == 0) {
             adjustCollateral = adjustClosedMargin(
                 perpetual,
@@ -1071,14 +1070,12 @@ library LiquidityPoolModule {
             adjustCollateral = adjustOpenedMargin(
                 perpetual,
                 trader,
+                deltaPosition,
                 closePosition,
                 openPosition,
                 flags
             );
         }
-
-        console.log("enter adjust", uint256(adjustCollateral));
-
         // real deposit/withdraw
         if (adjustCollateral > 0) {
             if (adjustCollateral > 0 && liquidityPool.isWrapped && flags.useETH()) {
@@ -1117,6 +1114,7 @@ library LiquidityPoolModule {
     function adjustOpenedMargin(
         PerpetualStorage storage perpetual,
         address trader,
+        int256 deltaPosition,
         int256 closePosition,
         int256 openPosition,
         int256 totalFee
@@ -1128,7 +1126,7 @@ library LiquidityPoolModule {
         int256 leverage = perpetual.getTargetLeverage(trader);
         require(leverage > 0, "target leverage = 0");
         int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
-        if (position.sub(closePosition) == 0 || closePosition != 0) {
+        if (position.sub(deltaPosition) == 0 || closePosition != 0) {
             // strategy: let new margin balance = openPositionMargin
             // strategy: let new margin balance = openPositionMargin. note that marginBalance2
             //           already contains -totalFee

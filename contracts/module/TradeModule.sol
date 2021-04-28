@@ -78,22 +78,10 @@ library TradeModule {
     ) public returns (int256 tradeAmount) {
         (int256 deltaCash, int256 deltaPosition) =
             preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
-
-        console.log(
-            "before trade",
-            uint256(liquidityPool.perpetuals[perpetualIndex].getPosition(trader))
-        );
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
-        console.log(
-            "after trade",
-            uint256(liquidityPool.perpetuals[perpetualIndex].getPosition(trader))
-        );
-
         (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition);
         if (flags.useTargetLeverage()) {
-            console.log("adjust leverage");
-
             liquidityPool.adjustMarginLeverage(
                 perpetualIndex,
                 trader,
@@ -201,7 +189,6 @@ library TradeModule {
             deltaCash.abs(),
             hasOpened
         );
-
         // send fee
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
         perpetual.updateCash(trader, totalFee.neg());
@@ -251,37 +238,35 @@ library TradeModule {
         )
     {
         require(tradeValue >= 0, "trade value is negative");
+        vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
+        lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+        if (liquidityPool.getOperator() != address(0)) {
+            operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
+        }
+        int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = perpetual.getAvailableMargin(trader, perpetual.getMarkPrice());
-        if (availableMargin <= 0) {
-            lpFee = 0;
-            operatorFee = 0;
-            vaultFee = 0;
-            referralRebate = 0;
-        } else {
-            vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
-            lpFee = tradeValue.wmul(perpetual.lpFeeRate);
-            if (liquidityPool.getOperator() != address(0)) {
-                operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
-            }
-            int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
-            if (totalFee > availableMargin && !hasOpened) {
+        if (!hasOpened) {
+            if (availableMargin <= 0) {
+                lpFee = 0;
+                operatorFee = 0;
+                vaultFee = 0;
+                referralRebate = 0;
+            } else if (totalFee > availableMargin) {
                 // maker sure the sum of fees < available margin
                 int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
                 lpFee = lpFee.wmul(rate, Round.FLOOR);
                 operatorFee = operatorFee.wmul(rate, Round.FLOOR);
                 vaultFee = vaultFee.wmul(rate, Round.FLOOR);
             }
-            if (
-                referrer != address(0) &&
-                perpetual.referralRebateRate > 0 &&
-                lpFee.add(operatorFee) > 0
-            ) {
-                int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
-                int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
-                referralRebate = lpFeeRebate.add(operatorFeeRabate);
-                lpFee = lpFee.sub(lpFeeRebate);
-                operatorFee = operatorFee.sub(operatorFeeRabate);
-            }
+        }
+        if (
+            referrer != address(0) && perpetual.referralRebateRate > 0 && lpFee.add(operatorFee) > 0
+        ) {
+            int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
+            int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
+            referralRebate = lpFeeRebate.add(operatorFeeRabate);
+            lpFee = lpFee.sub(lpFeeRebate);
+            operatorFee = operatorFee.sub(operatorFeeRabate);
         }
     }
 
