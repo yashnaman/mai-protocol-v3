@@ -126,7 +126,7 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice  Force tp set the state of the perpetual to "EMERGENCY" and set the settlement price.
+     * @notice  Force to set the state of the perpetual to "EMERGENCY" and set the settlement price.
      *          Can only called by the governor.
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
@@ -152,13 +152,13 @@ contract Governance is Storage {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
     function setEmergencyState(uint256 perpetualIndex) public syncState(true) {
-        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
-        require(
-            IOracle(perpetual.oracle).isTerminated() ||
-                !_liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex),
-            "prerequisite not met"
-        );
-        _liquidityPool.setEmergencyState(perpetualIndex);
+        if (perpetualIndex >= _liquidityPool.perpetualCount) {
+            _liquidityPool.setEmergencyStateAll();
+        } else {
+            PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+            require(IOracle(perpetual.oracle).isTerminated(), "prerequisite not met");
+            _liquidityPool.setEmergencyState(perpetualIndex);
+        }
     }
 
     bytes32[50] private __gap;

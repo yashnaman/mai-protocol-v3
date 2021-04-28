@@ -555,7 +555,9 @@ library AMMModule {
         view
         returns (Context memory context)
     {
-        for (uint256 i = 0; i < liquidityPool.perpetualCount; i++) {
+        int256 maintenanceMargin;
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             // only involve normal market
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -566,6 +568,9 @@ library AMMModule {
             require(indexPrice > 0, "index price must be positive");
             context.availableCash = context.availableCash.add(
                 perpetual.getAvailableCash(address(this))
+            );
+            maintenanceMargin = maintenanceMargin.add(
+                indexPrice.wmul(position).wmul(perpetual.maintenanceMarginRate).abs()
             );
             if (i == perpetualIndex) {
                 context.indexPrice = indexPrice;
@@ -590,12 +595,12 @@ library AMMModule {
             }
         }
         context.availableCash = context.availableCash.add(liquidityPool.poolCash);
-        // prevent margin balance < 0
+        // prevent margin balance < maintenance margin
         require(
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
-            ) >= 0,
-            "AMM's margin must be positive"
+            ) >= maintenanceMargin,
+            "AMM is mm unsafe"
         );
     }
 

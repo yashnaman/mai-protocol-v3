@@ -385,7 +385,6 @@ library LiquidityPoolModule {
 
     /**
      * @dev     Set the state of the perpetual to "EMERGENCY". Must rebalance first.
-     *          Can only called when AMM is not maintenance margin safe in the perpetual.
      *          After that the perpetual is not allowed to trade, deposit and withdraw.
      *          The price of the perpetual is freezed to the settlement price
      * @param   liquidityPool   The reference of liquidity pool storage.
@@ -397,6 +396,65 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+    }
+
+    /**
+     * @dev     Set the state of all the perpetuals to "EMERGENCY". Use special type of rebalance.
+     *          After rebalance, pool cash >= 0 and margin / initialMargin is the same in all perpetuals.
+     *          Can only called when AMM is not maintenance margin safe in all perpetuals.
+     *          After that all the perpetuals are not allowed to trade, deposit and withdraw.
+     *          The price of every perpetual is freezed to the settlement price
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     */
+    function setEmergencyStateAll(LiquidityPoolStorage storage liquidityPool) public {
+        int256 margin;
+        int256 maintenanceMargin;
+        int256 initialMargin;
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            int256 availableCash = perpetual.getAvailableCash(address(this));
+            int256 positionValue =
+                perpetual.getPosition(address(this)).wmul(perpetual.getIndexPrice());
+            maintenanceMargin = maintenanceMargin.add(
+                positionValue.wmul(perpetual.maintenanceMarginRate).abs()
+            );
+            initialMargin = initialMargin.add(
+                positionValue.wmul(perpetual.initialMarginRate).abs()
+            );
+            margin = margin.add(positionValue.add(availableCash));
+        }
+        margin = margin.add(liquidityPool.poolCash);
+        require(margin < maintenanceMargin, "prerequisite not met");
+        // rebalance for settle all perps
+        // Floor to make poolCash >= 0
+        int256 rate = margin.wdiv(initialMargin, Round.FLOOR).min(Constant.SIGNED_ONE);
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
+            }
+            int256 positionValue =
+                perpetual.getPosition(address(this)).wmul(perpetual.getIndexPrice());
+            // Floor to make poolCash >= 0
+            int256 newMargin =
+                positionValue.abs().wmul(perpetual.initialMarginRate, Round.FLOOR).wmul(
+                    rate,
+                    Round.FLOOR
+                );
+            margin = perpetual.getAvailableCash(address(this)).add(positionValue);
+            int256 deltaMargin = newMargin.sub(margin);
+            if (deltaMargin > 0) {
+                transferFromPoolToPerpetual(liquidityPool, i, deltaMargin);
+            } else if (deltaMargin < 0) {
+                transferFromPerpetualToPool(liquidityPool, i, deltaMargin.neg());
+            }
+            liquidityPool.perpetuals[i].setEmergencyState();
+        }
+        require(liquidityPool.poolCash >= 0, "negative poolCash after settle all");
     }
 
     /**
