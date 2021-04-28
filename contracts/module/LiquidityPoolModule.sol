@@ -21,6 +21,8 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for int256;
@@ -998,6 +1000,7 @@ library LiquidityPoolModule {
         int256 adjustCollateral;
         (int256 closePosition, int256 openPosition) =
             Utils.splitAmount(position.sub(deltaPosition), deltaPosition);
+
         if (closePosition != 0 && openPosition == 0) {
             adjustCollateral = adjustClosedMargin(
                 perpetual,
@@ -1015,6 +1018,9 @@ library LiquidityPoolModule {
                 flags
             );
         }
+
+        console.log("enter adjust", uint256(adjustCollateral));
+
         // real deposit/withdraw
         if (adjustCollateral > 0) {
             if (adjustCollateral > 0 && liquidityPool.isWrapped && flags.useETH()) {

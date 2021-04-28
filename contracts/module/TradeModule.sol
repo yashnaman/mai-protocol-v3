@@ -17,6 +17,8 @@ import "./PerpetualModule.sol";
 
 import "../Type.sol";
 
+import "hardhat/console.sol";
+
 library TradeModule {
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
@@ -76,15 +78,27 @@ library TradeModule {
     ) public returns (int256 tradeAmount) {
         (int256 deltaCash, int256 deltaPosition) =
             preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
+
+        console.log(
+            "before trade",
+            uint256(liquidityPool.perpetuals[perpetualIndex].getPosition(trader))
+        );
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
+        console.log(
+            "after trade",
+            uint256(liquidityPool.perpetuals[perpetualIndex].getPosition(trader))
+        );
+
         (int256 lpFee, int256 totalFee) =
             postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition);
         if (flags.useTargetLeverage()) {
+            console.log("adjust leverage");
+
             liquidityPool.adjustMarginLeverage(
                 perpetualIndex,
                 trader,
-                deltaPosition,
-                deltaCash,
+                deltaPosition.neg(),
+                deltaCash.neg(),
                 totalFee,
                 flags
             );
