@@ -21,6 +21,23 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     using TradeModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
+    function setTargetLeverage(
+        uint256 perpetualIndex,
+        address trader,
+        int256 targetLeverage
+    )
+        external
+        onlyAuthorized(
+            trader,
+            Constant.PRIVILEGE_TRADE | Constant.PRIVILEGE_DEPOSIT | Constant.PRIVILEGE_WITHDRAW
+        )
+    {
+        require(trader != address(0), "invalid trader");
+        require(targetLeverage % Constant.SIGNED_ONE == 0, "targetLeverage must be integer");
+        require(targetLeverage > 0, "targetLeverage is negative");
+        _liquidityPool.setTargetLeverage(perpetualIndex, trader, targetLeverage);
+    }
+
     /**
      * @notice  Deposit collateral to the perpetual.
      *          Can only called when the perpetual's state is "NORMAL".

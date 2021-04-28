@@ -273,12 +273,25 @@ library MarginAccountModule {
         account.position = 0;
     }
 
+    function setTargetLeverage(
+        PerpetualStorage storage perpetual,
+        address trader,
+        int256 targetLeverage
+    ) internal {
+        perpetual.marginAccounts[trader].targetLeverage = targetLeverage;
+    }
+
     function getTargetLeverage(PerpetualStorage storage perpetual, address trader)
         internal
         view
         returns (int256)
     {
+        require(perpetual.initialMarginRate != 0, "initialMarginRate is not set");
+        int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
         int256 targetLeverage = perpetual.marginAccounts[trader].targetLeverage;
-        return targetLeverage == 0 ? perpetual.defaultTargetLeverage.value : targetLeverage;
+        targetLeverage = targetLeverage == 0
+            ? perpetual.defaultTargetLeverage.value
+            : targetLeverage;
+        return targetLeverage.min(maxLeverage);
     }
 }

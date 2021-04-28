@@ -59,6 +59,7 @@ library LiquidityPoolModule {
     event OperatorCheckIn(address indexed operator);
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
+    event SetTargetLeverage(address indexed trader, int256 targetLeverage);
 
     /**
      * @dev     Get the vault's address of the liquidity pool
@@ -993,12 +994,10 @@ library LiquidityPoolModule {
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // read perp
-        int256 position2 = perpetual.getPosition(trader);
-        int256 markPrice = perpetual.getMarkPrice();
-        int256 marginBalance2 = perpetual.getMargin(trader, markPrice);
-        int256 position1 = position2.sub(deltaPosition);
+        int256 position = perpetual.getPosition(trader);
         int256 adjustCollateral;
-        (int256 closePosition, int256 openPosition) = Utils.splitAmount(position1, deltaPosition);
+        (int256 closePosition, int256 openPosition) =
+            Utils.splitAmount(position.sub(deltaPosition), deltaPosition);
         if (closePosition != 0 && openPosition == 0) {
             adjustCollateral = adjustClosedMargin(
                 perpetual,
@@ -1075,5 +1074,23 @@ library LiquidityPoolModule {
             adjustCollateral = openPositionMargin;
             adjustCollateral = openPositionMargin.add(totalFee);
         }
+    }
+
+    function setTargetLeverage(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 targetLeverage
+    ) public {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        require(perpetual.initialMarginRate != 0, "initialMarginRate is not set");
+        require(
+            targetLeverage != perpetual.marginAccounts[trader].targetLeverage,
+            "targetLeverage is already set"
+        );
+        int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
+        require(targetLeverage < maxLeverage, "targetLeverage exceeds maxLeverage");
+        perpetual.setTargetLeverage(trader, targetLeverage);
+        emit SetTargetLeverage(trader, targetLeverage);
     }
 }

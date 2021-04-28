@@ -30,6 +30,15 @@ contract TestTrade is TestLiquidityPool {
         _liquidityPool.accessController = address(this);
     }
 
+    function setTargetLeverage(
+        uint256 perpetualIndex,
+        address account,
+        int256 targetLeverage
+    ) public {
+        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[account]
+            .targetLeverage = targetLeverage;
+    }
+
     function getAccessController() public view returns (address) {
         return address(this);
     }

@@ -41,6 +41,7 @@ contract Reader {
         int256 availableMargin;
         int256 margin;
         int256 settleableMargin;
+        int256 targetLeverage;
         bool isInitialMarginSafe;
         bool isMaintenanceMarginSafe;
         bool isMarginSafe;
@@ -55,7 +56,7 @@ contract Reader {
 
     address public immutable poolCreator;
 
-    constructor(address _poolCreator) public {
+    constructor(address _poolCreator) {
         poolCreator = _poolCreator;
     }
 
@@ -83,16 +84,37 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (
-            accountStorage.cash,
-            accountStorage.position,
-            accountStorage.availableMargin,
-            accountStorage.margin,
-            accountStorage.settleableMargin,
-            accountStorage.isInitialMarginSafe,
-            accountStorage.isMaintenanceMarginSafe,
-            accountStorage.isMarginSafe
-        ) = ILiquidityPool(liquidityPool).getMarginAccount(perpetualIndex, account);
+        (bool success, bytes memory data) =
+            liquidityPool.call(
+                abi.encodeWithSignature(
+                    "getMarginAccount(uint256,address)",
+                    perpetualIndex,
+                    account
+                )
+            );
+        require(success, "fail to retrieve margin account");
+        accountStorage = _parseMarginAccount(data);
+    }
+
+    function _parseMarginAccount(bytes memory data)
+        internal
+        pure
+        returns (AccountReaderResult memory accountStorage)
+    {
+        require(data.length % 0x20 == 0, "malform input data");
+        assembly {
+            let len := mload(data)
+            let src := add(data, 0x20)
+            let dst := accountStorage
+            for {
+                let end := add(src, len)
+            } lt(src, end) {
+                src := add(src, 0x20)
+                dst := add(dst, 0x20)
+            } {
+                mstore(dst, mload(src))
+            }
+        }
     }
 
     /**
@@ -207,7 +229,7 @@ contract Reader {
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
         // read more from account
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, liquidityPool);
     }
 
@@ -296,7 +318,7 @@ contract Reader {
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
         // read more from account
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , ) = ILiquidityPool(liquidityPool)
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPool(liquidityPool)
             .getMarginAccount(perpetualIndex, liquidityPool);
     }
 
@@ -330,7 +352,7 @@ contract Reader {
             int256 margin;
             int256 position;
             bool isMaintenanceMarginSafe;
-            (, position, , margin, , , isMaintenanceMarginSafe, ) = ILiquidityPool(liquidityPool)
+            (, position, , margin, , , , isMaintenanceMarginSafe, ) = ILiquidityPool(liquidityPool)
                 .getMarginAccount(perpetualIndex, accounts[i]);
             result[i].account = accounts[i];
             result[i].position = position;

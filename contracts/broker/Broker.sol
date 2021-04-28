@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IAccessControl.sol";
 import "../interface/IPoolCreator.sol";
-import "../interface/IRelayRecipient.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/OrderData.sol";

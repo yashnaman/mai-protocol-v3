@@ -120,7 +120,7 @@ describe('TradeModule3', () => {
             expect(position).to.equal(toWei("1"))
             expect(await testTrade.getPoolCash()).to.equal(toWei("0.7"))
 
-            await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
+            await testTrade.connect(user1).trade(0, user1.address, toWei("- "), toWei("0"), none, 0x80000000);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
             expect(cash).to.equal(toWei("19990"))
             expect(position).to.equal(toWei("0"))

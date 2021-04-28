@@ -48,6 +48,7 @@ contract LibraryEvents {
     event OperatorCheckIn(address indexed operator);
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
+    event SetTargetLeverage(address indexed trader, int256 targetLeverage);
 
     // TradeModule
     event Trade(
