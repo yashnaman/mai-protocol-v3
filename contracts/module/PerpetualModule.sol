@@ -43,7 +43,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_AMM_MAX_LEVERAGE = 4;
     uint256 internal constant INDEX_AMM_CLOSE_PRICE_DISCOUNT = 5;
     uint256 internal constant INDEX_FUNDING_RATE_FACTOR = 6;
-    uint256 internal constant INDEX_DEFAULT_TARGETR_LEVERAGE = 6;
+    uint256 internal constant INDEX_DEFAULT_TARGETR_LEVERAGE = 7;
 
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);

@@ -126,9 +126,9 @@ describe("Reader", () => {
         expect(account.accountStorage.position).approximateBigNumber(toWei("0.1"));
         expect(account.accountStorage.cash).approximateBigNumber(toWei("49.145894"));
         expect(account.accountStorage.availableMargin).approximateBigNumber(toWei("94.325894"));
-        expect(account.accountwStorage.margin).approximateBigNumber(toWei("99.345894"));
+        expect(account.accountStorage.margin).approximateBigNumber(toWei("99.345894"));
         expect(account.accountStorage.settleableMargin).approximateBigNumber(toWei("0"));
-        expect(account.accountStorage.targetLeverage).approximateBigNumber(toWei("1 "));
+        expect(account.accountStorage.targetLeverage).approximateBigNumber(toWei("1"));
         expect(account.accountStorage.isInitialMarginSafe).to.be.true;
         expect(account.accountStorage.isMaintenanceMarginSafe).to.be.true;
         expect(account.accountStorage.isMarginSafe).to.be.true;
