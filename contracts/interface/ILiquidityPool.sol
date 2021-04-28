@@ -91,10 +91,10 @@ interface ILiquidityPool {
      * @return availableMargin The available margin of the account
      * @return margin The margin of the account
      * @return settleableMargin The settleable margin of the account
-     * @return targetLeverage   The target leverage for openning position.
      * @return isInitialMarginSafe True if the account is initial margin safe
      * @return isMaintenanceMarginSafe True if the account is maintenance margin safe
      * @return isMarginSafe True if the total value of margin account is beyond 0
+     * @return targetLeverage   The target leverage for openning position.
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         external
@@ -105,10 +105,10 @@ interface ILiquidityPool {
             int256 availableMargin,
             int256 margin,
             int256 settleableMargin,
-            int256 targetLeverage,
             bool isInitialMarginSafe,
             bool isMaintenanceMarginSafe,
-            bool isMarginSafe // bankrupt
+            bool isMarginSafe, // bankrupt
+            int256 targetLeverage
         );
 
     /**

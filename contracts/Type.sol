@@ -131,7 +131,6 @@ struct PerpetualStorage {
     Option fundingRateFactor;
     Option ammMaxLeverage;
     Option maxClosePriceDiscount;
-    Option defaultTargetLeverage;
     // users
     uint256 totalAccount;
     int256 totalMarginWithoutPosition;
@@ -145,5 +144,6 @@ struct PerpetualStorage {
     // accounts
     mapping(address => MarginAccount) marginAccounts;
     // reserved slot for future upgrade
-    bytes32[20] reserved;
+    Option defaultTargetLeverage;
+    bytes32[17] reserved;
 }

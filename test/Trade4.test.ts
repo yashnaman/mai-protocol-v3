@@ -122,7 +122,7 @@ describe('TradeModule3', () => {
             var { cash, position } = await testTrade.getMarginAccount(0, testTrade.address);
             expect(position).to.equal(toWei("1"))
             expect(cash).to.equal(toWei("-900")) // 9000 rebalance 9900 => pool
-            expect(await testTrade.getPoolCash()).to.equal(toWei("9900.7")) // 0.7 + 9900
+            expect(await testTrade.getPoolCash()).to.equal(toWei("9900.7")) // 0.7 + 9900 
         })
 
         //     it("close - but no fee", async () => {

@@ -1149,7 +1149,7 @@ library LiquidityPoolModule {
             "targetLeverage is already set"
         );
         int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
-        require(targetLeverage < maxLeverage, "targetLeverage exceeds maxLeverage");
+        require(targetLeverage <= maxLeverage, "targetLeverage exceeds maxLeverage");
         perpetual.setTargetLeverage(trader, targetLeverage);
         emit SetTargetLeverage(trader, targetLeverage);
     }

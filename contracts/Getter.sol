@@ -202,10 +202,10 @@ contract Getter is Storage {
      * @return availableMargin          The available margin of the account.
      * @return margin                   The margin of the account.
      * @return settleableMargin         The settleable margin of the account.
-     * @return targetLeverage           The target leverage for openning position.
      * @return isInitialMarginSafe      True if the account is initial margin safe.
      * @return isMaintenanceMarginSafe  True if the account is maintenance margin safe.
      * @return isMarginSafe             True if the total value of margin account is beyond 0.
+     * @return targetLeverage           The target leverage for openning position.
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
         public
@@ -217,10 +217,10 @@ contract Getter is Storage {
             int256 availableMargin,
             int256 margin,
             int256 settleableMargin,
-            int256 targetLeverage,
             bool isInitialMarginSafe,
             bool isMaintenanceMarginSafe,
-            bool isMarginSafe
+            bool isMarginSafe,
+            int256 targetLeverage
         )
     {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
@@ -231,10 +231,10 @@ contract Getter is Storage {
         availableMargin = perpetual.getAvailableMargin(trader, markPrice);
         margin = perpetual.getMargin(trader, markPrice);
         settleableMargin = perpetual.getSettleableMargin(trader, markPrice);
-        targetLeverage = perpetual.getTargetLeverage(trader);
         isInitialMarginSafe = perpetual.isInitialMarginSafe(trader, markPrice);
         isMaintenanceMarginSafe = perpetual.isMaintenanceMarginSafe(trader, markPrice);
         isMarginSafe = perpetual.isMarginSafe(trader, markPrice);
+        targetLeverage = perpetual.getTargetLeverage(trader);
     }
 
     /**

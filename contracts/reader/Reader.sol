@@ -41,10 +41,10 @@ contract Reader {
         int256 availableMargin;
         int256 margin;
         int256 settleableMargin;
-        int256 targetLeverage;
         bool isInitialMarginSafe;
         bool isMaintenanceMarginSafe;
         bool isMarginSafe;
+        int256 targetLeverage;
     }
 
     struct AccountsResult {
@@ -352,7 +352,7 @@ contract Reader {
             int256 margin;
             int256 position;
             bool isMaintenanceMarginSafe;
-            (, position, , margin, , , , isMaintenanceMarginSafe, ) = ILiquidityPool(liquidityPool)
+            (, position, , margin, , , isMaintenanceMarginSafe, , ) = ILiquidityPool(liquidityPool)
                 .getMarginAccount(perpetualIndex, accounts[i]);
             result[i].account = accounts[i];
             result[i].position = position;
