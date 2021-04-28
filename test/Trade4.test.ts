@@ -18,7 +18,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         accounts = await getAccounts();
     })
 
-    describe('basic', async () => {
+    describe('1x basic', async () => {
         let user0;
         let user1;
         let user2;
@@ -26,8 +26,9 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         let user4;
         let user5;
         let none = "0x0000000000000000000000000000000000000000";
-        let USE_TARGET_LEVERAGE = 0x08000000;
-
+        let USE_TARGET_LEVERAGE = 0x8000000;
+        let CLOSE_ONLY = 0x80000000;
+        
         let testTrade;
         let ctk;
         let oracle;
@@ -72,24 +73,23 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
             mocker = await createContract("MockAMMPriceEntries");
             await testTrade.setGovernor(mocker.address);
             await testTrade.setState(0, 2);
-        })
 
-        it("regular - 1x", async () => {
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(toWei("1000"), now);
             await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
-
             await mocker.setPrice(toWei("1000"));
 
-            await ctk.mint(user1.address, toWei("10000"));
+            await ctk.mint(testTrade.address, toWei("100000"));
+            await testTrade.setPoolCash(toWei("100000"));
+            
             await ctk.connect(user1).approve(testTrade.address, toWei("10000"))
-
-            await ctk.mint(testTrade.address, toWei("1000"));
-            await testTrade.setTotalCollateral(0, toWei("1000"));
-
+            await ctk.mint(user1.address, toWei("10000"));
             await testTrade.setTargetLeverage(0, user1.address, toWei("1")); // 1x target leverage
-            await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
+        })
+
+        it("cash 0, position 0 => 1", async () => {
+            await testTrade.setMarginAccount(0, user1.address, toWei("0"), toWei("0"));
 
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, USE_TARGET_LEVERAGE);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
@@ -113,7 +113,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         it("close only, pos 10 => 9", async () => {
             await testTrade.setMarginAccount(0, user1.address, toWei("-5000"), toWei("10")); // -5000 + 10 * 1000 : 10000 = 1 : 2
             await testTrade.setMarginAccount(0, testTrade.address, toWei("0"), toWei("0"));
-            await testTrade.setTotalCollateral(0, toWei("5000"));
+            await testTrade.setTotalCollateral(0, toWei("500000"));
 
             // close only
             await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, USE_TARGET_LEVERAGE + CLOSE_ONLY)).to.be.revertedWith("trader must be close only");
