@@ -248,7 +248,7 @@ describe('Funding', () => {
                 cash: toWei('10000'),
                 positionAmount1: toWei('-50'),
                 positionAmount2: toWei('-52'),
-                errorMsg: 'AMM\'s margin must be positive'
+                errorMsg: 'AMM is mm unsafe'
             }
         ]
 

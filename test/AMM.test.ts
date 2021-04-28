@@ -510,7 +510,7 @@ describe('AMM', () => {
                 amm: ammEmergency,
                 amount: toWad('1'),
                 partialFill: false,
-                errorMsg: 'AMM\'s margin must be positive'
+                errorMsg: 'AMM is mm unsafe'
             },
             {
                 name: 'zero trade amount',

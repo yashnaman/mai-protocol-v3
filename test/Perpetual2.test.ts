@@ -328,11 +328,12 @@ describe('Perpetual2', () => {
             await oracle.setIndexPrice(toWei("2000"), 2000);
             await oracle.setMarkPrice(toWei("2000"), 2000);
 
-            await liquidityPool.setEmergencyState(0);
+            await liquidityPool.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
             await liquidityPool.clear(0);
             await liquidityPool.connect(user1).settle(0, user1.address, true);
             // const info = await liquidityPool.getLiquidityPoolInfo();
-            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true);
+            // no collateral in pool
+            await expect(liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true)).to.be.revertedWith("pool margin must be positive");
 
             // console.log(fromWei(await ctk.balanceOf(user1.address)));
             // console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));

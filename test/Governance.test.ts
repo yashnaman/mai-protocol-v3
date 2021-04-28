@@ -163,7 +163,7 @@ describe('Governance', () => {
 
         await expect(governance.setEmergencyState(0)).to.be.revertedWith("prerequisite not met")
         await governance.setMarginAccount(0, governance.address, toWei("-1000"), toWei("1"));
-        await governance.setEmergencyState(0);
+        await governance.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         const result = await governance.settlementPrice(0)
         expect(result[0]).to.equal(toWei("1000"));
         expect(result[1]).to.equal(now);
