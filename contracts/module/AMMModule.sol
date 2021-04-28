@@ -583,10 +583,10 @@ library AMMModule {
                 );
                 // 10^36
                 context.squareValue = context.squareValue.add(
-                    indexPrice
+                    position
+                        .wmul(position, Round.CEIL)
                         .wmul(indexPrice, Round.CEIL)
-                        .wmul(position, Round.CEIL)
-                        .wmul(position, Round.CEIL)
+                        .wmul(indexPrice, Round.CEIL)
                         .mul(perpetual.openSlippageFactor.value)
                 );
                 context.positionMargin = context.positionMargin.add(

@@ -152,8 +152,8 @@ contract Governance is Storage {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */
     function setEmergencyState(uint256 perpetualIndex) public syncState(true) {
-        if (perpetualIndex >= _liquidityPool.perpetualCount) {
-            _liquidityPool.setEmergencyStateAll();
+        if (perpetualIndex == Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE) {
+            _liquidityPool.setAllPerpetualsToEmergencyState();
         } else {
             PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
             require(IOracle(perpetual.oracle).isTerminated(), "prerequisite not met");

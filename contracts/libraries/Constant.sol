@@ -12,4 +12,6 @@ library Constant {
     uint256 internal constant PRIVILEGE_TRADE = 0x4;
     uint256 internal constant PRIVILEGE_GUARD =
         PRIVILEGE_DEPOSIT | PRIVILEGE_WITHDRAW | PRIVILEGE_TRADE;
+    uint256 internal constant SET_ALL_PERPETUALS_TO_EMERGENCY_STATE =
+        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 }

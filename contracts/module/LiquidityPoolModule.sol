@@ -406,7 +406,7 @@ library LiquidityPoolModule {
      *          The price of every perpetual is freezed to the settlement price
      * @param   liquidityPool   The reference of liquidity pool storage.
      */
-    function setEmergencyStateAll(LiquidityPoolStorage storage liquidityPool) public {
+    function setAllPerpetualsToEmergencyState(LiquidityPoolStorage storage liquidityPool) public {
         int256 margin;
         int256 maintenanceMargin;
         int256 initialMargin;
@@ -425,10 +425,10 @@ library LiquidityPoolModule {
             initialMargin = initialMargin.add(
                 positionValue.wmul(perpetual.initialMarginRate).abs()
             );
-            margin = margin.add(positionValue.add(availableCash));
+            margin = margin.add(availableCash).add(positionValue);
         }
         margin = margin.add(liquidityPool.poolCash);
-        require(margin < maintenanceMargin, "prerequisite not met");
+        require(margin < maintenanceMargin, "AMM's margin >= maintenance margin");
         // rebalance for settle all perps
         // Floor to make poolCash >= 0
         int256 rate = margin.wdiv(initialMargin, Round.FLOOR).min(Constant.SIGNED_ONE);
