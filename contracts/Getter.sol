@@ -290,9 +290,10 @@ contract Getter is Storage {
      *          WARN: the result of this function is base on current storage of liquidityPool, not the latest.
      *          To get the latest status, call `syncState` first.
      * @return  poolMargin  The pool margin of the liquidity pool
+     * @return  isAMMSafe   True if AMM is safe
      */
-    function getPoolMargin() public view returns (int256 poolMargin, bool isSafe) {
-        (poolMargin, isSafe) = _liquidityPool.getPoolMargin();
+    function getPoolMargin() public view returns (int256 poolMargin, bool isAMMSafe) {
+        (poolMargin, isAMMSafe) = _liquidityPool.getPoolMargin();
     }
 
     /**
