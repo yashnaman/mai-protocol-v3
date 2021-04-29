@@ -332,7 +332,7 @@ describe('Perpetual2', () => {
             await liquidityPool.clear(0);
             await liquidityPool.connect(user1).settle(0, user1.address, true);
             // const info = await liquidityPool.getLiquidityPoolInfo();
-            // no collateral in pool
+            // already no collateral in pool
             await expect(liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true)).to.be.revertedWith("pool margin must be positive");
 
             // console.log(fromWei(await ctk.balanceOf(user1.address)));

@@ -25,7 +25,7 @@ contract TestGovernance is Governance {
     // }
 
     function setTotalCollateral(uint256 perpetualIndex, int256 amount) public {
-        _liquidityPool.perpetuals[0].totalCollateral = amount;
+        _liquidityPool.perpetuals[perpetualIndex].totalCollateral = amount;
     }
 
     function setOperatorNoAuth(address operator) public {
@@ -151,6 +151,24 @@ contract TestGovernance is Governance {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         perpetual.marginAccounts[trader].cash = cash;
         perpetual.marginAccounts[trader].position = position;
+    }
+
+    function setPoolCash(int256 poolCash) external {
+        _liquidityPool.poolCash = poolCash;
+    }
+
+    function getMarginAccount(uint256 perpetualIndex, address trader)
+        external
+        view
+        returns (int256 cash, int256 position)
+    {
+        PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
+        cash = perpetual.marginAccounts[trader].cash;
+        position = perpetual.marginAccounts[trader].position;
+    }
+
+    function getPoolCash() external view returns (int256 poolCash) {
+        poolCash = _liquidityPool.poolCash;
     }
 
     function oracle(uint256 perpetualIndex) public view returns (address) {

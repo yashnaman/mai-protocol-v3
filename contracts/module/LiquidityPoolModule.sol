@@ -429,7 +429,7 @@ library LiquidityPoolModule {
         require(margin < maintenanceMargin, "AMM's margin >= maintenance margin");
         // rebalance for settle all perps
         // Floor to make poolCash >= 0
-        int256 rate = margin.wdiv(initialMargin, Round.FLOOR).min(Constant.SIGNED_ONE);
+        int256 rate = margin.wdiv(initialMargin, Round.FLOOR);
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -446,8 +446,10 @@ library LiquidityPoolModule {
             margin = perpetual.getAvailableCash(address(this)).add(positionValue);
             int256 deltaMargin = newMargin.sub(margin);
             if (deltaMargin > 0) {
+                perpetual.updateCash(address(this), deltaMargin);
                 transferFromPoolToPerpetual(liquidityPool, i, deltaMargin);
             } else if (deltaMargin < 0) {
+                perpetual.updateCash(address(this), deltaMargin);
                 transferFromPerpetualToPool(liquidityPool, i, deltaMargin.neg());
             }
             liquidityPool.perpetuals[i].setEmergencyState();
