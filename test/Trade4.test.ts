@@ -26,7 +26,8 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         let user4;
         let user5;
         let none = "0x0000000000000000000000000000000000000000";
-        let USE_TARGET_LEVERAGE = 0x08000000;
+        let USE_TARGET_LEVERAGE = 0x8000000;
+        let IS_CLOSE_ONLY = 0x80000000;
 
         let testTrade;
         let ctk;
@@ -112,8 +113,8 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
             // close only
-            await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, 0x80000000)).to.be.revertedWith("trader must be close only");
-            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x88000000);
+            await expect(testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, IS_CLOSE_ONLY)).to.be.revertedWith("trader must be close only");
+            await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, USE_TARGET_LEVERAGE + IS_CLOSE_ONLY);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
             expect(cash).to.equal(toWei("9000"))  // 9000 + 9 * 1000 : 9000
             expect(position).to.equal(toWei("9"))
@@ -139,7 +140,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         //         await testTrade.setMarginAccount(0, user1.address, toWei("-9099.5"), toWei("10")); // margin = 9000 900
         //         await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, IS_CLOSE_ONLY);
         //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
         //         expect(cash).to.equal(toWei("-8100")) // 1000 + fee = 0.001 //
         //         expect(position).to.equal(toWei("9"))
@@ -151,7 +152,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         //         await testTrade.setMarginAccount(0, user1.address, toWei("-9100"), toWei("10")); // margin = 9000 900
         //         await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, IS_CLOSE_ONLY);
         //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
         //         expect(cash).to.equal(toWei("-8100")) // 1000 + fee = 0.001 //
         //         expect(position).to.equal(toWei("9"))
@@ -164,7 +165,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         //         await testTrade.setMarginAccount(0, user1.address, toWei("-9999"), toWei("10")); // margin = 9000 900
         //         await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, 0x80000000);
+        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-1"), toWei("0"), none, IS_CLOSE_ONLY);
         //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
         //         expect(cash).to.equal(toWei("-8999")) // 1000 + fee = 0.001 //
         //         expect(position).to.equal(toWei("9"))
@@ -177,7 +178,7 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
         //         await testTrade.setMarginAccount(0, user1.address, toWei("-10000"), toWei("10")); // margin = 9000 900
         //         await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
-        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, 0x80000000);
+        //         await testTrade.connect(user1).trade(0, user1.address, toWei("-10"), toWei("0"), none, IS_CLOSE_ONLY);
         //         var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
         //         expect(cash).to.equal(toWei("0")) // 1000 + fee = 0.001 //
         //         expect(position).to.equal(toWei("0"))
