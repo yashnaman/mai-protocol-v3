@@ -1073,7 +1073,7 @@ library LiquidityPoolModule {
                 deltaPosition,
                 closePosition,
                 openPosition,
-                flags
+                totalFee
             );
         }
         // real deposit/withdraw
@@ -1099,7 +1099,7 @@ library LiquidityPoolModule {
         int256 position = perpetual.getPosition(trader);
         // close only
         // withdraw only when IM is satisfied
-        if (perpetual.getAvailableMargin(trader, markPrice).sub(totalFee) >= 0) {
+        if (perpetual.getAvailableMargin(trader, markPrice).sub(totalFee) <= 0) {
             adjustCollateral = 0;
         } else {
             // when close, keep the effective leverage
