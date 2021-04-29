@@ -78,17 +78,7 @@ library TradeModule {
             preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
         (int256 lpFee, int256 totalFee) =
-            postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition);
-        if (flags.useTargetLeverage()) {
-            liquidityPool.adjustMarginLeverage(
-                perpetualIndex,
-                trader,
-                deltaPosition.neg(),
-                deltaCash.neg(),
-                totalFee,
-                flags
-            );
-        }
+            postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition, flags);
         emit Trade(
             perpetualIndex,
             trader,
@@ -170,25 +160,39 @@ library TradeModule {
         address trader,
         address referrer,
         int256 deltaCash,
-        int256 deltaPosition
+        int256 deltaPosition,
+        uint32 flags
     ) internal returns (int256 lpFee, int256 totalFee) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // fees
         int256 operatorFee;
         int256 vaultFee;
         int256 referralRebate;
-        bool hasOpened =
-            Utils.hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
-        (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
-            liquidityPool,
-            perpetual,
-            trader,
-            referrer,
-            deltaCash.abs(),
-            hasOpened
-        );
-        // send fee
+        {
+            bool hasOpened =
+                Utils.hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
+            (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
+                liquidityPool,
+                perpetual,
+                trader,
+                referrer,
+                deltaCash.abs(),
+                hasOpened
+            );
+        }
         totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
+        // trader deposit/withdraw
+        if (flags.useTargetLeverage()) {
+            liquidityPool.adjustMarginLeverage(
+                perpetualIndex,
+                trader,
+                deltaPosition.neg(),
+                deltaCash.neg(),
+                totalFee,
+                flags
+            );
+        }
+        // send fee
         perpetual.updateCash(trader, totalFee.neg());
         liquidityPool.transferFromPerpetualToPool(perpetualIndex, totalFee);
         liquidityPool.transferFromPoolToUser(referrer, referralRebate, true);

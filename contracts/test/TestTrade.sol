@@ -135,14 +135,16 @@ contract TestTrade is TestLiquidityPool {
         address trader,
         address referrer,
         int256 deltaCash,
-        int256 deltaPosition
+        int256 deltaPosition,
+        uint32 flags
     ) public returns (int256 lpFee, int256 totalFee) {
         (lpFee, totalFee) = _liquidityPool.postTrade(
             perpetualIndex,
             trader,
             referrer,
             deltaCash,
-            deltaPosition
+            deltaPosition,
+            flags
         );
     }
 

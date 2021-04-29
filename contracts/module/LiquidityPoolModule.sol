@@ -1097,14 +1097,15 @@ library LiquidityPoolModule {
         int256 position = perpetual.getPosition(trader);
         // close only
         // withdraw only when IM is satisfied
-        if (!perpetual.isInitialMarginSafe(trader, markPrice)) {
+        if (perpetual.getAvailableMargin(trader, markPrice).sub(totalFee) >= 0) {
             adjustCollateral = 0;
         } else {
             // when close, keep the effective leverage
-            // -withdraw == (availableCash2 * close + (- deltaCash + fee) * position2) / position1
+            // -withdraw == (availableCash2 * close - deltaCash * position2) / position1 + fee
             adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
-            adjustCollateral = adjustCollateral.add(totalFee.sub(deltaCash).wmul(position));
+            adjustCollateral = adjustCollateral.sub(deltaCash.wmul(position));
             adjustCollateral = adjustCollateral.wdiv(position.sub(closePosition));
+            adjustCollateral = adjustCollateral.add(totalFee);
             adjustCollateral = adjustCollateral.min(0);
         }
     }
@@ -1123,16 +1124,13 @@ library LiquidityPoolModule {
         // when open, deposit mark * | openPosition | / lev
         int256 leverage = perpetual.getTargetLeverage(trader);
         require(leverage > 0, "target leverage = 0");
-        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
+        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage).add(totalFee);
         if (position.sub(deltaPosition) == 0 || closePosition != 0) {
             // strategy: let new margin balance = openPositionMargin
-            // strategy: let new margin balance = openPositionMargin. note that marginBalance2
-            //           already contains -totalFee
             adjustCollateral = openPositionMargin.sub(perpetual.getMargin(trader, markPrice));
         } else {
             // strategy: always append positionMargin of openPosition
             adjustCollateral = openPositionMargin;
-            adjustCollateral = openPositionMargin.add(totalFee);
         }
     }
 

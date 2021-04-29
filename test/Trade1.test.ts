@@ -199,7 +199,7 @@ describe('TradeModule1', () => {
             it("postTrade - 1", async () => {
                 await testTrade.setPerpetualBaseParameter(0, toBytes32("referralRebateRate"), toWei("0.5"));
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.1"), toWei("1"));
-                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1")) // close
+                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1"), 0) // close
                 expect(await testTrade.getPoolCash()).to.equal(toWei("0.035")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
                 expect(cash).to.equal(toWei("0")); // lp
@@ -212,7 +212,7 @@ describe('TradeModule1', () => {
 
             it("postTrade - 2", async () => {
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.1"), toWei("1"));
-                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1")) // close
+                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("-1"), 0) // close
                 expect(await testTrade.getPoolCash()).to.equal(toWei("0.07")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
                 expect(cash).to.equal(toWei("0")); // lp
@@ -225,7 +225,7 @@ describe('TradeModule1', () => {
 
             it("postTrade - 3", async () => {
                 await testTrade.setMarginAccount(0, user0.address, toWei("1.05"), toWei("1"));
-                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("1")) // close
+                await testTrade.postTrade(0, user0.address, user2.address, toWei("100"), toWei("1"), 0) // close
                 expect(await testTrade.getPoolCash()).to.equal(toWei("0.035")); // lp
                 var { cash } = await testTrade.getMarginAccount(0, testTrade.address);
                 expect(cash).to.equal(toWei("0")); // lp
