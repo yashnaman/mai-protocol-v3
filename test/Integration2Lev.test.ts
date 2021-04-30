@@ -112,7 +112,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await perp.connect(user1).setTargetLeverage(0, user1.address, toWei("2"));
     });
 
-    it("addLiq + tradeWithLev long 3, short 2, short 2, long 1 + deposit + long 3 + short 1 when < im", async () => {
+    it("addLiq + tradeWithLev long 3, short 2, short 2, long 1", async () => {
         await perp.runLiquidityPool();
 
         // add liquidity
@@ -207,6 +207,20 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(intNums[1]).to.equal(toWei("1350.321305175759958502")); // rebalance. oldPoolCash + (oldPerpCash + deltaCash) = 1343.45 + (-970... + 977...)
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("8.51277982256805028")); // operator fee = 0.977783065493367778
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("8.51277982256805028")); // vault fee = 0.977783065493367778
+    });
+
+    it("deposit + long 3(auto deposit on demand) + short 1 when MM < margin < IM", async () => {
+        await perp.runLiquidityPool();
+
+        // add liquidity
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        expect(await ctk.balanceOf(user2.address)).to.equal(toWei("9000"));
+        var { intNums } = await perp.getLiquidityPoolInfo();
+        expect(intNums[1]).to.equal(toWei("1000")); // poolCash
+        var { nums } = await perp.getPerpetualInfo(0);
+        expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
+        var { nums } = await perp.getPerpetualInfo(1);
+        expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
 
         // deposit
         await perp.connect(user1).deposit(0, user1.address, toWei("500"));
@@ -215,6 +229,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(cash).to.equal(toWei("500"));
 
         // long 3 (open)
+        let now = Math.floor(Date.now() / 1000);
         await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3333.012879173688552000
