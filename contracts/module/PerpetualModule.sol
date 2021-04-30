@@ -43,7 +43,7 @@ library PerpetualModule {
     uint256 internal constant INDEX_AMM_MAX_LEVERAGE = 4;
     uint256 internal constant INDEX_AMM_CLOSE_PRICE_DISCOUNT = 5;
     uint256 internal constant INDEX_FUNDING_RATE_FACTOR = 6;
-    uint256 internal constant INDEX_DEFAULT_TARGETR_LEVERAGE = 7;
+    uint256 internal constant INDEX_DEFAULT_TARGET_LEVERAGE = 7;
 
     event Deposit(uint256 perpetualIndex, address indexed trader, int256 amount);
     event Withdraw(uint256 perpetualIndex, address indexed trader, int256 amount);
@@ -241,9 +241,9 @@ library PerpetualModule {
         );
         setOption(
             perpetual.defaultTargetLeverage,
-            riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE],
-            minRiskParamValues[INDEX_DEFAULT_TARGETR_LEVERAGE],
-            maxRiskParamValues[INDEX_DEFAULT_TARGETR_LEVERAGE]
+            riskParams[INDEX_DEFAULT_TARGET_LEVERAGE],
+            minRiskParamValues[INDEX_DEFAULT_TARGET_LEVERAGE],
+            maxRiskParamValues[INDEX_DEFAULT_TARGET_LEVERAGE]
         );
         emit SetPerpetualRiskParameter(
             perpetual.id,
@@ -270,7 +270,7 @@ library PerpetualModule {
         updateOption(perpetual.ammMaxLeverage, riskParams[INDEX_AMM_MAX_LEVERAGE]);
         updateOption(perpetual.maxClosePriceDiscount, riskParams[INDEX_AMM_CLOSE_PRICE_DISCOUNT]);
         updateOption(perpetual.fundingRateFactor, riskParams[INDEX_FUNDING_RATE_FACTOR]);
-        updateOption(perpetual.defaultTargetLeverage, riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE]);
+        updateOption(perpetual.defaultTargetLeverage, riskParams[INDEX_DEFAULT_TARGET_LEVERAGE]);
         emit UpdatePerpetualRiskParameter(perpetual.id, riskParams);
     }
 
@@ -748,7 +748,7 @@ library PerpetualModule {
         require(perpetual.initialMarginRate != 0, "initialMarginRate is not set");
         int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
         require(
-            riskParams[INDEX_DEFAULT_TARGETR_LEVERAGE] <= maxLeverage,
+            riskParams[INDEX_DEFAULT_TARGET_LEVERAGE] <= maxLeverage,
             "default target leverage exceeds max leverage"
         );
     }
