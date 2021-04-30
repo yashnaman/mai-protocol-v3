@@ -1096,20 +1096,18 @@ library LiquidityPoolModule {
         int256 totalFee
     ) public view returns (int256 adjustCollateral) {
         int256 markPrice = perpetual.getMarkPrice();
-        int256 position = perpetual.getPosition(trader);
-        // close only
+        int256 position2 = perpetual.getPosition(trader);
+        // when close, keep the effective leverage
+        // -withdraw == (availableCash2 * close - deltaCash * position2) / position1 + fee
+        adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
+        adjustCollateral = adjustCollateral.sub(deltaCash.wmul(position2));
+        adjustCollateral = adjustCollateral.wdiv(position2.sub(closePosition));
+        adjustCollateral = adjustCollateral.add(totalFee);
         // withdraw only when IM is satisfied
-        if (perpetual.getAvailableMargin(trader, markPrice).sub(totalFee) <= 0) {
-            adjustCollateral = 0;
-        } else {
-            // when close, keep the effective leverage
-            // -withdraw == (availableCash2 * close - deltaCash * position2) / position1 + fee
-            adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
-            adjustCollateral = adjustCollateral.sub(deltaCash.wmul(position));
-            adjustCollateral = adjustCollateral.wdiv(position.sub(closePosition));
-            adjustCollateral = adjustCollateral.add(totalFee);
-            adjustCollateral = adjustCollateral.min(0);
-        }
+        int256 limit = totalFee.sub(perpetual.getAvailableMargin(trader, markPrice));
+        adjustCollateral = adjustCollateral.max(limit);
+        // never deposit when close positions
+        adjustCollateral = adjustCollateral.min(0);
     }
 
     function adjustOpenedMargin(

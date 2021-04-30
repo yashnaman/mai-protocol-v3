@@ -257,9 +257,9 @@ library TradeModule {
             } else if (totalFee > availableMargin) {
                 // maker sure the sum of fees < available margin
                 int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
-                lpFee = lpFee.wmul(rate, Round.FLOOR);
                 operatorFee = operatorFee.wmul(rate, Round.FLOOR);
                 vaultFee = vaultFee.wmul(rate, Round.FLOOR);
+                lpFee = availableMargin.sub(operatorFee).sub(vaultFee);
             }
         }
         if (
