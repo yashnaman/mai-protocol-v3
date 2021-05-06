@@ -240,7 +240,7 @@ async function main(accounts: any[]) {
     var weth = { address: "0xd0A1E359811322d97991E03f863a0C30C2cF029C" }
 
     // await (await poolCreator.initialize(
-    //     weth.address, symbol.address, vault.address, vaultFeeRate, vault, { gasLimit: 5000000 }
+    //     symbol.address, vault.address, vaultFeeRate, vault, { gasLimit: 5000000 }
     // )).wait()
     // await (await symbol.addWhitelistedFactory(poolCreator.address)).wait();
     // return

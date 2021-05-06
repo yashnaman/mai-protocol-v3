@@ -40,7 +40,6 @@ async function main(_, deployer, accounts) {
     const tx = await deployer.deployAsUpgradeable("PoolCreator", upgradeAdmin)
     const poolCreator = await deployer.getDeployedContract("PoolCreator")
     await ensureFinished(poolCreator.initialize(
-        deployer.addressOf("WETH9"),
         deployer.addressOf("SymbolService"),
         vault,
         vaultFeeRate,
