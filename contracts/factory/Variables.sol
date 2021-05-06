@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract Variables is Initializable, OwnableUpgradeable {
+    bytes32 internal _reserved1;
     address internal _symbolService;
     address internal _vault;
     address internal _rewardDistributor;
