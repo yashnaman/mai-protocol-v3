@@ -78,7 +78,15 @@ library TradeModule {
             preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
         (int256 lpFee, int256 totalFee) =
-            postTrade(liquidityPool, perpetualIndex, trader, referrer, deltaCash, deltaPosition, flags);
+            postTrade(
+                liquidityPool,
+                perpetualIndex,
+                trader,
+                referrer,
+                deltaCash,
+                deltaPosition,
+                flags
+            );
         emit Trade(
             perpetualIndex,
             trader,
@@ -202,7 +210,8 @@ library TradeModule {
             lpFee,
             operatorFee,
             vaultFee,
-            referralRebate);
+            referralRebate
+        );
     }
 
     /**
@@ -287,15 +296,10 @@ library TradeModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         perpetual.updateCash(trader, totalFee.neg());
         perpetual.updateCash(address(this), lpFee);
-        liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate, true);
-        liquidityPool.transferFromPerpetualToUser(
-            perpetual.id,
-            liquidityPool.getVault(),
-            vaultFee,
-            false
-        );
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, referrer, referralRebate);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, liquidityPool.getVault(), vaultFee);
         address operator = liquidityPool.getOperator();
-        liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee, true);
+        liquidityPool.transferFromPerpetualToUser(perpetual.id, operator, operatorFee);
         emit TransferFeeToOperator(operator, operatorFee);
         emit TransferFeeToReferrer(perpetual.id, trader, referrer, referralRebate);
     }
@@ -337,8 +341,7 @@ library TradeModule {
         liquidityPool.transferFromPerpetualToUser(
             perpetual.id,
             liquidator,
-            perpetual.keeperGasReward,
-            true
+            perpetual.keeperGasReward
         );
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
         (int256 penalty, int256 penaltyToLiquidator) =
@@ -447,8 +450,7 @@ library TradeModule {
                 liquidityPool.transferFromPerpetualToUser(
                     perpetual.id,
                     liquidityPool.getVault(),
-                    vaultFee,
-                    true
+                    vaultFee
                 );
             }
         }

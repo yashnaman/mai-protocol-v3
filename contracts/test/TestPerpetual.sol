@@ -261,7 +261,7 @@ contract TestPerpetual is Storage {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) public payable returns (bool isInitialDeposit) {
+    ) public returns (bool isInitialDeposit) {
         isInitialDeposit = _liquidityPool.perpetuals[perpetualIndex].deposit(trader, amount);
     }
 

@@ -51,76 +51,6 @@ describe('Perpetual2', () => {
         await symbol.addWhitelistedFactory(poolCreator.address);
     });
 
-    describe("eth", async () => {
-
-        let stk;
-        let oracle;
-        let liquidityPool;
-
-        beforeEach(async () => {
-            oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
-            const deployed = await poolCreator.callStatic.createLiquidityPool(weth.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-            await poolCreator.createLiquidityPool(weth.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-
-            liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
-            await liquidityPool.createPerpetual(oracle.address,
-                [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
-                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
-                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")],
-            )
-            await liquidityPool.runLiquidityPool();
-
-            await oracle.setIndexPrice(toWei("1000"), 10000);
-            await oracle.setMarkPrice(toWei("1000"), 10000);
-
-            const info = await liquidityPool.getLiquidityPoolInfo();
-            stk = (await createFactory("LpGovernor")).attach(info.addresses[3]);
-        })
-
-        it("withdraw - unwrap", async () => {
-            await liquidityPool.connect(user1).deposit(0, user1.address, toWei("0"), { value: toWei("10") });
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("10"));
-
-            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"), true);
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("5"));
-
-            await expect(liquidityPool.connect(user1).deposit(0, user1.address, 0)).to.be.revertedWith("invalid amount")
-            await expect(liquidityPool.connect(user2).deposit(0, user1.address, toWei("5"))).to.be.revertedWith("unauthorized caller")
-
-            await poolCreator.connect(user1).grantPrivilege(user2.address, 2);
-            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"), true);
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("0"));
-
-            expect(await weth.balanceOf(user1.address)).to.equal(toWei("0"))
-            expect(await weth.balanceOf(user2.address)).to.equal(toWei("0"))
-        })
-
-        it("withdraw - wrap", async () => {
-            await liquidityPool.connect(user1).deposit(0, user1.address, toWei("0"), { value: toWei("10") });
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("10"));
-
-            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"), false);
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("5"));
-
-            await expect(liquidityPool.connect(user1).deposit(0, user1.address, 0)).to.be.revertedWith("invalid amount")
-            await expect(liquidityPool.connect(user2).deposit(0, user1.address, toWei("5"))).to.be.revertedWith("unauthorized caller")
-
-            await poolCreator.connect(user1).grantPrivilege(user2.address, 2);
-            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"), false);
-            var result = await liquidityPool.getMarginAccount(0, user1.address);
-            expect(result.cash).to.equal(toWei("0"));
-
-            expect(await weth.balanceOf(user1.address)).to.equal(toWei("10"))
-            expect(await weth.balanceOf(user2.address)).to.equal(toWei("0"))
-        })
-    })
-
     describe("erc20", async () => {
 
         let stk;
@@ -176,7 +106,7 @@ describe('Perpetual2', () => {
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("10"));
 
-            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"), true);
+            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"));
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("5"));
 
@@ -184,7 +114,7 @@ describe('Perpetual2', () => {
             await expect(liquidityPool.connect(user2).deposit(0, user1.address, toWei("5"))).to.be.revertedWith("unauthorized caller")
 
             await poolCreator.connect(user1).grantPrivilege(user2.address, 2);
-            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"), true);
+            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"));
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("0"));
 
@@ -200,7 +130,7 @@ describe('Perpetual2', () => {
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("10"));
 
-            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"), true);
+            await liquidityPool.connect(user1).withdraw(0, user1.address, toWei("5"));
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("5"));
 
@@ -208,7 +138,7 @@ describe('Perpetual2', () => {
             await expect(liquidityPool.connect(user2).deposit(0, user1.address, toWei("5"))).to.be.revertedWith("unauthorized caller")
 
             await poolCreator.connect(user1).grantPrivilege(user2.address, 2);
-            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"), true);
+            await liquidityPool.connect(user2).withdraw(0, user1.address, toWei("5"));
             var result = await liquidityPool.getMarginAccount(0, user1.address);
             expect(result.cash).to.equal(toWei("0"));
 
@@ -330,9 +260,9 @@ describe('Perpetual2', () => {
 
             await liquidityPool.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
             await liquidityPool.clear(0);
-            await liquidityPool.connect(user1).settle(0, user1.address, true);
+            await liquidityPool.connect(user1).settle(0, user1.address);
             // const info = await liquidityPool.getLiquidityPoolInfo();
-            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0, true);
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
 
             // console.log(fromWei(await ctk.balanceOf(user1.address)));
             // console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));

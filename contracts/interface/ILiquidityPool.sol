@@ -155,14 +155,11 @@ interface ILiquidityPool {
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
      * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
      */
     function withdraw(
         uint256 perpetualIndex,
         address trader,
-        int256 amount,
-        bool needUnwrap
+        int256 amount
     ) external;
 
     /**

@@ -215,7 +215,6 @@ library LiquidityPoolModule {
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = creator;
         IPoolCreator poolCreator = IPoolCreator(creator);
-        liquidityPool.isWrapped = (collateral == poolCreator.getWeth());
         liquidityPool.accessController = poolCreator.getAccessController();
 
         liquidityPool.operator = operator;
@@ -681,15 +680,12 @@ library LiquidityPoolModule {
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool
      * @param   trader          The address of the trader
      * @param   amount          The amount of collateral to withdraw
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
      */
     function withdraw(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address trader,
-        int256 amount,
-        bool needUnwrap
+        int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -697,13 +693,7 @@ library LiquidityPoolModule {
         if (perpetual.withdraw(trader, amount)) {
             IPoolCreator(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
         }
-        transferFromPerpetualToUser(
-            liquidityPool,
-            perpetualIndex,
-            payable(trader),
-            amount,
-            needUnwrap
-        );
+        transferFromPerpetualToUser(liquidityPool, perpetualIndex, trader, amount);
     }
 
     /**
@@ -711,27 +701,18 @@ library LiquidityPoolModule {
      *          trader's account in the perpetual. Which means to calculate how much the collateral should be returned
      *          to the trader, return it to trader's wallet and clear the trader's cash and position in the perpetual
      * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool
-     * @param   trader          The address of the trader
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   trader          The address of the trader.
      */
     function settle(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        address trader,
-        bool needUnwrap
+        address trader
     ) public {
         require(trader != address(0), "invalid trader");
         int256 marginToReturn = liquidityPool.perpetuals[perpetualIndex].settle(trader);
         require(marginToReturn > 0, "no margin to settle");
-        transferFromPerpetualToUser(
-            liquidityPool,
-            perpetualIndex,
-            payable(trader),
-            marginToReturn,
-            needUnwrap
-        );
+        transferFromPerpetualToUser(liquidityPool, perpetualIndex, trader, marginToReturn);
     }
 
     /**
@@ -754,9 +735,8 @@ library LiquidityPoolModule {
             transferFromPerpetualToUser(
                 liquidityPool,
                 perpetualIndex,
-                payable(trader),
-                perpetual.keeperGasReward,
-                true
+                trader,
+                perpetual.keeperGasReward
             );
         }
         if (
@@ -813,15 +793,12 @@ library LiquidityPoolModule {
      * @param   trader          The address of the trader that removing liquidity.
      * @param   shareToRemove   The amount of the share token to redeem.
      * @param   cashToReturn    The amount of cash(collateral) to return.
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
      */
     function removeLiquidity(
         LiquidityPoolStorage storage liquidityPool,
         address trader,
         int256 shareToRemove,
-        int256 cashToReturn,
-        bool needUnwrap
+        int256 cashToReturn
     ) public {
         IGovernor shareToken = IGovernor(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
@@ -850,7 +827,7 @@ library LiquidityPoolModule {
         );
         shareToken.burn(trader, shareToRemove.toUint256());
 
-        liquidityPool.transferToUser(payable(trader), cashToReturn, needUnwrap);
+        liquidityPool.transferToUser(trader, cashToReturn);
         liquidityPool.insuranceFund = liquidityPool.insuranceFund.sub(removedInsuranceFund);
         liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.sub(
             removedDonatedInsuranceFund
@@ -953,13 +930,12 @@ library LiquidityPoolModule {
     function transferFromPoolToUser(
         LiquidityPoolStorage storage liquidityPool,
         address account,
-        int256 amount,
-        bool needUnwrap
+        int256 amount
     ) public {
         if (amount == 0) {
             return;
         }
-        liquidityPool.transferToUser(payable(account), amount, needUnwrap);
+        liquidityPool.transferToUser(account, amount);
         decreasePoolCash(liquidityPool, amount);
     }
 
@@ -978,13 +954,12 @@ library LiquidityPoolModule {
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
         address account,
-        int256 amount,
-        bool needUnwrap
+        int256 amount
     ) public {
         if (amount == 0) {
             return;
         }
-        liquidityPool.transferToUser(payable(account), amount, needUnwrap);
+        liquidityPool.transferToUser(account, amount);
         liquidityPool.perpetuals[perpetualIndex].decreaseTotalCollateral(amount);
     }
 
@@ -1078,13 +1053,9 @@ library LiquidityPoolModule {
         }
         // real deposit/withdraw
         if (adjustCollateral > 0) {
-            if (adjustCollateral > 0 && liquidityPool.isWrapped && flags.useETH()) {
-                deposit(liquidityPool, perpetualIndex, trader, 0); // collateral module will handle msg.value
-            } else {
-                deposit(liquidityPool, perpetualIndex, trader, adjustCollateral);
-            }
+            deposit(liquidityPool, perpetualIndex, trader, adjustCollateral);
         } else if (adjustCollateral < 0) {
-            withdraw(liquidityPool, perpetualIndex, trader, adjustCollateral.neg(), flags.useETH());
+            withdraw(liquidityPool, perpetualIndex, trader, adjustCollateral.neg());
         }
     }
 

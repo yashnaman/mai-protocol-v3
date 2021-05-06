@@ -349,7 +349,7 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setInsuranceFund(toWei("100"))
                 await liquidityPool.setDonatedInsuranceFund(toWei("10"))
                 await ctk.mint(liquidityPool.address, toWei("110"));
-                await liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0, true);
+                await liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0);
                 expect(await liquidityPool.getInsuranceFund()).approximateBigNumber(element.insuranceFund)
                 expect(await liquidityPool.getDonatedInsuranceFund()).approximateBigNumber(element.donatedInsuranceFund)
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
@@ -388,7 +388,7 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setInsuranceFund(toWei("100"))
                 await liquidityPool.setDonatedInsuranceFund(toWei("10"))
                 await ctk.mint(liquidityPool.address, toWei("110"));
-                await liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove, true);
+                await liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove);
                 expect(await liquidityPool.getInsuranceFund()).approximateBigNumber(element.insuranceFund)
                 expect(await liquidityPool.getDonatedInsuranceFund()).approximateBigNumber(element.donatedInsuranceFund)
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
@@ -524,8 +524,8 @@ describe('LiquidityPool2', () => {
                 await oracle2.setMarkPrice(toWei('100'), now);
                 await liquidityPool.updatePrice(now);
 
-                await expect(liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0, true)).to.be.revertedWith(element.errorMsg);
-                await expect(liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove, true)).to.be.revertedWith(element.errorMsg);
+                await expect(liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0)).to.be.revertedWith(element.errorMsg);
+                await expect(liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
 
@@ -549,8 +549,8 @@ describe('LiquidityPool2', () => {
             await oracle2.setMarkPrice(toWei('100'), now);
             await liquidityPool.updatePrice(now);
 
-            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0, true)).to.be.revertedWith('pool margin must be positive');
-            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"), true)).to.be.revertedWith('AMM is unsafe after removing liquidity');
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('pool margin must be positive');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('AMM is unsafe after removing liquidity');
         })
 
         it('zero index', async () => {
@@ -568,8 +568,8 @@ describe('LiquidityPool2', () => {
 
             let now = Math.floor(Date.now() / 1000);
 
-            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0, true)).to.be.revertedWith('index price must be positive');
-            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"), true)).to.be.revertedWith('index price must be positive');
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('index price must be positive');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('index price must be positive');
         })
 
         it('zero supply of share token', async () => {
@@ -592,8 +592,8 @@ describe('LiquidityPool2', () => {
             await oracle2.setMarkPrice(toWei('100'), now);
             await liquidityPool.updatePrice(now);
 
-            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0, true)).to.be.revertedWith('total supply of share token is zero when removing liquidity');
-            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"), true)).to.be.revertedWith('total supply of share token is zero when removing liquidity');
+            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('total supply of share token is zero when removing liquidity');
+            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('total supply of share token is zero when removing liquidity');
         })
 
     })

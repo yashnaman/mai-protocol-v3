@@ -6,18 +6,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "../interface/ILiquidityPool.sol";
 
-interface IPoolCreator {
-    function grantPrivilege(address trader, uint256 privilege) external;
-
-    function isGranted(
-        address owner,
-        address trader,
-        uint256 privilege
-    ) external view returns (bool);
-
-    function getWeth() external view returns (address);
-}
-
 contract RemarginHelper is ReentrancyGuard {
     function remargin(
         address from,
@@ -27,19 +15,19 @@ contract RemarginHelper is ReentrancyGuard {
         int256 amount
     ) external nonReentrant {
         require(amount > 0, "remargin amount is zero");
+        address collateralFrom = _collateral(from);
         if (from != to) {
-            address collateralFrom = _collateral(from);
             address collateralTo = _collateral(to);
             require(
                 collateralFrom == collateralTo,
                 "cannot remargin between perpetuals with different collaterals"
             );
-            require(
-                IERC20(collateralFrom).allowance(msg.sender, to) >= uint256(amount),
-                "remargin amount exceeds allowance"
-            );
         }
-        ILiquidityPool(from).withdraw(fromIndex, msg.sender, amount, false);
+        require(
+            IERC20(collateralFrom).allowance(msg.sender, to) >= uint256(amount),
+            "remargin amount exceeds allowance"
+        );
+        ILiquidityPool(from).withdraw(fromIndex, msg.sender, amount);
         ILiquidityPool(to).deposit(toIndex, msg.sender, amount);
     }
 

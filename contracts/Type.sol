@@ -74,7 +74,7 @@ struct LiquidityPoolStorage {
     address governor;
     address shareToken;
     address accessController;
-    bool isWrapped;
+    bool reserved3; // isWrapped
     uint256 scaler;
     uint256 collateralDecimals;
     address collateralToken;

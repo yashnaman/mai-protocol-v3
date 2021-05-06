@@ -42,14 +42,13 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
+            ctk.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -59,13 +58,13 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         await symbol.addWhitelistedFactory(poolCreator.address);
 
         const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
-            weth.address,
+            ctk.address,
             18,
             998,
             ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
         );
         await poolCreator.createLiquidityPool(
-            weth.address,
+            ctk.address,
             18,
             998,
             ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
@@ -102,15 +101,17 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
     it("normal case", async () => {
         await perp.runLiquidityPool();
         // add liquidity
-        await perp.connect(user1).addLiquidity(toWei("0"), { value: toWei("10") });
+        await ctk.mint(user1.address, toWei("10"))
+        await ctk.connect(user1).approve(perp.address, toWei("10"))
+        await perp.connect(user1).addLiquidity(toWei("10"));
         expect(await stk.balanceOf(user1.address)).to.equal(toWei("10"))
 
-        await perp.connect(user1).removeLiquidity(toWei("5"), 0, true);
+        await perp.connect(user1).removeLiquidity(toWei("5"), 0);
         expect(await stk.balanceOf(user1.address)).to.equal(toWei("5"))
-        expect(await weth.balanceOf(user1.address)).to.equal(toWei("0"))
+        expect(await ctk.balanceOf(user1.address)).to.equal(toWei("5"))
 
-        await perp.connect(user1).removeLiquidity(toWei("5"), 0, false);
+        await perp.connect(user1).removeLiquidity(toWei("5"), 0);
         expect(await stk.balanceOf(user1.address)).to.equal(toWei("0"))
-        expect(await weth.balanceOf(user1.address)).to.equal(toWei("5"))
+        expect(await ctk.balanceOf(user1.address)).to.equal(toWei("10"))
     })
 })

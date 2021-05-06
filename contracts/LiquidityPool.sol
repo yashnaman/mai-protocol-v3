@@ -25,7 +25,9 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
     using LiquidityPoolModule for LiquidityPoolStorage;
     using AMMModule for LiquidityPoolStorage;
 
-    receive() external payable {}
+    receive() external payable {
+        revert("contract does not accept ether");
+    }
 
     /**
      * @notice  Initialize the liquidity pool and set up its configuration
@@ -110,7 +112,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
-    function addLiquidity(int256 cashToAdd) external payable syncState(false) nonReentrant {
+    function addLiquidity(int256 cashToAdd) external syncState(false) nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
@@ -124,16 +126,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   shareToRemove   The amount of share token to remove. The amount always use decimals 18.
      * @param   cashToReturn    The amount of cash(collateral) to return. The amount always use decimals 18.
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
      */
-    function removeLiquidity(
-        int256 shareToRemove,
-        int256 cashToReturn,
-        bool needUnwrap
-    ) external syncState(false) nonReentrant {
+    function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
+        external
+        syncState(false)
+        nonReentrant
+    {
         require(_liquidityPool.isRunning, "pool is not running");
-        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn, needUnwrap);
+        _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
     }
 
     /**
@@ -207,7 +207,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   amount          The amount of collateral to donate. The amount always use decimals 18.
      */
-    function donateInsuranceFund(int256 amount) external payable nonReentrant {
+    function donateInsuranceFund(int256 amount) external nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.donateInsuranceFund(_msgSender(), amount);
     }
@@ -217,7 +217,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
      *
      * @param   cashToAdd   The amount of cash to add. The amount always use decimals 18.
      */
-    function donateLiquidity(int256 cashToAdd) external payable nonReentrant {
+    function donateLiquidity(int256 cashToAdd) external nonReentrant {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.donateLiquidity(_msgSender(), cashToAdd);
     }

@@ -125,7 +125,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.revokeOperator();
     }
 
-    function donateInsuranceFund(int256 amount) public payable {
+    function donateInsuranceFund(int256 amount) public {
         _liquidityPool.donateInsuranceFund(msg.sender, amount);
     }
 
@@ -146,7 +146,7 @@ contract TestLiquidityPool is TestPerpetual {
         _liquidityPool.updatePrice(currentTime, false);
     }
 
-    function donateInsuranceFundP(int256 amount) public payable {
+    function donateInsuranceFundP(int256 amount) public {
         _liquidityPool.donateInsuranceFund(_msgSender(), amount);
     }
 
@@ -154,7 +154,7 @@ contract TestLiquidityPool is TestPerpetual {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) public payable {
+    ) public {
         _liquidityPool.deposit(perpetualIndex, trader, amount);
     }
 
@@ -163,7 +163,7 @@ contract TestLiquidityPool is TestPerpetual {
         address trader,
         int256 amount
     ) public {
-        _liquidityPool.withdraw(perpetualIndex, trader, amount, true);
+        _liquidityPool.withdraw(perpetualIndex, trader, amount);
     }
 
     function clearP(uint256 perpetualIndex) public {
@@ -171,7 +171,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function settleP(uint256 perpetualIndex, address trader) public {
-        _liquidityPool.settle(perpetualIndex, trader, true);
+        _liquidityPool.settle(perpetualIndex, trader);
     }
 
     function addLiquidity(address trader, int256 cashToAdd) public {
@@ -181,10 +181,9 @@ contract TestLiquidityPool is TestPerpetual {
     function removeLiquidity(
         address trader,
         int256 shareToRemove,
-        int256 cashToReturn,
-        bool needUnwrap
+        int256 cashToReturn
     ) public {
-        _liquidityPool.removeLiquidity(trader, shareToRemove, cashToReturn, needUnwrap);
+        _liquidityPool.removeLiquidity(trader, shareToRemove, cashToReturn);
     }
 
     function donateLiquidity(address trader, int256 cashToAdd) public {

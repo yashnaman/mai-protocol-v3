@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/ProxyAdmin.sol";
 
 import "../interface/IGovernor.sol";
@@ -14,7 +15,6 @@ import "./Tracer.sol";
 import "./VersionControl.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
-import "./ReceivableTransparentUpgradeableProxy.sol";
 
 contract PoolCreator is Initializable, Tracer, VersionControl, Variables, AccessControl {
     using AddressUpgradeable for address;
@@ -211,7 +211,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         require(implementation.isContract(), "implementation must be contract");
         bytes memory deploymentData =
             abi.encodePacked(
-                type(ReceivableTransparentUpgradeableProxy).creationCode,
+                type(TransparentUpgradeableProxy).creationCode,
                 abi.encode(implementation, address(upgradeAdmin), "")
             );
         assembly {

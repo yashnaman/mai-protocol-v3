@@ -69,20 +69,6 @@ library CollateralModule {
         address account,
         int256 amount
     ) public returns (int256 totalAmount) {
-        if (!liquidityPool.isWrapped) {
-            require(msg.value == 0, "native currency is not acceptable");
-        }
-        if (liquidityPool.isWrapped && msg.value > 0) {
-            int256 internalAmount = _toInternalAmount(liquidityPool, msg.value);
-            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
-            uint256 currentBalance = weth.balanceOf(address(this));
-            weth.deposit{ value: msg.value }();
-            require(
-                weth.balanceOf(address(this)).sub(currentBalance) == msg.value,
-                "fail to deposit weth"
-            );
-            totalAmount = totalAmount.add(internalAmount);
-        }
         if (amount > 0) {
             uint256 rawAmount = _toRawAmount(liquidityPool, amount);
             IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
@@ -103,14 +89,11 @@ library CollateralModule {
      * @param   liquidityPool   The liquidity pool object
      * @param   account         The address of the account
      * @param   amount          The amount of collateral to transfer. always use decimals 18.
-     * @param   needUnwrap      If set to true the WETH will be unwrapped into ETH then send to user,
-     *                          otherwise the ERC20 will be transferred.
      */
     function transferToUser(
         LiquidityPoolStorage storage liquidityPool,
-        address payable account,
-        int256 amount,
-        bool needUnwrap
+        address account,
+        int256 amount
     ) public {
         if (amount == 0) {
             return;
@@ -118,13 +101,7 @@ library CollateralModule {
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);
         IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
         uint256 previousBalance = collateralToken.balanceOf(address(this));
-        if (liquidityPool.isWrapped && needUnwrap) {
-            IWETH weth = IWETH(IPoolCreator(liquidityPool.creator).getWeth());
-            weth.withdraw(rawAmount);
-            AddressUpgradeable.sendValue(account, rawAmount);
-        } else {
-            collateralToken.safeTransfer(account, rawAmount);
-        }
+        collateralToken.safeTransfer(account, rawAmount);
         uint256 postBalance = collateralToken.balanceOf(address(this));
         require(previousBalance.sub(postBalance) == rawAmount, "incorrect transferred out amount");
     }

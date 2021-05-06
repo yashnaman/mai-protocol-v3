@@ -12,7 +12,7 @@ import {
 describe("integration2 - 2 perps. special pool states", () => {
     let USE_TARGET_LEVERAGE = 0x8000000;
     let IS_CLOSE_ONLY = 0x80000000;
-    
+
     let user0;
     let user1;
     let user2;
@@ -189,7 +189,7 @@ describe("integration2 - 2 perps. special pool states", () => {
         expect(nums[31]).to.equal(toWei("1")); // open interest of perpetual
 
         // remove liquidity
-        await perp.connect(user2).removeLiquidity(toWei("200"), 0, true);
+        await perp.connect(user2).removeLiquidity(toWei("200"), 0);
         expect(await stk.balanceOf(user2.address)).to.equal(toWei("800"));
         expect(await ctk.balanceOf(user2.address)).approximateBigNumber(toWei("9077.629229450671180548"));
         var { intNums } = await perp.getLiquidityPoolInfo();
@@ -202,7 +202,7 @@ describe("integration2 - 2 perps. special pool states", () => {
         expect(nums[0]).approximateBigNumber(toWei("98.09937976530821")); // total collateral of perpetual, remove liquidity don't change collateral of perpetual
 
         // withdraw
-        await perp.connect(user1).withdraw(0, user1.address, toWei("9"), true);
+        await perp.connect(user1).withdraw(0, user1.address, toWei("9"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9409"));
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         expect(cash).to.equal(toWei("-2969.35")); // -2960.35 - 9 = -2969.35
@@ -214,7 +214,7 @@ describe("integration2 - 2 perps. special pool states", () => {
         var { intNums } = await perp.getLiquidityPoolInfo();
         expect(intNums[1]).approximateBigNumber(toWei("1345.82077054932881945")); // poolCash
 
-        await perp.connect(user1).withdraw(1, user1.address, toWei("37"), true);
+        await perp.connect(user1).withdraw(1, user1.address, toWei("37"));
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("9446"));
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
         expect(cash).approximateBigNumber(toWei("1010.459186993858006293")); // 1047.4591869938580062938859841 - 37 = 1010.4591869938580062938859841
