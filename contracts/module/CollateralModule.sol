@@ -12,7 +12,6 @@ import "../libraries/Constant.sol";
 
 import "../interface/IDecimals.sol";
 import "../interface/IPoolCreator.sol";
-import "../interface/IWETH.sol";
 
 import "../Type.sol";
 
@@ -55,37 +54,29 @@ library CollateralModule {
     }
 
     /**
-     * @notice  Transfer collateral from the account to the liquidity pool. If the liquidity pool
-     *          is wrapped, eth will be automatically wrapped to weth and it's allowed to send
-     *          eth and weth at the same time
+     * @notice  Transfer collateral from the account to the liquidity pool.
      * @param   liquidityPool   The liquidity pool object
      * @param   account         The address of the account
      * @param   amount          The amount of erc20 token to transfer. the amount of eth is msg.value. always use decimals 18.
-     * @return  totalAmount     The total amount of collateral to transfer, eth amount + weth amount if the
-     *                          liquidity pool is wrapped, erc20 amount if the liquidity pool isn't wrapped
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
         address account,
         int256 amount
-    ) public returns (int256 totalAmount) {
-        if (amount > 0) {
-            uint256 rawAmount = _toRawAmount(liquidityPool, amount);
-            IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
-            uint256 previousBalance = collateralToken.balanceOf(address(this));
-            collateralToken.safeTransferFrom(account, address(this), rawAmount);
-            uint256 postBalance = collateralToken.balanceOf(address(this));
-            require(
-                postBalance.sub(previousBalance) == rawAmount,
-                "incorrect transferred in amount"
-            );
-            totalAmount = totalAmount.add(amount);
+    ) public {
+        if (amount <= 0) {
+            return;
         }
+        uint256 rawAmount = _toRawAmount(liquidityPool, amount);
+        IERC20Upgradeable collateralToken = IERC20Upgradeable(liquidityPool.collateralToken);
+        uint256 previousBalance = collateralToken.balanceOf(address(this));
+        collateralToken.safeTransferFrom(account, address(this), rawAmount);
+        uint256 postBalance = collateralToken.balanceOf(address(this));
+        require(postBalance.sub(previousBalance) == rawAmount, "incorrect transferred in amount");
     }
 
     /**
      * @notice  Transfer collateral from the liquidity pool to the account.
-     *          Weth will be automatically unwrapped to eth if the liquidity pool is wrapped
      * @param   liquidityPool   The liquidity pool object
      * @param   account         The address of the account
      * @param   amount          The amount of collateral to transfer. always use decimals 18.
@@ -95,7 +86,7 @@ library CollateralModule {
         address account,
         int256 amount
     ) public {
-        if (amount == 0) {
+        if (amount <= 0) {
             return;
         }
         uint256 rawAmount = _toRawAmount(liquidityPool, amount);

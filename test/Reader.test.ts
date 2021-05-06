@@ -17,8 +17,6 @@ describe("Reader", () => {
     var user3;
     var vault;
     var none;
-
-    var weth;
     var symbol;
     var ctk;
     var perpTemplate;
@@ -50,14 +48,12 @@ describe("Reader", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory()
 
         // create components
-        weth = await createContract("WETH9");
         symbol = await createContract("SymbolService", [10000]);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
         perpTemplate = await LiquidityPoolFactory.deploy();
         govTemplate = await createContract("TestLpGovernor");
         poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),

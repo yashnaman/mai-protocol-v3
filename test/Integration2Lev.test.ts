@@ -12,7 +12,7 @@ import {
 describe("integration2 - 2 perps. trade with targetLeverage", () => {
     let USE_TARGET_LEVERAGE = 0x8000000;
     let IS_CLOSE_ONLY = 0x80000000;
-    
+
     let user0;
     let user1;
     let user2;
@@ -44,14 +44,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -146,7 +144,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(intNums[1]).to.equal(toWei("1000")); // no rebalance, not changed
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("3.45")); // vault fee = 3.45
-        
+
         // short 2 (partial close)
         await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_TARGET_LEVERAGE);
         // amm deltaCash = -2100
@@ -282,7 +280,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(intNums[1]).to.equal(toWei("1000")); // no rebalance, not changed
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("3.45")); // vault fee = 3.45
-        
+
         // close when MM < margin < IM, normal fees
         await updatePrice(toWei("505"), toWei("1000"))
         await perp.forceToSyncState();
@@ -410,7 +408,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(intNums[1]).to.equal(toWei("1000")); // no rebalance, not changed
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("3.45")); // vault fee = 3.45
-        
+
         // oracle
         await updatePrice(toWei("500"), toWei("1000"))
         await perp.forceToSyncState();
@@ -469,7 +467,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(intNums[1]).to.equal(toWei("1000")); // no rebalance, not changed
         expect(await ctk.balanceOf(user0.address)).to.equal(toWei("3.45")); // operator fee = 3.45
         expect(await ctk.balanceOf(vault.address)).to.equal(toWei("3.45")); // vault fee = 3.45
-        
+
         // oracle
         await updatePrice(toWei("506"), toWei("1000"))
         await perp.forceToSyncState();

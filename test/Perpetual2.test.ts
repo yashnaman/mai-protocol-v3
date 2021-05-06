@@ -19,7 +19,6 @@ describe('Perpetual2', () => {
     let user3;
     let vault;
     let ctk;
-    let weth;
     let poolCreator;
     let LiquidityPoolFactory;
 
@@ -35,13 +34,11 @@ describe('Perpetual2', () => {
     beforeEach(async () => {
         LiquidityPoolFactory = await createLiquidityPoolFactory();
         var symbol = await createContract("SymbolService", [10000]);
-        weth = await createContract("WETH9");
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),

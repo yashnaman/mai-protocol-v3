@@ -16,7 +16,6 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
     let user2;
     let user3;
     let vault;
-    let weth;
     const none = "0x0000000000000000000000000000000000000000";
     let perp;
     let ctk;
@@ -48,7 +47,6 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            ctk.address,
             symbol.address,
             vault.address,
             toWei("0.001"),

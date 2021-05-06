@@ -55,10 +55,6 @@ contract TestTrade is TestLiquidityPool {
         return privilege > 0 && privilege <= Constant.PRIVILEGE_GUARD;
     }
 
-    function getWeth() public view returns (address) {
-        return address(this);
-    }
-
     function getVault() public view returns (address) {
         return _vault;
     }

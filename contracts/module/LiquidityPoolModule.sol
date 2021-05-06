@@ -602,12 +602,10 @@ library LiquidityPoolModule {
         address donator,
         int256 amount
     ) public {
-        require(amount > 0 || msg.value > 0, "invalid amount");
-        int256 totalCashToDonate = liquidityPool.transferFromUser(donator, amount);
-        liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(
-            totalCashToDonate
-        );
-        emit DonateInsuranceFund(totalCashToDonate);
+        require(amount > 0, "invalid amount");
+        liquidityPool.transferFromUser(donator, amount);
+        liquidityPool.donatedInsuranceFund = liquidityPool.donatedInsuranceFund.add(amount);
+        emit DonateInsuranceFund(amount);
     }
 
     /**
@@ -664,9 +662,8 @@ library LiquidityPoolModule {
         int256 amount
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
-        int256 totalAmount =
-            transferFromUserToPerpetual(liquidityPool, perpetualIndex, trader, amount);
-        if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, totalAmount)) {
+        transferFromUserToPerpetual(liquidityPool, perpetualIndex, trader, amount);
+        if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, amount)) {
             IPoolCreator(liquidityPool.creator).activatePerpetualFor(trader, perpetualIndex);
         }
     }
@@ -771,19 +768,19 @@ library LiquidityPoolModule {
         }
 
         require(allowAdd, "not all perpetuals are in NORMAL state");
-        int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
+        liquidityPool.transferFromUser(trader, cashToAdd);
 
         IGovernor shareToken = IGovernor(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
 
-        int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, totalCashToAdd);
+        int256 shareToMint = liquidityPool.getShareToMint(shareTotalSupply, cashToAdd);
         require(shareToMint > 0, "received share must be positive");
         // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
 
-        increasePoolCash(liquidityPool, totalCashToAdd);
+        increasePoolCash(liquidityPool, cashToAdd);
         shareToken.mint(trader, shareToMint.toUint256());
 
-        emit AddLiquidity(trader, totalCashToAdd, shareToMint);
+        emit AddLiquidity(trader, cashToAdd, shareToMint);
     }
 
     /**
@@ -848,10 +845,10 @@ library LiquidityPoolModule {
         int256 cashToAdd
     ) public {
         require(cashToAdd > 0 || msg.value > 0, "cash amount must be positive");
-        int256 totalCashToAdd = liquidityPool.transferFromUser(trader, cashToAdd);
+        liquidityPool.transferFromUser(trader, cashToAdd);
         // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
-        increasePoolCash(liquidityPool, totalCashToAdd);
-        emit AddLiquidity(trader, totalCashToAdd, 0);
+        increasePoolCash(liquidityPool, cashToAdd);
+        emit AddLiquidity(trader, cashToAdd, 0);
     }
 
     /**
@@ -922,9 +919,9 @@ library LiquidityPoolModule {
         LiquidityPoolStorage storage liquidityPool,
         address account,
         int256 amount
-    ) public returns (int256 totalAmount) {
-        totalAmount = liquidityPool.transferFromUser(account, amount);
-        increasePoolCash(liquidityPool, totalAmount);
+    ) public {
+        liquidityPool.transferFromUser(account, amount);
+        increasePoolCash(liquidityPool, amount);
     }
 
     function transferFromPoolToUser(
@@ -945,9 +942,9 @@ library LiquidityPoolModule {
         uint256 perpetualIndex,
         address account,
         int256 amount
-    ) public returns (int256 totalAmount) {
-        totalAmount = liquidityPool.transferFromUser(account, amount);
-        liquidityPool.perpetuals[perpetualIndex].increaseTotalCollateral(totalAmount);
+    ) public {
+        liquidityPool.transferFromUser(account, amount);
+        liquidityPool.perpetuals[perpetualIndex].increaseTotalCollateral(amount);
     }
 
     function transferFromPerpetualToUser(

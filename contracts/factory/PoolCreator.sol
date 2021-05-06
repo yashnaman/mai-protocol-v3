@@ -38,13 +38,12 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
     );
 
     function initialize(
-        address wethToken,
         address symbolService,
         address globalVault,
         int256 globalVaultFeeRate,
         address distributor
     ) external initializer {
-        __Variables_init(wethToken, symbolService, globalVault, globalVaultFeeRate);
+        __Variables_init(symbolService, globalVault, globalVaultFeeRate);
         __VersionControl_init();
 
         _rewardDistributor = distributor;

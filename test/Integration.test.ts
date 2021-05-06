@@ -62,14 +62,12 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -254,14 +252,12 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -393,14 +389,12 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -520,14 +514,12 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),
@@ -623,14 +615,12 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var weth = await createContract("WETH9");
         var symbol = await createContract("SymbolService", [10000]);
         var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");
         var poolCreator = await createContract("PoolCreator");
         await poolCreator.initialize(
-            weth.address,
             symbol.address,
             vault.address,
             toWei("0.001"),

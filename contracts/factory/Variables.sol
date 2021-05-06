@@ -5,7 +5,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 contract Variables is Initializable, OwnableUpgradeable {
-    address internal _weth;
     address internal _symbolService;
     address internal _vault;
     address internal _rewardDistributor;
@@ -16,17 +15,14 @@ contract Variables is Initializable, OwnableUpgradeable {
     event SetRewardDistributor(address previousRewardDistributor, address newRewardDistributor);
 
     function __Variables_init(
-        address wethToken_,
         address symbolService_,
         address vault_,
         int256 vaultFeeRate_
     ) internal initializer {
-        require(wethToken_ != address(0), "invalid weth address");
-        require(symbolService_ != address(0), "invalid weth address");
+        require(symbolService_ != address(0), "invalid symbol service address");
         require(vault_ != address(0), "invalid vault address");
         require(vaultFeeRate_ >= 0, "negative vault fee rate");
 
-        _weth = wethToken_;
         _symbolService = symbolService_;
         _vault = vault_;
         _vaultFeeRate = vaultFeeRate_;
@@ -83,16 +79,6 @@ contract Variables is Initializable, OwnableUpgradeable {
         );
         emit SetRewardDistributor(_rewardDistributor, newRewardDistributor);
         _rewardDistributor = newRewardDistributor;
-    }
-
-    /**
-     * @notice  Return address of weth.
-     * @dev     [ConfirmBeforeDeployment]
-     *
-     * @return  address The address of weth
-     */
-    function getWeth() public view returns (address) {
-        return _weth;
     }
 
     /**

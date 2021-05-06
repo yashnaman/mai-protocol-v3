@@ -14,8 +14,6 @@ interface IPoolCreator {
 
     function getVaultFeeRate() external view returns (int256);
 
-    function getWeth() external view returns (address);
-
     function getAccessController() external view returns (address);
 
     function getSymbolService() external view returns (address);
