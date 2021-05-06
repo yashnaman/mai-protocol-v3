@@ -88,7 +88,7 @@ async function main(accounts: any[]) {
         ["broker", broker.address],
     ];
     console.table(addresses);
-    
+
     // white list
     var wethFactory = await createFactory("WETH9");
     var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
@@ -130,19 +130,19 @@ async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
         oracleAddresses["USD - ETH"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper           insur          oi
         [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     )
     const mtx2 = await liquidityPool.createPerpetual(
         oracleAddresses["BTC - ETH"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper           insur          oi
         [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     )
     await mtx1.wait()
     await mtx2.wait()
@@ -181,37 +181,37 @@ async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
         oracleAddresses["ETH - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper        insur          oi
         [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.1"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     );
     const mtx2 = await liquidityPool.createPerpetual(
         oracleAddresses["BTC - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper        insur          oi
         [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.1"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     );
     const mtx3 = await liquidityPool.createPerpetual(
         oracleAddresses["DPI - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper        insur          oi
         [toWei("0.10"), toWei("0.05"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.1"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     );
     const mtx4 = await liquidityPool.createPerpetual(
         oracleAddresses["SP500 - USD"],
         // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper        insur          oi
         [toWei("0.10"), toWei("0.05"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.1"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor       defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")]
     );
     await mtx1.wait()
     await mtx2.wait()
