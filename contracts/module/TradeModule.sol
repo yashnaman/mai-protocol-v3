@@ -264,7 +264,7 @@ library TradeModule {
                 vaultFee = 0;
                 referralRebate = 0;
             } else if (totalFee > availableMargin) {
-                // maker sure the sum of fees < available margin
+                // make sure the sum of fees < available margin
                 int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
                 operatorFee = operatorFee.wmul(rate, Round.FLOOR);
                 vaultFee = vaultFee.wmul(rate, Round.FLOOR);
