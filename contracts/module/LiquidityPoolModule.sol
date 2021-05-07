@@ -621,7 +621,6 @@ library LiquidityPoolModule {
         public
         returns (int256 penaltyToLP)
     {
-        penaltyToLP = 0;
         if (deltaFund != 0) {
             int256 newInsuranceFund = liquidityPool.insuranceFund.add(deltaFund);
             if (deltaFund > 0) {

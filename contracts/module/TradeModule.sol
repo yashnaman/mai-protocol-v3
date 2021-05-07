@@ -477,6 +477,7 @@ library TradeModule {
         if (penaltyToFund >= 0) {
             perpetual.decreaseTotalCollateral(penaltyToFund.sub(penaltyToLP));
         } else {
+            // penaltyToLP = 0 when penaltyToFund < 0
             perpetual.increaseTotalCollateral(penaltyToFund.neg());
         }
         if (isEmergency) {
