@@ -1031,6 +1031,7 @@ library LiquidityPoolModule {
         (int256 closePosition, int256 openPosition) =
             Utils.splitAmount(position.sub(deltaPosition), deltaPosition);
         if (closePosition != 0 && openPosition == 0) {
+            // close only
             adjustCollateral = adjustClosedMargin(
                 perpetual,
                 trader,
@@ -1038,7 +1039,8 @@ library LiquidityPoolModule {
                 deltaCash,
                 totalFee
             );
-        } else if (openPosition != 0) {
+        } else {
+            // open only or close + open
             adjustCollateral = adjustOpenedMargin(
                 perpetual,
                 trader,
