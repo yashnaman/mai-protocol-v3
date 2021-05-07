@@ -756,7 +756,7 @@ library LiquidityPoolModule {
         address trader,
         int256 cashToAdd
     ) public {
-        require(cashToAdd > 0 || msg.value > 0, "cash amount must be positive");
+        require(cashToAdd > 0, "cash amount must be positive");
         uint256 length = liquidityPool.perpetualCount;
         bool allowAdd;
         for (uint256 i = 0; i < length; i++) {
@@ -843,7 +843,7 @@ library LiquidityPoolModule {
         address trader,
         int256 cashToAdd
     ) public {
-        require(cashToAdd > 0 || msg.value > 0, "cash amount must be positive");
+        require(cashToAdd > 0, "cash amount must be positive");
         liquidityPool.transferFromUser(trader, cashToAdd);
         // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
         increasePoolCash(liquidityPool, cashToAdd);

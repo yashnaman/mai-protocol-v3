@@ -212,15 +212,15 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents 
         _liquidityPool.donateInsuranceFund(_msgSender(), amount);
     }
 
-    /**
-     * @notice  Add liquidity to the liquidity pool without getting shares.
-     *
-     * @param   cashToAdd   The amount of cash to add. The amount always use decimals 18.
-     */
-    function donateLiquidity(int256 cashToAdd) external nonReentrant {
-        require(_liquidityPool.isRunning, "pool is not running");
-        _liquidityPool.donateLiquidity(_msgSender(), cashToAdd);
-    }
+    // /**
+    //  * @notice  Add liquidity to the liquidity pool without getting shares.
+    //  *
+    //  * @param   cashToAdd   The amount of cash to add. The amount always use decimals 18.
+    //  */
+    // function donateLiquidity(int256 cashToAdd) external nonReentrant {
+    //     require(_liquidityPool.isRunning, "pool is not running");
+    //     _liquidityPool.donateLiquidity(_msgSender(), cashToAdd);
+    // }
 
     bytes32[50] private __gap;
 }

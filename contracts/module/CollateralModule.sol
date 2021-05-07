@@ -57,7 +57,7 @@ library CollateralModule {
      * @notice  Transfer collateral from the account to the liquidity pool.
      * @param   liquidityPool   The liquidity pool object
      * @param   account         The address of the account
-     * @param   amount          The amount of erc20 token to transfer. the amount of eth is msg.value. always use decimals 18.
+     * @param   amount          The amount of erc20 token to transfer. Always use decimals 18.
      */
     function transferFromUser(
         LiquidityPoolStorage storage liquidityPool,
