@@ -157,8 +157,14 @@ async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
     console.log('run pool')
     await (await liquidityPool.runLiquidityPool()).wait()
 
+    var wethFactory = await createFactory("WETH9");
+    var weth = await wethFactory.attach("0xfA53FD78b5176B4d772194511cC16C02c7F183F9");
+
+    await weth.deposit({ value: toWei("6600") })
+    await weth.approve(liquidityPool.address, toWei("6600"))
+
     console.log('add liquidity')
-    await liquidityPool.addLiquidity(toWei("0"), { value: toWei("6600") });
+    await liquidityPool.addLiquidity(toWei("6600"));
 
     return liquidityPool;
 }
