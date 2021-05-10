@@ -413,16 +413,12 @@ library LiquidityPoolModule {
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
-            int256 availableCash = perpetual.getAvailableCash(address(this));
-            int256 positionValue =
-                perpetual.getPosition(address(this)).wmul(perpetual.getIndexPrice());
+            int256 markPrice = perpetual.getMarkPrice();
             maintenanceMargin = maintenanceMargin.add(
-                positionValue.wmul(perpetual.maintenanceMarginRate).abs()
+                perpetual.getMaintenanceMargin(address(this), markPrice)
             );
-            initialMargin = initialMargin.add(
-                positionValue.wmul(perpetual.initialMarginRate).abs()
-            );
-            margin = margin.add(availableCash).add(positionValue);
+            initialMargin = initialMargin.add(perpetual.getInitialMargin(address(this), markPrice));
+            margin = margin.add(perpetual.getMargin(address(this), markPrice));
         }
         margin = margin.add(liquidityPool.poolCash);
         require(margin < maintenanceMargin, "AMM's margin >= maintenance margin");
@@ -434,20 +430,18 @@ library LiquidityPoolModule {
             if (perpetual.state != PerpetualState.NORMAL) {
                 continue;
             }
-            int256 positionValue =
-                perpetual.getPosition(address(this)).wmul(perpetual.getIndexPrice());
+            int256 markPrice = perpetual.getMarkPrice();
             // Floor to make poolCash >= 0
             int256 newMargin =
-                positionValue.abs().wmul(perpetual.initialMarginRate, Round.FLOOR).wmul(
-                    rate,
-                    Round.FLOOR
-                );
-            margin = perpetual.getAvailableCash(address(this)).add(positionValue);
+                perpetual.getInitialMargin(address(this), markPrice).wmul(rate, Round.FLOOR);
+            margin = perpetual.getMargin(address(this), markPrice);
             int256 deltaMargin = newMargin.sub(margin);
             if (deltaMargin > 0) {
+                // from pool to perp
                 perpetual.updateCash(address(this), deltaMargin);
                 transferFromPoolToPerpetual(liquidityPool, i, deltaMargin);
             } else if (deltaMargin < 0) {
+                // from perp to pool
                 perpetual.updateCash(address(this), deltaMargin);
                 transferFromPerpetualToPool(liquidityPool, i, deltaMargin.neg());
             }
