@@ -108,7 +108,7 @@ export class Deployer {
         if (contractName in this.deployedContracts) {
             return this.getDeployedContract(contractName)
         }
-        return await this.deploy(contractName);
+        return await this.deploy(contractName, ...args);
     }
 
     public async deployAsUpgradeable(contractName: string, admin: string): Promise<any> {

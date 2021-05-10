@@ -31,10 +31,10 @@ async function main(_, deployer, accounts) {
     const vaultFeeRate = toWei("0.00015");
 
     // infrastructure
-    await deployer.deploy("Broker")
-    await deployer.deploy("SymbolService", 10000)
+    await deployer.deployOrSkip("Broker")
+    await deployer.deployOrSkip("SymbolService", 10000)
     // await deployer.deploy("WETH9")
-    await deployer.deploy("CustomERC20", "USDC", "USDC", 6)
+    await deployer.deployOrSkip("CustomERC20", "USDC", "USDC", 6)
 
     // upgradeable pool / add whitelist
     const tx = await deployer.deployAsUpgradeable("PoolCreator", upgradeAdmin)
@@ -49,17 +49,17 @@ async function main(_, deployer, accounts) {
     await ensureFinished(symbolService.addWhitelistedFactory(poolCreator.address))
 
     // add version
-    const liquidityPool = await deployer.deploy("LiquidityPool")
-    const governor = await deployer.deploy("LpGovernor")
+    const liquidityPool = await deployer.deployOrSkip("LiquidityPool")
+    const governor = await deployer.deployOrSkip("LpGovernor")
     await ensureFinished(poolCreator.addVersion(liquidityPool.address, governor.address, 0, "initial version"))
 
-    printInfo("deploying preset1")
-    await preset1(deployer, accounts)
-    printInfo("deploying preset1 done")
+    // printInfo("deploying preset1")
+    // await preset1(deployer, accounts)
+    // printInfo("deploying preset1 done")
 
-    printInfo("deploying preset2")
-    await preset2(deployer, accounts)
-    printInfo("deploying preset2 done")
+    // printInfo("deploying preset2")
+    // await preset2(deployer, accounts)
+    // printInfo("deploying preset2 done")
 }
 
 
