@@ -1092,7 +1092,7 @@ library LiquidityPoolModule {
         int256 markPrice = perpetual.getMarkPrice();
         int256 position2 = perpetual.getPosition(trader);
         // when close, keep the effective leverage
-        // -withdraw == (availableCash2 * close - (deltaCash - fee) * position2) / position1 + fee
+        // -withdraw == (availableCash2 * close - (deltaCash - fee) * position2) / position1
         adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
         adjustCollateral = adjustCollateral.sub(deltaCash.sub(totalFee).wmul(position2));
         adjustCollateral = adjustCollateral.wdiv(position2.sub(closePosition));
@@ -1117,13 +1117,16 @@ library LiquidityPoolModule {
         int256 leverage = perpetual.getTargetLeverage(trader);
         require(leverage > 0, "target leverage = 0");
         int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
+        int256 margin = perpetual.getMargin(trader, markPrice);
         if (position.sub(deltaPosition) == 0 || closePosition != 0) {
             // strategy: let new margin balance = openPositionMargin
-            adjustCollateral = openPositionMargin.sub(perpetual.getMargin(trader, markPrice));
+            adjustCollateral = openPositionMargin.sub(margin);
         } else {
             // strategy: always append positionMargin of openPosition
             adjustCollateral = openPositionMargin;
         }
+        // make sure after adjust: margin >= keeperGasReward
+        adjustCollateral = adjustCollateral.max(perpetual.keeperGasReward.sub(margin));
     }
 
     function setTargetLeverage(
