@@ -204,7 +204,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      * @dev     [ConfirmBeforeDeployment]
      */
     function votingPeriod() public pure virtual returns (uint256) {
-        return 17280;
+        return 30;
     }
 
     /**
@@ -213,7 +213,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      * @dev     [ConfirmBeforeDeployment]
      */
     function executionDelay() public pure virtual returns (uint256) {
-        return 11520;
+        return 30;
     }
 
     /**
@@ -221,7 +221,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      * @dev     [ConfirmBeforeDeployment]
      */
     function unlockDelay() public pure virtual returns (uint256) {
-        return 17280;
+        return 30;
     }
 
     function getProposalThreshold() public view virtual returns (uint256) {

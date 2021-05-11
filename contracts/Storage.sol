@@ -20,6 +20,14 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
+    modifier onlyKeeper() {
+        require(
+            _liquidityPool.keeper == address(0) || _liquidityPool.keeper == _msgSender(),
+            "caller must be keeper"
+        );
+        _;
+    }
+
     modifier syncState(bool ignoreTerminated) {
         uint256 currentTime = block.timestamp;
         _liquidityPool.updateFundingState(currentTime);

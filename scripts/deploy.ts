@@ -36,7 +36,7 @@ async function main(_, deployer, accounts) {
     // await deployer.deploy("WETH9")
     await deployer.deployOrSkip("CustomERC20", "USDC", "USDC", 6)
 
-    // upgradeable pool / add whitelist
+    // upgradeable pool / add whitelist 
     const tx = await deployer.deployAsUpgradeable("PoolCreator", upgradeAdmin)
     const poolCreator = await deployer.getDeployedContract("PoolCreator")
     await ensureFinished(poolCreator.initialize(

@@ -110,9 +110,9 @@ contract Variables is Initializable, OwnableUpgradeable {
         // const MCB token
         // return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
         // TODO: test only
-        // return address(0x3FA06FBBD051ef8185Df9191ae1dEBddcEE8efAd);
+        return address(0x3FA06FBBD051ef8185Df9191ae1dEBddcEE8efAd);
         // kovan
-        return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
+        // return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
         // bsc testnet, heco testnet
         // return address(0x9CaDa02fC03671EA66BaAC7929Cb769214621947);
     }

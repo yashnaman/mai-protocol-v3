@@ -111,6 +111,14 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await perp.connect(user1).setTargetLeverage(0, user1.address, toWei("2"));
     });
 
+
+    it("get default target leverage", async () => {
+        await perp.runLiquidityPool();
+
+        const margin = await perp.getMarginAccount(0, user2.address);
+        console.log(margin);
+    })
+
     it("addLiq + tradeWithLev long 3, short 2, short 2, long 1", async () => {
         await perp.runLiquidityPool();
 

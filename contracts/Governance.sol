@@ -54,6 +54,23 @@ contract Governance is Storage {
     }
 
     /**
+     * @notice  Set an address as keeper, who is able to call liquidate on bankrupt margin account.
+     *          If not set or set to zero address, keeper can be any one.
+     *
+     * @param   newKeeper Address of new keeper. zero address means no limit to keeper only methods.
+     */
+    function setKeeper(address newKeeper) public {
+        address operator = _liquidityPool.getOperator();
+        if (operator != address(0)) {
+            // has operator
+            require(_msgSender() == operator, "can only be initiated by operator");
+        } else {
+            require(_msgSender() == _liquidityPool.governor, "can only be initiated by governor");
+        }
+        _liquidityPool.setKeeper(newKeeper);
+    }
+
+    /**
      * @notice  Claim the ownership of the liquidity pool to sender. See `transferOperator` for details.
      *          The caller must be the one specified by `transferOperator` first.
      */

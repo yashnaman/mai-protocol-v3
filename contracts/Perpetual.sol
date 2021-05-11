@@ -236,6 +236,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         external
         syncState(false)
         nonReentrant
+        onlyKeeper
         returns (int256 liquidationAmount)
     {
         require(
@@ -265,7 +266,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         int256 amount,
         int256 limitPrice,
         uint256 deadline
-    ) external syncState(false) nonReentrant returns (int256 liquidationAmount) {
+    ) external syncState(false) onlyKeeper nonReentrant returns (int256 liquidationAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"

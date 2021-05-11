@@ -92,8 +92,10 @@ struct LiquidityPoolStorage {
     int256 insuranceFundCap;
     int256 insuranceFund;
     int256 donatedInsuranceFund;
+    // keeper
+    address keeper;
     // reserved slot for future upgrade
-    bytes32[17] reserved;
+    bytes32[16] reserved;
 }
 
 /**
