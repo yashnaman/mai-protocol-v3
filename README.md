@@ -16,29 +16,14 @@
 
 [AMMDesign](https://mcdexio.github.io/documents/en/Shared-Liquidity-AMM-of-MAI-PROTOCOL-v3.pdf)
 
-## test deploy
-```
-npx hardhat compile
-npx hardhat run --network s10 scripts/s10test.ts
-```
+## Audit
 
-### install
+The smart contracts were audited by quantstamp: [MCDEX Audit Report](https://certificate.quantstamp.com/full/mcdex).
 
+## Development
+### Compile contracts
 ```
 npm install
-```
-
-### deploy on test network
-
-```
 npx hardhat compile
 npx hardhat run --network s10 scripts/s10test.ts
-```
-
-### run test && coverage
-
-```
-npx hardhat compile
-npx hardhat test
-npx hardhat run coverage
 ```
