@@ -399,11 +399,8 @@ library PerpetualModule {
         int256 amount
     ) public returns (bool isInitialDeposit) {
         require(amount > 0, "amount should greater than 0");
-        isInitialDeposit = perpetual.isEmptyAccount(trader);
         perpetual.updateCash(trader, amount);
-        if (isInitialDeposit) {
-            registerActiveAccount(perpetual, trader);
-        }
+        isInitialDeposit = registerActiveAccount(perpetual, trader);
         emit Deposit(perpetual.id, trader, amount);
     }
 
@@ -564,18 +561,26 @@ library PerpetualModule {
      * @dev     Register the trader's account to the active accounts in the perpetual
      * @param   perpetual   The reference of perpetual storage.
      * @param   trader      The address of the trader.
+     * @return  True if the trader is added to account for the first time.
      */
-    function registerActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
-        perpetual.activeAccounts.add(trader);
+    function registerActiveAccount(PerpetualStorage storage perpetual, address trader)
+        internal
+        returns (bool)
+    {
+        return perpetual.activeAccounts.add(trader);
     }
 
     /**
      * @dev     Deregister the trader's account from the active accounts in the perpetual
      * @param   perpetual   The reference of perpetual storage.
      * @param   trader      The address of the trader.
+     * @return  True if the trader is removed to account for the first time.
      */
-    function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader) internal {
-        perpetual.activeAccounts.remove(trader);
+    function deregisterActiveAccount(PerpetualStorage storage perpetual, address trader)
+        internal
+        returns (bool)
+    {
+        return perpetual.activeAccounts.remove(trader);
     }
 
     /**
