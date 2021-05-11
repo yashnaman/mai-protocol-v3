@@ -168,4 +168,6 @@ contract TestTrade is TestLiquidityPool {
     ) public returns (int256 deltaPosition) {
         deltaPosition = _liquidityPool.liquidateByAMM(perpetualIndex, liquidator, trader);
     }
+
+    function activatePerpetualFor(address trader, uint256 perpetualIndex) public returns (bool) {}
 }

@@ -133,8 +133,14 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
 
         // long 3 (open)
+        var activateAccounts = await perp.listActiveAccounts(0, 0, 10);
+        // no active account
+        expect(activateAccounts.length).to.equal(0);
         let now = Math.floor(Date.now() / 1000);
         await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        // active account user1
+        activateAccounts = await perp.listActiveAccounts(0, 0, 10);
+        expect(activateAccounts[0]).to.equal(user1.address);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = | positionValue | / 2xLev. so cash = -1500
@@ -155,6 +161,9 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // short 2 (partial close)
         await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_TARGET_LEVERAGE);
+        // active account user1
+        activateAccounts = await perp.listActiveAccounts(0, 0, 10);
+        expect(activateAccounts[0]).to.equal(user1.address);
         // amm deltaCash = -2100
         // margin = cash + positionValue = | positionValue | / 2xLev. so cash = -500
         // newCash = oldCash - withdraw + 2100 - 2100 * 0.003(fee). so withdraw = 1093.7
@@ -177,6 +186,9 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // short 2 (close all + open)
         await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_TARGET_LEVERAGE);
+        // active account user1
+        activateAccounts = await perp.listActiveAccounts(0, 0, 10);
+        expect(activateAccounts[0]).to.equal(user1.address);
         // amm deltaCash = -1984.996757074682502
         // margin = cash + positionValue = | positionValue | / 2xLev. so cash = 1500
         // idealMargin = oldCash + deltaCash + deposit - fee + mark newPos.
@@ -197,6 +209,9 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // long 1 (close all)
         await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        // no active account
+        activateAccounts = await perp.listActiveAccounts(0, 0, 10);
+        expect(activateAccounts.length).to.equal(0);
         // amm deltaCash = 977.783065493367778000
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         expect(cash).approximateBigNumber(toWei("0"));

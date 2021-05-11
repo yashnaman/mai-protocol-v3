@@ -1071,8 +1071,7 @@ library LiquidityPoolModule {
                 trader,
                 deltaPosition,
                 closePosition,
-                openPosition,
-                totalFee
+                openPosition
             );
         }
         // real deposit/withdraw
@@ -1093,13 +1092,12 @@ library LiquidityPoolModule {
         int256 markPrice = perpetual.getMarkPrice();
         int256 position2 = perpetual.getPosition(trader);
         // when close, keep the effective leverage
-        // -withdraw == (availableCash2 * close - deltaCash * position2) / position1 + fee
+        // -withdraw == (availableCash2 * close - (deltaCash - fee) * position2) / position1 + fee
         adjustCollateral = perpetual.getAvailableCash(trader).wmul(closePosition);
-        adjustCollateral = adjustCollateral.sub(deltaCash.wmul(position2));
+        adjustCollateral = adjustCollateral.sub(deltaCash.sub(totalFee).wmul(position2));
         adjustCollateral = adjustCollateral.wdiv(position2.sub(closePosition));
-        adjustCollateral = adjustCollateral.add(totalFee);
         // withdraw only when IM is satisfied
-        int256 limit = totalFee.sub(perpetual.getAvailableMargin(trader, markPrice));
+        int256 limit = perpetual.getAvailableMargin(trader, markPrice).neg();
         adjustCollateral = adjustCollateral.max(limit);
         // never deposit when close positions
         adjustCollateral = adjustCollateral.min(0);
@@ -1110,8 +1108,7 @@ library LiquidityPoolModule {
         address trader,
         int256 deltaPosition,
         int256 closePosition,
-        int256 openPosition,
-        int256 totalFee
+        int256 openPosition
     ) public view returns (int256 adjustCollateral) {
         int256 markPrice = perpetual.getMarkPrice();
         int256 position = perpetual.getPosition(trader);
@@ -1119,7 +1116,7 @@ library LiquidityPoolModule {
         // when open, deposit mark * | openPosition | / lev
         int256 leverage = perpetual.getTargetLeverage(trader);
         require(leverage > 0, "target leverage = 0");
-        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage).add(totalFee);
+        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
         if (position.sub(deltaPosition) == 0 || closePosition != 0) {
             // strategy: let new margin balance = openPositionMargin
             adjustCollateral = openPositionMargin.sub(perpetual.getMargin(trader, markPrice));
