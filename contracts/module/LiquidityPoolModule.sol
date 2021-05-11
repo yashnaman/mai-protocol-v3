@@ -1040,7 +1040,6 @@ library LiquidityPoolModule {
      * @param   deltaPosition   The update position of the trader's account in the perpetual.
      * @param   deltaCash       The update cash(collateral) of the trader's account in the perpetual.
      * @param   totalFee        The total fee collected from the trader after the trade.
-     * @param   flags           The flags of the trade.
      */
     function adjustMarginLeverage(
         LiquidityPoolStorage storage liquidityPool,
@@ -1048,8 +1047,7 @@ library LiquidityPoolModule {
         address trader,
         int256 deltaPosition,
         int256 deltaCash,
-        int256 totalFee,
-        uint32 flags
+        int256 totalFee
     ) public {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         // read perp
