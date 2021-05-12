@@ -1070,8 +1070,10 @@ library LiquidityPoolModule {
                 perpetual,
                 trader,
                 deltaPosition,
+                deltaCash,
                 closePosition,
-                openPosition
+                openPosition,
+                totalFee
             );
         }
         // real deposit/withdraw
@@ -1103,30 +1105,38 @@ library LiquidityPoolModule {
         adjustCollateral = adjustCollateral.min(0);
     }
 
+    // open only or close + open
     function adjustOpenedMargin(
         PerpetualStorage storage perpetual,
         address trader,
         int256 deltaPosition,
+        int256 deltaCash,
         int256 closePosition,
-        int256 openPosition
-    ) public view returns (int256 adjustCollateral) {
+        int256 openPosition,
+        int256 totalFee
+    ) public view returns (int256) {
         int256 markPrice = perpetual.getMarkPrice();
-        int256 position = perpetual.getPosition(trader);
-        // open only or close + open
-        // when open, deposit mark * | openPosition | / lev
-        int256 leverage = perpetual.getTargetLeverage(trader);
-        require(leverage > 0, "target leverage = 0");
-        int256 openPositionMargin = openPosition.abs().wfrac(markPrice, leverage);
-        int256 margin = perpetual.getMargin(trader, markPrice);
-        if (position.sub(deltaPosition) == 0 || closePosition != 0) {
-            // strategy: let new margin balance = openPositionMargin
-            adjustCollateral = openPositionMargin.sub(margin);
-        } else {
-            // strategy: always append positionMargin of openPosition
-            adjustCollateral = openPositionMargin;
+        int256 oldMargin = perpetual.getMargin(trader, markPrice);
+        int256 newMargin;
+        {
+            int256 leverage = perpetual.getTargetLeverage(trader);
+            require(leverage > 0, "target leverage = 0");
+            // open from 0 or close + open
+            // new margin = openPositionMargin
+            newMargin = openPosition.abs().wfrac(markPrice, leverage);
+        }
+        if (perpetual.getPosition(trader).sub(deltaPosition) != 0 && closePosition == 0) {
+            // open from non-zero position
+            // new margin = openPositionMargin + old margin + fee - pnl
+            newMargin = newMargin.add(oldMargin).add(totalFee);
+            // - pnl
+            newMargin = newMargin.sub(markPrice.wmul(deltaPosition)).sub(deltaCash);
+            // make sure after adjust: margin >= initialMargin
+            newMargin = newMargin.max(perpetual.getInitialMargin(trader, markPrice));
         }
         // make sure after adjust: margin >= keeperGasReward
-        adjustCollateral = adjustCollateral.max(perpetual.keeperGasReward.sub(margin));
+        newMargin = newMargin.max(perpetual.keeperGasReward);
+        return newMargin.sub(oldMargin);
     }
 
     function setTargetLeverage(

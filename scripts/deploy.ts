@@ -39,6 +39,7 @@ async function main(_, deployer, accounts) {
     // upgradeable pool / add whitelist 
     const tx = await deployer.deployAsUpgradeable("PoolCreator", upgradeAdmin)
     const poolCreator = await deployer.getDeployedContract("PoolCreator")
+    await deployer.deployOrSkip("Reader", poolCreator.address)
     await ensureFinished(poolCreator.initialize(
         deployer.addressOf("SymbolService"),
         vault,
