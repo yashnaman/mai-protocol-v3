@@ -145,7 +145,7 @@ struct PerpetualStorage {
     int256 reserved3;
     // accounts
     mapping(address => MarginAccount) marginAccounts;
-    // reserved slot for future upgrade
     Option defaultTargetLeverage;
+    // reserved slot for future upgrade
     bytes32[17] reserved;
 }
