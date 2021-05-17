@@ -35,10 +35,6 @@ contract VersionControl is OwnableUpgradeable {
         string note
     );
 
-    function __VersionControl_init() internal initializer {
-        __Ownable_init();
-    }
-
     /**
      * @notice  Create a new version with template of liquidity pool and governor.
      *

@@ -43,8 +43,8 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         int256 globalVaultFeeRate,
         address distributor
     ) external initializer {
+        __Ownable_init();
         __Variables_init(symbolService, globalVault, globalVaultFeeRate);
-        __VersionControl_init();
 
         _rewardDistributor = distributor;
         upgradeAdmin = IProxyAdmin(address(new ProxyAdmin()));
