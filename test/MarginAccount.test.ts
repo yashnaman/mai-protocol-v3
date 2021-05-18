@@ -189,7 +189,7 @@ describe('MarginModule', () => {
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("-450"),
+                    cash: toWei("-449"),
                     position: toWei("1"),
                 },
                 parameters: {
@@ -197,14 +197,14 @@ describe('MarginModule', () => {
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
-                expect: true, // 500 - 450 vs 50
+                expect: true, // 500 - 449 vs 50 + 1
             },
             {
                 name: "-isInitialMarginSafe yes",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("550"),
+                    cash: toWei("551"),
                     position: toWei("-1"),
                 },
                 parameters: {
@@ -212,14 +212,14 @@ describe('MarginModule', () => {
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
-                expect: true, // -500 + 550 vs 50
+                expect: true, // -500 + 551 vs 50 + 1
             },
             {
                 name: "+isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("-450.1"),
+                    cash: toWei("-449.1"),
                     position: toWei("1"),
                 },
                 parameters: {
@@ -227,14 +227,14 @@ describe('MarginModule', () => {
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
-                expect: false, // 500 - 450.1 vs 50
+                expect: false, // 500 - 449.1 vs 50 + 1
             },
             {
                 name: "-isInitialMarginSafe no",
                 method: "isInitialMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("549.9"),
+                    cash: toWei("548.9"),
                     position: toWei("-1"),
                 },
                 parameters: {
@@ -242,14 +242,14 @@ describe('MarginModule', () => {
                 },
                 unitAccumulativeFunding: toWei("0"),
                 trader: 0,
-                expect: false, // -500 + 549.9 vs 50
+                expect: false, // -500 + 548.9 vs 50 + 1
             },
             {
                 name: "+isMaintenanceMarginSafe yes",
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("-450"),
+                    cash: toWei("-449"),
                     position: toWei("1"),
                 },
                 parameters: {
@@ -264,7 +264,7 @@ describe('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("550"),
+                    cash: toWei("551"),
                     position: toWei("-1"),
                 },
                 parameters: {
@@ -279,7 +279,7 @@ describe('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("-450.1"),
+                    cash: toWei("-449.1"),
                     position: toWei("1"),
                 },
                 parameters: {
@@ -294,7 +294,7 @@ describe('MarginModule', () => {
                 method: "isMaintenanceMarginSafe",
                 markPrice: toWei("500"),
                 marginAccount: {
-                    cash: toWei("549.9"),
+                    cash: toWei("550.9"),
                     position: toWei("-1"),
                 },
                 parameters: {

@@ -84,11 +84,11 @@ describe('Liquidate', () => {
 
             await testTrade.setMarginAccount(0, user2.address, toWei("5000"), toWei("0"));
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-950"), toWei("1")); // 100 / 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-949"), toWei("1")); // 100 / 50
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await expect(testTrade.liquidateByAMM(0, user2.address, user1.address)).to.be.revertedWith("trader is safe");
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-960"), toWei("1")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-960"), toWei("1")); // im = 100 / magin = 40 / safe = 51
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
@@ -110,7 +110,7 @@ describe('Liquidate', () => {
 
             await testTrade.setMarginAccount(0, user2.address, toWei("5000"), toWei("0"));
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 51
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
@@ -132,13 +132,13 @@ describe('Liquidate', () => {
 
             await testTrade.setMarginAccount(0, user2.address, toWei("5000"), toWei("0"));
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-950"), toWei("1")); // 100 / 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-949"), toWei("1")); // 100 / 50
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await expect(testTrade.liquidateByAMM(0, user2.address, user1.address)).to.be.revertedWith("trader is safe");
 
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0"))
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-960"), toWei("1")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-960"), toWei("1")); // im = 100 / magin = 40 / safe = 51
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
@@ -163,7 +163,7 @@ describe('Liquidate', () => {
 
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0"))
 
-            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-1200"), toWei("1")); // im = 100 / magin = 40 / safe = 51
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
@@ -189,7 +189,7 @@ describe('Liquidate', () => {
 
             expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0"))
             // marginbalance = 0 when cash = -994
-            await testTrade.setMarginAccount(0, user1.address, toWei("-993.9"), toWei("1")); // im = 100 / magin = 40 / safe = 50
+            await testTrade.setMarginAccount(0, user1.address, toWei("-993.9"), toWei("1")); // im = 100 / magin = 40 / safe = 51
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
             await testTrade.liquidateByAMM(0, user2.address, user1.address);
 

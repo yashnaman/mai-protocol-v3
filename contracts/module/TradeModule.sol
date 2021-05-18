@@ -394,7 +394,7 @@ library TradeModule {
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         require(perpetual.openInterest >= 0, "negative open interest");
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
-        (int256 penalty, int256 penaltyToLiquidator) =
+        (int256 penalty, ) =
             postLiquidate(
                 liquidityPool,
                 perpetual,

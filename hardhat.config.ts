@@ -113,7 +113,14 @@ module.exports = {
             // accounts: [""],
             timeout: 300000,
             confirmations: 1,
-        }
+        },
+        arb: {
+            url: "https://kovan5.arbitrum.io/rpc",
+            gasPrice: 35e6,
+            accounts: [""],
+            timeout: 300000,
+            confirmations: 1,
+        },
     },
     solidity: {
         version: "0.7.4",

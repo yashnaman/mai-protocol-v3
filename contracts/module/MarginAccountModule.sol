@@ -131,7 +131,7 @@ library MarginAccountModule {
 
     /**
      * @dev     Get the available margin of the trader in the perpetual.
-     *          Available margin = margin - max(initial margin, keeper gas reward), keeper gas reward = 0 if position = 0
+     *          Available margin = margin - (initial margin + keeper gas reward), keeper gas reward = 0 if position = 0
      * @param   perpetual   The perpetual object
      * @param   trader      The address of the trader
      * @param   price       The price to calculate available margin
@@ -145,7 +145,7 @@ library MarginAccountModule {
         int256 threshold =
             getPosition(perpetual, trader) == 0
                 ? 0
-                : getInitialMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
+                : getInitialMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
         availableMargin = getMargin(perpetual, trader, price).sub(threshold);
     }
 
@@ -166,7 +166,7 @@ library MarginAccountModule {
 
     /**
      * @dev Check if the trader is maintenance margin safe in the perpetual, which means
-     *      margin >= max(maintenance margin, keeper gas reward). Keeper gas reward = 0 if position = 0
+     *      margin >= maintenance margin + keeper gas reward. Keeper gas reward = 0 if position = 0
      * @param perpetual The perpetual object
      * @param trader The address of the trader
      * @param price The price to calculate the maintenance margin
@@ -180,7 +180,7 @@ library MarginAccountModule {
         int256 threshold =
             getPosition(perpetual, trader) == 0
                 ? 0
-                : getMaintenanceMargin(perpetual, trader, price).max(perpetual.keeperGasReward);
+                : getMaintenanceMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
         isSafe = getMargin(perpetual, trader, price) >= threshold;
     }
 

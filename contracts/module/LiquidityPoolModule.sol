@@ -1131,11 +1131,9 @@ library LiquidityPoolModule {
             newMargin = newMargin.add(oldMargin).add(totalFee);
             // - pnl
             newMargin = newMargin.sub(markPrice.wmul(deltaPosition)).sub(deltaCash);
-            // make sure after adjust: margin >= initialMargin
-            newMargin = newMargin.max(perpetual.getInitialMargin(trader, markPrice));
         }
-        // make sure after adjust: margin >= keeperGasReward
-        newMargin = newMargin.max(perpetual.keeperGasReward);
+        // make sure after adjust: trader is initial margin safe
+        newMargin = newMargin.max(oldMargin.sub(perpetual.getAvailableMargin(trader, markPrice)));
         return newMargin.sub(oldMargin);
     }
 
