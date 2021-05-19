@@ -40,13 +40,11 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
     function initialize(
         address symbolService,
         address globalVault,
-        int256 globalVaultFeeRate,
-        address distributor
+        int256 globalVaultFeeRate
     ) external initializer {
         __Ownable_init();
         __Variables_init(symbolService, globalVault, globalVaultFeeRate);
 
-        _rewardDistributor = distributor;
         upgradeAdmin = IProxyAdmin(address(new ProxyAdmin()));
     }
 
@@ -178,7 +176,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
             liquidityPool,
             liquidityPool,
             getMCBToken(),
-            rewardDistributor()
+            address(this)
         );
         // register pool to tracer
         _registerLiquidityPool(liquidityPool, operator);

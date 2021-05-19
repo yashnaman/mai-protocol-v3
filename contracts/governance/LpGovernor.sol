@@ -27,7 +27,7 @@ contract LpGovernor is
      * @param   minter      The role that has privilege to mint / burn token.
      * @param   target      The target of execution, all action of proposal will be send to target.
      * @param   rewardToken The ERC20 token used as reward of mining / reward distribution.
-     * @param   distributor The role that has privilege to set reward.
+     * @param   poolCreator The address of pool creator, whose owner will be the owner of governor.
      */
     function initialize(
         string memory name,
@@ -35,11 +35,11 @@ contract LpGovernor is
         address minter,
         address target,
         address rewardToken,
-        address distributor
+        address poolCreator
     ) public virtual initializer {
         __ERC20_init_unchained(name, symbol);
         __GovernorAlpha_init_unchained(target);
-        __RewardDistribution_init_unchained(rewardToken, distributor);
+        __RewardDistribution_init_unchained(rewardToken, poolCreator);
 
         _minter = minter;
         _target = target;

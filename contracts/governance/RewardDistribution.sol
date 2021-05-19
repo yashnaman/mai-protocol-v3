@@ -7,12 +7,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
+import "../interface/IPoolCreator.sol";
+
 abstract contract RewardDistribution is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    address internal _distributor;
-
+    IPoolCreator public poolCreator;
     IERC20Upgradeable public rewardToken;
 
     uint256 public periodFinish;
@@ -33,17 +34,22 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         _;
     }
 
+    modifier onlyOwnerOfPoolCreator() {
+        require(_msgSender() == poolCreator.owner(), "caller must be owner of pool creator");
+        _;
+    }
+
     // virtual methods
     function balanceOf(address account) public view virtual returns (uint256);
 
     function totalSupply() public view virtual returns (uint256);
 
-    function __RewardDistribution_init_unchained(address rewardToken_, address distributor)
+    function __RewardDistribution_init_unchained(address rewardToken_, address poolCreator_)
         internal
         initializer
     {
         rewardToken = IERC20Upgradeable(rewardToken_);
-        _distributor = distributor;
+        poolCreator = IPoolCreator(poolCreator_);
     }
 
     /**
@@ -52,8 +58,12 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
      *
      * @param   newRewardRate   New reward distribution rate.
      */
-    function setRewardRate(uint256 newRewardRate) external virtual updateReward(address(0)) {
-        require(_msgSender() == _distributor, "must be distributor to set reward rate");
+    function setRewardRate(uint256 newRewardRate)
+        external
+        virtual
+        onlyOwnerOfPoolCreator
+        updateReward(address(0))
+    {
         if (newRewardRate == 0) {
             periodFinish = block.number;
         } else if (periodFinish != 0) {
@@ -71,8 +81,12 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
      *
      * @param   reward  Amount of reward to add.
      */
-    function notifyRewardAmount(uint256 reward) external virtual updateReward(address(0)) {
-        require(_msgSender() == _distributor, "must be distributor to notify reward amount");
+    function notifyRewardAmount(uint256 reward)
+        external
+        virtual
+        onlyOwnerOfPoolCreator
+        updateReward(address(0))
+    {
         require(rewardRate > 0, "rewardRate is zero");
         uint256 period = reward.div(rewardRate);
         // already finished or not initialized

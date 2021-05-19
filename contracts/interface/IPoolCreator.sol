@@ -4,6 +4,8 @@ pragma solidity 0.7.4;
 import "./IProxyAdmin.sol";
 
 interface IPoolCreator {
+    function owner() external view returns (address);
+
     function activatePerpetualFor(address trader, uint256 perpetualIndex) external;
 
     function deactivatePerpetualFor(address trader, uint256 perpetualIndex) external;

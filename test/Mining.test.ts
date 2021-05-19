@@ -30,6 +30,8 @@ describe('Minging', () => {
         rtk = await createContract("CustomERC20", ["RTK", "RTK", 18]);
         miner = stk;
 
+        const poolCreator = await createContract("MockPoolCreator", [user1.address])
+
         await stk.initialize(
             "MCDEX governor token",
             "MGT",
@@ -42,8 +44,8 @@ describe('Minging', () => {
 
     it("notifyRewardAmount", async () => {
 
-        await expect(miner.setRewardRate(2)).to.be.revertedWith("must be distributor to set reward rate");
-        await expect(miner.notifyRewardAmount(toWei("100"))).to.be.revertedWith("must be distributor to notify reward amount");
+        await expect(miner.setRewardRate(2)).to.be.revertedWith("caller must be owner of pool creator");
+        await expect(miner.notifyRewardAmount(toWei("100"))).to.be.revertedWith("caller must be owner of pool creator");
         await expect(miner.connect(user1).notifyRewardAmount(toWei("100"))).to.be.revertedWith("rewardRate is zero");
 
         await miner.connect(user1).setRewardRate(toWei("2"));

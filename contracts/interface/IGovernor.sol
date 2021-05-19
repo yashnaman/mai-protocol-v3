@@ -11,7 +11,7 @@ interface IGovernor {
         address minter,
         address target_,
         address rewardToken,
-        address distributor
+        address poolCreator
     ) external;
 
     function getTarget() external view returns (address);

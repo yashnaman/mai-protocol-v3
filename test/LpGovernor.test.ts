@@ -8,7 +8,7 @@ import {
     createContract,
 } from '../scripts/utils';
 
-describe('Integration', () => {
+describe('LpGovernor', () => {
     let accounts;
     let user0;
     let user1;
@@ -19,6 +19,7 @@ describe('Integration', () => {
     let rtk;
     let governor;
     let target;
+    let poolCreator;
 
     enum ProposalState { Pending, Active, Canceled, Defeated, Succeeded, Queued, Expired, Executed }
 
@@ -40,13 +41,15 @@ describe('Integration', () => {
         target = await createContract("MockLiquidityPool");
         governor = stk;
 
+        poolCreator = await createContract("MockPoolCreator", [user0.address])
+
         await stk.initialize(
             "MCDEX governor token",
             "MGT",
             user0.address,
             target.address,
             rtk.address,
-            user0.address
+            poolCreator.address
         );
     });
 
@@ -65,9 +68,5 @@ describe('Integration', () => {
 
         await stk.mint(user1.address, toWei("1000"));
         await expect(stk.burn(user1.address, toWei("2000"))).to.be.revertedWith("burn amount exceeds balance")
-    });
-
-
-    it("lock", async () => {
     });
 })

@@ -50,7 +50,6 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
             symbol.address,
             vault.address,
             toWei("0.001"),
-            vault.address
         )
         await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
         await symbol.addWhitelistedFactory(poolCreator.address);

@@ -8,7 +8,6 @@ contract Variables is Initializable, OwnableUpgradeable {
     bytes32 internal _reserved1;
     address internal _symbolService;
     address internal _vault;
-    address internal _rewardDistributor;
     int256 internal _vaultFeeRate;
 
     event SetVaultFeeRate(int256 prevFeeRate, int256 newFeeRate);
@@ -67,19 +66,6 @@ contract Variables is Initializable, OwnableUpgradeable {
 
         emit SetVaultFeeRate(_vaultFeeRate, newVaultFeeRate);
         _vaultFeeRate = newVaultFeeRate;
-    }
-
-    function rewardDistributor() public view returns (address) {
-        return _rewardDistributor;
-    }
-
-    function setRewardDistributor(address newRewardDistributor) external onlyOwner {
-        require(
-            _rewardDistributor != newRewardDistributor,
-            "new distributor is already current distributor"
-        );
-        emit SetRewardDistributor(_rewardDistributor, newRewardDistributor);
-        _rewardDistributor = newRewardDistributor;
     }
 
     /**

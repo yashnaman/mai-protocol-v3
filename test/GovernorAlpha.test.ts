@@ -10,7 +10,7 @@ import {
     createFactory
 } from '../scripts/utils';
 
-describe('GovernorAlpha.test', () => {
+describe('GovernorAlpha', () => {
     let accounts;
     let user0;
     let user1;
@@ -47,6 +47,7 @@ describe('GovernorAlpha.test', () => {
         rtk = await createContract("CustomERC20", ["RTK", "RTK", 18]);
         target = await createContract("MockLiquidityPool");
         governor = stk;
+        const poolCreator = await createContract("MockPoolCreator", [user0.address])
 
         await stk.initialize(
             "MCDEX governor token",
@@ -54,7 +55,7 @@ describe('GovernorAlpha.test', () => {
             user0.address,
             target.address,
             rtk.address,
-            user0.address
+            poolCreator.address
         );
 
         // console.table([
@@ -269,7 +270,6 @@ describe('GovernorAlpha.test', () => {
             symbol.address,
             user0.address,
             toWei("0.001"),
-            user0.address
         )
         await symbol.addWhitelistedFactory(poolCreator.address);
 
