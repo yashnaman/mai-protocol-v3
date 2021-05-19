@@ -1099,8 +1099,9 @@ library LiquidityPoolModule {
         adjustCollateral = adjustCollateral.sub(deltaCash.sub(totalFee).wmul(position2));
         adjustCollateral = adjustCollateral.wdiv(position2.sub(closePosition));
         // withdraw only when IM is satisfied
-        int256 limit = perpetual.getAvailableMargin(trader, markPrice).neg();
-        adjustCollateral = adjustCollateral.max(limit);
+        adjustCollateral = adjustCollateral.max(
+            perpetual.getAvailableMargin(trader, markPrice).neg()
+        );
         // never deposit when close positions
         adjustCollateral = adjustCollateral.min(0);
     }
@@ -1114,27 +1115,28 @@ library LiquidityPoolModule {
         int256 closePosition,
         int256 openPosition,
         int256 totalFee
-    ) public view returns (int256) {
+    ) public view returns (int256 adjustCollateral) {
         int256 markPrice = perpetual.getMarkPrice();
         int256 oldMargin = perpetual.getMargin(trader, markPrice);
-        int256 newMargin;
-        {
-            int256 leverage = perpetual.getTargetLeverage(trader);
-            require(leverage > 0, "target leverage = 0");
-            // open from 0 or close + open
-            // new margin = openPositionMargin
-            newMargin = openPosition.abs().wfrac(markPrice, leverage);
-        }
+        int256 leverage = perpetual.getTargetLeverage(trader);
+        require(leverage > 0, "target leverage = 0");
+        // openPositionMargin
+        adjustCollateral = openPosition.abs().wfrac(markPrice, leverage);
         if (perpetual.getPosition(trader).sub(deltaPosition) != 0 && closePosition == 0) {
             // open from non-zero position
-            // new margin = openPositionMargin + old margin + fee - pnl
-            newMargin = newMargin.add(oldMargin).add(totalFee);
-            // - pnl
-            newMargin = newMargin.sub(markPrice.wmul(deltaPosition)).sub(deltaCash);
+            // adjustCollateral = openPositionMargin + fee - pnl
+            adjustCollateral = adjustCollateral
+                .add(totalFee)
+                .sub(markPrice.wmul(deltaPosition))
+                .sub(deltaCash);
+        } else {
+            // open from 0 or close + open
+            adjustCollateral = adjustCollateral.sub(oldMargin);
         }
         // make sure after adjust: trader is initial margin safe
-        newMargin = newMargin.max(oldMargin.sub(perpetual.getAvailableMargin(trader, markPrice)));
-        return newMargin.sub(oldMargin);
+        adjustCollateral = adjustCollateral.max(
+            perpetual.getAvailableMargin(trader, markPrice).neg()
+        );
     }
 
     function setTargetLeverage(
