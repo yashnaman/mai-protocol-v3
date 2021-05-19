@@ -117,7 +117,7 @@ module.exports = {
         arb: {
             url: "https://kovan5.arbitrum.io/rpc",
             gasPrice: 35e6,
-            accounts: [""],
+            // accounts: [""],
             timeout: 300000,
             confirmations: 1,
         },

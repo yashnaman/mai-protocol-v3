@@ -38,7 +38,7 @@ describe('Minging', () => {
             user0.address,
             "0x0000000000000000000000000000000000000000",
             rtk.address,
-            user1.address
+            poolCreator.address
         );
     });
 
