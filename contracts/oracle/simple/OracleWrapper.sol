@@ -46,19 +46,6 @@ contract OracleWrapper is Ownable, IOracle {
         _isMarketClosed = isClosed;
     }
 
-    function setAll(
-        int256 markPrice,
-        int256 indexPrice,
-        uint256 timestamp,
-        bool _isMarketClosed_
-    ) external onlyOwner {
-        _markPrice = markPrice;
-        _markPriceTimestamp = timestamp;
-        _indexPrice = indexPrice;
-        _indexPriceTimestamp = timestamp;
-        _isMarketClosed = _isMarketClosed_;
-    }
-
     function setTerminated(bool isTerminated_) external onlyOwner {
         _isTerminated = isTerminated_;
     }
