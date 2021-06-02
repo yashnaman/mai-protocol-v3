@@ -2,8 +2,9 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../../interface/IOracle.sol";
 
-contract OracleWrapper is Ownable {
+contract OracleWrapper is Ownable, IOracle {
     bool internal _isMarketClosed;
     bool internal _isTerminated;
     string internal _collateral;
@@ -52,27 +53,27 @@ contract OracleWrapper is Ownable {
         maxHeartBeat = maxHeartBeat_;
     }
 
-    function collateral() external view returns (string memory) {
+    function collateral() external override view returns (string memory) {
         return _collateral;
     }
 
-    function underlyingAsset() external view returns (string memory) {
+    function underlyingAsset() external override view returns (string memory) {
         return _underlyingAsset;
     }
 
-    function priceTWAPLong() external view returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPLong() external override view returns (int256 newPrice, uint256 newTimestamp) {
         return (_markPrice, _markPriceTimestamp);
     }
 
-    function priceTWAPShort() external view returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPShort() external override view returns (int256 newPrice, uint256 newTimestamp) {
         return (_indexPrice, _indexPriceTimestamp);
     }
 
-    function isMarketClosed() external view returns (bool) {
+    function isMarketClosed() external override view returns (bool) {
         return _isMarketClosed;
     }
 
-    function isTerminated() external returns (bool) {
+    function isTerminated() external override returns (bool) {
         checkHeartStop();
         return _isTerminated;
     }
