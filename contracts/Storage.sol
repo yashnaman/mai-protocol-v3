@@ -20,11 +20,9 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
-    modifier onlyKeeper() {
-        require(
-            _liquidityPool.keeper == address(0) || _liquidityPool.keeper == _msgSender(),
-            "caller must be keeper"
-        );
+    modifier onlyKeeper(uint256 perpetualIndex) {
+        address keeper = _liquidityPool.perpetuals[perpetualIndex].keeper;
+        require(keeper == address(0) || keeper == _msgSender(), "caller must be keeper");
         _;
     }
 

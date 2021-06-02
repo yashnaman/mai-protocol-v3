@@ -235,7 +235,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
         nonReentrant
-        onlyKeeper
+        onlyKeeper(perpetualIndex)
         syncState(false)
         returns (int256 liquidationAmount)
     {
@@ -271,7 +271,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
     )
         external
         nonReentrant
-        onlyKeeper
+        onlyKeeper(perpetualIndex)
         onlyAuthorized(liquidator, Constant.PRIVILEGE_LIQUIDATE)
         syncState(false)
         returns (int256 liquidationAmount)

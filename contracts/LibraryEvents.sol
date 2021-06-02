@@ -66,7 +66,11 @@ contract LibraryEvents {
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
     event SetTargetLeverage(address indexed trader, int256 targetLeverage);
-    event SetKeeper(address indexed previousKeeper, address indexed newKeeper);
+    event SetKeeper(
+        uint256 perpetualIndex,
+        address indexed previousKeeper,
+        address indexed newKeeper
+    );
 
     // TradeModule
     event Trade(
