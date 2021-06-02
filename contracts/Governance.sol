@@ -163,11 +163,12 @@ contract Governance is Storage {
     }
 
     /**
-     * @notice  Set the state of the perpetual to "EMERGENCY". Can be call by anyone when
-     *          following conditions are met:
-     *            1. the oralce contract declares itself as "termainated";
-     *            2. the AMM of perpetual's maintenance margin is unsafe;
-     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @notice  Set perpetual into "EMERGENCY" state.
+     *          1. if the oralce contract declares itself as "termainated", call setEmergencyState(index).
+     *          2. if the AMM is maintenance margin unsafe, call
+     *             setEmergencyState(SET_ALL_PERPETUALS_TO_EMERGENCY_STATE).
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool or
+     *                          SET_ALL_PERPETUALS_TO_EMERGENCY_STATE to settle the whole pool
      */
     function setEmergencyState(uint256 perpetualIndex) public syncState(true) {
         if (perpetualIndex == Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE) {
