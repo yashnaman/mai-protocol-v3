@@ -606,7 +606,8 @@ library AMMModule {
             }
         }
         context.availableCash = context.availableCash.add(liquidityPool.poolCash);
-        // prevent margin balance < maintenance margin
+        // prevent margin balance < maintenance margin.
+        // call setEmergencyState(SET_ALL_PERPETUALS_TO_EMERGENCY_STATE) when AMM is maintenance margin unsafe
         require(
             context.availableCash.add(context.positionValue).add(
                 context.indexPrice.wmul(context.position)
