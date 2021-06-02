@@ -2,7 +2,6 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "../../interface/IOracle.sol";
 
 contract OracleWrapper is Ownable, IOracle {

@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../../interface/IOracle.sol";
 
 contract MockMultiOracle is Ownable {
     struct Single {
@@ -109,36 +110,36 @@ contract MockMultiOracle is Ownable {
 }
 
 // note: wrapped by TransparentUpgradeableProxy
-contract MockSingleOracle {
+contract MockSingleOracle is IOracle {
     MockMultiOracle private _multiOracle;
     uint256 private _index;
-
     constructor(MockMultiOracle multiOracle_, uint256 index_) {
         _multiOracle = multiOracle_;
        _index = index_;
     }
     
-    function collateral(uint256 index) external view returns (string memory) {
-        return _multiOracle.collateral(index);
+    function collateral() external override view returns (string memory) {
+        return _multiOracle.collateral(_index);
     }
 
-    function underlyingAsset(uint256 index) external view returns (string memory) {
-        return _multiOracle.underlyingAsset(index);
+    function underlyingAsset() external override view returns (string memory) {
+        return _multiOracle.underlyingAsset(_index);
     }
 
-    function priceTWAPLong(uint256 index) external view returns (int256 newPrice, uint256 newTimestamp) {
-         return _multiOracle.priceTWAPLong(index);
+    function priceTWAPLong() external override view returns (int256 newPrice, uint256 newTimestamp) {
+         return _multiOracle.priceTWAPLong(_index);
     }
 
-    function priceTWAPShort(uint256 index) external view returns (int256 newPrice, uint256 newTimestamp) {
-        return _multiOracle.priceTWAPShort(index);
+    function priceTWAPShort() external override view returns (int256 newPrice, uint256 newTimestamp) {
+        return _multiOracle.priceTWAPShort(_index);
     }
 
-    function isMarketClosed(uint256 index) external view returns (bool) {
-        return _multiOracle.isMarketClosed(index);
+    function isMarketClosed() external override view returns (bool) {
+        return _multiOracle.isMarketClosed(_index);
     }
 
-    function isTerminated(uint256 index) external returns (bool) {
-        return _multiOracle.isTerminated(index);
+    function isTerminated() external override returns (bool) {
+        return _multiOracle.isTerminated(_index);
     }
 }
+
