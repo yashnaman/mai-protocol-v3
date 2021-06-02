@@ -70,7 +70,11 @@ library LiquidityPoolModule {
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
     event SetTargetLeverage(address indexed trader, int256 targetLeverage);
-    event SetKeeper(address indexed previousKeeper, address indexed newKeeper);
+    event SetKeeper(
+        uint256 perpetualIndex,
+        address indexed previousKeeper,
+        address indexed newKeeper
+    );
 
     /**
      * @dev     Get the vault's address of the liquidity pool
@@ -339,10 +343,15 @@ library LiquidityPoolModule {
      *
      * @param   newKeeper   The account of keeper.
      */
-    function setKeeper(LiquidityPoolStorage storage liquidityPool, address newKeeper) public {
-        require(newKeeper != liquidityPool.keeper, "new keeper is current keeper");
-        emit SetKeeper(liquidityPool.keeper, newKeeper);
-        liquidityPool.keeper = newKeeper;
+    function setKeeper(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address newKeeper
+    ) public {
+        address previousKeeper = liquidityPool.perpetuals[perpetualIndex].keeper;
+        require(newKeeper != previousKeeper, "new keeper is current keeper");
+        emit SetKeeper(perpetualIndex, previousKeeper, newKeeper);
+        liquidityPool.perpetuals[perpetualIndex].keeper = newKeeper;
     }
 
     function setPerpetualOracle(

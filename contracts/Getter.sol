@@ -402,5 +402,14 @@ contract Getter is Storage, ILiquidityPoolGetter {
         }
     }
 
+    /**
+     * @notice  Get address of keeper of specified perpetual. Keeper is the only one allowed to call
+     *          liquidateByAMM / liquidateByTrader when it is not zero address.
+     *          If keeper is not set, any one is able to liquidateByAMM / liquidateByTrader.
+     */
+    function getKeeper(uint256 perpetualIndex) public view returns (address) {
+        return _liquidityPool.perpetuals[perpetualIndex].keeper;
+    }
+
     bytes32[50] private __gap;
 }
