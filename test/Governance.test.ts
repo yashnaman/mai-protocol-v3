@@ -32,7 +32,7 @@ describe('Governance', () => {
 
         TestGovernance = await createFactory(
             "TestGovernance",
-            { PerpetualModule, LiquidityPoolModule }
+            { PerpetualModule, LiquidityPoolModule, CollateralModule }
         );
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
     })
@@ -223,6 +223,63 @@ describe('Governance', () => {
             expect(position).to.equal(toWei("5"));
             expect(await governance.getPoolCash()).to.equal(element.newPoolCash)
         })
+    })
+
+    it(`setAllPerpetualsToEmergencyState - has operator`, async () => {
+
+        const element = {
+            poolCash: toWei('100'),
+            cash1: toWei('25100'),
+            cash2: toWei('-4900'),
+            newPoolCash: toWei('0'),
+            newCash1: toWei('25250'), // new margin1 = 250
+            newCash2: toWei('-4950'), // new margin1 = 50
+        }
+
+        await governance.initializeParameters(
+            oracle.address,
+            [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.2"), toWei("0.04"), toWei("1")],
+            [toWei("0.01"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.9"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
+        )
+
+        const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+        var now = Math.floor(Date.now() / 1000);
+        await alterOracle.setIndexPrice(toWei("1000"), now)
+        await alterOracle.setMarkPrice(toWei("1000"), now)
+
+        const ctk = await createContract("CustomERC20", ["CTK", "CTK", 18])
+        await governance.setCollateralToken(ctk.address, 18)
+        await governance.setOperatorNoAuth(user0.address)
+        await ctk.connect(user0).approve(governance.address, toWei("996"))
+        await ctk.mint(user0.address, toWei("10"))
+        await governance.donateInsuranceFund(toWei("10"))
+
+        await governance.setGovernor(user0.address);
+        await governance.setOracle(0, alterOracle.address);
+        await governance.setOracle(1, alterOracle.address);
+        await governance.setTotalCollateral(0, toWei("999999999"));
+        await governance.setTotalCollateral(1, toWei("999999999"));
+
+        await governance.setMarginAccount(0, governance.address, element.cash1, toWei("-25"));
+        await governance.setMarginAccount(1, governance.address, element.cash2, toWei("5"));
+        await governance.setPoolCash(element.poolCash);
+
+        expect(await ctk.balanceOf(user0.address)).to.equal(toWei("0"))
+        await governance.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        expect(await ctk.balanceOf(user0.address)).to.equal(toWei("10"))
+        const result = await governance.settlementPrice(0)
+        expect(result[0]).to.equal(toWei("1000"));
+        expect(result[1]).to.equal(now);
+        expect(await governance.state(0)).to.equal(3)
+        var { cash, position } = await governance.getMarginAccount(0, governance.address)
+        expect(cash).to.equal(element.newCash1);
+        expect(position).to.equal(toWei("-25"));
+        var { cash, position } = await governance.getMarginAccount(1, governance.address)
+        expect(cash).to.equal(element.newCash2);
+        expect(position).to.equal(toWei("5"));
+        expect(await governance.getPoolCash()).to.equal(element.newPoolCash)
     })
 
     it(`setAllPerpetualsToEmergencyState-fail`, async () => {

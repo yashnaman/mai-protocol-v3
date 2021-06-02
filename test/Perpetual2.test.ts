@@ -257,14 +257,98 @@ describe('Perpetual2', () => {
             await liquidityPool.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
             await liquidityPool.clear(0);
             await liquidityPool.connect(user1).settle(0, user1.address);
-            // const info = await liquidityPool.getLiquidityPoolInfo();
-            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
+            const info = await liquidityPool.getLiquidityPoolInfo();
+            console.log("poolCash            :  ", info.intNums[1].toString())
+            console.log("insuranceFund       :  ", info.intNums[3].toString())
+            console.log("donatedInsuranceFund:  ", info.intNums[4].toString())
 
-            // console.log(fromWei(await ctk.balanceOf(user1.address)));
-            // console.log(fromWei(await ctk.balanceOf(liquidityPool.address)));
-            // console.log(fromWei(await ctk.balanceOf(vault.address)));
-            // console.log(fromWei(await ctk.balanceOf(user0.address)));
-            // console.log(fromWei(await ctk.balanceOf(user2.address)));
+            expect(await ctk.balanceOf(user2.address)).to.equal(0)
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
+            expect(await ctk.balanceOf(user2.address)).to.equal(info.intNums[1])
+        })
+
+        it("settle - has donated insurance fund", async () => {
+            await oracle.setIndexPrice(toWei("1000"), 1000);
+            await oracle.setMarkPrice(toWei("1000"), 1000);
+
+            await ctk.mint(user0.address, toWei("1000"));
+            await ctk.mint(user1.address, toWei("1000"));
+            await ctk.mint(user2.address, toWei("1000"));
+            await ctk.connect(user0).approve(liquidityPool.address, toWei("1000"));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000"));
+            await ctk.connect(user2).approve(liquidityPool.address, toWei("1000"));
+
+            await liquidityPool.donateInsuranceFund(toWei("1000"))
+            await liquidityPool.connect(user1).deposit(0, user1.address, toWei("1000"));
+            await liquidityPool.connect(user2).addLiquidity(toWei("1000"));
+
+            var now = Math.floor(Date.now() / 1000)
+            await liquidityPool.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 100000, "0x0000000000000000000000000000000000000000", 0);
+
+            await expect(liquidityPool.clear(0)).to.be.revertedWith("perpetual should be in EMERGENCY state");
+
+            // user +1 amm -1
+            await oracle.setIndexPrice(toWei("2000"), 2000);
+            await oracle.setMarkPrice(toWei("2000"), 2000);
+
+            // avoid operator fee
+            await liquidityPool.transferOperator(user3.address);
+            await liquidityPool.connect(user3).claimOperator();
+
+            await liquidityPool.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+            await liquidityPool.clear(0);
+            await liquidityPool.connect(user1).settle(0, user1.address);
+            const info = await liquidityPool.getLiquidityPoolInfo();
+            console.log("poolCash            :  ", info.intNums[1].toString())
+            console.log("insuranceFund       :  ", info.intNums[3].toString())
+            console.log("donatedInsuranceFund:  ", info.intNums[4].toString())
+
+            expect(await ctk.balanceOf(user3.address)).to.equal(toWei("1000"))
+
+            expect(await ctk.balanceOf(user2.address)).to.equal(0)
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
+            expect(await ctk.balanceOf(user2.address)).to.equal(info.intNums[1])
+        })
+
+
+        it("settle - no operator", async () => {
+            await oracle.setIndexPrice(toWei("1000"), 1000);
+            await oracle.setMarkPrice(toWei("1000"), 1000);
+
+            await ctk.mint(user0.address, toWei("1000"));
+            await ctk.mint(user1.address, toWei("1000"));
+            await ctk.mint(user2.address, toWei("1000"));
+            await ctk.connect(user0).approve(liquidityPool.address, toWei("1000"));
+            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000"));
+            await ctk.connect(user2).approve(liquidityPool.address, toWei("1000"));
+
+            await liquidityPool.donateInsuranceFund(toWei("1000"))
+            await liquidityPool.connect(user1).deposit(0, user1.address, toWei("1000"));
+            await liquidityPool.connect(user2).addLiquidity(toWei("1000"));
+
+            var now = Math.floor(Date.now() / 1000)
+            await liquidityPool.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 100000, "0x0000000000000000000000000000000000000000", 0);
+
+            await expect(liquidityPool.clear(0)).to.be.revertedWith("perpetual should be in EMERGENCY state");
+
+            // user +1 amm -1
+            await oracle.setIndexPrice(toWei("2000"), 2000);
+            await oracle.setMarkPrice(toWei("2000"), 2000);
+
+            // avoid operator fee
+            await liquidityPool.revokeOperator();
+
+            await liquidityPool.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+            await liquidityPool.clear(0);
+            await liquidityPool.connect(user1).settle(0, user1.address);
+            const info = await liquidityPool.getLiquidityPoolInfo();
+            console.log("poolCash            :  ", info.intNums[1].toString())
+            console.log("insuranceFund       :  ", info.intNums[3].toString())
+            console.log("donatedInsuranceFund:  ", info.intNums[4].toString())
+
+            expect(await ctk.balanceOf(user2.address)).to.equal(0)
+            await liquidityPool.connect(user2).removeLiquidity(await stk.balanceOf(user2.address), 0);
+            expect(await ctk.balanceOf(user2.address)).to.equal(ethers.BigNumber.from(info.intNums[1]).add(ethers.BigNumber.from(toWei("1000"))))
         })
     });
 })
