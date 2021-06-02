@@ -428,6 +428,39 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
+        if (isAllPerpetualSettled(liquidityPool)) {
+            refundDonatedInsuranceFund(liquidityPool);
+        }
+    }
+
+    /**
+     * @dev     Check if all the perpetuals in the liquidity pool are not in normal state.
+     */
+    function isAllPerpetualSettled(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (bool)
+    {
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
+            if (liquidityPool.perpetuals[i].state == PerpetualState.NORMAL) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @dev     Refund donated insurance fund to current operator.
+     *           - If currernt operator address is non-zero, all the donated funds will be forward to the operator address;
+     *           - If no operator, the donated funds will be dispatched to the LPs according to the ratio of owned shares.
+     */
+    function refundDonatedInsuranceFund(LiquidityPoolStorage storage liquidityPool) internal {
+        address operator = getOperator(liquidityPool);
+        if (liquidityPool.donatedInsuranceFund > 0 && operator != address(0)) {
+            liquidityPool.transferToUser(operator, liquidityPool.donatedInsuranceFund);
+            liquidityPool.donatedInsuranceFund = 0;
+        }
     }
 
     /**
@@ -483,6 +516,7 @@ library LiquidityPoolModule {
             liquidityPool.perpetuals[i].setEmergencyState();
         }
         require(liquidityPool.poolCash >= 0, "negative poolCash after settle all");
+        refundDonatedInsuranceFund(liquidityPool);
     }
 
     /**

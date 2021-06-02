@@ -5,10 +5,12 @@ pragma experimental ABIEncoderV2;
 
 import "../module/PerpetualModule.sol";
 import "../module/LiquidityPoolModule.sol";
+import "../module/CollateralModule.sol";
 
 import "../Governance.sol";
 
 contract TestGovernance is Governance {
+    using CollateralModule for LiquidityPoolStorage;
     using PerpetualModule for PerpetualStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
 
@@ -20,9 +22,9 @@ contract TestGovernance is Governance {
         _liquidityPool.governor = governor;
     }
 
-    // function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {
-    //     _liquidityPool.initializeCollateral(collateralToken, collateralDecimals);
-    // }
+    function setCollateralToken(address collateralToken, uint256 collateralDecimals) public {
+        _liquidityPool.initializeCollateral(collateralToken, collateralDecimals);
+    }
 
     function setTotalCollateral(uint256 perpetualIndex, int256 amount) public {
         _liquidityPool.perpetuals[perpetualIndex].totalCollateral = amount;
@@ -173,5 +175,9 @@ contract TestGovernance is Governance {
 
     function oracle(uint256 perpetualIndex) public view returns (address) {
         return _liquidityPool.perpetuals[perpetualIndex].oracle;
+    }
+
+    function donateInsuranceFund(int256 amount) public {
+        _liquidityPool.donateInsuranceFund(msg.sender, amount);
     }
 }
