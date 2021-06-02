@@ -3,6 +3,8 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "../../interface/IOracle.sol";
 
 contract MockMultiOracle is Ownable {
@@ -110,10 +112,11 @@ contract MockMultiOracle is Ownable {
 }
 
 // note: wrapped by TransparentUpgradeableProxy
-contract MockSingleOracle is IOracle {
+contract MockSingleOracle is Initializable, IOracle {
     MockMultiOracle private _multiOracle;
     uint256 private _index;
-    constructor(MockMultiOracle multiOracle_, uint256 index_) {
+
+    function initialize(MockMultiOracle multiOracle_, uint256 index_) external initializer {
         _multiOracle = multiOracle_;
        _index = index_;
     }
