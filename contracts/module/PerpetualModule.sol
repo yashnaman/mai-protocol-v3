@@ -608,7 +608,7 @@ library PerpetualModule {
         function() external returns (int256, uint256) priceGetter
     ) internal {
         (int256 price, uint256 time) = priceGetter();
-        require(price != 0 && time != 0, "invalid price data");
+        require(price > 0 && time != 0, "invalid price data");
         if (time >= priceData.time) {
             priceData.price = price;
             priceData.time = time;
