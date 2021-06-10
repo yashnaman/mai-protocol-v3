@@ -55,6 +55,11 @@ describe('Liquidate', () => {
                 OrderModule,
                 TradeModule,
             });
+
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
+
             await testTrade.createPerpetual(
                 oracle.address,
                 // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
@@ -69,14 +74,11 @@ describe('Liquidate', () => {
             mocker = await createContract("MockAMMPriceEntries");
             await testTrade.setGovernor(mocker.address);
             await testTrade.setState(0, 2);
+            await testTrade.updatePrice(now);
         })
 
         it("liquidateByAMM", async () => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.setInsuranceFundCap(toWei("10000"));
-            await testTrade.updatePrice(now);
 
             await mocker.setPrice(toWei("1000"));
             await ctk.mint(testTrade.address, toWei("1000"));
@@ -99,11 +101,6 @@ describe('Liquidate', () => {
         })
 
         it("liquidateByAMM - bankrupt", async () => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
-            await testTrade.updatePrice(now);
-
             await mocker.setPrice(toWei("1000"));
             await ctk.mint(testTrade.address, toWei("1000"));
             await testTrade.setTotalCollateral(0, toWei("13800"));
@@ -120,10 +117,6 @@ describe('Liquidate', () => {
         })
 
         it("liquidateByAMM - vault fee", async () => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
-            await testTrade.updatePrice(now);
             await testTrade.setInsuranceFundCap(toWei("10000"));
 
             await mocker.setPrice(toWei("1000"));
@@ -151,11 +144,6 @@ describe('Liquidate', () => {
 
 
         it("liquidateByAMM - vault fee / bankrupt", async () => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
-            await testTrade.updatePrice(now);
-
             await mocker.setPrice(toWei("1000"));
             await ctk.mint(testTrade.address, toWei("1000"));
             await testTrade.setTotalCollateral(0, toWei("13800"));
@@ -175,10 +163,6 @@ describe('Liquidate', () => {
         })
 
         it("liquidateByAMM - vault fee / not bankrupt", async () => {
-            let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
-            await testTrade.updatePrice(now);
             await testTrade.setInsuranceFundCap(toWei("10000"));
 
             await mocker.setPrice(toWei("1000"));

@@ -35,6 +35,9 @@ describe('Governance', () => {
             { PerpetualModule, LiquidityPoolModule, CollateralModule }
         );
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        var now = Math.floor(Date.now() / 1000);
+        await oracle.setIndexPrice(toWei("1000"), now)
+        await oracle.setMarkPrice(toWei("1000"), now)
     })
 
     beforeEach(async () => {
@@ -119,6 +122,9 @@ describe('Governance', () => {
 
     it('setOracle', async () => {
         const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+        var now = Math.floor(Date.now() / 1000);
+        await alterOracle.setIndexPrice(toWei("1000"), now)
+        await alterOracle.setMarkPrice(toWei("1000"), now)
         await governance.setGovernor(user0.address);
 
         expect(await governance.oracle(0)).to.equal(oracle.address)
@@ -128,6 +134,9 @@ describe('Governance', () => {
         await expect(governance.setOracle(0, "0x0000000000000000000000000000000000000000")).to.be.revertedWith("invalid oracle address")
         await expect(governance.setOracle(0, alterOracle.address)).to.be.revertedWith("oracle not changed")
         await expect(governance.setOracle(0, user0.address)).to.be.revertedWith("oracle must be contract")
+
+        const alterOracle2 = await createContract("OracleWrapper", ["A", "B"])
+        await expect(governance.setOracle(0, alterOracle2.address)).to.be.revertedWith("oracle's twap long price is not updated")
     })
 
 

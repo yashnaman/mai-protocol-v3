@@ -21,6 +21,7 @@ describe('LiquidityPool3', () => {
     let ctk;
     let poolCreator;
     let LiquidityPoolFactory;
+    let oracle;
 
     before(async () => {
         accounts = await getAccounts();
@@ -45,10 +46,13 @@ describe('LiquidityPool3', () => {
         )
         await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
         await symbol.addWhitelistedFactory(poolCreator.address);
+        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let now = Math.floor(Date.now() / 1000);
+        await oracle.setIndexPrice(toWei('100'), now);
+        await oracle.setMarkPrice(toWei('100'), now);
     });
 
     it("createPerpetual - address", async () => {
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         const deplpyed1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await ctk.approve(deplpyed1[0], 1000);
         const deplpyed2 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
@@ -57,12 +61,11 @@ describe('LiquidityPool3', () => {
     })
 
     it("createPerpetual - fastCreation disable", async () => {
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
 
         const liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
-        await liquidityPool.createPerpetual(oracle1.address,
+        await liquidityPool.createPerpetual(oracle.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -71,7 +74,7 @@ describe('LiquidityPool3', () => {
         await liquidityPool.runLiquidityPool();
         await expect(liquidityPool.runLiquidityPool()).to.be.revertedWith("already running")
 
-        await expect(liquidityPool.createPerpetual(oracle1.address,
+        await expect(liquidityPool.createPerpetual(oracle.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -80,12 +83,11 @@ describe('LiquidityPool3', () => {
     })
 
     it("createPerpetual - fastCreation enabled", async () => {
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
         const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")]));
         await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")]));
 
         const liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
-        await liquidityPool.createPerpetual(oracle1.address,
+        await liquidityPool.createPerpetual(oracle.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
@@ -94,8 +96,7 @@ describe('LiquidityPool3', () => {
         await liquidityPool.runLiquidityPool();
         await expect(liquidityPool.runLiquidityPool()).to.be.revertedWith("already running")
 
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        await liquidityPool.createPerpetual(oracle2.address,
+        await liquidityPool.createPerpetual(oracle.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
             [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0.1"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
             [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],

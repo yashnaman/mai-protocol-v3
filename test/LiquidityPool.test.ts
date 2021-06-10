@@ -49,6 +49,11 @@ describe('LiquidityPool', () => {
         beforeEach(async () => {
             oracle0 = await createContract("OracleWrapper", ["USD", "ETH"]);
             oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+            var now = 1000;
+            await oracle0.setMarkPrice(toWei("100"), now);
+            await oracle0.setIndexPrice(toWei("100"), now);
+            await oracle1.setMarkPrice(toWei("100"), now);
+            await oracle1.setIndexPrice(toWei("100"), now);
             await liquidityPool.createPerpetual(
                 oracle0.address,
                 // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi
@@ -295,6 +300,9 @@ describe('LiquidityPool', () => {
         beforeEach(async () => {
             tracer = await createContract("TestTracer")
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            var now = 1000;
+            await oracle.setMarkPrice(toWei("100"), now);
+            await oracle.setIndexPrice(toWei("100"), now);
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
 
             await liquidityPool.setCollateralToken(ctk.address, 18);

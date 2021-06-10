@@ -55,6 +55,8 @@ describe('Perpetual2', () => {
 
         beforeEach(async () => {
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            await oracle.setIndexPrice(toWei("1000"), 10000);
+            await oracle.setMarkPrice(toWei("1000"), 10000);
             const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
             await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
 
@@ -66,9 +68,6 @@ describe('Perpetual2', () => {
                 [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")],
             )
             await liquidityPool.runLiquidityPool();
-
-            await oracle.setIndexPrice(toWei("1000"), 10000);
-            await oracle.setMarkPrice(toWei("1000"), 10000);
 
             const info = await liquidityPool.getLiquidityPoolInfo();
             stk = (await createFactory("LpGovernor")).attach(info.addresses[3]);

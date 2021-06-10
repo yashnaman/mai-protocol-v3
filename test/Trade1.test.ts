@@ -41,6 +41,9 @@ describe('TradeModule1', () => {
 
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("6965"), now);
+            await oracle.setIndexPrice(toWei("7000"), now);
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");
@@ -264,6 +267,9 @@ describe('TradeModule1', () => {
 
                 ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
                 oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
+                let now = Math.floor(Date.now() / 1000);
+                await oracle.setMarkPrice(toWei("6965"), now);
+                await oracle.setIndexPrice(toWei("7000"), now);
                 const AMMModule = await createContract("AMMModule");
                 const CollateralModule = await createContract("CollateralModule")
                 const PerpetualModule = await createContract("PerpetualModule");
@@ -340,8 +346,6 @@ describe('TradeModule1', () => {
             testCases.forEach((testCase) => {
                 it(testCase.name, async () => {
                     let now = Math.floor(Date.now() / 1000);
-                    await oracle.setMarkPrice(toWei("6965"), now);
-                    await oracle.setIndexPrice(toWei("7000"), now);
                     await testTrade.updatePrice(now);
 
                     await testTrade.setMarginAccount(0, user1.address, testCase.marginAccount.cash, testCase.marginAccount.position);

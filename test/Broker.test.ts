@@ -28,6 +28,7 @@ describe('Broker', () => {
     let liquidityPool;
     let broker;
     let testOrder;
+    let now;
 
     before(async () => {
         accounts = await getAccounts();
@@ -69,6 +70,9 @@ describe('Broker', () => {
         liquidityPool = await LiquidityPoolFactory.attach(result[0]);
 
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        now = Math.floor(Date.now() / 1000);
+        await oracle.setMarkPrice(toWei("1000"), now);
+        await oracle.setIndexPrice(toWei("1000"), now);
         await liquidityPool.createPerpetual(
             oracle.address,
             // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur            oi
@@ -85,10 +89,6 @@ describe('Broker', () => {
     });
 
     it('broker', async () => {
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("1000"), now);
-        await oracle.setIndexPrice(toWei("1000"), now);
-
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -128,10 +128,6 @@ describe('Broker', () => {
     })
 
     it('broker - cancel', async () => {
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("1000"), now);
-        await oracle.setIndexPrice(toWei("1000"), now);
-
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -174,10 +170,6 @@ describe('Broker', () => {
     })
 
     it('broker - cancel by another signer', async () => {
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("1000"), now);
-        await oracle.setIndexPrice(toWei("1000"), now);
-
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -223,10 +215,6 @@ describe('Broker', () => {
 
 
     it('broker - fee', async () => {
-        let now = Math.floor(Date.now() / 1000);
-        await oracle.setMarkPrice(toWei("1000"), now);
-        await oracle.setIndexPrice(toWei("1000"), now);
-
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))

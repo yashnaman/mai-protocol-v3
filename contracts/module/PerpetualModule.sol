@@ -151,18 +151,14 @@ library PerpetualModule {
     }
 
     /**
-     * @dev     Set oracle address. New address should point to a valid contract.
-     *          And new oracle should not be in terminated state.
+     * @dev     Set oracle address of perpetual. New oracle must be different from the old one.
      *
      * @param   perpetual   The reference of perpetual storage.
      * @param   newOracle   The address of new oracle contract.
      */
     function setOracle(PerpetualStorage storage perpetual, address newOracle) public {
-        require(newOracle != address(0), "invalid oracle address");
         require(newOracle != perpetual.oracle, "oracle not changed");
-        require(newOracle.isContract(), "oracle must be contract");
-        require(!IOracle(newOracle).isTerminated(), "oracle is terminated");
-
+        validateOracle(newOracle);
         emit SetOracle(perpetual.oracle, newOracle);
         perpetual.oracle = newOracle;
     }
@@ -664,6 +660,43 @@ library PerpetualModule {
         option.value = newValue;
         option.minValue = newMinValue;
         option.maxValue = newMaxValue;
+    }
+
+    /**
+     * @dev     Validate oracle contract, including each method of oracle
+     *
+     * @param   oracle   The address of oracle contract.
+     */
+    function validateOracle(address oracle) public {
+        require(oracle != address(0), "invalid oracle address");
+        require(oracle.isContract(), "oracle must be contract");
+        bool success;
+        bytes memory data;
+        (success, data) = oracle.call(abi.encodeWithSignature("isMarketClosed()"));
+        require(success && data.length == 32, "invalid function: isMarketClosed");
+        (success, data) = oracle.call(abi.encodeWithSignature("isTerminated()"));
+        require(success && data.length == 32, "invalid function: isTerminated");
+        require(!abi.decode(data, (bool)), "oracle is terminated");
+        (success, data) = oracle.call(abi.encodeWithSignature("collateral()"));
+        require(success && data.length > 0, "invalid function: collateral");
+        string memory result;
+        result = abi.decode(data, (string));
+        require(keccak256(bytes(result)) != keccak256(bytes("")), "oracle's collateral is empty");
+        (success, data) = oracle.call(abi.encodeWithSignature("underlyingAsset()"));
+        require(success && data.length > 0, "invalid function: underlyingAsset");
+        result = abi.decode(data, (string));
+        require(
+            keccak256(bytes(result)) != keccak256(bytes("")),
+            "oracle's underlyingAsset is empty"
+        );
+        (success, data) = oracle.call(abi.encodeWithSignature("priceTWAPLong()"));
+        require(success && data.length > 0, "invalid function: priceTWAPLong");
+        (int256 price, uint256 timestamp) = abi.decode(data, (int256, uint256));
+        require(price > 0 && timestamp > 0, "oracle's twap long price is not updated");
+        (success, data) = oracle.call(abi.encodeWithSignature("priceTWAPShort()"));
+        require(success && data.length > 0, "invalid function: priceTWAPShort");
+        (price, timestamp) = abi.decode(data, (int256, uint256));
+        require(price > 0 && timestamp > 0, "oracle's twap short price is not updated");
     }
 
     /**

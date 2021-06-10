@@ -33,6 +33,9 @@ describe('Perpetual', () => {
             PerpetualModule
         });
         oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        var now = Math.floor(Date.now() / 1000);
+        await oracle.setMarkPrice(toWei("100"), now);
+        await oracle.setIndexPrice(toWei("100"), now);
         await perpetual.createPerpetual(
             oracle.address,
             // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur       oi

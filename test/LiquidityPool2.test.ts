@@ -61,7 +61,10 @@ describe('LiquidityPool2', () => {
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         await liquidityPool.setCollateralToken(ctk.address, 18);
 
+        let now = Math.floor(Date.now() / 1000);
         oracle1 = await createContract("OracleWrapper", ["ctk", "ctk"]);
+        await oracle1.setIndexPrice(toWei('100'), now);
+        await oracle1.setMarkPrice(toWei('100'), now);
         await liquidityPool.createPerpetual(
             oracle1.address,
             // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
@@ -69,12 +72,17 @@ describe('LiquidityPool2', () => {
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2'), toWei("0.01"), toWei("1")],
         )
         oracle2 = await createContract("OracleWrapper", ["ctk", "ctk"]);
+        await oracle2.setIndexPrice(toWei('100'), now);
+        await oracle2.setMarkPrice(toWei('100'), now);
         await liquidityPool.createPerpetual(
             oracle2.address,
             // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
             [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2'), toWei("0.01"), toWei("1")],
         )
+        await liquidityPool.setState(0, 2);
+        await liquidityPool.setState(1, 2);
+        await liquidityPool.updatePrice(now);
     })
 
     describe('liquidity', function () {
@@ -149,9 +157,6 @@ describe('LiquidityPool2', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
-
                 await ctk.mint(user1.address, element.marginToAdd);
                 await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
                 await stk.debugMint(user2.address, element.totalShare);
@@ -161,13 +166,6 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
                 await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
                 await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-                await liquidityPool.updatePrice(now);
 
                 await liquidityPool.addLiquidity(user1.address, element.marginToAdd);
                 expect(await stk.balanceOf(user1.address)).approximateBigNumber(element.share);
@@ -192,38 +190,19 @@ describe('LiquidityPool2', () => {
 
         failCases.forEach(element => {
             it(element.name, async () => {
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
-
                 await ctk.mint(user1.address, element.marginToAdd);
                 await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
                 await stk.debugMint(user2.address, element.totalShare);
 
                 await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
 
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-                await liquidityPool.updatePrice(now);
-
                 await expect(liquidityPool.addLiquidity(user1.address, element.marginToAdd)).to.be.revertedWith(element.errorMsg);
             })
         })
 
         it('donate', async function () {
-            await liquidityPool.setState(0, 2);
-            await liquidityPool.setState(1, 2);
             await ctk.mint(user1.address, toWei('1000'));
             await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-
-            let now = Math.floor(Date.now() / 1000);
-            await oracle1.setIndexPrice(toWei('100'), now);
-            await oracle1.setMarkPrice(toWei('100'), now);
-            await oracle2.setIndexPrice(toWei('100'), now);
-            await oracle2.setMarkPrice(toWei('100'), now);
-            await liquidityPool.updatePrice(now);
 
             await liquidityPool.donateLiquidity(user1.address, toWei('1000'));
             expect(await stk.balanceOf(user1.address)).approximateBigNumber("0");
@@ -330,10 +309,6 @@ describe('LiquidityPool2', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
-
                 await ctk.mint(liquidityPool.address, element.marginToRemove);
                 await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
                 await stk.debugMint(user1.address, element.shareToRemove);
@@ -344,13 +319,6 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
                 await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
                 await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-                await liquidityPool.updatePrice(now);
 
                 await liquidityPool.setState(0, element.state1)
                 await liquidityPool.setState(1, element.state2)
@@ -369,10 +337,6 @@ describe('LiquidityPool2', () => {
 
         successCases.forEach(element => {
             it(element.name, async () => {
-
-                await liquidityPool.setState(0, 2);
-                await liquidityPool.setState(1, 2);
-
                 await ctk.mint(liquidityPool.address, element.marginToRemove);
                 await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
                 await stk.debugMint(user1.address, element.shareToRemove);
@@ -383,13 +347,6 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, element.amm.position2);
                 await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
                 await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
-
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-                await liquidityPool.updatePrice(now);
 
                 await liquidityPool.setState(0, element.state1)
                 await liquidityPool.setState(1, element.state2)
@@ -402,7 +359,6 @@ describe('LiquidityPool2', () => {
                 expect(await ctk.balanceOf(user1.address)).approximateBigNumber(element.marginToRemove);
                 expect(await stk.balanceOf(user1.address)).approximateBigNumber(toWei("0"));
                 expect(await stk.totalSupply()).approximateBigNumber(element.shareLeft);
-
             })
         })
 
@@ -511,7 +467,6 @@ describe('LiquidityPool2', () => {
             it(element.name, async () => {
                 await liquidityPool.setState(0, 2);
                 await liquidityPool.setState(1, 2);
-
                 await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), element.ammMaxLeverage, element.ammMaxLeverage, element.ammMaxLeverage);
                 await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), element.ammMaxLeverage, element.ammMaxLeverage, element.ammMaxLeverage);
 
@@ -525,21 +480,12 @@ describe('LiquidityPool2', () => {
                 await liquidityPool.setUnitAccumulativeFunding(0, toWei("1.9"));
                 await liquidityPool.setUnitAccumulativeFunding(1, toWei("1.9"));
 
-                let now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(toWei('100'), now);
-                await oracle1.setMarkPrice(toWei('100'), now);
-                await oracle2.setIndexPrice(toWei('100'), now);
-                await oracle2.setMarkPrice(toWei('100'), now);
-                await liquidityPool.updatePrice(now);
-
                 await expect(liquidityPool.removeLiquidity(user1.address, element.shareToRemove, 0)).to.be.revertedWith(element.errorMsg);
                 await expect(liquidityPool.removeLiquidity(user1.address, 0, element.marginToRemove)).to.be.revertedWith(element.errorMsg);
             })
         })
 
         it('pool margin = 0', async () => {
-            await liquidityPool.setState(0, 2);
-            await liquidityPool.setState(1, 2);
             await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
             await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
             await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
@@ -550,39 +496,11 @@ describe('LiquidityPool2', () => {
             await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
             await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
 
-            let now = Math.floor(Date.now() / 1000);
-            await oracle1.setIndexPrice(toWei('100'), now);
-            await oracle1.setMarkPrice(toWei('100'), now);
-            await oracle2.setIndexPrice(toWei('100'), now);
-            await oracle2.setMarkPrice(toWei('100'), now);
-            await liquidityPool.updatePrice(now);
-
             await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('pool margin must be positive');
             await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('AMM is unsafe after removing liquidity');
         })
 
-        it('zero index', async () => {
-            await liquidityPool.setState(0, 2);
-            await liquidityPool.setState(1, 2);
-            await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
-            await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
-            await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
-            await stk.debugMint(user2.address, toWei('90'));
-            await stk.debugMint(user1.address, toWei("10"));
-
-            await liquidityPool.setPoolCash(toWei("10"))
-            await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
-            await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
-
-            let now = Math.floor(Date.now() / 1000);
-
-            await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('index price must be positive');
-            await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('index price must be positive');
-        })
-
         it('zero supply of share token', async () => {
-            await liquidityPool.setState(0, 2);
-            await liquidityPool.setState(1, 2);
             await liquidityPool.setPerpetualRiskParameter(0, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
             await liquidityPool.setPerpetualRiskParameter(1, toBytes32("ammMaxLeverage"), toWei("5"), toWei("5"), toWei("5"));
             await ctk.connect(user1).approve(liquidityPool.address, toWei("1000000"));
@@ -592,13 +510,6 @@ describe('LiquidityPool2', () => {
             await liquidityPool.setPoolCash(toWei("10"))
             await liquidityPool.setMarginAccount(0, liquidityPool.address, 0, 0);
             await liquidityPool.setMarginAccount(1, liquidityPool.address, 0, 0);
-
-            let now = Math.floor(Date.now() / 1000);
-            await oracle1.setIndexPrice(toWei('100'), now);
-            await oracle1.setMarkPrice(toWei('100'), now);
-            await oracle2.setIndexPrice(toWei('100'), now);
-            await oracle2.setMarkPrice(toWei('100'), now);
-            await liquidityPool.updatePrice(now);
 
             await expect(liquidityPool.removeLiquidity(user1.address, toWei("1"), 0)).to.be.revertedWith('total supply of share token is zero when removing liquidity');
             await expect(liquidityPool.removeLiquidity(user1.address, 0, toWei("1"))).to.be.revertedWith('total supply of share token is zero when removing liquidity');

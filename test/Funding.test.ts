@@ -112,6 +112,12 @@ describe('Funding', () => {
         cases.forEach(element => {
             it(element.name, async () => {
 
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(element.indexPrice1, now);
+                await oracle1.setMarkPrice(element.indexPrice1, now);
+                await oracle2.setIndexPrice(element.indexPrice2, now);
+                await oracle2.setMarkPrice(element.indexPrice2, now);
+
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
@@ -125,11 +131,6 @@ describe('Funding', () => {
 
                 await liquidityPool.runLiquidityPool();
 
-                var now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(element.indexPrice1, now);
-                await oracle1.setMarkPrice(element.indexPrice1, now);
-                await oracle2.setIndexPrice(element.indexPrice2, now);
-                await oracle2.setMarkPrice(element.indexPrice2, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 
@@ -203,6 +204,12 @@ describe('Funding', () => {
         successCases.forEach(element => {
             it(element.name, async () => {
 
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle1.setMarkPrice(params.indexPrice, now);
+                await oracle2.setIndexPrice(params.indexPrice, now);
+                await oracle2.setMarkPrice(params.indexPrice, now);
+
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
@@ -216,11 +223,6 @@ describe('Funding', () => {
 
                 await liquidityPool.runLiquidityPool();
 
-                var now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(params.indexPrice, now);
-                await oracle1.setMarkPrice(params.indexPrice, now);
-                await oracle2.setIndexPrice(params.indexPrice, now);
-                await oracle2.setMarkPrice(params.indexPrice, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 
@@ -255,6 +257,12 @@ describe('Funding', () => {
         failCases.forEach(element => {
 
             it(element.name, async () => {
+                var now = Math.floor(Date.now() / 1000);
+                await oracle1.setIndexPrice(params.indexPrice, now);
+                await oracle1.setMarkPrice(params.indexPrice, now);
+                await oracle2.setIndexPrice(params.indexPrice, now);
+                await oracle2.setMarkPrice(params.indexPrice, now);
+
                 await liquidityPool.createPerpetual(
                     oracle1.address,
                     [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
@@ -268,11 +276,6 @@ describe('Funding', () => {
 
                 await liquidityPool.runLiquidityPool();
 
-                var now = Math.floor(Date.now() / 1000);
-                await oracle1.setIndexPrice(params.indexPrice, now);
-                await oracle1.setMarkPrice(params.indexPrice, now);
-                await oracle2.setIndexPrice(params.indexPrice, now);
-                await oracle2.setMarkPrice(params.indexPrice, now);
                 await liquidityPool.updatePrice(0);
                 await liquidityPool.updatePrice(1);
 

@@ -24,6 +24,9 @@ describe('MarginModule', () => {
                 PerpetualModule
             });
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            var now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("100"), now);
+            await oracle.setIndexPrice(toWei("100"), now);
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
@@ -389,6 +392,9 @@ describe('MarginModule', () => {
                 PerpetualModule
             });
             oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            var now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("500"), now);
+            await oracle.setIndexPrice(toWei("500"), now);
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi
@@ -400,9 +406,6 @@ describe('MarginModule', () => {
 
         it("setMarginAccount", async () => {
             let trader = accounts[0].address;
-            var now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("500"), now);
-            await oracle.setIndexPrice(toWei("500"), now);
             await testMargin.updatePrice(0);
 
             await testMargin.setUnitAccumulativeFunding(0, toWei("-100"));
@@ -437,6 +440,9 @@ describe('MarginModule', () => {
                 PerpetualModule
             });
             const oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            var now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("500"), now);
+            await oracle.setIndexPrice(toWei("500"), now);
             await testMargin.createPerpetual(
                 oracle.address,
                 // imr       mmr         operatorfr       lpfr             rebate      penalty         keeper      insur       oi

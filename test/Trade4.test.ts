@@ -44,6 +44,9 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
 
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
             oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
+            let now = Math.floor(Date.now() / 1000);
+            await oracle.setMarkPrice(toWei("1000"), now);
+            await oracle.setIndexPrice(toWei("1000"), now);
             const AMMModule = await createContract("AMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");
@@ -77,8 +80,6 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
 
         it("regular - 1x", async () => {
             let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
 
             await mocker.setPrice(toWei("1000"));
@@ -101,8 +102,6 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
 
         it("close", async () => {
             let now = Math.floor(Date.now() / 1000);
-            await oracle.setMarkPrice(toWei("1000"), now);
-            await oracle.setIndexPrice(toWei("1000"), now);
             await testTrade.updatePrice(now);
             await mocker.setPrice(toWei("1000"));
 
