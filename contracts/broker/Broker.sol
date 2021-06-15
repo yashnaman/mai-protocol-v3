@@ -14,6 +14,7 @@ import "../interface/IAccessControl.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/OrderData.sol";
+import "../libraries/Signature.sol";
 import "../libraries/Utils.sol";
 
 import "../Type.sol";
@@ -26,6 +27,7 @@ contract Broker is ReentrancyGuard {
     using SafeCast for int256;
     using OrderData for Order;
     using OrderData for bytes;
+    using Signature for bytes32;
 
     uint256 internal constant GWEI = 10**9;
 
@@ -151,9 +153,13 @@ contract Broker is ReentrancyGuard {
         uint256 orderCount = compressedOrders.length;
         for (uint256 i = 0; i < orderCount; i++) {
             Order memory order = compressedOrders[i].decodeOrderData();
+            bytes memory signature = compressedOrders[i].decodeSignature();
+            bytes32 orderHash = order.getOrderHash();
+            require(orderHash.getSigner(signature) == order.trader, "signer mismatch");
+
             int256 amount = amounts[i];
             uint256 gasReward = gasRewards[i];
-            bytes32 orderHash = order.getOrderHash();
+
             if (order.chainID != _chainID) {
                 emit TradeFailed(orderHash, order, amount, "chain id mismatch");
                 return;

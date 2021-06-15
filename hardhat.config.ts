@@ -100,7 +100,7 @@ module.exports = {
         kovan: {
             url: "https://kovan.infura.io/v3/",
             gasPrice: 1e9,
-            // accounts: [""],
+            accounts: [pk],
             timeout: 300000,
             confirmations: 1,
         },
