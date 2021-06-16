@@ -648,7 +648,7 @@ library LiquidityPoolModule {
      * @dev     Update the oracle price of each perpetual of the liquidity pool.
      *          If oracle is terminated, set market to EMERGENCY.
      *
-     * @param   liquidityPool       he liquidity pool object
+     * @param   liquidityPool       The liquidity pool object
      * @param   ignoreTerminated    Ignore terminated oracle if set to True.
      */
     function updatePrice(LiquidityPoolStorage storage liquidityPool, bool ignoreTerminated) public {
