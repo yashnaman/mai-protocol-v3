@@ -648,17 +648,10 @@ library LiquidityPoolModule {
      * @dev     Update the oracle price of each perpetual of the liquidity pool.
      *          If oracle is terminated, set market to EMERGENCY.
      *
-     * @param   liquidityPool   The liquidity pool object
-     * @param   currentTime     The current timestamp
+     * @param   liquidityPool       he liquidity pool object
+     * @param   ignoreTerminated    Ignore terminated oracle if set to True.
      */
-    function updatePrice(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 currentTime,
-        bool ignoreTerminated
-    ) public {
-        if (liquidityPool.priceUpdateTime >= currentTime) {
-            return;
-        }
+    function updatePrice(LiquidityPoolStorage storage liquidityPool, bool ignoreTerminated) public {
         uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
@@ -670,7 +663,6 @@ library LiquidityPoolModule {
                 setEmergencyState(liquidityPool, perpetual.id);
             }
         }
-        liquidityPool.priceUpdateTime = currentTime;
     }
 
     /**

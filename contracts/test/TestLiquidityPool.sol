@@ -143,7 +143,7 @@ contract TestLiquidityPool is TestPerpetual {
     }
 
     function updatePrice(uint256 currentTime) public virtual override {
-        _liquidityPool.updatePrice(currentTime, false);
+        _liquidityPool.updatePrice(false);
     }
 
     function donateInsuranceFundP(int256 amount) public {
