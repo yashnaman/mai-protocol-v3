@@ -69,10 +69,6 @@ contract TestLiquidityPool is TestPerpetual {
         return _liquidityPool.fundingTime;
     }
 
-    function getPriceUpdateTime() public view returns (uint256) {
-        return _liquidityPool.priceUpdateTime;
-    }
-
     function getDonatedInsuranceFund() public view returns (int256) {
         return _liquidityPool.donatedInsuranceFund;
     }

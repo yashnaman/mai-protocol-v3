@@ -81,7 +81,7 @@ struct LiquidityPoolStorage {
     // pool attributes
     int256 poolCash;
     uint256 fundingTime;
-    uint256 priceUpdateTime;
+    uint256 reserved5;
     uint256 operatorExpiration;
     mapping(address => int256) reserved1;
     bytes32[] reserved2;

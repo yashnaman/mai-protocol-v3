@@ -77,13 +77,11 @@ describe('LiquidityPool', () => {
             await oracle1.setMarkPrice(toWei("200"), now);
             await oracle1.setIndexPrice(toWei("201"), now);
 
-            expect(await liquidityPool.getPriceUpdateTime()).to.equal(0);
             await liquidityPool.updatePrice(1000);
             expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100"));
             expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101"));
             expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200"));
             expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201"));
-            expect(await liquidityPool.getPriceUpdateTime()).to.equal(1000);
 
             now = 2000;
             await oracle0.setMarkPrice(toWei("100.1"), now);
@@ -92,18 +90,21 @@ describe('LiquidityPool', () => {
             await oracle1.setIndexPrice(toWei("201.1"), now);
 
             await liquidityPool.updatePrice(1000);
-            expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100"));
-            expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101"));
-            expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200"));
-            expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201"));
-            expect(await liquidityPool.getPriceUpdateTime()).to.equal(1000);
+            expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100.1"));
+            expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101.1"));
+            expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200.1"));
+            expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201.1"));
 
+            now = 1000;
+            await oracle0.setMarkPrice(toWei("100"), now);
+            await oracle0.setIndexPrice(toWei("101"), now);
+            await oracle1.setMarkPrice(toWei("200"), now);
+            await oracle1.setIndexPrice(toWei("201"), now);
             await liquidityPool.updatePrice(2000);
             expect(await liquidityPool.getMarkPrice(0)).to.equal(toWei("100.1"));
             expect(await liquidityPool.getIndexPrice(0)).to.equal(toWei("101.1"));
             expect(await liquidityPool.getMarkPrice(1)).to.equal(toWei("200.1"));
             expect(await liquidityPool.getIndexPrice(1)).to.equal(toWei("201.1"));
-            expect(await liquidityPool.getPriceUpdateTime()).to.equal(2000);
         })
 
         it("getAvailablePoolCash", async () => {
