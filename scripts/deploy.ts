@@ -37,6 +37,8 @@ async function main(_, deployer, accounts) {
     // infrastructure
     await deployer.deployOrSkip("Broker")
     await deployer.deployOrSkip("SymbolService", 10000)
+    await deployer.deployOrSkip("OracleRouterCreator")
+    await deployer.deployOrSkip("InverseStateService")
     // await deployer.deploy("WETH9")
     // await deployer.deployOrSkip("CustomERC20", "USDC", "USDC", 6)
 
@@ -80,36 +82,36 @@ async function preset1(deployer, accounts) {
 
     await ensureFinished(liquidityPool.createPerpetual(
         oracleAddresses["USD - ETH"],
-        // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper           insur          oi
-        [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
+        [toWei("0.04"), toWei("0.03"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("30"), toWei("0.5"), toWei("3")],
+        // alpha          beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("10")],
+        [toWei("0"),      toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
+        [toWei("0.1"),    toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
     ))
     await ensureFinished(liquidityPool.createPerpetual(
         oracleAddresses["BTC - ETH"],
-        // imr          mmr            operatorfr        lpfr              rebate        penalty         keeper           insur          oi
-        [toWei("0.04"), toWei("0.02"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.005"), toWei("0.0005"), toWei("0.25"), toWei("5")],
-        // alpha         beta1            beta2             frLimit          lev         maxClose       frFactor
-        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1")]
+        // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
+        [toWei("0.04"), toWei("0.03"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("30"), toWei("0.5"), toWei("3")],
+        // alpha          beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("10")],
+        [toWei("0"),      toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
+        [toWei("0.1"),    toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
     ))
     await ensureFinished(liquidityPool.runLiquidityPool())
-    await ensureFinished(liquidityPool.addLiquidity(toWei("0"), { value: toWei("6600") }));
+    // await ensureFinished(liquidityPool.addLiquidity(toWei("0"), { value: toWei("6600") }));
     return liquidityPool
 }
 
 async function preset2(deployer, accounts) {
-    const usd = await deployer.getContractAt("CustomERC20", "0x4B442fB2b62BacCe41c202FB244B1D0CA4c7BF8f")
+    const usd = await deployer.getContractAt("CustomERC20", "0x09b98F8b2395D076514037fF7D39a091a536206C")
     const poolCreator = await deployer.getDeployedContract("PoolCreator")
 
     await ensureFinished(poolCreator.createLiquidityPool(
         usd.address,
         6,
         Math.floor(Date.now() / 1000),
-        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")])
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("10000000")])
     ))
 
     const n = await poolCreator.getLiquidityPoolCount();
@@ -170,12 +172,29 @@ async function preset2(deployer, accounts) {
         [toWei("0"),      toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
         [toWei("0.1"),    toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
     ))
-
+    await ensureFinished(liquidityPool.createPerpetual(
+        oracleAddresses["DEFI++ - USD"],
+        // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
+        [toWei("0.04"), toWei("0.03"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("30"), toWei("0.5"), toWei("3")],
+        // alpha          beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("10")],
+        [toWei("0"),      toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
+        [toWei("0.1"),    toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
+    ))
+    await ensureFinished(liquidityPool.createPerpetual(
+        oracleAddresses["DEFI5 - USD"],
+        // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
+        [toWei("0.04"), toWei("0.03"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("30"), toWei("0.5"), toWei("3")],
+        // alpha          beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev
+        [toWei("0.0008"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("3"), toWei("0.05"), toWei("0.005"), toWei("10")],
+        [toWei("0"),      toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
+        [toWei("0.1"),    toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
+    ))
     await ensureFinished(liquidityPool.runLiquidityPool())
 
     // await ensureFinished(usd.mint(accounts[0].address, "25000000" + "000000"))
-    await ensureFinished(usd.approve(liquidityPool.address, "25000000" + "000000"))
-    await ensureFinished(liquidityPool.addLiquidity(toWei("25000000")))
+    // await ensureFinished(usd.approve(liquidityPool.address, "25000000" + "000000"))
+    // await ensureFinished(liquidityPool.addLiquidity(toWei("25000000")))
 
     return liquidityPool;
 }
