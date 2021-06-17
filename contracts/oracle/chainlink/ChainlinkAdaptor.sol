@@ -26,11 +26,11 @@ contract ChainlinkAdaptor is Ownable {
     string internal _underlyingAsset;
 
     constructor(
-        address chainlink,
+        address chainlink_,
         string memory collateral_,
         string memory underlyingAsset_
     ) Ownable() {
-        _chainlink = chainlink;
+        _chainlink = chainlink_;
         _collateral = collateral_;
         _underlyingAsset = underlyingAsset_;
     }
@@ -54,12 +54,13 @@ contract ChainlinkAdaptor is Ownable {
 
     function priceTWAPLong() public returns (int256, uint256) {
         if (!checkHeartStop()) {
-            (, _markPrice, , _markPriceTimestamp, ) = IChainlink(_chainlink).latestRoundData();
+            int256 markPrice;
+            (, markPrice, , _markPriceTimestamp, ) = IChainlink(_chainlink).latestRoundData();
             require(
-                _markPrice > 0 && _markPrice <= type(int256).max / 10**10,
+                markPrice > 0 && markPrice <= type(int256).max / 10**10,
                 "invalid oracle price"
             );
-            _markPrice *= 10**10;
+            _markPrice = markPrice * 10**10;
         }
         return (_markPrice, _markPriceTimestamp);
     }
