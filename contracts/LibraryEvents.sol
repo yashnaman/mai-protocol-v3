@@ -24,7 +24,7 @@ contract LibraryEvents {
         int256[8] maxRiskParamValues
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[8] riskParams);
-    event SetOracle(address indexed oldOracle, address indexed newOracle);
+    event SetOracle(uint256 perpetualIndex, address indexed oldOracle, address indexed newOracle);
     event UpdatePrice(
         uint256 perpetualIndex,
         address indexed oracle,

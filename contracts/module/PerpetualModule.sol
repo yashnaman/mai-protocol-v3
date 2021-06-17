@@ -61,7 +61,7 @@ library PerpetualModule {
         int256[8] maxRiskParamValues
     );
     event UpdatePerpetualRiskParameter(uint256 perpetualIndex, int256[8] riskParams);
-    event SetOracle(address indexed oldOracle, address indexed newOracle);
+    event SetOracle(uint256 perpetualIndex, address indexed oldOracle, address indexed newOracle);
     event UpdatePrice(
         uint256 perpetualIndex,
         address indexed oracle,
@@ -159,7 +159,7 @@ library PerpetualModule {
     function setOracle(PerpetualStorage storage perpetual, address newOracle) public {
         require(newOracle != perpetual.oracle, "oracle not changed");
         validateOracle(newOracle);
-        emit SetOracle(perpetual.oracle, newOracle);
+        emit SetOracle(perpetual.id, perpetual.oracle, newOracle);
         perpetual.oracle = newOracle;
     }
 
@@ -288,10 +288,10 @@ library PerpetualModule {
      * @param   timeElapsed The elapsed time since last update.
      */
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
-        int256 deltaUnitLoss =
-            timeElapsed.mul(getIndexPrice(perpetual)).wmul(perpetual.fundingRate).div(
-                FUNDING_INTERVAL
-            );
+        int256 deltaUnitLoss = timeElapsed
+        .mul(getIndexPrice(perpetual))
+        .wmul(perpetual.fundingRate)
+        .div(FUNDING_INTERVAL);
         perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
         emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
     }
