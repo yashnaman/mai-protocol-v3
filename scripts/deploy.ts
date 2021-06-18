@@ -117,6 +117,7 @@ async function preset2(deployer, accounts) {
     const n = await poolCreator.getLiquidityPoolCount();
     const allLiquidityPools = await poolCreator.listLiquidityPools(0, n.toString());
     const liquidityPool = await deployer.getContractAt("LiquidityPool", allLiquidityPools[allLiquidityPools.length - 1]);
+    console.log("Create new pool:", liquidityPool.address)
 
     await ensureFinished(liquidityPool.createPerpetual(
         oracleAddresses["ETH - USD"],
