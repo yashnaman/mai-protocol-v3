@@ -5,6 +5,7 @@ import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "../../interface/IOracle.sol";
 
 interface IERC20 {
     function symbol() external view returns (string memory);
@@ -12,92 +13,81 @@ interface IERC20 {
     function decimals() external view returns (uint8);
 }
 
-contract UniswapV3OracleAdaptor {
-    string internal _collateral;
-    string internal _underlyingAsset;
-    uint32 internal _shortPeriod;
-    uint32 internal _longPeriod;
-    address[] internal _pools;
-    address[] internal _path;
-    uint8 internal _collateralDecimals;
-    uint8 internal _underlyingAssetDecimals;
+contract UniswapV3OracleAdaptor is IOracle {
+    string public override collateral;
+    string public override underlyingAsset;
+    uint32 public shortPeriod;
+    uint32 public longPeriod;
+    address[] public pools;
+    address[] public path;
+    uint8 internal collateralDecimals;
+    uint8 internal underlyingAssetDecimals;
 
     constructor(
-        address factory,
-        address[] memory path,
-        uint24[] memory fees,
+        address factory_,
+        address[] memory path_,
+        uint24[] memory fees_,
         uint32 shortPeriod_,
         uint32 longPeriod_
     ) {
-        uint256 pathLength = path.length;
+        uint256 pathLength = path_.length;
         require(pathLength >= 2, "paths are too short");
-        require(pathLength - 1 == fees.length, "paths and fees are mismatched");
+        require(pathLength - 1 == fees_.length, "paths and fees are mismatched");
 
-        _collateral = IERC20(path[pathLength - 1]).symbol();
-        _collateralDecimals = IERC20(path[pathLength - 1]).decimals();
-        _underlyingAsset = IERC20(path[0]).symbol();
-        _underlyingAssetDecimals = IERC20(path[0]).decimals();
-        _longPeriod = longPeriod_;
-        _shortPeriod = shortPeriod_;
-        _path = path;
+        collateral = IERC20(path_[pathLength - 1]).symbol();
+        collateralDecimals = IERC20(path_[pathLength - 1]).decimals();
+        underlyingAsset = IERC20(path_[0]).symbol();
+        underlyingAssetDecimals = IERC20(path_[0]).decimals();
+        require(collateralDecimals <= 18 && underlyingAssetDecimals <= 18, "decimals over 18");
+        longPeriod = longPeriod_;
+        shortPeriod = shortPeriod_;
+        path = path_;
 
         for (uint256 i = 0; i < pathLength - 1; i++) {
             address pool = PoolAddress.computeAddress(
-                factory,
-                PoolAddress.getPoolKey(path[i], path[i + 1], fees[i])
+                factory_,
+                PoolAddress.getPoolKey(path[i], path[i + 1], fees_[i])
             );
-            _pools.push(pool);
+            pools.push(pool);
         }
     }
 
-    function isMarketClosed() public pure returns (bool) {
+    function isMarketClosed() public pure override returns (bool) {
         return false;
     }
 
-    function isTerminated() public pure returns (bool) {
+    function isTerminated() public pure override returns (bool) {
         return false;
     }
 
-    function collateral() public view returns (string memory) {
-        return _collateral;
+    function priceTWAPLong() public view override returns (int256, uint256) {
+        return priceTWAP(longPeriod);
     }
 
-    function underlyingAsset() public view returns (string memory) {
-        return _underlyingAsset;
-    }
-
-    function longPeriod() public view returns (uint32) {
-        return _longPeriod;
-    }
-
-    function shortPeriod() public view returns (uint32) {
-        return _shortPeriod;
-    }
-
-    function priceTWAPLong() public view returns (uint256 newPrice, uint256 newTimestamp) {
-        return priceTWAP(_longPeriod);
-    }
-
-    function priceTWAPShort() public view returns (uint256 newPrice, uint256 newTimestamp) {
-        return priceTWAP(_shortPeriod);
+    function priceTWAPShort() public view override returns (int256, uint256) {
+        return priceTWAP(shortPeriod);
     }
 
     function priceTWAP(uint32 period)
         internal
         view
-        returns (uint256 newPrice, uint256 newTimestamp)
+        returns (int256 newPrice, uint256 newTimestamp)
     {
         // input = 1, output = price
-        uint128 baseAmount = uint128(10**_underlyingAssetDecimals);
-        uint256 length = _pools.length;
-        uint256 quoteAmount;
+        uint128 baseAmount = uint128(10**underlyingAssetDecimals);
+        uint256 length = pools.length;
         for (uint256 i = 0; i < length; i++) {
-            int24 tick = OracleLibrary.consult(_pools[i], period);
-            quoteAmount = OracleLibrary.getQuoteAtTick(tick, baseAmount, _path[i], _path[i + 1]);
+            int24 tick = OracleLibrary.consult(pools[i], period);
+            uint256 quoteAmount = OracleLibrary.getQuoteAtTick(
+                tick,
+                baseAmount,
+                path[i],
+                path[i + 1]
+            );
             baseAmount = SafeCast.toUint128(quoteAmount);
         }
         // change to 18 decimals for mcdex oracle interface
-        newPrice = quoteAmount * 10**(18 - _collateralDecimals);
+        newPrice = int256(baseAmount * 10**(18 - collateralDecimals));
         newTimestamp = block.timestamp;
     }
 }

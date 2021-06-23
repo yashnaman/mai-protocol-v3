@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../../interface/IOracle.sol";
 
 interface IChainlink {
     function latestRoundData()
@@ -16,46 +17,38 @@ interface IChainlink {
         );
 }
 
-contract ChainlinkAdaptor is Ownable {
-    address internal _chainlink;
+contract ChainlinkAdaptor is Ownable, IOracle {
+    address public chainlink;
     int256 internal _markPrice;
     uint256 internal _markPriceTimestamp;
     uint256 public maxHeartBeat;
     bool internal _isTerminated;
-    string internal _collateral;
-    string internal _underlyingAsset;
+    string public override collateral;
+    string public override underlyingAsset;
 
     constructor(
         address chainlink_,
         string memory collateral_,
         string memory underlyingAsset_
     ) Ownable() {
-        _chainlink = chainlink_;
-        _collateral = collateral_;
-        _underlyingAsset = underlyingAsset_;
+        chainlink = chainlink_;
+        collateral = collateral_;
+        underlyingAsset = underlyingAsset_;
     }
 
-    function isMarketClosed() public pure returns (bool) {
+    function isMarketClosed() public pure override returns (bool) {
         return false;
     }
 
-    function isTerminated() public returns (bool) {
+    function isTerminated() public override returns (bool) {
         checkHeartStop();
         return _isTerminated;
     }
 
-    function collateral() public view returns (string memory) {
-        return _collateral;
-    }
-
-    function underlyingAsset() public view returns (string memory) {
-        return _underlyingAsset;
-    }
-
-    function priceTWAPLong() public returns (int256, uint256) {
+    function priceTWAPLong() public override returns (int256, uint256) {
         if (!checkHeartStop()) {
             int256 markPrice;
-            (, markPrice, , _markPriceTimestamp, ) = IChainlink(_chainlink).latestRoundData();
+            (, markPrice, , _markPriceTimestamp, ) = IChainlink(chainlink).latestRoundData();
             require(
                 markPrice > 0 && markPrice <= type(int256).max / 10**10,
                 "invalid oracle price"
@@ -65,7 +58,7 @@ contract ChainlinkAdaptor is Ownable {
         return (_markPrice, _markPriceTimestamp);
     }
 
-    function priceTWAPShort() public returns (int256, uint256) {
+    function priceTWAPShort() public override returns (int256, uint256) {
         return priceTWAPLong();
     }
 
