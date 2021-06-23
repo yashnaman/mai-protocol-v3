@@ -19,6 +19,8 @@ contract UniswapV3OracleAdaptor {
     uint32 internal _longPeriod;
     address[] internal _pools;
     address[] internal _path;
+    uint8 internal _collateralDecimals;
+    uint8 internal _underlyingAssetDecimals;
 
     constructor(
         address factory,
@@ -32,17 +34,18 @@ contract UniswapV3OracleAdaptor {
         require(pathLength - 1 == fees.length, "paths and fees are mismatched");
 
         _collateral = IERC20(path[pathLength - 1]).symbol();
+        _collateralDecimals = IERC20(path[pathLength - 1]).decimals();
         _underlyingAsset = IERC20(path[0]).symbol();
+        _underlyingAssetDecimals = IERC20(path[0]).decimals();
         _longPeriod = longPeriod_;
         _shortPeriod = shortPeriod_;
         _path = path;
 
         for (uint256 i = 0; i < pathLength - 1; i++) {
-            address pool =
-                PoolAddress.computeAddress(
-                    factory,
-                    PoolAddress.getPoolKey(path[i], path[i + 1], fees[i])
-                );
+            address pool = PoolAddress.computeAddress(
+                factory,
+                PoolAddress.getPoolKey(path[i], path[i + 1], fees[i])
+            );
             _pools.push(pool);
         }
     }
@@ -84,7 +87,8 @@ contract UniswapV3OracleAdaptor {
         view
         returns (uint256 newPrice, uint256 newTimestamp)
     {
-        uint128 baseAmount = uint128(10**IERC20(_path[0]).decimals());
+        // input = 1, output = price
+        uint128 baseAmount = uint128(10**_underlyingAssetDecimals);
         uint256 length = _pools.length;
         uint256 quoteAmount;
         for (uint256 i = 0; i < length; i++) {
@@ -92,7 +96,8 @@ contract UniswapV3OracleAdaptor {
             quoteAmount = OracleLibrary.getQuoteAtTick(tick, baseAmount, _path[i], _path[i + 1]);
             baseAmount = SafeCast.toUint128(quoteAmount);
         }
-        newPrice = quoteAmount * 10**(18 - IERC20(_path[_path.length - 1]).decimals());
+        // change to 18 decimals for mcdex oracle interface
+        newPrice = quoteAmount * 10**(18 - _collateralDecimals);
         newTimestamp = block.timestamp;
     }
 }
