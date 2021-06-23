@@ -4,22 +4,21 @@ pragma solidity 0.7.4;
 import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 
 interface IERC20 {
     function symbol() external view returns (string memory);
+
+    function decimals() external view returns (uint8);
 }
 
-contract OracleUniswapV2 {
-    struct PoolInfo {
-        address pool;
-        bool inverse;
-    }
-
+contract UniswapV3OracleAdaptor {
     string internal _collateral;
     string internal _underlyingAsset;
     uint32 internal _shortPeriod;
     uint32 internal _longPeriod;
-    PoolInfo[] internal _poolInfo;
+    address[] internal _pools;
+    address[] internal _path;
 
     constructor(
         address factory,
@@ -36,6 +35,7 @@ contract OracleUniswapV2 {
         _underlyingAsset = IERC20(path[0]).symbol();
         _longPeriod = longPeriod_;
         _shortPeriod = shortPeriod_;
+        _path = path;
 
         for (uint256 i = 0; i < pathLength - 1; i++) {
             address pool =
@@ -43,7 +43,7 @@ contract OracleUniswapV2 {
                     factory,
                     PoolAddress.getPoolKey(path[i], path[i + 1], fees[i])
                 );
-            _poolInfo[i] = PoolInfo({ pool: pool, inverse: path[i] > path[i + 1] });
+            _pools.push(pool);
         }
     }
 
@@ -84,24 +84,15 @@ contract OracleUniswapV2 {
         view
         returns (uint256 newPrice, uint256 newTimestamp)
     {
-        newPrice = 10**18;
-        uint256 length = _poolInfo.length;
+        uint128 baseAmount = uint128(10**IERC20(_path[0]).decimals());
+        uint256 length = _pools.length;
+        uint256 quoteAmount;
         for (uint256 i = 0; i < length; i++) {
-            PoolInfo memory poolInfo = _poolInfo[i];
-            int24 tick = OracleLibrary.consult(poolInfo.pool, period);
-            uint160 sqrtRatioX96 = TickMath.getSqrtRatioAtTick(tick);
-            if (sqrtRatioX96 <= type(uint128).max) {
-                uint256 ratioX192 = uint256(sqrtRatioX96) * sqrtRatioX96;
-                newPrice = poolInfo.inverse
-                    ? FullMath.mulDiv(1 << 192, newPrice, ratioX192)
-                    : FullMath.mulDiv(ratioX192, newPrice, 1 << 192);
-            } else {
-                uint256 ratioX128 = FullMath.mulDiv(sqrtRatioX96, sqrtRatioX96, 1 << 64);
-                newPrice = poolInfo.inverse
-                    ? FullMath.mulDiv(1 << 128, newPrice, ratioX128)
-                    : FullMath.mulDiv(ratioX128, newPrice, 1 << 128);
-            }
+            int24 tick = OracleLibrary.consult(_pools[i], period);
+            quoteAmount = OracleLibrary.getQuoteAtTick(tick, baseAmount, _path[i], _path[i + 1]);
+            baseAmount = SafeCast.toUint128(quoteAmount);
         }
+        newPrice = quoteAmount * 10**(18 - IERC20(_path[_path.length - 1]).decimals());
         newTimestamp = block.timestamp;
     }
 }
