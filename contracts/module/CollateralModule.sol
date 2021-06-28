@@ -8,10 +8,9 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
-import "../libraries/Constant.sol";
-
 import "../interface/IDecimals.sol";
-import "../interface/IPoolCreator.sol";
+
+import "../libraries/Constant.sol";
 
 import "../Type.sol";
 

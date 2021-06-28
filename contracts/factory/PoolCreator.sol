@@ -10,16 +10,25 @@ import "@openzeppelin/contracts/proxy/ProxyAdmin.sol";
 import "../interface/IGovernor.sol";
 import "../interface/ILiquidityPool.sol";
 import "../interface/IProxyAdmin.sol";
+import "../interface/IPoolCreator.sol";
 
 import "./Tracer.sol";
 import "./VersionControl.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
 
-contract PoolCreator is Initializable, Tracer, VersionControl, Variables, AccessControl {
+contract PoolCreator is
+    Initializable,
+    OwnableUpgradeable,
+    Tracer,
+    VersionControl,
+    Variables,
+    AccessControl,
+    IPoolCreator
+{
     using AddressUpgradeable for address;
 
-    IProxyAdmin public upgradeAdmin;
+    IProxyAdmin public override upgradeAdmin;
 
     event CreateLiquidityPool(
         bytes32 versionKey,
@@ -49,6 +58,18 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
     }
 
     /**
+     * @notice Owner of version control.
+     */
+    function owner()
+        public
+        view
+        override(OwnableUpgradeable, VersionControl, Variables)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
+    }
+
+    /**
      * @notice  Create a liquidity pool with the latest vesion.
      *          The sender will be the operator of pool.
      *
@@ -63,7 +84,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         uint256 collateralDecimals,
         int256 nonce,
         bytes calldata initData
-    ) external returns (address liquidityPool, address governor) {
+    ) external override returns (address liquidityPool, address governor) {
         (liquidityPool, governor) = _createLiquidityPoolWith(
             getLatestVersion(),
             collateral,
@@ -90,7 +111,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         uint256 collateralDecimals,
         int256 nonce,
         bytes memory initData
-    ) external returns (address liquidityPool, address governor) {
+    ) external override returns (address liquidityPool, address governor) {
         (liquidityPool, governor) = _createLiquidityPoolWith(
             versionKey,
             collateral,
@@ -113,7 +134,7 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         bytes32 targetVersionKey,
         bytes memory dataForLiquidityPool,
         bytes memory dataForGovernor
-    ) external {
+    ) external override {
         (
             address liquidityPool,
             address governor,
@@ -206,11 +227,10 @@ contract PoolCreator is Initializable, Tracer, VersionControl, Variables, Access
         returns (address instance)
     {
         require(implementation.isContract(), "implementation must be contract");
-        bytes memory deploymentData =
-            abi.encodePacked(
-                type(TransparentUpgradeableProxy).creationCode,
-                abi.encode(implementation, address(upgradeAdmin), "")
-            );
+        bytes memory deploymentData = abi.encodePacked(
+            type(TransparentUpgradeableProxy).creationCode,
+            abi.encode(implementation, address(upgradeAdmin), "")
+        );
         assembly {
             instance := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }

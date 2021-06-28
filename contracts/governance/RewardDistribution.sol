@@ -7,13 +7,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-import "../interface/IPoolCreator.sol";
+import "../interface/IPoolCreatorFull.sol";
 
 abstract contract RewardDistribution is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-    IPoolCreator public poolCreator;
+    IPoolCreatorFull public poolCreator;
     IERC20Upgradeable public rewardToken;
 
     uint256 public periodFinish;
@@ -49,7 +49,7 @@ abstract contract RewardDistribution is Initializable, ContextUpgradeable {
         initializer
     {
         rewardToken = IERC20Upgradeable(rewardToken_);
-        poolCreator = IPoolCreator(poolCreator_);
+        poolCreator = IPoolCreatorFull(poolCreator_);
     }
 
     /**

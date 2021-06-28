@@ -8,8 +8,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "./GovernorAlpha.sol";
 import "./RewardDistribution.sol";
+import "../interface/IGovernor.sol";
 
 contract LpGovernor is
+    IGovernor,
     Initializable,
     ContextUpgradeable,
     ERC20Upgradeable,
@@ -36,7 +38,7 @@ contract LpGovernor is
         address target,
         address rewardToken,
         address poolCreator
-    ) public virtual initializer {
+    ) external virtual override initializer {
         __ERC20_init_unchained(name, symbol);
         __GovernorAlpha_init_unchained(target);
         __RewardDistribution_init_unchained(rewardToken, poolCreator);
@@ -49,10 +51,15 @@ contract LpGovernor is
         return _minter;
     }
 
+
+    function getTarget() public view virtual override(IGovernor, GovernorAlpha) returns (address) {
+        return GovernorAlpha.getTarget();
+    }
+
     /**
      * @notice  Mint token to account.
      */
-    function mint(address account, uint256 amount) public virtual {
+    function mint(address account, uint256 amount) public virtual override {
         require(_msgSender() == _minter, "must be minter to mint");
         _mint(account, amount);
     }
@@ -60,7 +67,7 @@ contract LpGovernor is
     /**
      * @notice  Burn token from account. Voting will block also block burning.
      */
-    function burn(address account, uint256 amount) public virtual {
+    function burn(address account, uint256 amount) public virtual override {
         require(_msgSender() == _minter, "must be minter to burn");
         _burn(account, amount);
     }
@@ -76,7 +83,7 @@ contract LpGovernor is
         public
         view
         virtual
-        override(ERC20Upgradeable, GovernorAlpha, RewardDistribution)
+        override(IGovernor, ERC20Upgradeable, GovernorAlpha, RewardDistribution)
         returns (uint256)
     {
         return ERC20Upgradeable.balanceOf(account);
@@ -89,7 +96,7 @@ contract LpGovernor is
         public
         view
         virtual
-        override(ERC20Upgradeable, GovernorAlpha, RewardDistribution)
+        override(IGovernor, ERC20Upgradeable, GovernorAlpha, RewardDistribution)
         returns (uint256)
     {
         return ERC20Upgradeable.totalSupply();

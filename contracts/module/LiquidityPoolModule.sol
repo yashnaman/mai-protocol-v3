@@ -6,8 +6,8 @@ import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
 import "../interface/IAccessControl.sol";
-import "../interface/IPoolCreator.sol";
 import "../interface/IGovernor.sol";
+import "../interface/IPoolCreatorFull.sol";
 import "../interface/ISymbolService.sol";
 
 import "../libraries/SafeMathExt.sol";
@@ -83,7 +83,7 @@ library LiquidityPoolModule {
         view
         returns (address vault)
     {
-        vault = IPoolCreator(liquidityPool.creator).getVault();
+        vault = IPoolCreatorFull(liquidityPool.creator).getVault();
     }
 
     function getOperator(LiquidityPoolStorage storage liquidityPool)
@@ -108,7 +108,7 @@ library LiquidityPoolModule {
         view
         returns (int256 vaultFeeRate)
     {
-        vaultFeeRate = IPoolCreator(liquidityPool.creator).getVaultFeeRate();
+        vaultFeeRate = IPoolCreatorFull(liquidityPool.creator).getVaultFeeRate();
     }
 
     /**
@@ -220,13 +220,14 @@ library LiquidityPoolModule {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
 
-        (bool isFastCreationEnabled, int256 insuranceFundCap) =
-            abi.decode(initData, (bool, int256));
+        (bool isFastCreationEnabled, int256 insuranceFundCap) = abi.decode(
+            initData,
+            (bool, int256)
+        );
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = creator;
-        IPoolCreator poolCreator = IPoolCreator(creator);
-        liquidityPool.accessController = poolCreator.getAccessController();
+        liquidityPool.accessController = IPoolCreatorFull(creator).getAccessController();
 
         liquidityPool.operator = operator;
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
@@ -269,8 +270,9 @@ library LiquidityPoolModule {
             minRiskParamValues,
             maxRiskParamValues
         );
-        ISymbolService service =
-            ISymbolService(IPoolCreator(liquidityPool.creator).getSymbolService());
+        ISymbolService service = ISymbolService(
+            IPoolCreatorFull(liquidityPool.creator).getSymbolService()
+        );
         service.allocateSymbol(address(this), perpetualIndex);
         if (liquidityPool.isRunning) {
             perpetual.setNormalState();
@@ -459,8 +461,10 @@ library LiquidityPoolModule {
             }
             int256 markPrice = perpetual.getMarkPrice();
             // Floor to make poolCash >= 0
-            int256 newMargin =
-                perpetual.getInitialMargin(address(this), markPrice).wmul(rate, Round.FLOOR);
+            int256 newMargin = perpetual.getInitialMargin(address(this), markPrice).wmul(
+                rate,
+                Round.FLOOR
+            );
             margin = perpetual.getMargin(address(this), markPrice);
             int256 deltaMargin = newMargin.sub(margin);
             if (deltaMargin > 0) {
@@ -531,7 +535,10 @@ library LiquidityPoolModule {
         liquidityPool.operator = claimer;
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.transferringOperator = address(0);
-        IPoolCreator(liquidityPool.creator).registerOperatorOfLiquidityPool(address(this), claimer);
+        IPoolCreatorFull(liquidityPool.creator).registerOperatorOfLiquidityPool(
+            address(this),
+            claimer
+        );
         emit ClaimOperator(claimer);
     }
 
@@ -541,7 +548,7 @@ library LiquidityPoolModule {
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
         liquidityPool.operator = address(0);
-        IPoolCreator(liquidityPool.creator).registerOperatorOfLiquidityPool(
+        IPoolCreatorFull(liquidityPool.creator).registerOperatorOfLiquidityPool(
             address(this),
             address(0)
         );
@@ -695,7 +702,7 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         transferFromUserToPerpetual(liquidityPool, perpetualIndex, trader, amount);
         if (liquidityPool.perpetuals[perpetualIndex].deposit(trader, amount)) {
-            IPoolCreator(liquidityPool.creator).activatePerpetualFor(trader, perpetualIndex);
+            IPoolCreatorFull(liquidityPool.creator).activatePerpetualFor(trader, perpetualIndex);
         }
     }
 
@@ -720,7 +727,7 @@ library LiquidityPoolModule {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         rebalance(liquidityPool, perpetualIndex);
         if (perpetual.withdraw(trader, amount)) {
-            IPoolCreator(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
+            IPoolCreatorFull(liquidityPool.creator).deactivatePerpetualFor(trader, perpetualIndex);
         }
         transferFromPerpetualToUser(liquidityPool, perpetualIndex, trader, amount);
     }
@@ -808,8 +815,10 @@ library LiquidityPoolModule {
         IGovernor shareToken = IGovernor(liquidityPool.shareToken);
         int256 shareTotalSupply = shareToken.totalSupply().toInt256();
 
-        (int256 shareToMint, int256 addedPoolMargin) =
-            liquidityPool.getShareToMint(shareTotalSupply, cashToAdd);
+        (int256 shareToMint, int256 addedPoolMargin) = liquidityPool.getShareToMint(
+            shareTotalSupply,
+            cashToAdd
+        );
         require(shareToMint > 0, "received share must be positive");
         // pool cash cannot be added before calculation, DO NOT use transferFromUserToPool
 
@@ -862,8 +871,9 @@ library LiquidityPoolModule {
             shareToRemove.toUint256() <= shareToken.balanceOf(trader),
             "insufficient share balance"
         );
-        int256 removedCashFromPool =
-            cashToReturn.sub(removedInsuranceFund).sub(removedDonatedInsuranceFund);
+        int256 removedCashFromPool = cashToReturn.sub(removedInsuranceFund).sub(
+            removedDonatedInsuranceFund
+        );
         require(
             removedCashFromPool <= getAvailablePoolCash(liquidityPool),
             "insufficient pool cash"
@@ -1075,8 +1085,10 @@ library LiquidityPoolModule {
         // read perp
         int256 position = perpetual.getPosition(trader);
         int256 adjustCollateral;
-        (int256 closePosition, int256 openPosition) =
-            Utils.splitAmount(position.sub(deltaPosition), deltaPosition);
+        (int256 closePosition, int256 openPosition) = Utils.splitAmount(
+            position.sub(deltaPosition),
+            deltaPosition
+        );
         if (closePosition != 0 && openPosition == 0) {
             // close only
             adjustCollateral = adjustClosedMargin(
@@ -1148,9 +1160,9 @@ library LiquidityPoolModule {
             // open from non-zero position
             // adjustCollateral = openPositionMargin + fee - pnl
             adjustCollateral = adjustCollateral
-                .add(totalFee)
-                .sub(markPrice.wmul(deltaPosition))
-                .sub(deltaCash);
+            .add(totalFee)
+            .sub(markPrice.wmul(deltaPosition))
+            .sub(deltaCash);
         } else {
             // open from 0 or close + open
             adjustCollateral = adjustCollateral.sub(oldMargin);

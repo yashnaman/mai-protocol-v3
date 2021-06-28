@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "../interface/ILiquidityPool.sol";
+import "../interface/ILiquidityPoolGetter.sol";
 
 contract SymbolService is Ownable {
     using Address for address;
@@ -67,8 +67,8 @@ contract SymbolService is Ownable {
 
     modifier onlyWhitelisted(address liquidityPool) {
         require(Address.isContract(liquidityPool), "must called by contract");
-        (, , address[7] memory addresses, , ) =
-            ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
+        (, , address[7] memory addresses, , ) = ILiquidityPoolGetter(liquidityPool)
+        .getLiquidityPoolInfo();
         require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
         _;
     }

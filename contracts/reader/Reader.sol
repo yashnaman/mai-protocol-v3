@@ -3,9 +3,9 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "../Type.sol";
-import "../interface/ILiquidityPool.sol";
+import "../interface/ILiquidityPoolFull.sol";
+import "../interface/IPoolCreatorFull.sol";
 import "../interface/IOracle.sol";
-import "../interface/IPoolCreator.sol";
 import "../interface/ISymbolService.sol";
 import "../interface/ISymbolService.sol";
 import "../libraries/SafeMathExt.sol";
@@ -85,14 +85,9 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (bool success, bytes memory data) =
-            liquidityPool.call(
-                abi.encodeWithSignature(
-                    "getMarginAccount(uint256,address)",
-                    perpetualIndex,
-                    account
-                )
-            );
+        (bool success, bytes memory data) = liquidityPool.call(
+            abi.encodeWithSignature("getMarginAccount(uint256,address)", perpetualIndex, account)
+        );
         require(success, "fail to retrieve margin account");
         accountStorage = _parseMarginAccount(data);
     }
@@ -140,7 +135,7 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (poolMargin, isSafe) = ILiquidityPool(liquidityPool).getPoolMargin();
+        (poolMargin, isSafe) = ILiquidityPoolFull(liquidityPool).getPoolMargin();
     }
 
     /**
@@ -173,7 +168,7 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (deltaCash, deltaPosition) = ILiquidityPool(liquidityPool).queryTradeWithAMM(
+        (deltaCash, deltaPosition) = ILiquidityPoolFull(liquidityPool).queryTradeWithAMM(
             perpetualIndex,
             amount
         );
@@ -204,10 +199,10 @@ contract Reader {
             pool.addresses,
             pool.intNums,
             pool.uintNums
-        ) = ILiquidityPool(liquidityPool).getLiquidityPoolInfo();
+        ) = ILiquidityPoolFull(liquidityPool).getLiquidityPoolInfo();
         // perpetual
         uint256 perpetualCount = pool.uintNums[1];
-        address symbolService = IPoolCreator(pool.addresses[0]).getSymbolService();
+        address symbolService = IPoolCreatorFull(pool.addresses[0]).getSymbolService();
         pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
         for (uint256 i = 0; i < perpetualCount; i++) {
             getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
@@ -221,7 +216,7 @@ contract Reader {
         uint256 perpetualIndex
     ) private {
         // perpetual
-        (perp.state, perp.oracle, perp.nums) = ILiquidityPool(liquidityPool).getPerpetualInfo(
+        (perp.state, perp.oracle, perp.nums) = ILiquidityPoolFull(liquidityPool).getPerpetualInfo(
             perpetualIndex
         );
         // read more from symbol service
@@ -230,8 +225,9 @@ contract Reader {
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
         // read more from account
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPool(liquidityPool)
-            .getMarginAccount(perpetualIndex, liquidityPool);
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
+            liquidityPool
+        ).getMarginAccount(perpetualIndex, liquidityPool);
     }
 
     function getMinSymbol(
@@ -254,7 +250,7 @@ contract Reader {
     // back-compatible: beta0.0.4
 
     function getImplementation(address proxy) public view returns (address) {
-        IProxyAdmin proxyAdmin = IPoolCreator(poolCreator).upgradeAdmin();
+        IProxyAdmin proxyAdmin = IPoolCreatorFull(poolCreator).upgradeAdmin();
         return proxyAdmin.getProxyImplementation(proxy);
     }
 
@@ -319,8 +315,9 @@ contract Reader {
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
         // read more from account
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPool(liquidityPool)
-            .getMarginAccount(perpetualIndex, liquidityPool);
+        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
+            liquidityPool
+        ).getMarginAccount(perpetualIndex, liquidityPool);
     }
 
     /**
@@ -341,8 +338,11 @@ contract Reader {
         uint256 begin,
         uint256 end
     ) public returns (bool isSynced, AccountsResult[] memory result) {
-        address[] memory accounts =
-            ILiquidityPool(liquidityPool).listActiveAccounts(perpetualIndex, begin, end);
+        address[] memory accounts = ILiquidityPoolFull(liquidityPool).listActiveAccounts(
+            perpetualIndex,
+            begin,
+            end
+        );
         try ILiquidityPool(liquidityPool).forceToSyncState() {
             isSynced = true;
         } catch {
@@ -353,8 +353,9 @@ contract Reader {
             int256 margin;
             int256 position;
             bool isMaintenanceMarginSafe;
-            (, position, , margin, , , isMaintenanceMarginSafe, , ) = ILiquidityPool(liquidityPool)
-                .getMarginAccount(perpetualIndex, accounts[i]);
+            (, position, , margin, , , isMaintenanceMarginSafe, , ) = ILiquidityPoolFull(
+                liquidityPool
+            ).getMarginAccount(perpetualIndex, accounts[i]);
             result[i].account = accounts[i];
             result[i].position = position;
             result[i].margin = margin;
@@ -393,7 +394,7 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (cashToAddResult, shareToMintResult) = ILiquidityPool(liquidityPool).queryAddLiquidity(
+        (cashToAddResult, shareToMintResult) = ILiquidityPoolFull(liquidityPool).queryAddLiquidity(
             cashToAdd,
             shareToMint
         );
@@ -430,8 +431,8 @@ contract Reader {
         } catch {
             isSynced = false;
         }
-        (shareToRemoveResult, cashToReturnResult) = ILiquidityPool(liquidityPool)
-            .queryRemoveLiquidity(shareToRemove, cashToReturn);
+        (shareToRemoveResult, cashToReturnResult) = ILiquidityPoolFull(liquidityPool)
+        .queryRemoveLiquidity(shareToRemove, cashToReturn);
     }
 }
 

@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
+import "./interface/IPerpetual.sol";
+
 import "./libraries/Constant.sol";
 import "./libraries/OrderData.sol";
 
@@ -14,7 +16,7 @@ import "./module/LiquidityPoolModule.sol";
 import "./Storage.sol";
 import "./Type.sol";
 
-contract Perpetual is Storage, ReentrancyGuardUpgradeable {
+contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
     using OrderData for bytes;
     using OrderData for uint32;
     using OrderModule for LiquidityPoolStorage;
@@ -51,7 +53,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT) nonReentrant {
+    ) external override onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT) nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -78,7 +80,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external syncState(false) onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW) nonReentrant {
+    )
+        external
+        override
+        syncState(false)
+        onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
+        nonReentrant
+    {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -97,7 +105,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      * @param   trader          The address of the trader.
      */
     function settle(uint256 perpetualIndex, address trader)
-        public
+        external
+        override
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
         nonReentrant
     {
@@ -117,7 +126,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      */
-    function clear(uint256 perpetualIndex) public nonReentrant {
+    function clear(uint256 perpetualIndex) external override nonReentrant {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.EMERGENCY,
             "perpetual should be in EMERGENCY state"
@@ -166,6 +175,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint32 flags
     )
         external
+        override
         onlyAuthorized(
             trader,
             flags.useTargetLeverage()
@@ -194,6 +204,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function brokerTrade(bytes memory orderData, int256 amount)
         external
+        override
         syncState(false)
         returns (int256 tradeAmount)
     {
@@ -234,6 +245,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
      */
     function liquidateByAMM(uint256 perpetualIndex, address trader)
         external
+        override
         nonReentrant
         onlyKeeper
         syncState(false)
@@ -270,6 +282,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable {
         uint256 deadline
     )
         external
+        override
         nonReentrant
         onlyKeeper
         onlyAuthorized(liquidator, Constant.PRIVILEGE_LIQUIDATE)

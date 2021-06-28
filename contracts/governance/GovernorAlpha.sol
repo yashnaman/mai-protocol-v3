@@ -7,8 +7,8 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-import "../interface/ILiquidityPool.sol";
-import "../interface/IPoolCreator.sol";
+import "../interface/IPoolCreatorFull.sol";
+import "../interface/ILiquidityPoolGetter.sol";
 
 /**
  * @notice Possible states that a proposal may be in.
@@ -26,7 +26,15 @@ import "../interface/IPoolCreator.sol";
  *                        it will be marked as expired and no longer can be executed.
  *
  */
-enum ProposalState { Pending, Active, Defeated, Succeeded, Queued, Executed, Expired }
+enum ProposalState {
+    Pending,
+    Active,
+    Defeated,
+    Succeeded,
+    Queued,
+    Executed,
+    Expired
+}
 
 struct Proposal {
     // Unique id for looking up a proposal
@@ -81,7 +89,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
         keccak256(bytes("transferOperator(address)"));
 
-    IPoolCreator internal _creator;
+    IPoolCreatorFull internal _creator;
     address internal _target;
     mapping(address => uint256) internal _voteLocks;
     mapping(address => EnumerableSetUpgradeable.UintSet) internal _supportedProposals;
@@ -139,7 +147,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     function __GovernorAlpha_init_unchained(address target_) internal initializer {
         _target = target_;
-        _creator = IPoolCreator(_msgSender());
+        _creator = IPoolCreatorFull(_msgSender());
     }
 
     function getTarget() public view virtual returns (address) {
@@ -325,8 +333,13 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         require(signatures.length <= proposalMaxOperations(), "too many actions");
 
         address proposer = _msgSender();
-        uint256 proposalId =
-            _createProposal(proposer, getTarget(), signatures, calldatas, description);
+        uint256 proposalId = _createProposal(
+            proposer,
+            getTarget(),
+            signatures,
+            calldatas,
+            description
+        );
         latestProposalIds[proposer] = proposalId;
         _castVote(proposer, proposalId, true);
         return proposalId;
@@ -358,8 +371,13 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
         signatures[0] = "upgradeToAndCall(bytes32,bytes,bytes)";
         bytes[] memory calldatas = new bytes[](1);
         calldatas[0] = abi.encode(targetVersionKey, dataForLiquidityPool, dataForGovernor);
-        uint256 proposalId =
-            _createProposal(proposer, address(_creator), signatures, calldatas, description);
+        uint256 proposalId = _createProposal(
+            proposer,
+            address(_creator),
+            signatures,
+            calldatas,
+            description
+        );
         latestProposalIds[proposer] = proposalId;
         _castVote(proposer, proposalId, true);
         return proposalId;
@@ -473,8 +491,9 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
                     proposalState == ProposalState.Queued ||
                     proposalState == ProposalState.Expired
                 ) {
-                    uint256 unlockBlock =
-                        proposals[proposalId].endBlock.add(executionDelay().add(unlockDelay()));
+                    uint256 unlockBlock = proposals[proposalId].endBlock.add(
+                        executionDelay().add(unlockDelay())
+                    );
                     if (unlockBlock > lastUnlockBlock) {
                         lastUnlockBlock = unlockBlock;
                     }
@@ -487,8 +506,11 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     function _updateVoteLock(address account, uint256 blockNumber) internal returns (uint256) {
         EnumerableSetUpgradeable.UintSet storage proposalIds = _supportedProposals[account];
-        (uint256 lastUnlockBlock, uint256 stableProposalCount, uint256[] memory stableProposalIds) =
-            _getVoteLock(account);
+        (
+            uint256 lastUnlockBlock,
+            uint256 stableProposalCount,
+            uint256[] memory stableProposalIds
+        ) = _getVoteLock(account);
         for (uint256 i = 0; i < stableProposalCount; i++) {
             uint256 proposalId = stableProposalIds[i];
             if (proposalId != 0) {
@@ -525,7 +547,8 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     function _getOperator() internal view returns (address) {
-        (, , address[7] memory addresses, , ) = ILiquidityPool(_target).getLiquidityPoolInfo();
+        (, , address[7] memory addresses, , ) = ILiquidityPoolGetter(_target)
+        .getLiquidityPoolInfo();
         return addresses[1];
     }
 

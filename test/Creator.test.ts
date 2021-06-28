@@ -303,6 +303,38 @@ describe('Creator', () => {
         expect(result.length).to.equal(1)
         expect(result[0].liquidityPool).to.equal(deployed2[0]);
         expect(result[0].perpetualIndex).to.equal(0);
+    })
 
+    it("owner", async () => {
+        var lpVersion1 = await LiquidityPoolFactory.deploy();
+        var govVersion1 = await createContract("TestLpGovernor");
+        await poolCreator.addVersion(
+            lpVersion1.address,
+            govVersion1.address,
+            1,
+            "version1"
+        );
+        const key1 = versionKey(lpVersion1.address, govVersion1.address);
+        expect(await poolCreator.getLatestVersion()).to.equal(key1);
+        var lpVersion2 = await LiquidityPoolFactory.deploy();
+        var govVersion2 = await createContract("TestLpGovernor");
+        await poolCreator.addVersion(
+            lpVersion2.address,
+            govVersion2.address,
+            2,
+            "version2"
+        );
+        await poolCreator.setVault(
+            user3.address
+        );
+        await expect(poolCreator.connect(user2).addVersion(
+            lpVersion2.address,
+            govVersion2.address,
+            2,
+            "version2"
+        )).to.be.revertedWith("caller is not the owner")
+        await expect(poolCreator.connect(user2).setVault(
+            user1.address
+        )).to.be.revertedWith("caller is not the owner")
     })
 })

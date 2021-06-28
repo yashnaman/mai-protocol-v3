@@ -4,44 +4,56 @@ pragma solidity 0.7.4;
 import "./IProxyAdmin.sol";
 
 interface IPoolCreator {
-    function owner() external view returns (address);
-
-    function activatePerpetualFor(address trader, uint256 perpetualIndex) external;
-
-    function deactivatePerpetualFor(address trader, uint256 perpetualIndex) external;
-
-    function registerOperatorOfLiquidityPool(address liquidityPool, address operator) external;
-
-    function getVault() external view returns (address);
-
-    function getVaultFeeRate() external view returns (int256);
-
-    function getAccessController() external view returns (address);
-
-    function getSymbolService() external view returns (address);
-
-    function getLatestVersion() external view returns (bytes32 latestVersionKey);
-
-    function getVersion(bytes32 versionKey)
-        external
-        view
-        returns (
-            address liquidityPoolTemplate,
-            address governorTemplate,
-            uint256 compatibility
-        );
-
-    function getAppliedVersionKey(address liquidityPool, address governor)
-        external
-        view
-        returns (bytes32 appliedVersionKey);
-
-    function isVersionKeyValid(bytes32 versionKey) external view returns (bool isValid);
-
-    function isVersionCompatible(bytes32 targetVersionKey, bytes32 baseVersionKey)
-        external
-        view
-        returns (bool isCompatible);
-
     function upgradeAdmin() external view returns (IProxyAdmin proxyAdmin);
+
+    /**
+     * @notice  Create a liquidity pool with the latest vesion.
+     *          The sender will be the operator of pool.
+     *
+     * @param   collateral              he collateral address of the liquidity pool.
+     * @param   collateralDecimals      The collateral's decimals of the liquidity pool.
+     * @param   nonce                   A random nonce to calculate the address of deployed contracts.
+     * @param   initData                A bytes array contains data to initialize new created liquidity pool.
+     * @return  liquidityPool           The address of the created liquidity pool.
+     */
+    function createLiquidityPool(
+        address collateral,
+        uint256 collateralDecimals,
+        int256 nonce,
+        bytes calldata initData
+    ) external returns (address liquidityPool, address governor);
+
+    /**
+     * @notice  Create a liquidity pool with the specific version. The operator will be the sender.
+     *
+     * @param   versionKey          The key of the version to create.
+     * @param   collateral          The collateral address of the liquidity pool.
+     * @param   collateralDecimals  The collateral's decimals of the liquidity pool.
+     * @param   nonce               A random nonce to calculate the address of deployed contracts.
+     * @param   initData            A bytes array contains data to initialize new created liquidity pool.
+     * @return  liquidityPool       The address of the created liquidity pool.
+     * @return  governor            The address of the created governor.
+     */
+    function createLiquidityPoolWith(
+        bytes32 versionKey,
+        address collateral,
+        uint256 collateralDecimals,
+        int256 nonce,
+        bytes memory initData
+    ) external returns (address liquidityPool, address governor);
+
+    /**
+     * @notice  Upgrade a liquidity pool and governor pair then call a patch function on the upgraded contract (optional).
+     *          This method checks the sender and forwards the request to ProxyAdmin to do upgrading.
+     *
+     * @param   targetVersionKey        The key of version to be upgrade up. The target version must be compatiable with
+     *                                  current version.
+     * @param   dataForLiquidityPool    The patch calldata for upgraded liquidity pool.
+     * @param   dataForGovernor         The patch calldata of upgraded governor.
+     */
+    function upgradeToAndCall(
+        bytes32 targetVersionKey,
+        bytes memory dataForLiquidityPool,
+        bytes memory dataForGovernor
+    ) external;
 }

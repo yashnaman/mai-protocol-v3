@@ -6,10 +6,12 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
-import "../libraries/SafeMathExt.sol";
 import "../interface/IUpgradeableProxy.sol";
+import "../interface/IVersionControl.sol";
 
-contract VersionControl is OwnableUpgradeable {
+import "../libraries/SafeMathExt.sol";
+
+contract VersionControl is OwnableUpgradeable, IVersionControl {
     using Utils for EnumerableSetUpgradeable.Bytes32Set;
     using SafeMathExt for uint256;
     using AddressUpgradeable for address;
@@ -34,6 +36,19 @@ contract VersionControl is OwnableUpgradeable {
         uint256 compatibility,
         string note
     );
+
+    /**
+     * @notice Owner of version control.
+     */
+    function owner()
+        public
+        view
+        virtual
+        override(IVersionControl, OwnableUpgradeable)
+        returns (address)
+    {
+        return owner();
+    }
 
     /**
      * @notice  Create a new version with template of liquidity pool and governor.
@@ -78,7 +93,7 @@ contract VersionControl is OwnableUpgradeable {
      *
      * @return  latestVersionKey    The key of the latest template of liquidity pool and governor.
      */
-    function getLatestVersion() public view returns (bytes32 latestVersionKey) {
+    function getLatestVersion() public view override returns (bytes32 latestVersionKey) {
         require(_versionKeys.length() > 0, "no version");
         latestVersionKey = _versionKeys.at(_versionKeys.length() - 1);
     }
@@ -94,6 +109,7 @@ contract VersionControl is OwnableUpgradeable {
     function getVersion(bytes32 versionKey)
         public
         view
+        override
         returns (
             address liquidityPoolTemplate,
             address governorTemplate,
@@ -116,8 +132,9 @@ contract VersionControl is OwnableUpgradeable {
      * @return appliedVersionKey    The version key of given liquidity pool and governor.
      */
     function getAppliedVersionKey(address liquidityPool, address governor)
-        public
+        external
         view
+        override
         returns (bytes32 appliedVersionKey)
     {
         bytes32 deployedAddressHash = _getVersionHash(liquidityPool, governor);
@@ -130,7 +147,7 @@ contract VersionControl is OwnableUpgradeable {
      * @param   versionKey  The key of the version to test.
      * @return  isValid     Return true if the version of given key is valid.
      */
-    function isVersionKeyValid(bytes32 versionKey) public view returns (bool isValid) {
+    function isVersionKeyValid(bytes32 versionKey) public view override returns (bool isValid) {
         isValid = _versionKeys.contains(versionKey);
     }
 
@@ -145,6 +162,7 @@ contract VersionControl is OwnableUpgradeable {
     function isVersionCompatible(bytes32 targetVersionKey, bytes32 baseVersionKey)
         public
         view
+        override
         returns (bool isCompatible)
     {
         require(isVersionKeyValid(targetVersionKey), "target version is invalid");
@@ -162,8 +180,9 @@ contract VersionControl is OwnableUpgradeable {
      * @return  versionKeys An array contains current version keys.
      */
     function listAvailableVersions(uint256 begin, uint256 end)
-        public
+        external
         view
+        override
         returns (bytes32[] memory versionKeys)
     {
         versionKeys = _versionKeys.toArray(begin, end);

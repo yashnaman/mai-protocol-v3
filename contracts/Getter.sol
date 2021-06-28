@@ -5,6 +5,8 @@ import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 
+import "./interface/ILiquidityPoolGetter.sol";
+
 import "./libraries/SafeMathExt.sol";
 import "./libraries/Utils.sol";
 
@@ -19,7 +21,7 @@ import "./Storage.sol";
 /**
  * @notice  Getter is a helper to help getting status of liquidity from external.
  */
-contract Getter is Storage {
+contract Getter is Storage, ILiquidityPoolGetter {
     using SafeMathUpgradeable for uint256;
     using SafeCastUpgradeable for uint256;
     using SafeMathExt for int256;
@@ -44,8 +46,9 @@ contract Getter is Storage {
      * @return  uintNums                An fixed length array of uint type properties, see comments for details.
      */
     function getLiquidityPoolInfo()
-        public
+        external
         view
+        override
         returns (
             bool isRunning,
             bool isFastCreationEnabled,
@@ -104,8 +107,9 @@ contract Getter is Storage {
      * @return  nums            An fixed length array of uint type properties, see comments for details.
      */
     function getPerpetualInfo(uint256 perpetualIndex)
-        public
+        external
         view
+        override
         onlyExistedPerpetual(perpetualIndex)
         returns (
             PerpetualState state,
@@ -208,8 +212,9 @@ contract Getter is Storage {
      * @return targetLeverage           The target leverage for openning position.
      */
     function getMarginAccount(uint256 perpetualIndex, address trader)
-        public
+        external
         view
+        override
         onlyExistedPerpetual(perpetualIndex)
         returns (
             int256 cash,
@@ -244,8 +249,9 @@ contract Getter is Storage {
      * @return  activeAccountCount  The number of active accounts in the perpetual.
      */
     function getActiveAccountCount(uint256 perpetualIndex)
-        public
+        external
         view
+        override
         onlyExistedPerpetual(perpetualIndex)
         returns (uint256 activeAccountCount)
     {
@@ -263,7 +269,13 @@ contract Getter is Storage {
         uint256 perpetualIndex,
         uint256 begin,
         uint256 end
-    ) public view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
+    )
+        external
+        view
+        override
+        onlyExistedPerpetual(perpetualIndex)
+        returns (address[] memory result)
+    {
         PerpetualStorage storage perpetual = _liquidityPool.perpetuals[perpetualIndex];
         result = perpetual.activeAccounts.toArray(begin, end);
     }
@@ -275,8 +287,9 @@ contract Getter is Storage {
      * @return  total           Number of total active accounts.
      */
     function getClearProgress(uint256 perpetualIndex)
-        public
+        external
         view
+        override
         onlyExistedPerpetual(perpetualIndex)
         returns (uint256 left, uint256 total)
     {
@@ -295,7 +308,7 @@ contract Getter is Storage {
      * @return  poolMargin  The pool margin of the liquidity pool
      * @return  isAMMSafe   True if AMM is safe
      */
-    function getPoolMargin() public view returns (int256 poolMargin, bool isAMMSafe) {
+    function getPoolMargin() external view override returns (int256 poolMargin, bool isAMMSafe) {
         (poolMargin, isAMMSafe) = _liquidityPool.getPoolMargin();
     }
 
@@ -311,8 +324,9 @@ contract Getter is Storage {
      * @return  deltaPosition   The update position of the trader after the trade
      */
     function queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
-        public
+        external
         view
+        override
         returns (int256 deltaCash, int256 deltaPosition)
     {
         (deltaCash, deltaPosition) = _liquidityPool.queryTradeWithAMM(
@@ -322,6 +336,70 @@ contract Getter is Storage {
         );
         deltaCash = deltaCash.neg();
         deltaPosition = deltaPosition.neg();
+    }
+
+    /**
+     * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.
+     *          Only one of cashToAdd or shareToMint may be non-zero.
+     *          Can only called when the pool is running.
+     *
+     * @param   cashToAdd         The amount of cash to add, always use decimals 18.
+     * @param   shareToMint       The amount of share token to mint, always use decimals 18.
+     * @return  cashToAddResult   The amount of cash to add, always use decimals 18. Equal to cashToAdd if cashToAdd is non-zero.
+     * @return  shareToMintResult The amount of cash to add, always use decimals 18. Equal to shareToMint if shareToMint is non-zero.
+     */
+    function queryAddLiquidity(int256 cashToAdd, int256 shareToMint)
+        external
+        view
+        override
+        returns (int256 cashToAddResult, int256 shareToMintResult)
+    {
+        require(_liquidityPool.isRunning, "pool is not running");
+        int256 shareTotalSupply = IGovernor(_liquidityPool.shareToken).totalSupply().toInt256();
+        if (cashToAdd > 0 && shareToMint == 0) {
+            (shareToMintResult, ) = _liquidityPool.getShareToMint(shareTotalSupply, cashToAdd);
+            cashToAddResult = cashToAdd;
+        } else if (cashToAdd == 0 && shareToMint > 0) {
+            cashToAddResult = _liquidityPool.getCashToAdd(shareTotalSupply, shareToMint);
+            shareToMintResult = shareToMint;
+        } else {
+            revert("invalid parameter");
+        }
+    }
+
+    /**
+     * @notice  Query cash to return / share to redeem when removing liquidity from the liquidity pool.
+     *          Only one of shareToRemove or cashToReturn may be non-zero.
+     *          Can only called when the pool is running.
+     *
+     * @param   shareToRemove       The amount of share token to redeem, always use decimals 18.
+     * @param   cashToReturn        The amount of cash to return, always use decimals 18.
+     * @return  shareToRemoveResult The amount of share token to redeem, always use decimals 18. Equal to shareToRemove if shareToRemove is non-zero.
+     * @return  cashToReturnResult  The amount of cash to return, always use decimals 18. Equal to cashToReturn if cashToReturn is non-zero.
+     */
+    function queryRemoveLiquidity(int256 shareToRemove, int256 cashToReturn)
+        external
+        view
+        override
+        returns (int256 shareToRemoveResult, int256 cashToReturnResult)
+    {
+        require(_liquidityPool.isRunning, "pool is not running");
+        int256 shareTotalSupply = IGovernor(_liquidityPool.shareToken).totalSupply().toInt256();
+        if (shareToRemove > 0 && cashToReturn == 0) {
+            (cashToReturnResult, , , ) = _liquidityPool.getCashToReturn(
+                shareTotalSupply,
+                shareToRemove
+            );
+            shareToRemoveResult = shareToRemove;
+        } else if (shareToRemove == 0 && cashToReturn > 0) {
+            (shareToRemoveResult, , , ) = _liquidityPool.getShareToRemove(
+                shareTotalSupply,
+                cashToReturn
+            );
+            cashToReturnResult = cashToReturn;
+        } else {
+            revert("invalid parameter");
+        }
     }
 
     bytes32[50] private __gap;

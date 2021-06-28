@@ -5,7 +5,9 @@ import "../libraries/EnumerableMapExt.sol";
 import "../libraries/BitwiseMath.sol";
 import "../libraries/Constant.sol";
 
-contract AccessControl {
+import "../interface/IAccessControl.sol";
+
+contract AccessControl is IAccessControl {
     using BitwiseMath for uint256;
     using EnumerableMapExt for EnumerableMapExt.AddressToUintMap;
 
@@ -22,13 +24,12 @@ contract AccessControl {
      * @param   grantee     The address of the grantee.
      * @param   privilege   The privilege to grant.
      */
-    function grantPrivilege(address grantee, uint256 privilege) external {
+    function grantPrivilege(address grantee, uint256 privilege) external override {
         require(_isValid(privilege), "privilege is invalid");
         require(!isGranted(msg.sender, grantee, privilege), "privilege is already granted");
-        uint256 grantedPrivileges =
-            _accessControls[msg.sender].contains(grantee)
-                ? _accessControls[msg.sender].get(grantee)
-                : 0;
+        uint256 grantedPrivileges = _accessControls[msg.sender].contains(grantee)
+            ? _accessControls[msg.sender].get(grantee)
+            : 0;
         grantedPrivileges = grantedPrivileges.set(privilege);
         _accessControls[msg.sender].set(grantee, grantedPrivileges);
         emit GrantPrivilege(msg.sender, grantee, privilege);
@@ -40,7 +41,7 @@ contract AccessControl {
      * @param   grantee     The address of the grantee, the account to accept privilege.
      * @param   privilege   The privilege to revoke.
      */
-    function revokePrivilege(address grantee, uint256 privilege) external {
+    function revokePrivilege(address grantee, uint256 privilege) external override {
         require(_isValid(privilege), "privilege is invalid");
         require(isGranted(msg.sender, grantee, privilege), "privilege is not granted");
         _accessControls[msg.sender].set(
@@ -61,7 +62,7 @@ contract AccessControl {
         address grantor,
         address grantee,
         uint256 privilege
-    ) public view returns (bool) {
+    ) public view override returns (bool) {
         if (!_isValid(privilege)) {
             return false;
         }

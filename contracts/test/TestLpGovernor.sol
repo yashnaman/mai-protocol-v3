@@ -19,10 +19,10 @@ contract TestLpGovernor is LpGovernor {
     }
 
     function setCreator(address creator_) public {
-        _creator = IPoolCreator(creator_);
+        _creator = IPoolCreatorFull(creator_);
     }
 
     function setTarget(address creator_) public {
-        _creator = IPoolCreator(creator_);
+        _creator = IPoolCreatorFull(creator_);
     }
 }

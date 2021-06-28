@@ -4,7 +4,9 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-contract Variables is Initializable, OwnableUpgradeable {
+import "../interface/IVariables.sol";
+
+contract Variables is Initializable, OwnableUpgradeable, IVariables {
     bytes32 internal _reserved1;
     address internal _symbolService;
     address internal _vault;
@@ -29,10 +31,23 @@ contract Variables is Initializable, OwnableUpgradeable {
     }
 
     /**
+     * @notice Owner of version control.
+     */
+    function owner()
+        public
+        view
+        virtual
+        override(IVariables, OwnableUpgradeable)
+        returns (address)
+    {
+        return owner();
+    }
+
+    /**
      * @notice Get the address of the vault
      * @return address The address of the vault
      */
-    function getVault() public view returns (address) {
+    function getVault() public view override returns (address) {
         return _vault;
     }
 
@@ -40,7 +55,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      * @notice Get the vault fee rate
      * @return int256 The vault fee rate
      */
-    function getVaultFeeRate() public view returns (int256) {
+    function getVaultFeeRate() public view override returns (int256) {
         return _vaultFeeRate;
     }
 
@@ -49,7 +64,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      *
      * @param   newVault    The new value of the vault fee rate
      */
-    function setVault(address newVault) external onlyOwner {
+    function setVault(address newVault) external override onlyOwner {
         require(newVault != address(0), "new vault is zero-address");
         require(_vault != newVault, "new vault is already current vault");
         emit SetVault(_vault, newVault);
@@ -61,7 +76,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      *
      * @param   newVaultFeeRate The new value of the vault fee rate
      */
-    function setVaultFeeRate(int256 newVaultFeeRate) external onlyOwner {
+    function setVaultFeeRate(int256 newVaultFeeRate) external override onlyOwner {
         require(newVaultFeeRate >= 0, "negative vault fee rate");
         require(newVaultFeeRate != _vaultFeeRate, "unchanged vault fee rate");
 
@@ -74,7 +89,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      *
      * @return address The address of the access controller.
      */
-    function getAccessController() public view returns (address) {
+    function getAccessController() external view override returns (address) {
         return address(this);
     }
 
@@ -83,7 +98,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      *
      * @return  Address The address of the symbol service.
      */
-    function getSymbolService() public view returns (address) {
+    function getSymbolService() external view override returns (address) {
         return _symbolService;
     }
 
@@ -93,7 +108,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      *
      * @return  Address The address of the mcb token.
      */
-    function getMCBToken() public pure returns (address) {
+    function getMCBToken() public pure override returns (address) {
         return address(0x4e352cF164E64ADCBad318C3a1e222E9EBa4Ce42);
     }
 }

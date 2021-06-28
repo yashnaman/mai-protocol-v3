@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 
-import "../interface/ILiquidityPool.sol";
+import "../interface/ILiquidityPoolFull.sol";
+import "../interface/IPoolCreatorFull.sol";
 import "../interface/IAccessControl.sol";
-import "../interface/IPoolCreator.sol";
 
 import "../libraries/SafeMathExt.sol";
 import "../libraries/OrderData.sol";
@@ -112,19 +112,23 @@ contract Broker is ReentrancyGuard {
 
     /**
      * @notice  Cancel an order to prevent any further trade.
-     *          Currently, Only trader or elayer and anthorized account (by order.trader)
+     *          Currently, Only trader or elayer and anth orized account (by order.trader)
      *          are able to cancel an order.
      *
      * @param   order   Order object.
      */
     function cancelOrder(Order memory order) public {
         if (msg.sender != order.trader && msg.sender != order.relayer) {
-            (, , address[7] memory addresses, , ) =
-                ILiquidityPool(order.liquidityPool).getLiquidityPoolInfo();
-            IAccessControl accessControl =
-                IAccessControl(IPoolCreator(addresses[0]).getAccessController());
-            bool isGranted =
-                accessControl.isGranted(order.trader, msg.sender, Constant.PRIVILEGE_TRADE);
+            (, , address[7] memory addresses, , ) = ILiquidityPoolFull(order.liquidityPool)
+            .getLiquidityPoolInfo();
+            IAccessControl accessControl = IAccessControl(
+                IPoolCreatorFull(addresses[0]).getAccessController()
+            );
+            bool isGranted = accessControl.isGranted(
+                order.trader,
+                msg.sender,
+                Constant.PRIVILEGE_TRADE
+            );
             require(isGranted, "sender must be trader or relayer or authorized");
         }
         bytes32 orderHash = order.getOrderHash();
@@ -175,7 +179,7 @@ contract Broker is ReentrancyGuard {
                 return;
             }
             try
-                ILiquidityPool(order.liquidityPool).brokerTrade(compressedOrders[i], amount)
+                ILiquidityPoolFull(order.liquidityPool).brokerTrade(compressedOrders[i], amount)
             returns (int256 filledAmount) {
                 _fillOrder(orderHash, filledAmount);
                 _transfer(order.trader, order.relayer, gasReward);

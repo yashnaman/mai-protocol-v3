@@ -4,7 +4,7 @@ pragma solidity 0.7.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "../interface/ILiquidityPool.sol";
+import "../interface/ILiquidityPoolFull.sol";
 
 contract RemarginHelper is ReentrancyGuard {
     function remargin(
@@ -27,12 +27,13 @@ contract RemarginHelper is ReentrancyGuard {
             IERC20(collateralFrom).allowance(msg.sender, to) >= uint256(amount),
             "remargin amount exceeds allowance"
         );
-        ILiquidityPool(from).withdraw(fromIndex, msg.sender, amount);
-        ILiquidityPool(to).deposit(toIndex, msg.sender, amount);
+        ILiquidityPoolFull(from).withdraw(fromIndex, msg.sender, amount);
+        ILiquidityPoolFull(to).deposit(toIndex, msg.sender, amount);
     }
 
     function _collateral(address perpetual) internal view returns (address collateral) {
-        (, , address[7] memory addresses, , ) = ILiquidityPool(perpetual).getLiquidityPoolInfo();
+        (, , address[7] memory addresses, , ) = ILiquidityPoolFull(perpetual)
+        .getLiquidityPoolInfo();
         collateral = addresses[5];
     }
 }
