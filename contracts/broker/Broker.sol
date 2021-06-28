@@ -112,7 +112,7 @@ contract Broker is ReentrancyGuard {
 
     /**
      * @notice  Cancel an order to prevent any further trade.
-     *          Currently, Only trader or elayer and anth orized account (by order.trader)
+     *          Currently, Only trader or relayer and the authorized account (by order.trader)
      *          are able to cancel an order.
      *
      * @param   order   Order object.

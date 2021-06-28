@@ -164,7 +164,7 @@ contract Governance is Storage {
     /**
      * @notice  Set the state of the perpetual to "EMERGENCY". Can be call by anyone when
      *          following conditions are met:
-     *            1. the oralce contract declares itself as "termainated";
+     *            1. the oracle contract declares itself as "terminated";
      *            2. the AMM of perpetual's maintenance margin is unsafe;
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      */

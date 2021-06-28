@@ -69,7 +69,7 @@ contract VersionControl is OwnableUpgradeable, IVersionControl {
         require(governorTemplate.isContract(), "implementation must be contract");
 
         versionKey = _getVersionHash(liquidityPoolTemplate, governorTemplate);
-        require(!isVersionKeyValid(versionKey), "implementation is already existed");
+        require(!isVersionKeyValid(versionKey), "implementation already exists");
 
         _versionDescriptions[versionKey] = VersionDescription({
             liquidityPoolTemplate: liquidityPoolTemplate,

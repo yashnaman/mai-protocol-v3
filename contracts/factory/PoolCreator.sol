@@ -41,7 +41,7 @@ contract PoolCreator is
         bytes initData
     );
     event UpgradeLiquidityPool(
-        bytes32 vaersionKey,
+        bytes32 versionKey,
         address indexed liquidityPool,
         address indexed governor
     );
@@ -70,7 +70,7 @@ contract PoolCreator is
     }
 
     /**
-     * @notice  Create a liquidity pool with the latest vesion.
+     * @notice  Create a liquidity pool with the latest version.
      *          The sender will be the operator of pool.
      *
      * @param   collateral              he collateral address of the liquidity pool.

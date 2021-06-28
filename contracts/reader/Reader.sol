@@ -97,7 +97,7 @@ contract Reader {
         pure
         returns (AccountReaderResult memory accountStorage)
     {
-        require(data.length % 0x20 == 0, "malform input data");
+        require(data.length % 0x20 == 0, "malformed input data");
         assembly {
             let len := mload(data)
             let src := add(data, 0x20)
@@ -143,7 +143,7 @@ contract Reader {
      *          Trading fee is not included.
      * @param   liquidityPool   The address of the liquidity pool
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
-     * @param   amount          The expected(max) amoun of position to trade.
+     * @param   amount          The expected(max) amount of position to trade.
      * @return  isSynced        True if the funding state is synced to real-time data. False if
      *                          error happens (oracle error, zero price etc.). In this case,
      *                          trading, withdraw (if position != 0), addLiquidity, removeLiquidity

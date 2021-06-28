@@ -206,7 +206,7 @@ library LiquidityPoolModule {
      * @param   collateralDecimals  The collateral's decimals of the liquidity pool.
      * @param   operator            The operator's address of the liquidity pool.
      * @param   governor            The governor's address of the liquidity pool.
-     * @param   initData            The byte array contains data to initialze new created liquidity pool.
+     * @param   initData            The byte array contains data to initialize new created liquidity pool.
      */
     function initialize(
         LiquidityPoolStorage storage liquidityPool,
@@ -333,7 +333,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     Set an account as new keeper of liquidit pool.
+     * @dev     Set an account as new keeper of liquidity pool.
      *          Keeper is the role to be able to call liquidateByAMM.
      *          When keeper is set to zero address, any one is able to call liquidateByAMM.
      *
@@ -514,6 +514,7 @@ library LiquidityPoolModule {
 
     /**
      * @dev     A lease mechanism to check if the operator is alive as the pool manager.
+     *          When called the operatorExpiration will be extended according to OPERATOR_CHECK_IN_TIMEOUT.
      *          After OPERATOR_CHECK_IN_TIMEOUT, the operator will no longer be the operator.
      *          New operator will only be raised by voting.
      *          Transfer operator to another account will renew the expiration.
@@ -808,8 +809,7 @@ library LiquidityPoolModule {
                 break;
             }
         }
-
-        require(allowAdd, "not all perpetuals are in NORMAL state");
+        require(allowAdd, "all perpetuals are NOT in NORMAL state");
         liquidityPool.transferFromUser(trader, cashToAdd);
 
         IGovernor shareToken = IGovernor(liquidityPool.shareToken);

@@ -19,7 +19,7 @@ import "../interface/ILiquidityPoolGetter.sol";
  *                        Once voted, voter's all governor token will be locked until votingPeriod passed.
  *           3. Defeated / Succeeded:
  *                        For a defeated proposal, voting is done, all govnor tokens are will unlock immediately;
- *                        For a  proposal, lock will be extended by `executionDelay` + `unlockDelay`.
+ *                        For a succeeded proposal, lock will be extended by `executionDelay` + `unlockDelay`.
  *           4. Queued:   Successfull proposal can only be executed after an `executionDelay`;
  *           5. Executed: After `executionDelay` a successfull proposal is able to be called by anyone then marked as 'executed';
  *           6. Expired:  If a proposal succeeded but no one try to execute it, when the `unlockDelay` passed.
