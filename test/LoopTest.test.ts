@@ -178,4 +178,105 @@ describe("LoopTest", () => {
 
         gs.summary();
     })
+
+
+    it("settle", async () => {
+        var gs = new GasStat();
+        // users
+        const accounts = await ethers.getSigners();
+        const user0 = accounts[0];
+        const user1 = accounts[1];
+        const user2 = accounts[2];
+        const user3 = accounts[3];
+        const vault = accounts[9];
+        const none = "0x0000000000000000000000000000000000000000";
+        const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+        // create components
+        var symbol = await createContract("SymbolService", [10000]);
+        var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+        var perpTemplate = await LiquidityPoolFactory.deploy();
+        var govTemplate = await createContract("TestLpGovernor");
+        var poolCreator = await createContract("PoolCreator");
+        await poolCreator.initialize(
+            symbol.address,
+            vault.address,
+            toWei("0.001"),
+        )
+        await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+        await symbol.addWhitelistedFactory(poolCreator.address);
+
+        const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        await poolCreator.createLiquidityPool(
+            ctk.address,
+            18,
+            998,
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+        );
+        var perp = await LiquidityPoolFactory.attach(liquidityPool);
+
+        // oracle
+        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let updatePrice = async (price1) => {
+            let now = Math.floor(Date.now() / 1000);
+            await oracle1.setMarkPrice(price1, now);
+            await oracle1.setIndexPrice(price1, now);
+        }
+        await updatePrice(toWei("500"))
+
+        for (let i = 0; i < 48; i++) {
+            await perp.createPerpetual(oracle1.address,
+                [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("4")],
+                [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+                [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+                [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")],
+            )
+        }
+        await perp.runLiquidityPool();
+
+        // overview
+        const info = await perp.getLiquidityPoolInfo();
+        const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
+
+        print(info);
+        print(await perp.callStatic.getPerpetualInfo(0));
+
+        // get initial coins
+        await ctk.mint(user1.address, toWei("10000"));
+        await ctk.mint(user2.address, toWei("10000"));
+        await ctk.connect(user1).approve(perp.address, toWei("100000"));
+        await ctk.connect(user2).approve(perp.address, toWei("100000"));
+
+        await perp.forceToSyncState();
+
+        // deposit
+        await gs.collect("deposit", perp.connect(user1).deposit(0, user1.address, toWei("100")));
+        print(await perp.connect(user1).callStatic.getMarginAccount(0, user1.address));
+
+        // lp
+        await updatePrice(toWei("501"))
+        await gs.collect("addLiquidity", perp.connect(user2).addLiquidity(toWei("1000")));
+        // console.log("share:", fromWei(await stk.balanceOf(user2.address)));
+        // console.log("ctk  :", fromWei(await ctk.balanceOf(user2.address)));
+
+        print(await perp.callStatic.getLiquidityPoolInfo());
+
+
+        let now = Math.floor(Date.now() / 1000);
+        // trade 1
+        await updatePrice(toWei("502"))
+        await gs.collect("trade 1 - open", perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0));
+        print(await perp.connect(user1).callStatic.getMarginAccount(0, user1.address));
+
+        await updatePrice(toWei("55010"))
+
+        await gs.collect("setEmergencyState", perp.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+
+        gs.summary();
+    })
 })
