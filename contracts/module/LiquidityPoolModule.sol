@@ -175,7 +175,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     Check if Trader is maintenance margin safe in the perpetual, need to rebalance before checking.
+     * @dev     Check if Trader is maintenance margin safe in the perpetual.
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
