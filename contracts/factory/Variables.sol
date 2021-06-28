@@ -94,15 +94,6 @@ contract Variables is Initializable, OwnableUpgradeable {
      * @return  Address The address of the mcb token.
      */
     function getMCBToken() public pure returns (address) {
-        // const MCB token
-        // return address(0x83487dF1fA9C62130893A889578DFA7e2EAB9eFf);
-        // TODO: test only
-        return address(0x3FA06FBBD051ef8185Df9191ae1dEBddcEE8efAd);
-        // kovan
-        // return address(0xA0A45F2B616a740C3C7a7fF69Be893f61E6455E3);
-        // bsc testnet, heco testnet
-        // return address(0x9CaDa02fC03671EA66BaAC7929Cb769214621947);
-        // arb
-        // return address(0x46B5264D5697e5A54d76DCfA6C12b4c467ddd66c);
+        return address(0x4e352cF164E64ADCBad318C3a1e222E9EBa4Ce42);
     }
 }
