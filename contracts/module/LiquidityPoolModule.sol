@@ -430,6 +430,7 @@ library LiquidityPoolModule {
      * @param   liquidityPool   The reference of liquidity pool storage.
      */
     function setAllPerpetualsToEmergencyState(LiquidityPoolStorage storage liquidityPool) public {
+        require(liquidityPool.perpetualCount > 0, "no perpetual to settle");
         int256 margin;
         int256 maintenanceMargin;
         int256 initialMargin;

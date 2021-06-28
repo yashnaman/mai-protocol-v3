@@ -57,6 +57,7 @@ contract Reader {
     address public immutable poolCreator;
 
     constructor(address _poolCreator) {
+        require(_poolCreator != address(0), "poolCreator is zero-address");
         poolCreator = _poolCreator;
     }
 

@@ -50,6 +50,7 @@ contract Variables is Initializable, OwnableUpgradeable {
      * @param   newVault    The new value of the vault fee rate
      */
     function setVault(address newVault) external onlyOwner {
+        require(newVault != address(0), "new vault is zero-address");
         require(_vault != newVault, "new vault is already current vault");
         emit SetVault(_vault, newVault);
         _vault = newVault;
