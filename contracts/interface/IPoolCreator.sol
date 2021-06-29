@@ -7,7 +7,7 @@ interface IPoolCreator {
     function upgradeAdmin() external view returns (IProxyAdmin proxyAdmin);
 
     /**
-     * @notice  Create a liquidity pool with the latest vesion.
+     * @notice  Create a liquidity pool with the latest version.
      *          The sender will be the operator of pool.
      *
      * @param   collateral              he collateral address of the liquidity pool.
@@ -46,7 +46,7 @@ interface IPoolCreator {
      * @notice  Upgrade a liquidity pool and governor pair then call a patch function on the upgraded contract (optional).
      *          This method checks the sender and forwards the request to ProxyAdmin to do upgrading.
      *
-     * @param   targetVersionKey        The key of version to be upgrade up. The target version must be compatiable with
+     * @param   targetVersionKey        The key of version to be upgrade up. The target version must be compatible with
      *                                  current version.
      * @param   dataForLiquidityPool    The patch calldata for upgraded liquidity pool.
      * @param   dataForGovernor         The patch calldata of upgraded governor.

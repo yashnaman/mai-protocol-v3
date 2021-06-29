@@ -47,7 +47,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
-     * @param   amount          The amount of collatetal to deposit. The amount always use decimals 18.
+     * @param   amount          The amount of collateral to deposit. The amount always use decimals 18.
      */
     function deposit(
         uint256 perpetualIndex,
@@ -74,7 +74,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
-     * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
+     * @param   amount          The amount of collateral to withdraw. The amount always use decimals 18.
      */
     function withdraw(
         uint256 perpetualIndex,
@@ -150,17 +150,17 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
      *          It will be treat as opening position.
      *
      *          Flags is a 32 bit uint value which indicates: (from highest bit)
-     *            - close only      only close positon during trading;
+     *            - close only      only close position during trading;
      *            - market order    do not check limit price during trading;
-     *            - stop loss       only availble in brokerTrade mode;
-     *            - take profit     only availble in brokerTrade mode;
+     *            - stop loss       only available in brokerTrade mode;
+     *            - take profit     only available in brokerTrade mode;
      *          For stop loss and take profit, see `validateTriggerPrice` in OrderModule.sol for details.
      *
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   trader          The address of trader.
      * @param   amount          The amount of position to trader, positive for buying and negative for selling. The amount always use decimals 18.
      * @param   limitPrice      The worst price the trader accepts.
-     * @param   deadline        The dealine of trade transaction.
+     * @param   deadline        The deadline of trade transaction.
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   flags           The flags of the trade.
      * @return  tradeAmount     The amount of positions actually traded in the transaction. The amount always use decimals 18.
@@ -228,9 +228,9 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
      *          Liquidate can be considered as a forced trading between AMM and unsafe margin account;
      *          Based on current liquidity of AMM, it may take positions up to an amount equal to all the position
      *          of the unsafe account. Besides the position, trader need to pay an extra penalty to AMM
-     *          for taking the unsafe assets. See TradeModule.sol for ehe stategy of penalty.
+     *          for taking the unsafe assets. See TradeModule.sol for ehe strategy of penalty.
      *
-     *          The liquidate price will be determied by AMM.
+     *          The liquidate price will be determined by AMM.
      *          Caller of this method can be anyone, then get a reward to make up for transaction gas fee.
      *
      *          If a trader's margin balance is lower than 0 (bankrupt), insurance fund will be use to fill the loss

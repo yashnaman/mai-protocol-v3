@@ -13,15 +13,15 @@ import "../interface/ILiquidityPoolGetter.sol";
 /**
  * @notice Possible states that a proposal may be in.
  *
- *         There basicly are up to 4 stages for a proposal:
+ *         There basically are up to 4 stages for a proposal:
  *           1. Pending:  Period before voter can cast vote.
  *           2. Active:   Period for casting vote.
  *                        Once voted, voter's all governor token will be locked until votingPeriod passed.
  *           3. Defeated / Succeeded:
- *                        For a defeated proposal, voting is done, all govnor tokens are will unlock immediately;
+ *                        For a defeated proposal, voting is done, all governor tokens are will unlock immediately;
  *                        For a succeeded proposal, lock will be extended by `executionDelay` + `unlockDelay`.
- *           4. Queued:   Successfull proposal can only be executed after an `executionDelay`;
- *           5. Executed: After `executionDelay` a successfull proposal is able to be called by anyone then marked as 'executed';
+ *           4. Queued:   Succeeded proposal can only be executed after an `executionDelay`;
+ *           5. Executed: After `executionDelay` a succeeded proposal is able to be called by anyone then marked as 'executed';
  *           6. Expired:  If a proposal succeeded but no one try to execute it, when the `unlockDelay` passed.
  *                        it will be marked as expired and no longer can be executed.
  *
@@ -265,7 +265,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     }
 
     /**
-     * @notice Execute a transction in 'queue' state.
+     * @notice Execute a transaction in 'queue' state.
      *
      & @param   proposalId  The id of proposal to execute.
      */

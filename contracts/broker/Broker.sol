@@ -138,7 +138,7 @@ contract Broker is ReentrancyGuard {
     }
 
     /**
-     * @notice  Trade multiple orders, each order will be treated seperately.
+     * @notice  Trade multiple orders, each order will be treated separately.
      * @param   compressedOrders    The compressed order objects to trade.
      * @param   amounts             The trading amounts of position.
      * @param   gasRewards          The gas rewards of eth given to their brokers.

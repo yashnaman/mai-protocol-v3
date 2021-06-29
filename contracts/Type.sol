@@ -32,7 +32,7 @@ struct OraclePriceData {
 }
 
 /**
- * @notice  Data structure to store user margin infomation. See MarginAccountModule.sol for details.
+ * @notice  Data structure to store user margin information. See MarginAccountModule.sol for details.
  */
 struct MarginAccount {
     int256 cash;
@@ -99,7 +99,7 @@ struct LiquidityPoolStorage {
 }
 
 /**
- * @notice  Core data structure, storing perpetual informations.
+ * @notice  Core data structure, storing perpetual information.
  */
 struct PerpetualStorage {
     uint256 id;

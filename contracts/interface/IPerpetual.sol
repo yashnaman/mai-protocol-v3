@@ -11,7 +11,7 @@ interface IPerpetual {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
-     * @param   amount          The amount of collatetal to deposit. The amount always use decimals 18.
+     * @param   amount          The amount of collateral to deposit. The amount always use decimals 18.
      */
     function deposit(
         uint256 perpetualIndex,
@@ -30,7 +30,7 @@ interface IPerpetual {
      *
      * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
      * @param   trader          The address of the trader.
-     * @param   amount          The amount of collatetal to withdraw. The amount always use decimals 18.
+     * @param   amount          The amount of collateral to withdraw. The amount always use decimals 18.
      */
     function withdraw(
         uint256 perpetualIndex,
@@ -96,9 +96,9 @@ interface IPerpetual {
      *          Liquidate can be considered as a forced trading between AMM and unsafe margin account;
      *          Based on current liquidity of AMM, it may take positions up to an amount equal to all the position
      *          of the unsafe account. Besides the position, trader need to pay an extra penalty to AMM
-     *          for taking the unsafe assets. See TradeModule.sol for ehe stategy of penalty.
+     *          for taking the unsafe assets. See TradeModule.sol for ehe strategy of penalty.
      *
-     *          The liquidate price will be determied by AMM.
+     *          The liquidate price will be determined by AMM.
      *          Caller of this method can be anyone, then get a reward to make up for transaction gas fee.
      *
      *          If a trader's margin balance is lower than 0 (bankrupt), insurance fund will be use to fill the loss

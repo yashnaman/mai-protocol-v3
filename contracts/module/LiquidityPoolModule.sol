@@ -544,7 +544,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev  Revoke operatorship of the liquidity pool.
+     * @dev  Revoke operator of the liquidity pool.
      * @param   liquidityPool   The liquidity pool object
      */
     function revokeOperator(LiquidityPoolStorage storage liquidityPool) public {
@@ -910,7 +910,7 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     To keep the AMM's margin equal to initial margin in the perpetual as posiible.
+     * @dev     To keep the AMM's margin equal to initial margin in the perpetual as possible.
      *          Transfer collateral between the perpetual and the liquidity pool's cash, then
      *          update the AMM's cash in perpetual. The liquidity pool's cash can be negative,
      *          but the available cash can't. If AMM need to transfer and the available cash
