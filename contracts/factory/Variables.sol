@@ -40,7 +40,7 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
         override(IVariables, OwnableUpgradeable)
         returns (address)
     {
-        return owner();
+        return OwnableUpgradeable.owner();
     }
 
     /**

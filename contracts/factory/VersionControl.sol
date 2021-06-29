@@ -47,7 +47,7 @@ contract VersionControl is OwnableUpgradeable, IVersionControl {
         override(IVersionControl, OwnableUpgradeable)
         returns (address)
     {
-        return owner();
+        return OwnableUpgradeable.owner();
     }
 
     /**
