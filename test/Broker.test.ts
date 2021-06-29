@@ -69,7 +69,7 @@ describe('Broker', () => {
         );
         liquidityPool = await LiquidityPoolFactory.attach(result[0]);
 
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         now = Math.floor(Date.now() / 1000);
         await oracle.setMarkPrice(toWei("1000"), now);
         await oracle.setIndexPrice(toWei("1000"), now);

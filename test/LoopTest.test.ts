@@ -90,7 +90,7 @@ describe("LoopTest", () => {
         var perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price1, price2, price3, price4) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle1.setMarkPrice(price1, now);

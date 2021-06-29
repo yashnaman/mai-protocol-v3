@@ -73,8 +73,8 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
 
         // oracle
-        oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         await updatePrice(toWei("1000"), toWei("1000"))
 
         // create perpetual

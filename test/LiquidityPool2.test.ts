@@ -62,7 +62,7 @@ describe('LiquidityPool2', () => {
         await liquidityPool.setCollateralToken(ctk.address, 18);
 
         let now = Math.floor(Date.now() / 1000);
-        oracle1 = await createContract("OracleWrapper", ["ctk", "ctk"]);
+        oracle1 = await createContract("OracleAdaptor", ["ctk", "ctk"]);
         await oracle1.setIndexPrice(toWei('100'), now);
         await oracle1.setMarkPrice(toWei('100'), now);
         await liquidityPool.createPerpetual(
@@ -71,7 +71,7 @@ describe('LiquidityPool2', () => {
             [toWei("1"), toWei("1"), toWei("0.0001"), toWei("0.0007"), toWei("0"), toWei("0.005"), toWei("1"), toWei("0"), toWei("1")],
             [toWei("0.001"), toWei("1"), toWei("0.9"), toWei("5"), toWei("0.5"), toWei('0.2'), toWei("0.01"), toWei("1")],
         )
-        oracle2 = await createContract("OracleWrapper", ["ctk", "ctk"]);
+        oracle2 = await createContract("OracleAdaptor", ["ctk", "ctk"]);
         await oracle2.setIndexPrice(toWei('100'), now);
         await oracle2.setMarkPrice(toWei('100'), now);
         await liquidityPool.createPerpetual(

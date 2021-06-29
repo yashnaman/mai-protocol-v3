@@ -32,7 +32,7 @@ describe('Perpetual', () => {
         perpetual = await createContract("TestPerpetual", [], {
             PerpetualModule
         });
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         var now = Math.floor(Date.now() / 1000);
         await oracle.setMarkPrice(toWei("100"), now);
         await oracle.setIndexPrice(toWei("100"), now);

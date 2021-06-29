@@ -90,10 +90,10 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle3 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle4 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle3 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle4 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price1, price2, price3, price4) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle1.setMarkPrice(price1, now);
@@ -278,10 +278,10 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         );
         const perp = await LiquidityPoolFactory.attach(liquidityPool);
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle3 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle4 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle3 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle4 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price1, price2, price3, price4) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle1.setMarkPrice(price1, now);
@@ -415,10 +415,10 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle3 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle4 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle3 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle4 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price1, price2, price3, price4) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle1.setMarkPrice(price1, now);
@@ -539,7 +539,7 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
-        let oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(price, now);
@@ -639,7 +639,7 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
         // oracle
-        let oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let updatePrice = async (price) => {
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(price, now);

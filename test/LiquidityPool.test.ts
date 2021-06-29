@@ -47,8 +47,8 @@ describe('LiquidityPool', () => {
         let oracle1;
 
         beforeEach(async () => {
-            oracle0 = await createContract("OracleWrapper", ["USD", "ETH"]);
-            oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
+            oracle0 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+            oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
             var now = 1000;
             await oracle0.setMarkPrice(toWei("100"), now);
             await oracle0.setIndexPrice(toWei("100"), now);
@@ -300,7 +300,7 @@ describe('LiquidityPool', () => {
 
         beforeEach(async () => {
             tracer = await createContract("TestTracer")
-            oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
             var now = 1000;
             await oracle.setMarkPrice(toWei("100"), now);
             await oracle.setIndexPrice(toWei("100"), now);

@@ -18,10 +18,10 @@ describe("OracleRouter", () => {
     let routerCreator;
 
     before(async () => {
-        oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        oracle2 = await createContract("OracleWrapper", ["USD", "BTC"]);
-        oracle3 = await createContract("OracleWrapper", ["ETH", "USD"]);
-        oracle4 = await createContract("OracleWrapper", ["BTC", "XXX"]);
+        oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        oracle2 = await createContract("OracleAdaptor", ["USD", "BTC"]);
+        oracle3 = await createContract("OracleAdaptor", ["ETH", "USD"]);
+        oracle4 = await createContract("OracleAdaptor", ["BTC", "XXX"]);
     })
 
     beforeEach(async () => {

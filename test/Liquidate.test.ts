@@ -41,7 +41,7 @@ describe('Liquidate', () => {
             user5 = accounts[5];
 
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
+            oracle = await createContract("OracleAdaptor", ["ctk", "ctk"]);
             const AMMModule = await createContract("MockAMMModule");
             const CollateralModule = await createContract("CollateralModule")
             const PerpetualModule = await createContract("PerpetualModule");

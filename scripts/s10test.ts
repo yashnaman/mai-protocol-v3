@@ -16,10 +16,10 @@ function toMap(a) {
 }
 
 async function deployOracle() {
-    const oracle3 = await createContract("OracleWrapper", ["USD", "ETH"]);
-    const oracle4 = await createContract("OracleWrapper", ["USD", "BTC"]);
-    const oracle5 = await createContract("OracleWrapper", ["USD", "DPI"]);
-    const oracle6 = await createContract("OracleWrapper", ["USD", "SP500"]);
+    const oracle3 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+    const oracle4 = await createContract("OracleAdaptor", ["USD", "BTC"]);
+    const oracle5 = await createContract("OracleAdaptor", ["USD", "DPI"]);
+    const oracle6 = await createContract("OracleAdaptor", ["USD", "SP500"]);
     const oracleRouterCreator = await createContract("OracleRouterCreator");
 
     // index printer

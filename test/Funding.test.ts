@@ -40,8 +40,8 @@ describe('Funding', () => {
             CollateralModule,
             PerpetualModule
         });
-        oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
     });
 
     describe('updateFundingState', function () {

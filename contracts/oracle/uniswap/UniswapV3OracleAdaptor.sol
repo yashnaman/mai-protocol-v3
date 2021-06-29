@@ -2,8 +2,6 @@
 pragma solidity 0.7.4;
 
 import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
-import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
-import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "../../interface/IOracle.sol";
 

@@ -34,7 +34,7 @@ describe('Governance', () => {
             "TestGovernance",
             { PerpetualModule, LiquidityPoolModule, CollateralModule }
         );
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         var now = Math.floor(Date.now() / 1000);
         await oracle.setIndexPrice(toWei("1000"), now)
         await oracle.setMarkPrice(toWei("1000"), now)
@@ -102,7 +102,7 @@ describe('Governance', () => {
     });
 
     it('forceToSetEmergencyState', async () => {
-        const oracle = await createContract("OracleWrapper", ["A", "B"])
+        const oracle = await createContract("OracleAdaptor", ["A", "B"])
         var now = Math.floor(Date.now() / 1000);
         await oracle.setIndexPrice(toWei("1000"), now)
         await oracle.setMarkPrice(toWei("1000"), now)
@@ -121,7 +121,7 @@ describe('Governance', () => {
     })
 
     it('setOracle', async () => {
-        const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+        const alterOracle = await createContract("OracleAdaptor", ["A", "B"])
         var now = Math.floor(Date.now() / 1000);
         await alterOracle.setIndexPrice(toWei("1000"), now)
         await alterOracle.setMarkPrice(toWei("1000"), now)
@@ -135,13 +135,13 @@ describe('Governance', () => {
         await expect(governance.setOracle(0, alterOracle.address)).to.be.revertedWith("oracle not changed")
         await expect(governance.setOracle(0, user0.address)).to.be.revertedWith("oracle must be contract")
 
-        const alterOracle2 = await createContract("OracleWrapper", ["A", "B"])
+        const alterOracle2 = await createContract("OracleAdaptor", ["A", "B"])
         await expect(governance.setOracle(0, alterOracle2.address)).to.be.revertedWith("oracle's twap long price is not updated")
     })
 
 
     it('setEmergencyState', async () => {
-        const oracle = await createContract("OracleWrapper", ["A", "B"])
+        const oracle = await createContract("OracleAdaptor", ["A", "B"])
         var now = Math.floor(Date.now() / 1000);
         await oracle.setIndexPrice(toWei("1000"), now)
         await oracle.setMarkPrice(toWei("1000"), now)
@@ -205,7 +205,7 @@ describe('Governance', () => {
                 [toWei("0.9"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
             )
 
-            const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+            const alterOracle = await createContract("OracleAdaptor", ["A", "B"])
             var now = Math.floor(Date.now() / 1000);
             await alterOracle.setIndexPrice(toWei("1000"), now)
             await alterOracle.setMarkPrice(toWei("1000"), now)
@@ -253,7 +253,7 @@ describe('Governance', () => {
             [toWei("0.9"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
         )
 
-        const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+        const alterOracle = await createContract("OracleAdaptor", ["A", "B"])
         var now = Math.floor(Date.now() / 1000);
         await alterOracle.setIndexPrice(toWei("1000"), now)
         await alterOracle.setMarkPrice(toWei("1000"), now)
@@ -299,7 +299,7 @@ describe('Governance', () => {
             [toWei("0.01"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
             [toWei("0.9"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
         )
-        const alterOracle = await createContract("OracleWrapper", ["A", "B"])
+        const alterOracle = await createContract("OracleAdaptor", ["A", "B"])
         var now = Math.floor(Date.now() / 1000);
         await alterOracle.setIndexPrice(toWei("1000"), now)
         await alterOracle.setMarkPrice(toWei("1000"), now)

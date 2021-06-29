@@ -54,7 +54,7 @@ describe('Perpetual2', () => {
         let liquidityPool;
 
         beforeEach(async () => {
-            oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+            oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
             await oracle.setIndexPrice(toWei("1000"), 10000);
             await oracle.setMarkPrice(toWei("1000"), 10000);
             const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));

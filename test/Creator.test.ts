@@ -160,7 +160,7 @@ describe('Creator', () => {
         const key2 = versionKey(lpVersion2.address, govVersion2.address);
 
         const upgradeAdmin = await ethers.getContractAt("IProxyAdmin", await poolCreator.upgradeAdmin());
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         const deployed1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         expect(await upgradeAdmin.getProxyImplementation(deployed1[0])).to.equal(lpVersion2.address);
@@ -183,7 +183,7 @@ describe('Creator', () => {
         );
         const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
 
         const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
         await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
@@ -234,7 +234,7 @@ describe('Creator', () => {
         );
         const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         await oracle.setIndexPrice(toWei("1000"), 1000)
         await oracle.setMarkPrice(toWei("1000"), 1000)
 

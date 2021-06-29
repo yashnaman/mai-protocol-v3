@@ -41,7 +41,7 @@ describe('TradeModule3', () => {
             user5 = accounts[5];
 
             ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
-            oracle = await createContract("OracleWrapper", ["ctk", "ctk"]);
+            oracle = await createContract("OracleAdaptor", ["ctk", "ctk"]);
             let now = Math.floor(Date.now() / 1000);
             await oracle.setMarkPrice(toWei("1000"), now);
             await oracle.setIndexPrice(toWei("1000"), now);

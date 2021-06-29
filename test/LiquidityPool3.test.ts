@@ -46,7 +46,7 @@ describe('LiquidityPool3', () => {
         )
         await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
         await symbol.addWhitelistedFactory(poolCreator.address);
-        oracle = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         let now = Math.floor(Date.now() / 1000);
         await oracle.setIndexPrice(toWei('100'), now);
         await oracle.setMarkPrice(toWei('100'), now);

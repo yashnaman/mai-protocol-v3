@@ -77,8 +77,8 @@ describe("Reader", () => {
         reader = await createContract("Reader", [poolCreator.address]);
 
         // oracle
-        oracle1 = await createContract("OracleWrapper", ["USD", "BTC"]);
-        oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        oracle1 = await createContract("OracleAdaptor", ["USD", "BTC"]);
+        oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
         await updatePrice(toWei("500"), toWei("500"))
         await perp.createPerpetual(oracle1.address,
             [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],

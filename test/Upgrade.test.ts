@@ -52,8 +52,8 @@ describe("upgrade", () => {
         const governor = await ethers.getContractAt("TestLpGovernor", deployed[1]);
 
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
 
         let updatePrice = async (price1) => {
             let now = Math.floor(Date.now() / 1000);
@@ -146,8 +146,8 @@ describe("upgrade", () => {
         const governor = await ethers.getContractAt("TestLpGovernor", deployed[1]);
 
         // oracle
-        let oracle1 = await createContract("OracleWrapper", ["USD", "ETH"]);
-        let oracle2 = await createContract("OracleWrapper", ["USD", "ETH"]);
+        let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
+        let oracle2 = await createContract("OracleAdaptor", ["USD", "ETH"]);
 
         let updatePrice = async (price1) => {
             let now = Math.floor(Date.now() / 1000);
