@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 
 import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "../../interface/IOracle.sol";
 
 interface IERC20 {
@@ -12,6 +13,8 @@ interface IERC20 {
 }
 
 contract UniswapV3OracleAdaptor is IOracle {
+    using Address for address;
+
     string public override collateral;
     string public override underlyingAsset;
     uint32 public shortPeriod;
@@ -46,6 +49,7 @@ contract UniswapV3OracleAdaptor is IOracle {
                 factory_,
                 PoolAddress.getPoolKey(path[i], path[i + 1], fees_[i])
             );
+            require(pool.isContract(), "pool not exists");
             pools.push(pool);
         }
     }
