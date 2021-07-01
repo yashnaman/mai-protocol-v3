@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.7.4;
+pragma experimental ABIEncoderV2;
 
 import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
@@ -15,12 +16,22 @@ interface IERC20 {
 contract UniswapV3OracleAdaptor is IOracle {
     using Address for address;
 
+    struct DumpData {
+        address[] path;
+        string[] symbols;
+        uint24[] fees;
+        uint32 shortPeriod;
+        uint32 longPeriod;
+    }
+
+    string public constant source = "UniswapV3OracleAdaptor";
     string public override collateral;
     string public override underlyingAsset;
-    uint32 public shortPeriod;
-    uint32 public longPeriod;
-    address[] public pools;
-    address[] public path;
+    uint32 internal shortPeriod;
+    uint32 internal longPeriod;
+    address[] internal pools;
+    address[] internal path;
+    uint24[] internal fees;
     uint8 internal collateralDecimals;
     uint8 internal underlyingAssetDecimals;
 
@@ -43,6 +54,7 @@ contract UniswapV3OracleAdaptor is IOracle {
         longPeriod = longPeriod_;
         shortPeriod = shortPeriod_;
         path = path_;
+        fees = fees_;
 
         for (uint256 i = 0; i < pathLength - 1; i++) {
             address pool = PoolAddress.computeAddress(
@@ -91,5 +103,15 @@ contract UniswapV3OracleAdaptor is IOracle {
         // change to 18 decimals for mcdex oracle interface
         newPrice = int256(baseAmount * 10**(18 - collateralDecimals));
         newTimestamp = block.timestamp;
+    }
+
+    function dumpPath() external view returns (DumpData memory data) {
+        for (uint256 i = 0; i < path.length; i++) {
+            data.symbols[i] = IERC20(path[i]).symbol();
+        }
+        data.path = path;
+        data.fees = fees;
+        data.shortPeriod = shortPeriod;
+        data.longPeriod = longPeriod;
     }
 }

@@ -21,36 +21,34 @@ import "../../interface/IOracle.sol";
 //
 // Example 4: underlying = eth, collateral = btc, oracle1 = btc/usd = 10000, oracle2 = usd/eth = 0.001
 // [(oracle1, true), (oracle2, true)], return (1 / oracle1) * (1 / oracle2) = 0.1
-// 
+//
 // Example 5: underlying = xxx, collateral = eth, oracle1 = btc/usd = 10000, oracle2 = eth/usd = 1000, oracle3 = xxx/btc = 2
 // [(oracle2, true), (oracle1, false), (oracle3, false)], return (1 / oracle2) * oracle1 * oracle3 = 20
-// 
+//
 contract OracleRouter {
     using SafeMathExt for int256;
     using SafeMathExt for uint256;
 
     struct Route {
-      address oracle;
-      bool isInverse;
+        address oracle;
+        bool isInverse;
     }
 
     struct RouteDump {
-      address oracle;
-      bool isInverse;
-      string underlyingAsset;
-      string collateral;
+        address oracle;
+        bool isInverse;
+        string underlyingAsset;
+        string collateral;
     }
 
+    string public constant source = "OracleRouter";
     Route[] internal _path;
-    
+
     constructor(Route[] memory path_) {
         require(path_.length > 0, "empty path");
-        for (uint i = 0; i < path_.length; i++) {
+        for (uint256 i = 0; i < path_.length; i++) {
             require(path_[i].oracle != address(0), "empty oracle");
-            _path.push(Route({
-              oracle: path_[i].oracle,
-              isInverse: path_[i].isInverse
-            }));
+            _path.push(Route({ oracle: path_[i].oracle, isInverse: path_[i].isInverse }));
         }
     }
 
@@ -79,7 +77,7 @@ contract OracleRouter {
      * @return symbol string
      */
     function underlyingAsset() public view returns (string memory) {
-        uint i = _path.length - 1;
+        uint256 i = _path.length - 1;
         if (_path[i].isInverse) {
             return IOracle(_path[i].oracle).collateral();
         } else {
@@ -92,7 +90,7 @@ contract OracleRouter {
      */
     function priceTWAPLong() external returns (int256 newPrice, uint256 newTimestamp) {
         newPrice = Constant.SIGNED_ONE;
-        for (uint i = 0; i < _path.length; i++) {
+        for (uint256 i = 0; i < _path.length; i++) {
             (int256 p, uint256 t) = IOracle(_path[i].oracle).priceTWAPLong();
             if (_path[i].isInverse && p != 0) {
                 p = Constant.SIGNED_ONE.wdiv(p);
@@ -107,7 +105,7 @@ contract OracleRouter {
      */
     function priceTWAPShort() external returns (int256 newPrice, uint256 newTimestamp) {
         newPrice = Constant.SIGNED_ONE;
-        for (uint i = 0; i < _path.length; i++) {
+        for (uint256 i = 0; i < _path.length; i++) {
             (int256 p, uint256 t) = IOracle(_path[i].oracle).priceTWAPShort();
             if (_path[i].isInverse && p != 0) {
                 p = Constant.SIGNED_ONE.wdiv(p);
@@ -121,7 +119,7 @@ contract OracleRouter {
      * @dev The market is closed if the market is not in its regular trading period.
      */
     function isMarketClosed() external returns (bool) {
-        for (uint i = 0; i < _path.length; i++) {
+        for (uint256 i = 0; i < _path.length; i++) {
             if (IOracle(_path[i].oracle).isMarketClosed()) {
                 return true;
             }
@@ -133,7 +131,7 @@ contract OracleRouter {
      * @dev The oracle service was shutdown and never online again.
      */
     function isTerminated() external returns (bool) {
-        for (uint i = 0; i < _path.length; i++) {
+        for (uint256 i = 0; i < _path.length; i++) {
             if (IOracle(_path[i].oracle).isTerminated()) {
                 return true;
             }
@@ -153,7 +151,7 @@ contract OracleRouter {
      */
     function dumpPath() external view returns (RouteDump[] memory) {
         RouteDump[] memory ret = new RouteDump[](_path.length);
-        for (uint i = 0; i < _path.length; i++) {
+        for (uint256 i = 0; i < _path.length; i++) {
             ret[i].oracle = _path[i].oracle;
             ret[i].isInverse = _path[i].isInverse;
             ret[i].underlyingAsset = IOracle(_path[i].oracle).underlyingAsset();
