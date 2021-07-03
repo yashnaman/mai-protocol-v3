@@ -93,11 +93,12 @@ describe('TradeModule4 - auto deposit/withdraw with targetLeverage', () => {
             await testTrade.setTargetLeverage(0, user1.address, toWei("1")); // 1x target leverage
             await testTrade.setMarginAccount(0, testTrade.address, toWei("10000"), toWei("0"));
 
+            // deposit 1000 * 1 / 1 + 1000 * 1 * 0.1% + 1gas = 1002
             await testTrade.connect(user1).trade(0, user1.address, toWei("1"), toWei("20000"), none, USE_TARGET_LEVERAGE);
             var { cash, position } = await testTrade.getMarginAccount(0, user1.address);
-            expect(cash).approximateBigNumber(toWei("0"))
+            expect(cash).approximateBigNumber(toWei("1"))
             expect(position).to.equal(toWei("1"))
-            expect(await ctk.balanceOf(user1.address)).approximateBigNumber(toWei("8999"))
+            expect(await ctk.balanceOf(user1.address)).approximateBigNumber(toWei("8998"))
         })
 
         it("close", async () => {

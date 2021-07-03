@@ -1204,7 +1204,7 @@ library LiquidityPoolModule {
             .sub(deltaCash);
         } else {
             // open from 0 or close + open
-            adjustCollateral = adjustCollateral.sub(oldMargin);
+            adjustCollateral = adjustCollateral.add(perpetual.keeperGasReward).sub(oldMargin);
         }
         // make sure after adjust: trader is initial margin safe
         adjustCollateral = adjustCollateral.max(
