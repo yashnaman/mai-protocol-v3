@@ -8,6 +8,13 @@ import {
     createContract,
     createLiquidityPoolFactory
 } from "../scripts/utils";
+import BigNumber from 'bignumber.js';
+
+const weis = new BigNumber('1000000000000000000');
+const toWad = (x: any) => {
+    return new BigNumber(x).times(weis).toFixed(0);
+}
+const _0 = toWad('0')
 
 describe("Reader", () => {
     var accounts;
@@ -214,4 +221,23 @@ describe("Reader", () => {
         expect(pool.pool.perpetuals[1].ammCashBalance).approximateBigNumber(toWei("0"));
         expect(pool.pool.perpetuals[1].ammPositionAmount).approximateBigNumber(toWei("0"));
     });
+
+    it('readIndexPrices', async () => {
+        await updatePrice(toWei("501"), toWei("0"));
+        const ret = await reader.callStatic.readIndexPrices([
+            oracle1.address, // normal
+            oracle2.address, // normal but 0
+            user0.address, // bad
+            ctk.address, // bad
+            none, // bad
+        ]);
+        expect(ret.length).to.equal(5)
+        expect(ret[0].isSuccess).to.equal(true)
+        expect(ret[1].isSuccess).to.equal(true)
+        expect(ret[2].isSuccess).to.equal(false)
+        expect(ret[3].isSuccess).to.equal(false)
+        expect(ret[4].isSuccess).to.equal(false)
+        expect(ret[0].indexPrice).to.equal(toWad('501'))
+        expect(ret[1].indexPrice).to.equal(toWad('0'))
+    })
 })

@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "../Type.sol";
 import "../interface/ILiquidityPoolFull.sol";
 import "../interface/IPoolCreatorFull.sol";
@@ -12,6 +13,7 @@ import "../libraries/SafeMathExt.sol";
 
 contract Reader {
     using SafeMathExt for uint256;
+    using Address for address;
 
     struct LiquidityPoolReaderResult {
         bool isRunning;
@@ -52,6 +54,11 @@ contract Reader {
         int256 position;
         int256 margin;
         bool isSafe;
+    }
+
+    struct ReadIndexResult {
+        bool isSuccess;
+        int256 indexPrice;
     }
 
     address public immutable poolCreator;
@@ -228,6 +235,21 @@ contract Reader {
         (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
             liquidityPool
         ).getMarginAccount(perpetualIndex, liquidityPool);
+    }
+
+    function readIndexPrices(address[] memory oracles) public returns (ReadIndexResult[] memory) {
+        ReadIndexResult[] memory ret = new ReadIndexResult[](oracles.length);
+        for (uint256 i = 0; i < oracles.length; i++) {
+            if (!oracles[i].isContract()) {
+                continue;
+            }
+            try IOracle(oracles[i]).priceTWAPShort() returns (int256 indexPrice, uint256) {
+                ret[i].indexPrice = indexPrice;
+                ret[i].isSuccess = true;
+            } catch {
+            }
+        }
+        return ret;
     }
 
     function getMinSymbol(
