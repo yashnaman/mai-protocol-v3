@@ -45,6 +45,8 @@ contract UniswapV3OracleAdaptor is IOracle {
         uint256 pathLength = path_.length;
         require(pathLength >= 2, "paths are too short");
         require(pathLength - 1 == fees_.length, "paths and fees are mismatched");
+        require(shortPeriod_ > 0, "period = 0");
+        require(longPeriod_ >= shortPeriod_, "shortPeriod > longPeriod");
 
         collateral = IERC20(path_[pathLength - 1]).symbol();
         collateralDecimals = IERC20(path_[pathLength - 1]).decimals();
@@ -106,6 +108,7 @@ contract UniswapV3OracleAdaptor is IOracle {
     }
 
     function dumpPath() external view returns (DumpData memory data) {
+        data.symbols = new string[](path.length);
         for (uint256 i = 0; i < path.length; i++) {
             data.symbols[i] = IERC20(path[i]).symbol();
         }
