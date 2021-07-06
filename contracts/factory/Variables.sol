@@ -62,7 +62,7 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
     }
 
     /**
-     * @notice  Set the vault address. Can only called by owner.
+     * @notice  Set the vault address. Can only called by owner(dao).
      *
      * @param   newVault    The new value of the vault fee rate
      */
@@ -74,7 +74,7 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
     }
 
     /**
-     * @notice  Set the vault fee rate. Can only called by owner.
+     * @notice  Set the vault fee rate. Can only called by owner(dao).
      *
      * @param   newVaultFeeRate The new value of the vault fee rate
      */
@@ -90,16 +90,16 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
      * @notice Get the address of the vault
      * @return address The address of the vault
      */
-    function getKeeper() public view returns (address) {
+    function getKeeper() public view override returns (address) {
         return _keeper;
     }
 
     /**
-     * @notice  Set the vault address. Can only called by owner.
+     * @notice  Set the address of default keeper. Can only called by owner(dao).
      *
      * @param   newKeeper   The address of keeper to be set.
      */
-    function setKeeper(address newKeeper) external onlyOwner {
+    function setKeeper(address newKeeper) external override onlyOwner {
         require(newKeeper != address(0), "new keeper is zero-address");
         require(_keeper != newKeeper, "new keeper is already current keeper");
         emit SetKeeper(_keeper, newKeeper);

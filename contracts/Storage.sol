@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/GSN/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 
-import "./interface/IAccessControl.sol";
+import "./interface/IPoolCreatorFull.sol";
 import "./module/LiquidityPoolModule.sol";
 import "./Type.sol";
 
@@ -22,7 +22,10 @@ contract Storage is ContextUpgradeable {
 
     modifier onlyKeeper(uint256 perpetualIndex) {
         address keeper = _liquidityPool.perpetuals[perpetualIndex].keeper;
-        require(keeper == address(0) || keeper == _msgSender(), "caller must be keeper");
+        if (keeper == address(0)) {
+            keeper = IPoolCreatorFull(_liquidityPool.creator).getKeeper();
+        }
+        require(keeper == _msgSender(), "caller must be keeper");
         _;
     }
 

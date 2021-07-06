@@ -284,7 +284,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         external
         override
         nonReentrant
-        onlyKeeper(perpetualIndex)
         onlyAuthorized(liquidator, Constant.PRIVILEGE_LIQUIDATE)
         syncState(false)
         returns (int256 liquidationAmount)
