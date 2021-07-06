@@ -11,9 +11,11 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
     address internal _symbolService;
     address internal _vault;
     int256 internal _vaultFeeRate;
+    address internal _keeper;
 
     event SetVaultFeeRate(int256 prevFeeRate, int256 newFeeRate);
     event SetVault(address previousVault, address newVault);
+    event SetKeeper(address previousKeeper, address newKeeper);
     event SetRewardDistributor(address previousRewardDistributor, address newRewardDistributor);
 
     function __Variables_init(
@@ -85,6 +87,26 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
     }
 
     /**
+     * @notice Get the address of the vault
+     * @return address The address of the vault
+     */
+    function getKeeper() public view returns (address) {
+        return _keeper;
+    }
+
+    /**
+     * @notice  Set the vault address. Can only called by owner.
+     *
+     * @param   newKeeper   The address of keeper to be set.
+     */
+    function setKeeper(address newKeeper) external onlyOwner {
+        require(newKeeper != address(0), "new keeper is zero-address");
+        require(_keeper != newKeeper, "new keeper is already current keeper");
+        emit SetKeeper(_keeper, newKeeper);
+        _keeper = newKeeper;
+    }
+
+    /**
      * @notice Get the address of the access controller. It's always its own address.
      *
      * @return address The address of the access controller.
@@ -111,4 +133,6 @@ contract Variables is Initializable, OwnableUpgradeable, IVariables {
     function getMCBToken() public pure override returns (address) {
         return address(0x4e352cF164E64ADCBad318C3a1e222E9EBa4Ce42);
     }
+
+    bytes32[50] private __gap;
 }

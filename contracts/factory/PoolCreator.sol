@@ -266,4 +266,6 @@ contract PoolCreator is
         );
         (liquidityPoolTemplate, governorTemplate, ) = getVersion(targetVersionKey);
     }
+
+    bytes32[50] private __gap;
 }
