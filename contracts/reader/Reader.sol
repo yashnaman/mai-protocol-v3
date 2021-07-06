@@ -56,11 +56,6 @@ contract Reader {
         bool isSafe;
     }
 
-    struct ReadIndexResult {
-        bool isSuccess;
-        int256 indexPrice;
-    }
-
     address public immutable poolCreator;
 
     constructor(address _poolCreator) {
@@ -237,19 +232,21 @@ contract Reader {
         ).getMarginAccount(perpetualIndex, liquidityPool);
     }
 
-    function readIndexPrices(address[] memory oracles) public returns (ReadIndexResult[] memory) {
-        ReadIndexResult[] memory ret = new ReadIndexResult[](oracles.length);
+    function readIndexPrices(address[] memory oracles)
+        public
+        returns (bool[] memory isSuccess, int256[] memory indexPrices) {
+        isSuccess = new bool[](oracles.length);
+        indexPrices = new int256[](oracles.length);
         for (uint256 i = 0; i < oracles.length; i++) {
             if (!oracles[i].isContract()) {
                 continue;
             }
             try IOracle(oracles[i]).priceTWAPShort() returns (int256 indexPrice, uint256) {
-                ret[i].indexPrice = indexPrice;
-                ret[i].isSuccess = true;
+                indexPrices[i] = indexPrice;
+                isSuccess[i] = true;
             } catch {
             }
         }
-        return ret;
     }
 
     function getMinSymbol(

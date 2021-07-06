@@ -224,20 +224,21 @@ describe("Reader", () => {
 
     it('readIndexPrices', async () => {
         await updatePrice(toWei("501"), toWei("0"));
-        const ret = await reader.callStatic.readIndexPrices([
+        const { isSuccess, indexPrices } = await reader.callStatic.readIndexPrices([
             oracle1.address, // normal
             oracle2.address, // normal but 0
             user0.address, // bad
             ctk.address, // bad
             none, // bad
         ]);
-        expect(ret.length).to.equal(5)
-        expect(ret[0].isSuccess).to.equal(true)
-        expect(ret[1].isSuccess).to.equal(true)
-        expect(ret[2].isSuccess).to.equal(false)
-        expect(ret[3].isSuccess).to.equal(false)
-        expect(ret[4].isSuccess).to.equal(false)
-        expect(ret[0].indexPrice).to.equal(toWad('501'))
-        expect(ret[1].indexPrice).to.equal(toWad('0'))
+        expect(isSuccess.length).to.equal(5)
+        expect(isSuccess[0]).to.equal(true)
+        expect(isSuccess[1]).to.equal(true)
+        expect(isSuccess[2]).to.equal(false)
+        expect(isSuccess[3]).to.equal(false)
+        expect(isSuccess[4]).to.equal(false)
+        expect(indexPrices.length).to.equal(5)
+        expect(indexPrices[0]).to.equal(toWad('501'))
+        expect(indexPrices[1]).to.equal(toWad('0'))
     })
 })
