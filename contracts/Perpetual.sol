@@ -326,10 +326,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
             referrer,
             flags
         );
-        require(
-            _liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
-            "trader margin unsafe"
-        );
     }
 
     bytes32[50] private __gap;

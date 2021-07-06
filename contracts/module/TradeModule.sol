@@ -96,6 +96,10 @@ library TradeModule {
             lpFee
         );
         tradeAmount = deltaPosition.neg();
+        require(
+            liquidityPool.isTraderMarginSafe(perpetualIndex, trader, tradeAmount),
+            "trader margin unsafe"
+        );
     }
 
     function preTrade(
@@ -549,6 +553,10 @@ library TradeModule {
             liquidityPool, perpetual, account, deltaCash, deltaPosition);
         (totalFee, cost) = readonlyPostTrade(
             liquidityPool, perpetual, account, referrer, deltaCash, deltaPosition, flags);
+        require(
+            LiquidityPoolModule.readonlyIsTraderMarginSafe(perpetual, account, amount),
+            "trader margin unsafe"
+        );
     }
 
     // A readonly version of doTrade. This function was written post-audit. So there's a lot of repeated logic here.
@@ -622,6 +630,7 @@ library TradeModule {
                 totalFee
             );
         }
+        account.cash = account.cash.add(adjustCollateral);
     }
 
     // A readonly version of MarginAccountModule.updateMargin. This function was written post-audit. So there's a lot of repeated logic here.
