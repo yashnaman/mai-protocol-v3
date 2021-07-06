@@ -159,8 +159,8 @@ library TradeModule {
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   deltaCash       The amount of cash changes in a trade.
      * @param   deltaPosition   The amount of position changes in a trade.
-     * @return  lpFee           The amount of fee for lp provider
-     * @return  totalFee        The total fee collected from the trader after the trade
+     * @return  lpFee           The amount of fee for lp provider.
+     * @return  totalFee        The total fee collected from the trader after the trade.
      */
     function postTrade(
         LiquidityPoolStorage storage liquidityPool,
@@ -512,5 +512,187 @@ library TradeModule {
         require(price > 0, "price must be positive");
         bool isPriceSatisfied = isLong ? price <= priceLimit : price >= priceLimit;
         require(isPriceSatisfied, "price exceeds limit");
+    }
+
+    /**
+     * @dev     A readonly version of trade
+     *
+     *          This function was written post-audit. So there's a lot of repeated logic here.
+     *          NOTE: max openInterest is NOT exact the same as trade(). In this function, poolMargin
+     *                will be smaller, so that the openInterst limit is also smaller (more strict).
+     * @param   liquidityPool   The reference of liquidity pool storage.
+     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
+     * @param   trader          The address of trader.
+     * @param   amount          The amount of position to trader, positive for buying and negative for selling.
+     * @param   limitPrice      The worst price the trader accepts.
+     * @param   referrer        The address of referrer who will get rebate in the deal.
+     * @param   flags           The flags of the trade, contains extra config for trading.
+     * @return  tradePrice      The average fill price.
+     * @return  totalFee        The total fee collected from the trader after the trade.
+     * @return  cost            Deposit or withdraw to let effective leverage == targetLeverage if flags contain USE_TARGET_LEVERAGE. > 0 if deposit, < 0 if withdraw.
+     */
+    function queryTrade(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address trader,
+        int256 amount,
+        int256 limitPrice,
+        address referrer,
+        uint32 flags
+    ) public returns (int256 tradePrice, int256 totalFee, int256 cost) {
+        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
+        MarginAccount memory account = perpetual.marginAccounts[trader]; // clone
+        (int256 deltaCash, int256 deltaPosition) =
+            preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
+        tradePrice = deltaCash.wdiv(deltaPosition).abs();
+        readonlyDoTrade(
+            liquidityPool, perpetual, account, deltaCash, deltaPosition);
+        (totalFee, cost) = readonlyPostTrade(
+            liquidityPool, perpetual, account, referrer, deltaCash, deltaPosition, flags);
+    }
+
+    // A readonly version of doTrade. This function was written post-audit. So there's a lot of repeated logic here.
+    // NOTE: max openInterest is NOT exact the same as trade(). In this function, poolMargin
+    //       will be smaller, so that the openInterst limit is also smaller (more strict).
+    function readonlyDoTrade(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        MarginAccount memory account,
+        int256 deltaCash,
+        int256 deltaPosition
+    ) internal view {
+        int256 deltaOpenInterest1;
+        int256 deltaOpenInterest2;
+        (, , deltaOpenInterest1) = readonlyUpdateMargin(
+            perpetual, perpetual.marginAccounts[address(this)].cash,
+            perpetual.marginAccounts[address(this)].position,
+            deltaPosition, deltaCash);
+        (account.cash, account.position, deltaOpenInterest2) = readonlyUpdateMargin(
+            perpetual, account.cash, account.position, deltaPosition.neg(), deltaCash.neg());
+        int256 perpetualOpenInterest  = perpetual.openInterest.add(deltaOpenInterest1).add(deltaOpenInterest2);
+        require(perpetualOpenInterest >= 0, "negative open interest");
+        if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
+            // open interest will increase, check limit
+            (int256 poolMargin, ) = liquidityPool.getPoolMargin(); // NOTE: this is a slight different from trade()
+            require(
+                perpetualOpenInterest <=
+                    perpetual.maxOpenInterestRate.wfrac(poolMargin, perpetual.getIndexPrice()),
+                "open interest exceeds limit"
+            );
+        }
+    }
+
+    // A readonly version of postTrade. This function was written post-audit. So there's a lot of repeated logic here.
+    function readonlyPostTrade(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        MarginAccount memory account,
+        address referrer,
+        int256 deltaCash,
+        int256 deltaPosition,
+        uint32 flags
+    ) internal view returns (int256 totalFee, int256 adjustCollateral) {
+        // fees
+        int256 lpFee;
+        int256 operatorFee;
+        int256 vaultFee;
+        int256 referralRebate;
+        {
+            bool hasOpened =
+                Utils.hasOpenedPosition(account.position, deltaPosition.neg());
+            (lpFee, operatorFee, vaultFee, referralRebate) = readonlyGetFees(
+                liquidityPool,
+                perpetual,
+                account,
+                referrer,
+                deltaCash.abs(),
+                hasOpened
+            );
+        }
+        totalFee = lpFee.add(operatorFee).add(vaultFee).add(referralRebate);
+        // was updateCash
+        account.cash = account.cash.add(totalFee.neg());
+        // trader deposit/withdraw
+        if (flags.useTargetLeverage()) {
+            adjustCollateral = LiquidityPoolModule.readonlyAdjustMarginLeverage(
+                perpetual,
+                account,
+                deltaPosition.neg(),
+                deltaCash.neg(),
+                totalFee
+            );
+        }
+    }
+
+    // A readonly version of MarginAccountModule.updateMargin. This function was written post-audit. So there's a lot of repeated logic here.
+    function readonlyUpdateMargin(
+        PerpetualStorage storage perpetual,
+        int256 oldCash,
+        int256 oldPosition,
+        int256 deltaPosition,
+        int256 deltaCash
+    ) internal view returns (int256 newCash, int256 newPosition, int256 deltaOpenInterest) {
+        newPosition = oldPosition.add(deltaPosition);
+        newCash = oldCash.add(deltaCash).add(
+            perpetual.unitAccumulativeFunding.wmul(deltaPosition)
+        );
+        if (oldPosition > 0) {
+            deltaOpenInterest = oldPosition.neg();
+        }
+        if (newPosition > 0) {
+            deltaOpenInterest = deltaOpenInterest.add(newPosition);
+        }
+    }
+
+    // A readonly version of getFees. This function was written post-audit. So there's a lot of repeated logic here.
+    function readonlyGetFees(
+        LiquidityPoolStorage storage liquidityPool,
+        PerpetualStorage storage perpetual,
+        MarginAccount memory trader,
+        address referrer,
+        int256 tradeValue,
+        bool hasOpened
+    )
+        public
+        view
+        returns (
+            int256 lpFee,
+            int256 operatorFee,
+            int256 vaultFee,
+            int256 referralRebate
+        )
+    {
+        require(tradeValue >= 0, "trade value is negative");
+        vaultFee = tradeValue.wmul(liquidityPool.getVaultFeeRate());
+        lpFee = tradeValue.wmul(perpetual.lpFeeRate);
+        if (liquidityPool.getOperator() != address(0)) {
+            operatorFee = tradeValue.wmul(perpetual.operatorFeeRate);
+        }
+        int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
+        int256 availableMargin = LiquidityPoolModule.readonlyGetAvailableMargin(
+            perpetual, trader, perpetual.getMarkPrice());
+        if (!hasOpened) {
+            if (availableMargin <= 0) {
+                lpFee = 0;
+                operatorFee = 0;
+                vaultFee = 0;
+                referralRebate = 0;
+            } else if (totalFee > availableMargin) {
+                // make sure the sum of fees < available margin
+                int256 rate = availableMargin.wdiv(totalFee, Round.FLOOR);
+                operatorFee = operatorFee.wmul(rate, Round.FLOOR);
+                vaultFee = vaultFee.wmul(rate, Round.FLOOR);
+                lpFee = availableMargin.sub(operatorFee).sub(vaultFee);
+            }
+        }
+        if (
+            referrer != address(0) && perpetual.referralRebateRate > 0 && lpFee.add(operatorFee) > 0
+        ) {
+            int256 lpFeeRebate = lpFee.wmul(perpetual.referralRebateRate);
+            int256 operatorFeeRabate = operatorFee.wmul(perpetual.referralRebateRate);
+            referralRebate = lpFeeRebate.add(operatorFeeRabate);
+            lpFee = lpFee.sub(lpFeeRebate);
+            operatorFee = operatorFee.sub(operatorFeeRabate);
+        }
     }
 }
