@@ -311,6 +311,12 @@ describe("integration2 - 2 perps. special pool states", () => {
 
     // trade
     let now = Math.floor(Date.now() / 1000);
+    {
+      let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
+      expect(tradePrice).to.equal(toWei("1150"));
+      expect(totalFee).to.equal(toWei("10.35"));
+      expect(cost).to.equal(toWei("0"));
+    }
     await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
     var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
     expect(cash).to.equal(toWei("-2960.35")); // 500 - 3450 - 3450 * 0.003(fee) = -2960.35
@@ -331,6 +337,12 @@ describe("integration2 - 2 perps. special pool states", () => {
     expect(nums[0]).to.equal(toWei("493.1")); // total collateral of perpetual, 500 - 3.45(operator fee) - 3.45(vault fee)
     expect(nums[31]).to.equal(toWei("3")); // open interest of perpetual
 
+    {
+      let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(1, user1.address, toWei("-1"), toWei("950"), now + 999999, none, 0);
+      expect(tradePrice).to.equal(toWei("950.310117345895693000"));
+      expect(totalFee).to.equal(toWei("2.850930352037687079"));
+      expect(cost).to.equal(toWei("0"));
+    }
     await perp.connect(user1).trade(1, user1.address, toWei("-1"), toWei("950"), now + 999999, none, 0);
     var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(1, user1.address);
     expect(cash).approximateBigNumber(toWei("1047.459186993858006293")); // 100 - 950.310117345895693374 - 950.310117345895693374 * 0.003(fee) = 1047.4591869938580062938859841
@@ -484,6 +496,9 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
     oracle1.setMarketClosed(true);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith(
+      "market is closed now"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith(
       "market is closed now"
     );
@@ -495,6 +510,9 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
     oracle1.setTerminated(true);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith(
+      "perpetual should be in NORMAL state"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith(
       "perpetual should be in NORMAL state"
     );
@@ -505,10 +523,16 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user1).deposit(0, user1.address, toWei("500"));
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith(
+      "trader has no position to close"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith(
       "trader has no position to close"
     );
     await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith(
+      "trader must be close only"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 2147483648)).to.be.revertedWith(
       "trader must be close only"
     );
@@ -519,7 +543,13 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user1).deposit(0, user1.address, toWei("500"));
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1149"), now + 999999, none, 0)).to.be.revertedWith(
+      "price exceeds limit"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1149"), now + 999999, none, 0)).to.be.revertedWith(
+      "price exceeds limit"
+    );
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith(
       "price exceeds limit"
     );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith(
@@ -533,6 +563,7 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
     // open position, initial margin unsafe
+    // await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
     // close position, margin unsafe
     await perp.connect(user1).deposit(0, user1.address, toWei("10"));
@@ -546,6 +577,9 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user1).deposit(0, user1.address, toWei("10000"));
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
+    await expect(perp.connect(user1).queryTrade(0, user1.address, toWei("4.3"), toWei("999999"), now + 999999, none, 0)).to.be.revertedWith(
+      "open interest exceeds limit"
+    );
     await expect(perp.connect(user1).trade(0, user1.address, toWei("4.3"), toWei("999999"), now + 999999, none, 0)).to.be.revertedWith(
       "open interest exceeds limit"
     );
