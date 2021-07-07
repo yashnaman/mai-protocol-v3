@@ -554,14 +554,15 @@ describe("integration2 - 2 perps. special pool states", () => {
     await perp.connect(user2).addLiquidity(toWei("1000"));
     let now = Math.floor(Date.now() / 1000);
     // open position, initial margin unsafe
-    await expect(perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, 0)).to.be.revertedWith("margin unsafe");
+    await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, 0)
     await expect(perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
     // close position, margin unsafe
     await perp.connect(user1).deposit(0, user1.address, toWei("10"));
+    await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, 0);
     await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, 0);
     await updatePrice(toWei("939"), toWei("1000"));
     await perp.forceToSyncState();
-    await expect(perp.callStatic.queryTrade(0, user1.address, toWei("-3"), none, 0)).to.be.revertedWith("margin unsafe");
+    await perp.callStatic.queryTrade(0, user1.address, toWei("-3"), none, 0)
     await expect(perp.connect(user1).trade(0, user1.address, toWei("-3"), toWei("851"), now + 999999, none, 0)).to.be.revertedWith("margin unsafe");
   });
 

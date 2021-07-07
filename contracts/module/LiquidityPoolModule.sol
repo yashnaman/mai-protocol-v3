@@ -1430,22 +1430,4 @@ library LiquidityPoolModule {
             .add(perpetual.keeperGasReward);
         availableMargin = readonlyGetMargin(perpetual, account, price).sub(threshold);
     }
-
-    // A readonly version of isTraderMarginSafe. This function was written post-audit. So there's a lot of repeated logic here.
-    function readonlyIsTraderMarginSafe(
-        PerpetualStorage storage perpetual,
-        MarginAccount memory account,
-        int256 tradeAmount
-    ) public view returns (bool isSafe) {
-        bool hasOpened = Utils.hasOpenedPosition(account.position, tradeAmount);
-        int256 markPrice = perpetual.getMarkPrice();
-        if (hasOpened) {
-            // was isInitialMarginSafe
-            isSafe = (readonlyGetAvailableMargin(perpetual, account, markPrice) >= 0);
-        } else {
-            // was isMarginSafe
-            int256 threshold = account.position == 0 ? 0 : perpetual.keeperGasReward;
-            isSafe = readonlyGetMargin(perpetual, account, markPrice) >= threshold;
-        }
-    }
 }

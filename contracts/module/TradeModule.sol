@@ -552,10 +552,6 @@ library TradeModule {
             liquidityPool, perpetual, account, deltaCash, deltaPosition);
         (totalFee, cost) = readonlyPostTrade(
             liquidityPool, perpetual, account, referrer, deltaCash, deltaPosition, flags);
-        require(
-            LiquidityPoolModule.readonlyIsTraderMarginSafe(perpetual, account, amount),
-            "trader margin unsafe"
-        );
     }
 
     // A readonly version of doTrade. This function was written post-audit. So there's a lot of repeated logic here.
