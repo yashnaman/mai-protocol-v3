@@ -24,25 +24,6 @@ interface IPoolCreator {
     ) external returns (address liquidityPool, address governor);
 
     /**
-     * @notice  Create a liquidity pool with the specific version. The operator will be the sender.
-     *
-     * @param   versionKey          The key of the version to create.
-     * @param   collateral          The collateral address of the liquidity pool.
-     * @param   collateralDecimals  The collateral's decimals of the liquidity pool.
-     * @param   nonce               A random nonce to calculate the address of deployed contracts.
-     * @param   initData            A bytes array contains data to initialize new created liquidity pool.
-     * @return  liquidityPool       The address of the created liquidity pool.
-     * @return  governor            The address of the created governor.
-     */
-    function createLiquidityPoolWith(
-        bytes32 versionKey,
-        address collateral,
-        uint256 collateralDecimals,
-        int256 nonce,
-        bytes memory initData
-    ) external returns (address liquidityPool, address governor);
-
-    /**
      * @notice  Upgrade a liquidity pool and governor pair then call a patch function on the upgraded contract (optional).
      *          This method checks the sender and forwards the request to ProxyAdmin to do upgrading.
      *

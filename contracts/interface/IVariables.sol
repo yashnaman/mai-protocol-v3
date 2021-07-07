@@ -53,17 +53,4 @@ interface IVariables {
      * @param   newVaultFeeRate The new value of the vault fee rate
      */
     function setVaultFeeRate(int256 newVaultFeeRate) external;
-
-    /**
-     * @notice Get the address of the DAO default keeper.
-     * @return address The address of the keeper
-     */
-    function getKeeper() external view returns (address);
-
-    /**
-     * @notice  Set the vault address. Can only called by owner.
-     *
-     * @param   newKeeper   The address of keeper to be set.
-     */
-    function setKeeper(address newKeeper) external;
 }

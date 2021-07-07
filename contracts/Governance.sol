@@ -23,6 +23,17 @@ contract Governance is Storage {
         _;
     }
 
+    modifier onlyOperatorOrGovernor() {
+        address operator = _liquidityPool.getOperator();
+        if (operator != address(0)) {
+            // has operator
+            require(_msgSender() == operator, "can only be initiated by operator");
+        } else {
+            require(_msgSender() == _liquidityPool.governor, "can only be initiated by governor");
+        }
+        _;
+    }
+
     /**
         @notice
      */
@@ -41,34 +52,9 @@ contract Governance is Storage {
      *            2. when operator not exists, call should be from a succeeded governor proposal.
      * @param   newOperator The address of new operator to transfer to.
      */
-    function transferOperator(address newOperator) public {
+    function transferOperator(address newOperator) external onlyOperatorOrGovernor {
         require(newOperator != address(0), "new operator is zero address");
-        address operator = _liquidityPool.getOperator();
-        if (operator != address(0)) {
-            // has operator
-            require(_msgSender() == operator, "can only be initiated by operator");
-        } else {
-            require(_msgSender() == _liquidityPool.governor, "can only be initiated by governor");
-        }
         _liquidityPool.transferOperator(newOperator);
-    }
-
-    /**
-     * @notice  Set an address as keeper, who is able to call liquidate on bankrupt margin account.
-     *          If not set or set to zero address, keeper can be any one.
-     *
-     * @param   perpetualIndex  The index of the perpetual in liquidity pool.
-     * @param   newKeeper       Address of new keeper. zero address means no limit to keeper only methods.
-     */
-    function setKeeper(uint256 perpetualIndex, address newKeeper) public {
-        address operator = _liquidityPool.getOperator();
-        if (operator != address(0)) {
-            // has operator
-            require(_msgSender() == operator, "can only be initiated by operator");
-        } else {
-            require(_msgSender() == _liquidityPool.governor, "can only be initiated by governor");
-        }
-        _liquidityPool.setKeeper(perpetualIndex, newKeeper);
     }
 
     /**
@@ -141,6 +127,59 @@ contract Governance is Storage {
         onlyOperator
     {
         _liquidityPool.updatePerpetualRiskParameter(perpetualIndex, riskParams);
+    }
+
+    /**
+     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByAMM`.
+     *          If never called, the whitelist in poolCreator will be used instead.
+     *          Once called, the local whitelist will be used and the the whitelist in poolCreator will be ignored.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function addAMMKeeper(uint256 perpetualIndex, address keeper) external onlyOperatorOrGovernor {
+        _liquidityPool.addAMMKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Remove an account from the `liquidateByAMM` whitelist.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function removeAMMKeeper(uint256 perpetualIndex, address keeper)
+        external
+        onlyOperatorOrGovernor
+    {
+        _liquidityPool.removeAMMKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByTrader`.
+     *          Different to whitelist of AMMKeeper, if addByTraderKeeper never called or the whitelist is empty,
+     *          any call is permitted to call `liquidateByTrader`.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function addTraderKeeper(uint256 perpetualIndex, address keeper)
+        external
+        onlyOperatorOrGovernor
+    {
+        _liquidityPool.addTraderKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Remove an account from the `liquidateByTrader` whitelist.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function removeTraderKeeper(uint256 perpetualIndex, address keeper)
+        external
+        onlyOperatorOrGovernor
+    {
+        _liquidityPool.removeTraderKeeper(perpetualIndex, keeper);
     }
 
     /**

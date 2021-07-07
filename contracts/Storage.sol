@@ -12,6 +12,7 @@ import "./Type.sol";
 contract Storage is ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using LiquidityPoolModule for LiquidityPoolStorage;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     LiquidityPoolStorage internal _liquidityPool;
 
@@ -20,15 +21,32 @@ contract Storage is ContextUpgradeable {
         _;
     }
 
-    modifier onlyKeeper(uint256 perpetualIndex) {
-        address keeper = _liquidityPool.perpetuals[perpetualIndex].keeper;
-        // anyone can be a keeper
-        require(keeper == address(0) || keeper == _msgSender(), "caller must be keeper");
-        // only specified one can be a keeper
-        // if (keeper == address(0)) {
-        //     keeper = IPoolCreatorFull(_liquidityPool.creator).getKeeper();
-        // }
-        // require(keeper == _msgSender(), "caller must be keeper");
+    modifier onlyAMMKeeper(uint256 perpetualIndex) {
+        // check if whitelist is set locally.
+        //  - if not, check default whitelist in pool creator;
+        //  - if set, check if sender is in the local whitelist;
+        EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
+        .perpetuals[perpetualIndex]
+        .ammKeepers;
+        if (whitelist.length() == 0) {
+            require(
+                IPoolCreatorFull(_liquidityPool.creator).isKeeper(_msgSender()),
+                "caller must be keeper"
+            );
+        } else {
+            require(whitelist.contains(_msgSender()), "caller must be keeper");
+        }
+        _;
+    }
+
+    modifier onlyTraderKeeper(uint256 perpetualIndex) {
+        EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
+        .perpetuals[perpetualIndex]
+        .traderKeepers;
+        require(
+            whitelist.length() == 0 || whitelist.contains(_msgSender()),
+            "caller must be keeper"
+        );
         _;
     }
 

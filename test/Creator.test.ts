@@ -1,14 +1,6 @@
 import BigNumber from "bignumber.js";
 import { expect, use } from "chai";
-import {
-  toWei,
-  fromWei,
-  toBytes32,
-  getAccounts,
-  createContract,
-  createLiquidityPoolFactory,
-  createFactory,
-} from "../scripts/utils";
+import { toWei, fromWei, toBytes32, getAccounts, createContract, createLiquidityPoolFactory, createFactory } from "../scripts/utils";
 const { ethers } = require("hardhat");
 
 describe("Creator", () => {
@@ -52,60 +44,29 @@ describe("Creator", () => {
   });
 
   it("versionControl", async () => {
-    await expect(poolCreator.getLatestVersion()).to.be.revertedWith(
-      "no version"
-    );
+    await expect(poolCreator.getLatestVersion()).to.be.revertedWith("no version");
     await expect(
-      poolCreator.addVersion(
-        "0x0000000000000000000000000000000000000000",
-        "0x0000000000000000000000000000000000000000",
-        0,
-        "version0"
-      )
+      poolCreator.addVersion("0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", 0, "version0")
     ).to.be.revertedWith("implementation must be contract");
 
     var lpVersion1 = await LiquidityPoolFactory.deploy();
     var govVersion1 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion1.address,
-      govVersion1.address,
-      1,
-      "version1"
-    );
+    await poolCreator.addVersion(lpVersion1.address, govVersion1.address, 1, "version1");
     const key1 = versionKey(lpVersion1.address, govVersion1.address);
     expect(await poolCreator.getLatestVersion()).to.equal(key1);
 
-    await expect(
-      poolCreator.addVersion(
-        lpVersion1.address,
-        govVersion1.address,
-        0,
-        "version1"
-      )
-    ).to.be.revertedWith("implementation already exists");
-    await expect(
-      poolCreator.addVersion(user0.address, govVersion1.address, 1, "version1")
-    ).to.be.revertedWith("implementation must be contract");
+    await expect(poolCreator.addVersion(lpVersion1.address, govVersion1.address, 0, "version1")).to.be.revertedWith("implementation already exists");
+    await expect(poolCreator.addVersion(user0.address, govVersion1.address, 1, "version1")).to.be.revertedWith("implementation must be contract");
 
     var lpVersion2 = await LiquidityPoolFactory.deploy();
     var govVersion2 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion2.address,
-      govVersion2.address,
-      2,
-      "version2"
-    );
+    await poolCreator.addVersion(lpVersion2.address, govVersion2.address, 2, "version2");
     const key2 = versionKey(lpVersion2.address, govVersion2.address);
     expect(await poolCreator.getLatestVersion()).to.equal(key2);
 
     var lpVersion3 = await LiquidityPoolFactory.deploy();
     var govVersion3 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion3.address,
-      govVersion3.address,
-      2,
-      "version3"
-    );
+    await poolCreator.addVersion(lpVersion3.address, govVersion3.address, 2, "version3");
     const key3 = versionKey(lpVersion3.address, govVersion3.address);
     expect(await poolCreator.getLatestVersion()).to.equal(key3);
 
@@ -136,168 +97,36 @@ describe("Creator", () => {
     expect(await poolCreator.isVersionCompatible(key2, key3)).to.be.true;
   });
 
-  it("createLiquidityPoolWith", async () => {
-    var lpVersion1 = await LiquidityPoolFactory.deploy();
-    var govVersion1 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion1.address,
-      govVersion1.address,
-      1,
-      "version1"
-    );
-    const key1 = versionKey(lpVersion1.address, govVersion1.address);
-
-    var lpVersion2 = await LiquidityPoolFactory.deploy();
-    var govVersion2 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion2.address,
-      govVersion2.address,
-      2,
-      "version2"
-    );
-    const key2 = versionKey(lpVersion2.address, govVersion2.address);
-
-    const upgradeAdmin = await ethers.getContractAt(
-      "IProxyAdmin",
-      await poolCreator.upgradeAdmin()
-    );
-    oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
-    const deployed1 = await poolCreator.callStatic.createLiquidityPool(
-      ctk.address,
-      18,
-      998,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
-    await poolCreator.createLiquidityPool(
-      ctk.address,
-      18,
-      998,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
-    expect(await upgradeAdmin.getProxyImplementation(deployed1[0])).to.equal(
-      lpVersion2.address
-    );
-    expect(await upgradeAdmin.getProxyImplementation(deployed1[0])).to.equal(
-      lpVersion2.address
-    );
-
-    const deployed2 = await poolCreator.callStatic.createLiquidityPoolWith(
-      key1,
-      ctk.address,
-      18,
-      998,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
-    await poolCreator.createLiquidityPoolWith(
-      key1,
-      ctk.address,
-      18,
-      998,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
-    expect(await upgradeAdmin.getProxyImplementation(deployed2[0])).to.equal(
-      lpVersion1.address
-    );
-    expect(await upgradeAdmin.getProxyImplementation(deployed2[1])).to.equal(
-      govVersion1.address
-    );
-  });
-
   it("tracer", async () => {
     var lpVersion1 = await LiquidityPoolFactory.deploy();
     var govVersion1 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion1.address,
-      govVersion1.address,
-      1,
-      "version1"
-    );
+    await poolCreator.addVersion(lpVersion1.address, govVersion1.address, 1, "version1");
     const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
     oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
 
     const deployed1 = await poolCreator
       .connect(user1)
-      .callStatic.createLiquidityPool(
-        ctk.address,
-        18,
-        996,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     await poolCreator
       .connect(user1)
-      .createLiquidityPool(
-        ctk.address,
-        18,
-        996,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     expect(await poolCreator.getLiquidityPoolCount()).to.equal(1);
 
     const deployed2 = await poolCreator
       .connect(user2)
-      .callStatic.createLiquidityPool(
-        ctk.address,
-        18,
-        997,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .callStatic.createLiquidityPool(ctk.address, 18, 997, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     await poolCreator
       .connect(user2)
-      .createLiquidityPool(
-        ctk.address,
-        18,
-        997,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .createLiquidityPool(ctk.address, 18, 997, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     expect(await poolCreator.getLiquidityPoolCount()).to.equal(2);
 
     const deployed3 = await poolCreator
       .connect(user2)
-      .callStatic.createLiquidityPool(
-        ctk.address,
-        18,
-        998,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     await poolCreator
       .connect(user2)
-      .createLiquidityPool(
-        ctk.address,
-        18,
-        998,
-        ethers.utils.defaultAbiCoder.encode(
-          ["bool", "int256"],
-          [false, toWei("1000000")]
-        )
-      );
+      .createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
     expect(await poolCreator.getLiquidityPoolCount()).to.equal(3);
 
     expect(await poolCreator.isLiquidityPool(deployed1[0])).to.be.true;
@@ -310,35 +139,17 @@ describe("Creator", () => {
     expect(result[1]).to.equal(deployed2[0]);
     expect(result[2]).to.equal(deployed3[0]);
 
-    expect(
-      await poolCreator.getOwnedLiquidityPoolsCountOf(user0.address)
-    ).to.equal(0);
-    var result = await poolCreator.listLiquidityPoolOwnedBy(
-      user0.address,
-      0,
-      100
-    );
+    expect(await poolCreator.getOwnedLiquidityPoolsCountOf(user0.address)).to.equal(0);
+    var result = await poolCreator.listLiquidityPoolOwnedBy(user0.address, 0, 100);
     expect(result.length).to.equal(0);
 
-    expect(
-      await poolCreator.getOwnedLiquidityPoolsCountOf(user1.address)
-    ).to.equal(1);
-    var result = await poolCreator.listLiquidityPoolOwnedBy(
-      user1.address,
-      0,
-      100
-    );
+    expect(await poolCreator.getOwnedLiquidityPoolsCountOf(user1.address)).to.equal(1);
+    var result = await poolCreator.listLiquidityPoolOwnedBy(user1.address, 0, 100);
     expect(result.length).to.equal(1);
     expect(result[0]).to.equal(deployed1[0]);
 
-    expect(
-      await poolCreator.getOwnedLiquidityPoolsCountOf(user2.address)
-    ).to.equal(2);
-    var result = await poolCreator.listLiquidityPoolOwnedBy(
-      user2.address,
-      0,
-      100
-    );
+    expect(await poolCreator.getOwnedLiquidityPoolsCountOf(user2.address)).to.equal(2);
+    var result = await poolCreator.listLiquidityPoolOwnedBy(user2.address, 0, 100);
     expect(result.length).to.equal(2);
     expect(result[0]).to.equal(deployed2[0]);
     expect(result[1]).to.equal(deployed3[0]);
@@ -347,12 +158,7 @@ describe("Creator", () => {
   it("tracer - 2", async () => {
     var lpVersion1 = await LiquidityPoolFactory.deploy();
     var govVersion1 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion1.address,
-      govVersion1.address,
-      1,
-      "version1"
-    );
+    await poolCreator.addVersion(lpVersion1.address, govVersion1.address, 1, "version1");
     const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
     oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
@@ -363,109 +169,24 @@ describe("Creator", () => {
       ctk.address,
       18,
       996,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
     );
-    await poolCreator.createLiquidityPool(
-      ctk.address,
-      18,
-      996,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
+    await poolCreator.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
 
     const liquidityPool1 = await LiquidityPoolFactory.attach(deployed1[0]);
     await liquidityPool1.createPerpetual(
       oracle.address,
-      [
-        toWei("0.1"),
-        toWei("0.05"),
-        toWei("0.001"),
-        toWei("0.001"),
-        toWei("0.2"),
-        toWei("0.02"),
-        toWei("0.00000002"),
-        toWei("0.5"),
-        toWei("1"),
-      ],
-      [
-        toWei("0.01"),
-        toWei("0.1"),
-        toWei("0.06"),
-        toWei("0"),
-        toWei("5"),
-        toWei("0.05"),
-        toWei("0.01"),
-        toWei("1"),
-      ],
-      [
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-      ],
-      [
-        toWei("0.1"),
-        toWei("0.2"),
-        toWei("0.2"),
-        toWei("0.5"),
-        toWei("10"),
-        toWei("0.99"),
-        toWei("1"),
-        toWei("1"),
-      ]
+      [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
+      [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+      [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+      [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")]
     );
     await liquidityPool1.createPerpetual(
       oracle.address,
-      [
-        toWei("0.1"),
-        toWei("0.05"),
-        toWei("0.001"),
-        toWei("0.001"),
-        toWei("0.2"),
-        toWei("0.02"),
-        toWei("0.00000002"),
-        toWei("0.5"),
-        toWei("1"),
-      ],
-      [
-        toWei("0.01"),
-        toWei("0.1"),
-        toWei("0.06"),
-        toWei("0"),
-        toWei("5"),
-        toWei("0.05"),
-        toWei("0.01"),
-        toWei("1"),
-      ],
-      [
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-      ],
-      [
-        toWei("0.1"),
-        toWei("0.2"),
-        toWei("0.2"),
-        toWei("0.5"),
-        toWei("10"),
-        toWei("0.99"),
-        toWei("1"),
-        toWei("1"),
-      ]
+      [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
+      [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+      [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+      [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")]
     );
     await liquidityPool1.runLiquidityPool();
 
@@ -473,65 +194,17 @@ describe("Creator", () => {
       ctk.address,
       18,
       997,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
     );
-    await poolCreator.createLiquidityPool(
-      ctk.address,
-      18,
-      997,
-      ethers.utils.defaultAbiCoder.encode(
-        ["bool", "int256"],
-        [false, toWei("1000000")]
-      )
-    );
+    await poolCreator.createLiquidityPool(ctk.address, 18, 997, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
 
     const liquidityPool2 = await LiquidityPoolFactory.attach(deployed2[0]);
     await liquidityPool2.createPerpetual(
       oracle.address,
-      [
-        toWei("0.1"),
-        toWei("0.05"),
-        toWei("0.001"),
-        toWei("0.001"),
-        toWei("0.2"),
-        toWei("0.02"),
-        toWei("0.00000002"),
-        toWei("0.5"),
-        toWei("1"),
-      ],
-      [
-        toWei("0.01"),
-        toWei("0.1"),
-        toWei("0.06"),
-        toWei("0"),
-        toWei("5"),
-        toWei("0.05"),
-        toWei("0.01"),
-        toWei("1"),
-      ],
-      [
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-        toWei("0"),
-      ],
-      [
-        toWei("0.1"),
-        toWei("0.2"),
-        toWei("0.2"),
-        toWei("0.5"),
-        toWei("10"),
-        toWei("0.99"),
-        toWei("1"),
-        toWei("1"),
-      ]
+      [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0.00000002"), toWei("0.5"), toWei("1")],
+      [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+      [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+      [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")]
     );
     await liquidityPool2.runLiquidityPool();
 
@@ -551,33 +224,21 @@ describe("Creator", () => {
 
     await liquidityPool2.connect(user3).deposit(0, user3.address, toWei("1"));
 
-    var result = await poolCreator.listActiveLiquidityPoolsOf(
-      user1.address,
-      0,
-      100
-    );
+    var result = await poolCreator.listActiveLiquidityPoolsOf(user1.address, 0, 100);
     expect(result.length).to.equal(2);
     expect(result[0].liquidityPool).to.equal(deployed1[0]);
     expect(result[0].perpetualIndex).to.equal(0);
     expect(result[1].liquidityPool).to.equal(deployed2[0]);
     expect(result[1].perpetualIndex).to.equal(0);
 
-    var result = await poolCreator.listActiveLiquidityPoolsOf(
-      user2.address,
-      0,
-      100
-    );
+    var result = await poolCreator.listActiveLiquidityPoolsOf(user2.address, 0, 100);
     expect(result.length).to.equal(2);
     expect(result[0].liquidityPool).to.equal(deployed1[0]);
     expect(result[0].perpetualIndex).to.equal(0);
     expect(result[1].liquidityPool).to.equal(deployed1[0]);
     expect(result[1].perpetualIndex).to.equal(1);
 
-    var result = await poolCreator.listActiveLiquidityPoolsOf(
-      user3.address,
-      0,
-      100
-    );
+    var result = await poolCreator.listActiveLiquidityPoolsOf(user3.address, 0, 100);
     expect(result.length).to.equal(1);
     expect(result[0].liquidityPool).to.equal(deployed2[0]);
     expect(result[0].perpetualIndex).to.equal(0);
@@ -586,30 +247,16 @@ describe("Creator", () => {
   it("owner", async () => {
     var lpVersion1 = await LiquidityPoolFactory.deploy();
     var govVersion1 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion1.address,
-      govVersion1.address,
-      1,
-      "version1"
-    );
+    await poolCreator.addVersion(lpVersion1.address, govVersion1.address, 1, "version1");
     const key1 = versionKey(lpVersion1.address, govVersion1.address);
     expect(await poolCreator.getLatestVersion()).to.equal(key1);
     var lpVersion2 = await LiquidityPoolFactory.deploy();
     var govVersion2 = await createContract("TestLpGovernor");
-    await poolCreator.addVersion(
-      lpVersion2.address,
-      govVersion2.address,
-      2,
-      "version2"
-    );
+    await poolCreator.addVersion(lpVersion2.address, govVersion2.address, 2, "version2");
     await poolCreator.setVault(user3.address);
-    await expect(
-      poolCreator
-        .connect(user2)
-        .addVersion(lpVersion2.address, govVersion2.address, 2, "version2")
-    ).to.be.revertedWith("caller is not the owner");
-    await expect(
-      poolCreator.connect(user2).setVault(user1.address)
-    ).to.be.revertedWith("caller is not the owner");
+    await expect(poolCreator.connect(user2).addVersion(lpVersion2.address, govVersion2.address, 2, "version2")).to.be.revertedWith(
+      "caller is not the owner"
+    );
+    await expect(poolCreator.connect(user2).setVault(user1.address)).to.be.revertedWith("caller is not the owner");
   });
 });

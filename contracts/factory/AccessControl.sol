@@ -76,6 +76,4 @@ contract AccessControl is IAccessControl {
     function _isValid(uint256 privilege) private pure returns (bool) {
         return privilege > 0 && privilege <= Constant.PRIVILEGE_GUARD;
     }
-
-    bytes32[50] private __gap;
 }

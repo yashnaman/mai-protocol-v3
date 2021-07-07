@@ -70,11 +70,10 @@ library LiquidityPoolModule {
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
     event SetTargetLeverage(address indexed trader, int256 targetLeverage);
-    event SetKeeper(
-        uint256 perpetualIndex,
-        address indexed previousKeeper,
-        address indexed newKeeper
-    );
+    event AddByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event AddByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
 
     /**
      * @dev     Get the vault's address of the liquidity pool
@@ -337,21 +336,91 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     Set an account as new keeper of liquidity pool.
-     *          Keeper is the role to be able to call liquidateByAMM.
-     *          When keeper is set to zero address, any one is able to call liquidateByAMM.
+     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByAMM`.
+     *          If never called, the whitelist in poolCreator will be used instead.
+     *          Once called, the local whitelist will be used and the the whitelist in poolCreator will be ignored.
      *
-     * @param   newKeeper   The account of keeper.
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
      */
-    function setKeeper(
+    function addAMMKeeper(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        address newKeeper
+        address keeper
     ) public {
-        address previousKeeper = liquidityPool.perpetuals[perpetualIndex].keeper;
-        require(newKeeper != previousKeeper, "new keeper is current keeper");
-        emit SetKeeper(perpetualIndex, previousKeeper, newKeeper);
-        liquidityPool.perpetuals[perpetualIndex].keeper = newKeeper;
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
+        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
+        .perpetuals[perpetualIndex]
+        .ammKeepers;
+        require(!whitelist.contains(keeper), "keeper is already added");
+        bool success = whitelist.add(keeper);
+        require(success, "fail to add keeper to whitelist");
+        emit AddByAMMKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Remove an account from the `liquidateByAMM` whitelist.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function removeAMMKeeper(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address keeper
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
+        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
+        .perpetuals[perpetualIndex]
+        .ammKeepers;
+        require(whitelist.contains(keeper), "keeper is not added");
+        bool success = whitelist.remove(keeper);
+        require(success, "fail to remove keeper from whitelist");
+        emit RemoveByAMMKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByTrader`.
+     *          Different to whitelist of AMMKeeper, if addByTraderKeeper never called or the whitelist is empty,
+     *          any call is permitted to call `liquidateByTrader`.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function addTraderKeeper(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address keeper
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
+        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
+        .perpetuals[perpetualIndex]
+        .traderKeepers;
+        require(!whitelist.contains(keeper), "keeper is already added");
+        bool success = whitelist.add(keeper);
+        require(success, "fail to add keeper to whitelist");
+        emit AddByTraderKeeper(perpetualIndex, keeper);
+    }
+
+    /**
+     * @dev     Remove an account from the `liquidateByTrader` whitelist.
+     *
+     * @param   keeper          The account of keeper.
+     * @param   perpetualIndex  The index of perpetual in the liquidity pool
+     */
+    function removeTraderKeeper(
+        LiquidityPoolStorage storage liquidityPool,
+        uint256 perpetualIndex,
+        address keeper
+    ) public {
+        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
+        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
+        .perpetuals[perpetualIndex]
+        .traderKeepers;
+        require(whitelist.contains(keeper), "keeper is not added");
+        bool success = whitelist.remove(keeper);
+        require(success, "fail to remove keeper from whitelist");
+        emit RemoveByTraderKeeper(perpetualIndex, keeper);
     }
 
     function setPerpetualOracle(
@@ -1239,8 +1308,10 @@ library LiquidityPoolModule {
         int256 totalFee
     ) public view returns (int256 adjustCollateral) {
         // read perp
-        (int256 closePosition, int256 openPosition) =
-            Utils.splitAmount(trader.position.sub(deltaPosition), deltaPosition);
+        (int256 closePosition, int256 openPosition) = Utils.splitAmount(
+            trader.position.sub(deltaPosition),
+            deltaPosition
+        );
         if (closePosition != 0 && openPosition == 0) {
             // close only
             adjustCollateral = readonlyAdjustClosedMargin(
@@ -1308,9 +1379,7 @@ library LiquidityPoolModule {
         {
             require(perpetual.initialMarginRate != 0, "initialMarginRate is not set");
             int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
-            leverage = leverage == 0
-                ? perpetual.defaultTargetLeverage.value
-                : leverage;
+            leverage = leverage == 0 ? perpetual.defaultTargetLeverage.value : leverage;
             leverage = leverage.min(maxLeverage);
         }
         require(leverage > 0, "target leverage = 0");
@@ -1320,9 +1389,9 @@ library LiquidityPoolModule {
             // open from non-zero position
             // adjustCollateral = openPositionMargin + fee - pnl
             adjustCollateral = adjustCollateral
-                .add(totalFee)
-                .sub(markPrice.wmul(deltaPosition))
-                .sub(deltaCash);
+            .add(totalFee)
+            .sub(markPrice.wmul(deltaPosition))
+            .sub(deltaCash);
         } else {
             // open from 0 or close + open
             adjustCollateral = adjustCollateral.add(perpetual.keeperGasReward).sub(oldMargin);
@@ -1350,16 +1419,15 @@ library LiquidityPoolModule {
         MarginAccount memory account,
         int256 price
     ) public view returns (int256 availableMargin) {
-        int256 threshold =
-            account.position == 0
-                ? 0
-                // was getInitialMargin
-                : account.position
-                    .wmul(price)
-                    .wmul(perpetual.initialMarginRate)
-                    .abs()
-                    // was getAvailableMargin
-                    .add(perpetual.keeperGasReward);
+        int256 threshold = account.position == 0
+            ? 0 // was getInitialMargin
+            : account
+            .position
+            .wmul(price)
+            .wmul(perpetual.initialMarginRate)
+            .abs()
+            // was getAvailableMargin
+            .add(perpetual.keeperGasReward);
         availableMargin = readonlyGetMargin(perpetual, account, price).sub(threshold);
     }
 

@@ -25,7 +25,7 @@ describe("OracleRouter", () => {
     })
 
     beforeEach(async () => {
-        routerCreator = await createContract("OracleRouterCreator");
+        routerCreator = await createContract("OracleRouterCreator"); 
         await updatePrice(toWei("1000"), toWei("10000"), toWei("0.001"), toWei("2"));
     })
 
@@ -190,7 +190,7 @@ describe("OracleRouter", () => {
         await routerCreator.createOracleRouter(path);
         let routerAddress = await routerCreator.routers(hash);
         const router = await (await createFactory("OracleRouter")).attach(routerAddress);
-        
+
         expect(await router.callStatic.isMarketClosed()).to.be.false;
         expect(await router.callStatic.isTerminated()).to.be.false;
 

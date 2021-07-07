@@ -6,8 +6,16 @@ import "./IPoolCreator.sol";
 import "./ITracer.sol";
 import "./IVersionControl.sol";
 import "./IVariables.sol";
+import "./IKeeperWhitelist.sol";
 
-interface IPoolCreatorFull is IPoolCreator, IVersionControl, ITracer, IVariables, IAccessControl {
+interface IPoolCreatorFull is
+    IPoolCreator,
+    IVersionControl,
+    ITracer,
+    IVariables,
+    IAccessControl,
+    IKeeperWhitelist
+{
     /**
      * @notice Owner of version control.
      */

@@ -362,7 +362,11 @@ contract Getter is Storage, ILiquidityPoolGetter {
     )
         external
         override
-        returns (int256 tradePrice, int256 totalFee, int256 cost)
+        returns (
+            int256 tradePrice,
+            int256 totalFee,
+            int256 cost
+        )
     {
         require(trader != address(0), "invalid trader");
         require(amount != 0, "invalid amount");
@@ -370,13 +374,7 @@ contract Getter is Storage, ILiquidityPoolGetter {
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
         );
-        return _liquidityPool.queryTrade(
-            perpetualIndex,
-            trader,
-            amount,
-            referrer,
-            flags
-        );
+        return _liquidityPool.queryTrade(perpetualIndex, trader, amount, referrer, flags);
     }
 
     /**
@@ -444,12 +442,33 @@ contract Getter is Storage, ILiquidityPoolGetter {
     }
 
     /**
-     * @notice  Get address of keeper of specified perpetual. Keeper is the only one allowed to call
-     *          liquidateByAMM / liquidateByTrader when it is not zero address.
-     *          If keeper is not set, any one is able to liquidateByAMM / liquidateByTrader.
+     * @notice  List all local keepers who are able to call `liquidateByAMM`.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   begin           The begin index of keeper to retrieve.
+     * @param   end             The end index of keeper, exclusive.
+     * @return  result          An array of keeper addresses.
      */
-    function getKeeper(uint256 perpetualIndex) public view returns (address) {
-        return _liquidityPool.perpetuals[perpetualIndex].keeper;
+    function listByAMMKeepers(
+        uint256 perpetualIndex,
+        uint256 begin,
+        uint256 end
+    ) external view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
+        result = _liquidityPool.perpetuals[perpetualIndex].ammKeepers.toArray(begin, end);
+    }
+
+    /**
+     * @notice  List all local keepers who are able to call `liquidateByTrader`.
+     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
+     * @param   begin           The begin index of keeper to retrieve.
+     * @param   end             The end index of keeper, exclusive.
+     * @return  result          An array of keeper addresses.
+     */
+    function listByTraderKeepers(
+        uint256 perpetualIndex,
+        uint256 begin,
+        uint256 end
+    ) external view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
+        result = _liquidityPool.perpetuals[perpetualIndex].traderKeepers.toArray(begin, end);
     }
 
     bytes32[50] private __gap;

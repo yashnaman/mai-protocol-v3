@@ -95,7 +95,7 @@ describe("integration2 - 2 perps. special pool states", () => {
     await ctk.connect(user2).approve(perp.address, toWei("100000"));
     await ctk.connect(user3).approve(perp.address, toWei("100000"));
 
-    await poolCreator.setKeeper(user3.address);
+    await poolCreator.addKeeper(user3.address);
   });
 
   it("addLiq + trade + removeLiq + liquidate", async () => {

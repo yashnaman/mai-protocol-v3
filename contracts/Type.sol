@@ -11,8 +11,18 @@ import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
  *          - EMERGENCY:    Perpetual is unsafe and only clear is available;
  *          - CLEARED:      All margin account is cleared. Trade could withdraw remaining margin balance.
  */
-enum PerpetualState { INVALID, INITIALIZING, NORMAL, EMERGENCY, CLEARED }
-enum OrderType { LIMIT, MARKET, STOP }
+enum PerpetualState {
+    INVALID,
+    INITIALIZING,
+    NORMAL,
+    EMERGENCY,
+    CLEARED
+}
+enum OrderType {
+    LIMIT,
+    MARKET,
+    STOP
+}
 
 /**
  * @notice  Data structure to store risk parameter value.
@@ -146,7 +156,9 @@ struct PerpetualStorage {
     mapping(address => MarginAccount) marginAccounts;
     Option defaultTargetLeverage;
     // keeper
-    address keeper;
+    address reserved4;
+    EnumerableSetUpgradeable.AddressSet ammKeepers;
+    EnumerableSetUpgradeable.AddressSet traderKeepers;
     // reserved slot for future upgrade
-    bytes32[16] reserved;
+    bytes32[12] reserved;
 }

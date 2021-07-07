@@ -244,6 +244,4 @@ contract Tracer {
     {
         return keccak256(abi.encodePacked(liquidityPool, perpetualIndex));
     }
-
-    bytes32[50] private __gap;
 }
