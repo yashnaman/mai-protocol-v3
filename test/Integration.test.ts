@@ -658,4 +658,141 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
     expect(u4Account.cash).to.equal(toWei("0"));
     expect(await ctk.balanceOf(user4.address)).to.equal(toWei("0"));
   });
+
+  describe("liquidate whitelist", async () => {
+    let user0;
+    let user1;
+    let user2;
+    let user3;
+    let user4;
+    let vault;
+
+    let poolCreator;
+    let perp;
+    let oracle;
+
+    before(async () => {
+      const accounts = await ethers.getSigners();
+      user0 = accounts[0];
+      user1 = accounts[1];
+      user2 = accounts[2];
+      user3 = accounts[3];
+      user4 = accounts[4];
+      vault = accounts[9];
+    });
+
+    const updatePrice = async (price) => {
+      let now = Math.floor(Date.now() / 1000);
+      await oracle.setMarkPrice(price, now);
+      await oracle.setIndexPrice(price, now);
+    };
+
+    beforeEach(async () => {
+      // users
+      const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+      // create components
+      var symbol = await createContract("SymbolService", [10000]);
+      var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+      var perpTemplate = await LiquidityPoolFactory.deploy();
+      var govTemplate = await createContract("TestLpGovernor");
+      poolCreator = await createContract("PoolCreator");
+      await poolCreator.initialize(symbol.address, vault.address, toWei("0.001"));
+      await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+      await symbol.addWhitelistedFactory(poolCreator.address);
+
+      const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+        ctk.address,
+        18,
+        998,
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      );
+      await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+      perp = await LiquidityPoolFactory.attach(liquidityPool);
+
+      // oracle
+      oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
+      await updatePrice(toWei("1000"));
+
+      await perp.createPerpetual(
+        oracle.address,
+        [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0"), toWei("0.5"), toWei("5")],
+        [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+        [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")]
+      );
+
+      await perp.runLiquidityPool();
+
+      // overview
+      const info = await perp.getLiquidityPoolInfo();
+      const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
+
+      // get initial coins
+      await ctk.mint(user1.address, toWei("10000"));
+      await ctk.mint(user2.address, toWei("10000"));
+      await ctk.mint(user3.address, toWei("10000"));
+      await ctk.connect(user1).approve(perp.address, toWei("100000"));
+      await ctk.connect(user2).approve(perp.address, toWei("100000"));
+      await ctk.connect(user3).approve(perp.address, toWei("100000"));
+
+      await poolCreator.connect(user1).grantPrivilege(user4.address, 0x7); // deposit withdraw
+
+      // deposit
+      await perp.connect(user1).deposit(0, user1.address, toWei("200"));
+      // lp
+      await perp.connect(user2).addLiquidity(toWei("1000"));
+    });
+
+    it("default amm keeper whitelist", async () => {
+      let now = Math.floor(Date.now() / 1000);
+      const none = "0x0000000000000000000000000000000000000000";
+      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
+      await updatePrice(toWei("850"));
+      await expect(perp.liquidateByAMM(0, user1.address)).to.be.revertedWith("caller must be keeper");
+      await poolCreator.addKeeper(user0.address);
+      await perp.liquidateByAMM(0, user1.address);
+    });
+
+    it("local amm keeper whitelist", async () => {
+      let now = Math.floor(Date.now() / 1000);
+      const none = "0x0000000000000000000000000000000000000000";
+      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
+      await updatePrice(toWei("850"));
+
+      await expect(perp.connect(user3).liquidateByAMM(0, user1.address)).to.be.revertedWith("caller must be keeper");
+      await expect(perp.connect(user4).liquidateByAMM(0, user1.address)).to.be.revertedWith("caller must be keeper");
+
+      await poolCreator.addKeeper(user3.address);
+      await perp.addAMMKeeper(0, user4.address); // 3 is local
+
+      await expect(perp.connect(user3).liquidateByAMM(0, user1.address)).to.be.revertedWith("caller must be keeper");
+      await perp.connect(user4).liquidateByAMM(0, user1.address);
+    });
+
+    it("default trader keeper whitelist", async () => {
+      let now = Math.floor(Date.now() / 1000);
+      const none = "0x0000000000000000000000000000000000000000";
+      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
+      await updatePrice(toWei("850"));
+
+      await perp.connect(user3).deposit(0, user3.address, toWei("10000"));
+      await perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999);
+    });
+
+    it("local trader keeper whitelist", async () => {
+      let now = Math.floor(Date.now() / 1000);
+      const none = "0x0000000000000000000000000000000000000000";
+      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
+      await updatePrice(toWei("850"));
+
+      await perp.addTraderKeeper(0, user4.address);
+      await perp.connect(user3).deposit(0, user3.address, toWei("10000"));
+      await expect(
+        perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999)
+      ).to.be.revertedWith("caller must be keeper");
+      await perp.addTraderKeeper(0, user3.address);
+      await perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999);
+    });
+  });
 });

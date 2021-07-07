@@ -6,7 +6,7 @@ import "./module/PerpetualModule.sol";
 import "./Type.sol";
 import "./Storage.sol";
 
-// @title Goovernance is the contract to maintain liquidityPool parameters.
+// @title Governance is the contract to maintain liquidityPool parameters.
 contract Governance is Storage {
     using SafeMathUpgradeable for uint256;
     using PerpetualModule for PerpetualStorage;

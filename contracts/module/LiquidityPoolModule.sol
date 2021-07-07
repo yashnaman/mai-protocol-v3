@@ -70,10 +70,10 @@ library LiquidityPoolModule {
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
     event SetTargetLeverage(address indexed trader, int256 targetLeverage);
-    event AddByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
-    event RemoveByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
-    event AddByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
-    event RemoveByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
+    event AddAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event AddTraderKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveTraderKeeper(uint256 perpetualIndex, address indexed keeper);
 
     /**
      * @dev     Get the vault's address of the liquidity pool
@@ -355,7 +355,7 @@ library LiquidityPoolModule {
         require(!whitelist.contains(keeper), "keeper is already added");
         bool success = whitelist.add(keeper);
         require(success, "fail to add keeper to whitelist");
-        emit AddByAMMKeeper(perpetualIndex, keeper);
+        emit AddAMMKeeper(perpetualIndex, keeper);
     }
 
     /**
@@ -376,7 +376,7 @@ library LiquidityPoolModule {
         require(whitelist.contains(keeper), "keeper is not added");
         bool success = whitelist.remove(keeper);
         require(success, "fail to remove keeper from whitelist");
-        emit RemoveByAMMKeeper(perpetualIndex, keeper);
+        emit RemoveAMMKeeper(perpetualIndex, keeper);
     }
 
     /**
@@ -399,7 +399,7 @@ library LiquidityPoolModule {
         require(!whitelist.contains(keeper), "keeper is already added");
         bool success = whitelist.add(keeper);
         require(success, "fail to add keeper to whitelist");
-        emit AddByTraderKeeper(perpetualIndex, keeper);
+        emit AddTraderKeeper(perpetualIndex, keeper);
     }
 
     /**
@@ -420,7 +420,7 @@ library LiquidityPoolModule {
         require(whitelist.contains(keeper), "keeper is not added");
         bool success = whitelist.remove(keeper);
         require(success, "fail to remove keeper from whitelist");
-        emit RemoveByTraderKeeper(perpetualIndex, keeper);
+        emit RemoveTraderKeeper(perpetualIndex, keeper);
     }
 
     function setPerpetualOracle(

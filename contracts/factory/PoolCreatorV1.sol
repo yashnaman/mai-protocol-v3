@@ -19,7 +19,6 @@ import "./AccessControl.sol";
 
 contract PoolCreatorV1 is
     Initializable,
-    OwnableUpgradeable,
     Tracer,
     VersionControl,
     Variables,
@@ -60,13 +59,7 @@ contract PoolCreatorV1 is
     /**
      * @notice Owner of version control.
      */
-    function owner()
-        public
-        view
-        virtual
-        override(OwnableUpgradeable, VersionControl, Variables)
-        returns (address)
-    {
+    function owner() public view virtual override(VersionControl, Variables) returns (address) {
         return OwnableUpgradeable.owner();
     }
 

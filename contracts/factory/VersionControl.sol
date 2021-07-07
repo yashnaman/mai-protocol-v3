@@ -217,6 +217,4 @@ contract VersionControl is OwnableUpgradeable, IVersionControl {
             "the target version is not compatible"
         );
     }
-
-    bytes32[50] private __gap;
 }

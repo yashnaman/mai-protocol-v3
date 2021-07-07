@@ -67,10 +67,10 @@ contract LibraryEvents {
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
     event SetTargetLeverage(address indexed trader, int256 targetLeverage);
-    event AddByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
-    event RemoveByAMMKeeper(uint256 perpetualIndex, address indexed keeper);
-    event AddByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
-    event RemoveByTraderKeeper(uint256 perpetualIndex, address indexed keeper);
+    event AddAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveAMMKeeper(uint256 perpetualIndex, address indexed keeper);
+    event AddTraderKeeper(uint256 perpetualIndex, address indexed keeper);
+    event RemoveTraderKeeper(uint256 perpetualIndex, address indexed keeper);
 
     // TradeModule
     event Trade(
