@@ -528,8 +528,6 @@ library TradeModule {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   trader          The address of trader.
      * @param   amount          The amount of position to trader, positive for buying and negative for selling.
-     * @param   limitPrice      The worst price the trader accepts.
-     * @param   referrer        The address of referrer who will get rebate in the deal.
      * @param   flags           The flags of the trade, contains extra config for trading.
      * @return  tradePrice      The average fill price.
      * @return  totalFee        The total fee collected from the trader after the trade.
@@ -540,14 +538,15 @@ library TradeModule {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 limitPrice,
         address referrer,
         uint32 flags
     ) public returns (int256 tradePrice, int256 totalFee, int256 cost) {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         MarginAccount memory account = perpetual.marginAccounts[trader]; // clone
         (int256 deltaCash, int256 deltaPosition) =
-            preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
+            preTrade(liquidityPool, perpetualIndex, trader, amount,
+                amount > 0 ? type(int256).max : 0,
+                flags);
         tradePrice = deltaCash.wdiv(deltaPosition).abs();
         readonlyDoTrade(
             liquidityPool, perpetual, account, deltaCash, deltaPosition);

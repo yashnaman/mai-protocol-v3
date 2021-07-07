@@ -178,8 +178,6 @@ contract Reader {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   trader          The address of trader.
      * @param   amount          The amount of position to trader, positive for buying and negative for selling. The amount always use decimals 18.
-     * @param   limitPrice      The worst price the trader accepts.
-     * @param   deadline        The deadline of trade transaction.
      * @param   referrer        The address of referrer who will get rebate from the deal.
      * @param   flags           The flags of the trade.
      * @return  isSynced        True if the funding state is synced to real-time data. False if
@@ -195,8 +193,6 @@ contract Reader {
         uint256 perpetualIndex,
         address trader,
         int256 amount,
-        int256 limitPrice,
-        uint256 deadline,
         address referrer,
         uint32 flags
     )
@@ -209,9 +205,7 @@ contract Reader {
             isSynced = false;
         }
         (tradePrice, totalFee, cost) = ILiquidityPoolFull(liquidityPool).queryTrade(
-            perpetualIndex, trader, amount,
-            limitPrice, deadline, referrer, flags
-        );
+            perpetualIndex, trader, amount, referrer, flags);
     }
 
     /**
