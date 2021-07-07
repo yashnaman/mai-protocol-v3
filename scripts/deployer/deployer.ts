@@ -64,7 +64,7 @@ export class Deployer {
     public async save() {
         fs.writeFileSync(
             this.options.network + this.SAVE_POSTFIX,
-            JSON.stringify(this.deployedContracts)
+            JSON.stringify(this.deployedContracts, null, 2)
         )
     }
 
