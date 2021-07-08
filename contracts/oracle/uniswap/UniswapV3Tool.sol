@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@uniswap/v3-periphery/contracts/libraries/OracleLibrary.sol";
 import "@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol";
 import "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolActions.sol";
+import "@uniswap/v3-core/contracts/interfaces/pool/IUniswapV3PoolState.sol";
 
 interface IERC20 {
     function decimals() external view returns (uint8);
@@ -27,7 +28,7 @@ contract UniswapV3Tool {
         address[] memory path,
         uint24[] memory fees,
         uint16 observationCardinalityNext
-    ) public {
+    ) public returns (uint16 totalIncreasedObservationCardinalityNext) {
         uint256 pathLength = path.length;
         require(pathLength >= 2, "paths are too short");
         require(pathLength - 1 == fees.length, "paths and fees are mismatched");
@@ -37,6 +38,12 @@ contract UniswapV3Tool {
                 factory,
                 PoolAddress.getPoolKey(path[i], path[i + 1], fees[i])
             );
+            (, , , , uint16 observationCardinalityNextOld, , ) = IUniswapV3PoolState(pool).slot0();
+            if (observationCardinalityNext > observationCardinalityNextOld) {
+                totalIncreasedObservationCardinalityNext +=
+                    observationCardinalityNext -
+                    observationCardinalityNextOld;
+            }
             IUniswapV3PoolActions(pool).increaseObservationCardinalityNext(
                 observationCardinalityNext
             );
