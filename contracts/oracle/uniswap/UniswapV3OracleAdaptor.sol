@@ -84,13 +84,16 @@ contract UniswapV3OracleAdaptor is IOracle {
         return priceTWAP(shortPeriod);
     }
 
-    function priceTWAP(uint32 period)
-        internal
-        view
-        returns (int256 newPrice, uint256 newTimestamp)
-    {
+    /**
+     * @dev     Get the twap price of a specific path.
+     *
+     * @param   period     The twap time.
+     * @return  price      The twap price.
+     * @return  timestamp  The updated timestamp, is always block.timestamp.
+     */
+    function priceTWAP(uint32 period) internal view returns (int256 price, uint256 timestamp) {
         // input = 1, output = price
-        uint128 baseAmount = uint128(10**underlyingAssetDecimals);
+        uint128 baseAmount = uint128(10**(18 - collateralDecimals + underlyingAssetDecimals));
         uint256 length = pools.length;
         for (uint256 i = 0; i < length; i++) {
             int24 tick = OracleLibrary.consult(pools[i], period);
@@ -103,8 +106,8 @@ contract UniswapV3OracleAdaptor is IOracle {
             baseAmount = SafeCast.toUint128(quoteAmount);
         }
         // change to 18 decimals for mcdex oracle interface
-        newPrice = int256(baseAmount * 10**(18 - collateralDecimals));
-        newTimestamp = block.timestamp;
+        price = int256(baseAmount);
+        timestamp = block.timestamp;
     }
 
     function dumpPath() external view returns (DumpData memory data) {
