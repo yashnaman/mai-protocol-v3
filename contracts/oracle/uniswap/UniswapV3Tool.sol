@@ -28,7 +28,7 @@ contract UniswapV3Tool {
         address[] memory path,
         uint24[] memory fees,
         uint16 observationCardinalityNext
-    ) public returns (uint16 totalIncreasedObservationCardinalityNext) {
+    ) public returns (uint256 totalIncreasedObservationCardinalityNext) {
         uint256 pathLength = path.length;
         require(pathLength >= 2, "paths are too short");
         require(pathLength - 1 == fees.length, "paths and fees are mismatched");
