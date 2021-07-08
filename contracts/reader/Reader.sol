@@ -140,30 +140,6 @@ contract Reader {
         (poolMargin, isSafe) = ILiquidityPoolFull(liquidityPool).getPoolMargin();
     }
 
-    // obsoleted! will be removed in mainnet launch
-    function queryTradeWithAMM(
-        address liquidityPool,
-        uint256 perpetualIndex,
-        int256 amount
-    )
-        public
-        returns (
-            bool isSynced,
-            int256 deltaCash,
-            int256 deltaPosition
-        )
-    {
-        try ILiquidityPool(liquidityPool).forceToSyncState() {
-            isSynced = true;
-        } catch {
-            isSynced = false;
-        }
-        (deltaCash, deltaPosition) = ILiquidityPoolFull(liquidityPool).queryTradeWithAMM(
-            perpetualIndex,
-            amount
-        );
-    }
-
     /**
      * @notice  Query the price, fees and cost when trade agaist amm.
      *          The trading price is determined by the AMM based on the index price of the perpetual.

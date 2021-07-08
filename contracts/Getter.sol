@@ -314,22 +314,6 @@ contract Getter is Storage, ILiquidityPoolGetter {
         (poolMargin, isAMMSafe) = _liquidityPool.getPoolMargin();
     }
 
-    // obsoleted! will be removed in mainnet launch
-    function queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
-        external
-        view
-        override
-        returns (int256 deltaCash, int256 deltaPosition)
-    {
-        (deltaCash, deltaPosition) = _liquidityPool.queryTradeWithAMM(
-            perpetualIndex,
-            amount.neg(),
-            false
-        );
-        deltaCash = deltaCash.neg();
-        deltaPosition = deltaPosition.neg();
-    }
-
     /**
      * @notice  Query the price, fees and cost when trade agaist amm.
      *          The trading price is determined by the AMM based on the index price of the perpetual.

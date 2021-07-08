@@ -154,7 +154,8 @@ When a trader is not maintenance margin safe in the perpetual, he needs to be li
 This method will liquidate the account and sender takes the position. A part of the penalty belongs to sender. The liquidate price is the mark price.
 
 ```solidity
-queryTradeWithAMM(uint256 perpetualIndex, int256 amount)
+queryTrade(uint256 perpetualIndex, address trader, int256 amount, address referrer, uint32 flags)
+
 ```
 
 Get the update cash amount and the update position amount of trader if trader trades with AMM in the perpetual.
