@@ -3,6 +3,7 @@ pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 
 import "./interface/IPerpetual.sol";
 
@@ -22,6 +23,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
     using OrderModule for LiquidityPoolStorage;
     using TradeModule for LiquidityPoolStorage;
     using LiquidityPoolModule for LiquidityPoolStorage;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     function setTargetLeverage(
         uint256 perpetualIndex,
@@ -247,10 +249,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         external
         override
         nonReentrant
-        onlyAMMKeeper(perpetualIndex)
         syncState(false)
         returns (int256 liquidationAmount)
     {
+        require(_isAMMKeeper(perpetualIndex, _msgSender()), "caller must be keeper");
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -285,10 +287,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         override
         nonReentrant
         onlyAuthorized(liquidator, Constant.PRIVILEGE_LIQUIDATE)
-        onlyTraderKeeper(perpetualIndex)
         syncState(false)
         returns (int256 liquidationAmount)
     {
+        require(_isTraderKeeper(perpetualIndex, liquidator), "caller must be keeper");
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -327,6 +329,28 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
             referrer,
             flags
         );
+    }
+
+    function _isAMMKeeper(uint256 perpetualIndex, address liquidator) internal view returns (bool) {
+        EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
+        .perpetuals[perpetualIndex]
+        .ammKeepers;
+        if (whitelist.length() == 0) {
+            return IPoolCreatorFull(_liquidityPool.creator).isKeeper(liquidator);
+        } else {
+            return whitelist.contains(liquidator);
+        }
+    }
+
+    function _isTraderKeeper(uint256 perpetualIndex, address liquidator)
+        internal
+        view
+        returns (bool)
+    {
+        EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
+        .perpetuals[perpetualIndex]
+        .traderKeepers;
+        return whitelist.length() == 0 || whitelist.contains(liquidator);
     }
 
     bytes32[50] private __gap;
