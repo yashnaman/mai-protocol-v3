@@ -18,6 +18,7 @@ export interface DeploymentRecord {
 
 export class Deployer {
 
+    public SAVE_PREFIX = './deployments/'
     public SAVE_POSTFIX = '.deployment.js'
 
     public ethers: any
@@ -53,7 +54,7 @@ export class Deployer {
     public async load() {
         try {
             const savedProgress = JSON.parse(
-                fs.readFileSync(this.options.network + this.SAVE_POSTFIX, 'utf-8')
+                fs.readFileSync(this.SAVE_PREFIX + this.options.network + this.SAVE_POSTFIX, 'utf-8')
             )
             this.deployedContracts = savedProgress
         } catch (err) {
@@ -63,7 +64,7 @@ export class Deployer {
 
     public async save() {
         fs.writeFileSync(
-            this.options.network + this.SAVE_POSTFIX,
+            this.SAVE_PREFIX + this.options.network + this.SAVE_POSTFIX,
             JSON.stringify(this.deployedContracts, null, 2)
         )
     }
