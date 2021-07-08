@@ -2,18 +2,19 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import "../interface/ILiquidityPoolGetter.sol";
 
-contract SymbolService is Ownable {
-    using Address for address;
-    using SafeMath for uint256;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using EnumerableSet for EnumerableSet.AddressSet;
+contract SymbolService is Initializable, OwnableUpgradeable {
+    using AddressUpgradeable for address;
+    using SafeMathUpgradeable for uint256;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     struct PerpetualUID {
         address liquidityPool;
@@ -21,16 +22,17 @@ contract SymbolService is Ownable {
     }
 
     mapping(uint256 => PerpetualUID) internal _perpetualUIDs;
-    mapping(bytes32 => EnumerableSet.UintSet) internal _perpetualSymbols;
+    mapping(bytes32 => EnumerableSetUpgradeable.UintSet) internal _perpetualSymbols;
     uint256 internal _nextSymbol;
     uint256 internal _reservedSymbolCount;
-    EnumerableSet.AddressSet internal _whitelistedFactories;
+    EnumerableSetUpgradeable.AddressSet internal _whitelistedFactories;
 
     event AllocateSymbol(address liquidityPool, uint256 perpetualIndex, uint256 symbol);
     event AddWhitelistedFactory(address factory);
     event RemoveWhitelistedFactory(address factory);
 
-    constructor(uint256 reservedSymbolCount) Ownable() {
+    function initialize(uint256 reservedSymbolCount) virtual external initializer {
+        __Ownable_init();
         _nextSymbol = reservedSymbolCount;
         _reservedSymbolCount = reservedSymbolCount;
     }
@@ -66,7 +68,7 @@ contract SymbolService is Ownable {
     }
 
     modifier onlyWhitelisted(address liquidityPool) {
-        require(Address.isContract(liquidityPool), "must called by contract");
+        require(AddressUpgradeable.isContract(liquidityPool), "must called by contract");
         (, , address[7] memory addresses, , ) = ILiquidityPoolGetter(liquidityPool)
         .getLiquidityPoolInfo();
         require(_whitelistedFactories.contains(addresses[0]), "wrong factory");

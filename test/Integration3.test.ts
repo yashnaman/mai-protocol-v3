@@ -41,7 +41,8 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
 
         // create components
-        var symbol = await createContract("SymbolService", [10000]);
+        var symbol = await createContract("SymbolService");
+        await symbol.initialize(10000);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
         var perpTemplate = await LiquidityPoolFactory.deploy();
         var govTemplate = await createContract("TestLpGovernor");

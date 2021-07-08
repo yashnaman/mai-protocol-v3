@@ -17,7 +17,8 @@ describe('SymbolService', () => {
     beforeEach(async () => {
         accounts = await ethers.getSigners();
 
-        symbolService = await createContract("SymbolService", [10000]);
+        symbolService = await createContract("SymbolService");
+        await symbolService.initialize(10000);
         testSymbolService = await createContract("TestSymbolService", [symbolService.address]);
     });
 
@@ -74,7 +75,8 @@ describe('SymbolService', () => {
         })
 
         it('not enough symbol', async () => {
-            symbolService = await createContract("SymbolService", ["115792089237316195423570985008687907853269984665640564039457584007913129639934"]);
+            symbolService = await createContract("SymbolService");
+            await symbolService.initialize("115792089237316195423570985008687907853269984665640564039457584007913129639934");
             testSymbolService = await createContract("TestSymbolService", [symbolService.address]);
             await symbolService.addWhitelistedFactory(testSymbolService.address);
             await testSymbolService.allocateSymbol(0);

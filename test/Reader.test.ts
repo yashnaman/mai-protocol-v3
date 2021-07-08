@@ -55,7 +55,8 @@ describe("Reader", () => {
         const LiquidityPoolFactory = await createLiquidityPoolFactory()
 
         // create components
-        symbol = await createContract("SymbolService", [10000]);
+        symbol = await createContract("SymbolService");
+        await symbol.initialize(10000);
         ctk = await createContract("CustomERC20", ["collateral", "CTK", 6]);
         perpTemplate = await LiquidityPoolFactory.deploy();
         govTemplate = await createContract("TestLpGovernor");
