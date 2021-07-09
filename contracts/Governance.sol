@@ -6,8 +6,10 @@ import "./module/PerpetualModule.sol";
 import "./Type.sol";
 import "./Storage.sol";
 
+import "./interface/ILiquidityPoolGovernance.sol";
+
 // @title Governance is the contract to maintain liquidityPool parameters.
-contract Governance is Storage {
+contract Governance is Storage, ILiquidityPoolGovernance {
     using SafeMathUpgradeable for uint256;
     using PerpetualModule for PerpetualStorage;
     using MarginAccountModule for PerpetualStorage;
@@ -211,7 +213,7 @@ contract Governance is Storage {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool or
      *                          SET_ALL_PERPETUALS_TO_EMERGENCY_STATE to settle the whole pool
      */
-    function setEmergencyState(uint256 perpetualIndex) public syncState(true) {
+    function setEmergencyState(uint256 perpetualIndex) public override syncState(true) {
         if (perpetualIndex == Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE) {
             _liquidityPool.setAllPerpetualsToEmergencyState();
         } else {

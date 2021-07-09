@@ -96,9 +96,9 @@ contract Reader {
     }
 
     /**
-     * @notice If amm is maintenance safe. Function setEmergencyState will revert only if amm is not maintenance margin safe.
-     * @param liquidityPool The address of the liquidity pool
-     * @return isSynced True if amm is maintenance margin safe.
+     * @notice               If amm is maintenance safe. Function setEmergencyState will revert only if amm is not maintenance margin safe.
+     * @param  liquidityPool The address of the liquidity pool.
+     * @return bool          True if amm is maintenance margin safe.
      */
     function isAMMMaintenanceSafe(address liquidityPool) public returns (bool) {
         (, , , , uint256[4] memory uintNums) = ILiquidityPoolFull(liquidityPool)
