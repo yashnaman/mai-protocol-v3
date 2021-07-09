@@ -5,5 +5,11 @@ pragma experimental ABIEncoderV2;
 import "./IPerpetual.sol";
 import "./ILiquidityPool.sol";
 import "./ILiquidityPoolGetter.sol";
+import "./ILiquidityPoolGovernance.sol";
 
-interface ILiquidityPoolFull is IPerpetual, ILiquidityPool, ILiquidityPoolGetter {}
+interface ILiquidityPoolFull is
+    IPerpetual,
+    ILiquidityPool,
+    ILiquidityPoolGetter,
+    ILiquidityPoolGovernance
+{}

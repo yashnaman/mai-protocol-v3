@@ -10,6 +10,7 @@ import "../interface/IOracle.sol";
 import "../interface/ISymbolService.sol";
 import "../interface/ISymbolService.sol";
 import "../libraries/SafeMathExt.sol";
+import "../libraries/Constant.sol";
 
 contract Reader {
     using SafeMathExt for uint256;
@@ -94,6 +95,27 @@ contract Reader {
         accountStorage = _parseMarginAccount(data);
     }
 
+    /**
+     * @notice If amm is maintenance safe. Function setEmergencyState will revert only if amm is not maintenance margin safe.
+     * @param liquidityPool The address of the liquidity pool
+     * @return isSynced True if amm is maintenance margin safe.
+     */
+    function isAMMMaintenanceSafe(address liquidityPool) public returns (bool) {
+        (, , , , uint256[4] memory uintNums) = ILiquidityPoolFull(liquidityPool)
+        .getLiquidityPoolInfo();
+        // perpetual count
+        require(uintNums[1] > 0, "no perpetual in pool");
+        try
+            ILiquidityPoolGovernance(liquidityPool).setEmergencyState(
+                Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE
+            )
+        {
+            return false;
+        } catch {
+            return true;
+        }
+    }
+
     function _parseMarginAccount(bytes memory data)
         internal
         pure
@@ -173,7 +195,12 @@ contract Reader {
         uint32 flags
     )
         external
-        returns (bool isSynced, int256 tradePrice, int256 totalFee, int256 cost)
+        returns (
+            bool isSynced,
+            int256 tradePrice,
+            int256 totalFee,
+            int256 cost
+        )
     {
         try ILiquidityPool(liquidityPool).forceToSyncState() {
             isSynced = true;
@@ -181,7 +208,12 @@ contract Reader {
             isSynced = false;
         }
         (tradePrice, totalFee, cost) = ILiquidityPoolFull(liquidityPool).queryTrade(
-            perpetualIndex, trader, amount, referrer, flags);
+            perpetualIndex,
+            trader,
+            amount,
+            referrer,
+            flags
+        );
     }
 
     /**
@@ -242,7 +274,8 @@ contract Reader {
 
     function readIndexPrices(address[] memory oracles)
         public
-        returns (bool[] memory isSuccess, int256[] memory indexPrices) {
+        returns (bool[] memory isSuccess, int256[] memory indexPrices)
+    {
         isSuccess = new bool[](oracles.length);
         indexPrices = new int256[](oracles.length);
         for (uint256 i = 0; i < oracles.length; i++) {
@@ -252,8 +285,7 @@ contract Reader {
             try IOracle(oracles[i]).priceTWAPShort() returns (int256 indexPrice, uint256) {
                 indexPrices[i] = indexPrice;
                 isSuccess[i] = true;
-            } catch {
-            }
+            } catch {}
         }
     }
 
