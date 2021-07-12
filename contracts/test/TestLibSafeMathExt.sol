@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.7.4;
 
 import "../libraries/SafeMathExt.sol";
