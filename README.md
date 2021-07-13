@@ -18,7 +18,9 @@
 
 ## Audit
 
-The smart contracts were audited by quantstamp: [MCDEX Audit Report](https://certificate.quantstamp.com/full/mcdex).
+The smart contracts were audited by quantstamp:
+* [Audit1: MCDEX Audit Report](./docs/asset/audit1-Quantstamp-MCDEX.pdf).
+* [Audit2: MCDEX Audit Report](./docs/asset/audit2-Quantstamp-MCDEX-Arbitrum-Integration-Report.pdf).
 
 ## Deployed Contracts
 
