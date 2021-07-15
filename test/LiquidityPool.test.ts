@@ -229,37 +229,6 @@ describe('LiquidityPool', () => {
             expect(cash).to.equal(toWei("-140")); // -500 + 360
             expect(position).to.equal(toWei("1"));
         })
-
-        it("isAMMMaintenanceMarginSafe", async () => {
-            var now = 1000;
-            await oracle0.setMarkPrice(toWei("100"), now);
-            await oracle0.setIndexPrice(toWei("100"), now);
-            await oracle1.setMarkPrice(toWei("200"), now);
-            await oracle1.setIndexPrice(toWei("200"), now);
-            await liquidityPool.updatePrice(1000);
-
-            await liquidityPool.setPoolCash(toWei("0"));
-            await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-100"), toWei("1")); // im = 10 / m = 0
-            await liquidityPool.setTotalCollateral(0, toWei("200"));
-            await liquidityPool.setMarginAccount(1, liquidityPool.address, toWei("200"), toWei("1")); // im = 40 / m = 400 // available = 360
-            await liquidityPool.setTotalCollateral(1, toWei("360"));
-            await liquidityPool.rebalance(0);
-            expect(await liquidityPool.getPoolCash()).to.equal(toWei("-10"));
-            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("210"));
-            expect(await liquidityPool.callStatic.isAMMMaintenanceMarginSafe(0)).to.be.true;
-            expect(await liquidityPool.callStatic.isAMMMaintenanceMarginSafe(1)).to.be.true;
-
-            await liquidityPool.setPoolCash(toWei("0"));
-            await liquidityPool.setMarginAccount(0, liquidityPool.address, toWei("-458"), toWei("1")); // im = 10 / m = -358
-            await liquidityPool.setTotalCollateral(0, toWei("200"));
-            await liquidityPool.setMarginAccount(1, liquidityPool.address, toWei("200"), toWei("1")); // im = 40 / m = 400 // available = 360
-            await liquidityPool.setTotalCollateral(1, toWei("360"));
-            await liquidityPool.rebalance(0);
-            expect(await liquidityPool.getPoolCash()).to.equal(toWei("-360"));
-            expect(await liquidityPool.getTotalCollateral(0)).to.equal(toWei("560"));
-            expect(await liquidityPool.callStatic.isAMMMaintenanceMarginSafe(0)).to.be.false;
-            expect(await liquidityPool.callStatic.isAMMMaintenanceMarginSafe(1)).to.be.true;
-        })
     })
 
     describe("operator", async () => {

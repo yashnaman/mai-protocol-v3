@@ -91,10 +91,6 @@ contract TestLiquidityPool is TestPerpetual {
         availablePoolCash = _liquidityPool.getAvailablePoolCash(exclusiveIndex);
     }
 
-    function isAMMMaintenanceMarginSafe(uint256 perpetualIndex) public returns (bool isSafe) {
-        isSafe = _liquidityPool.isAMMMaintenanceMarginSafe(perpetualIndex);
-    }
-
     function setLiquidityPoolParameter(bytes32 key, int256 newValue) public {
         if (key == "isFastCreationEnabled") {
             _liquidityPool.isFastCreationEnabled = (newValue != 0);

@@ -159,25 +159,6 @@ library LiquidityPoolModule {
     }
 
     /**
-     * @dev     Check if AMM is maintenance margin safe in the perpetual, need to rebalance before checking.
-     *
-     * @param   liquidityPool   The reference of liquidity pool storage.
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
-     * @return  isSafe          True if AMM is maintenance margin safe in the perpetual.
-     */
-    function isAMMMaintenanceMarginSafe(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex
-    ) public returns (bool isSafe) {
-        rebalance(liquidityPool, perpetualIndex);
-        PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        isSafe = liquidityPool.perpetuals[perpetualIndex].isMaintenanceMarginSafe(
-            address(this),
-            perpetual.getMarkPrice()
-        );
-    }
-
-    /**
      * @dev     Check if Trader is maintenance margin safe in the perpetual.
      *
      * @param   liquidityPool   The reference of liquidity pool storage.
@@ -1187,6 +1168,10 @@ library LiquidityPoolModule {
     ) public view returns (int256 adjustCollateral) {
         int256 markPrice = perpetual.getMarkPrice();
         int256 position2 = perpetual.getPosition(trader);
+        if (position2 == 0) {
+            // close all, withdraw all
+            return perpetual.getAvailableCash(trader).neg().min(0);
+        }
         // when close, keep the margin ratio
         // -withdraw == (availableCash2 * close - (deltaCash - fee) * position2 + reservedValue) / position1
         // reservedValue = 0 if position2 == 0 else keeperGasReward * (-deltaPos)

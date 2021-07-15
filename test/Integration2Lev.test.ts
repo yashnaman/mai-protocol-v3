@@ -831,4 +831,27 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         const state = await perp.getPerpetualInfo(0)
         expect(state.state).to.equal(3 /* EMERGENCY */)
     });
+
+    it("long 3 and close all", async () => {
+        await perp.runLiquidityPool();
+
+        // add liquidity
+        await perp.connect(user2).addLiquidity(toWei("1000"));
+        expect(await ctk.balanceOf(user2.address)).to.equal(toWei("9000"));
+        var { intNums } = await perp.getLiquidityPoolInfo();
+        expect(intNums[1]).to.equal(toWei("1000")); // poolCash
+        var { nums } = await perp.getPerpetualInfo(0);
+        expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
+        var { nums } = await perp.getPerpetualInfo(1);
+        expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
+
+        let now = Math.floor(Date.now() / 1000);
+        await perp.connect(user1).trade(0, user1.address, toWei("0.000065"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-0.000065"), toWei("0"), now + 999999, none, USE_TARGET_LEVERAGE);
+        var { cash, position, margin, isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
+        expect(cash).to.equal(toWei("0"));
+        expect(position).to.equal(toWei("0"));
+        expect(margin).to.equal(toWei("0"));
+        expect(isInitialMarginSafe).to.be.true;
+    });
 })
