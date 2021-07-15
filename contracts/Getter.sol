@@ -80,7 +80,7 @@ contract Getter is Storage, ILiquidityPoolGetter {
         addresses = [
             _liquidityPool.creator,
             _liquidityPool.getOperator(),
-            _liquidityPool.transferringOperator,
+            _liquidityPool.getTransferringOperator(),
             _liquidityPool.governor,
             _liquidityPool.shareToken,
             _liquidityPool.collateralToken,

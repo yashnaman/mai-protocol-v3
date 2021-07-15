@@ -92,11 +92,22 @@ library LiquidityPoolModule {
     function getOperator(LiquidityPoolStorage storage liquidityPool)
         internal
         view
-        returns (address operator)
+        returns (address)
     {
         return
             block.timestamp <= liquidityPool.operatorExpiration
                 ? liquidityPool.operator
+                : address(0);
+    }
+
+    function getTransferringOperator(LiquidityPoolStorage storage liquidityPool)
+        internal
+        view
+        returns (address)
+    {
+        return
+            block.timestamp <= liquidityPool.operatorExpiration
+                ? liquidityPool.transferringOperator
                 : address(0);
     }
 
@@ -558,6 +569,7 @@ library LiquidityPoolModule {
         require(newOperator != address(0), "new operator is invalid");
         require(newOperator != getOperator(liquidityPool), "cannot transfer to current operator");
         liquidityPool.transferringOperator = newOperator;
+        liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         emit TransferOperatorTo(newOperator);
     }
 
@@ -581,7 +593,7 @@ library LiquidityPoolModule {
      * @param   claimer         The address of claimer
      */
     function claimOperator(LiquidityPoolStorage storage liquidityPool, address claimer) public {
-        require(claimer == liquidityPool.transferringOperator, "caller is not qualified");
+        require(claimer == getTransferringOperator(liquidityPool), "caller is not qualified");
         liquidityPool.operator = claimer;
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.transferringOperator = address(0);
