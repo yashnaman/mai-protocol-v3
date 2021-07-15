@@ -440,20 +440,5 @@ contract Getter is Storage, ILiquidityPoolGetter {
         result = _liquidityPool.perpetuals[perpetualIndex].ammKeepers.toArray(begin, end);
     }
 
-    /**
-     * @notice  List all local keepers who are able to call `liquidateByTrader`.
-     * @param   perpetualIndex  The index of the perpetual in the liquidity pool.
-     * @param   begin           The begin index of keeper to retrieve.
-     * @param   end             The end index of keeper, exclusive.
-     * @return  result          An array of keeper addresses.
-     */
-    function listByTraderKeepers(
-        uint256 perpetualIndex,
-        uint256 begin,
-        uint256 end
-    ) external view onlyExistedPerpetual(perpetualIndex) returns (address[] memory result) {
-        result = _liquidityPool.perpetuals[perpetualIndex].traderKeepers.toArray(begin, end);
-    }
-
     bytes32[50] private __gap;
 }

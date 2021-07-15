@@ -290,7 +290,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         syncState(false)
         returns (int256 liquidationAmount)
     {
-        require(_isTraderKeeper(perpetualIndex, liquidator), "caller must be keeper");
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -340,17 +339,6 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         } else {
             return whitelist.contains(liquidator);
         }
-    }
-
-    function _isTraderKeeper(uint256 perpetualIndex, address liquidator)
-        internal
-        view
-        returns (bool)
-    {
-        EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
-        .perpetuals[perpetualIndex]
-        .traderKeepers;
-        return whitelist.length() == 0 || whitelist.contains(liquidator);
     }
 
     bytes32[50] private __gap;

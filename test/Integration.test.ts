@@ -775,30 +775,5 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       await expect(perp.connect(user3).liquidateByAMM(0, user1.address)).to.be.revertedWith("caller must be keeper");
       await perp.connect(user4).liquidateByAMM(0, user1.address);
     });
-
-    it("default trader keeper whitelist", async () => {
-      let now = Math.floor(Date.now() / 1000);
-      const none = "0x0000000000000000000000000000000000000000";
-      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
-      await updatePrice(toWei("850"));
-
-      await perp.connect(user3).deposit(0, user3.address, toWei("10000"));
-      await perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999);
-    });
-
-    it("local trader keeper whitelist", async () => {
-      let now = Math.floor(Date.now() / 1000);
-      const none = "0x0000000000000000000000000000000000000000";
-      await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("2000"), now + 999999, none, 0);
-      await updatePrice(toWei("850"));
-
-      await perp.addTraderKeeper(0, user4.address);
-      await perp.connect(user3).deposit(0, user3.address, toWei("10000"));
-      await expect(
-        perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999)
-      ).to.be.revertedWith("caller must be keeper");
-      await perp.addTraderKeeper(0, user3.address);
-      await perp.connect(user3).liquidateByTrader(0, user3.address, user1.address, toWei("1"), toWei("2000"), now + 999999);
-    });
   });
 });

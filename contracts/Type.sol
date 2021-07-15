@@ -158,7 +158,7 @@ struct PerpetualStorage {
     // keeper
     address reserved4;
     EnumerableSetUpgradeable.AddressSet ammKeepers;
-    EnumerableSetUpgradeable.AddressSet traderKeepers;
+    EnumerableSetUpgradeable.AddressSet reserved5;
     // reserved slot for future upgrade
     bytes32[12] reserved;
 }

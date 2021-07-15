@@ -379,50 +379,6 @@ library LiquidityPoolModule {
         emit RemoveAMMKeeper(perpetualIndex, keeper);
     }
 
-    /**
-     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByTrader`.
-     *          Different to whitelist of AMMKeeper, if addByTraderKeeper never called or the whitelist is empty,
-     *          any call is permitted to call `liquidateByTrader`.
-     *
-     * @param   keeper          The account of keeper.
-     * @param   perpetualIndex  The index of perpetual in the liquidity pool
-     */
-    function addTraderKeeper(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address keeper
-    ) public {
-        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
-        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
-        .perpetuals[perpetualIndex]
-        .traderKeepers;
-        require(!whitelist.contains(keeper), "keeper is already added");
-        bool success = whitelist.add(keeper);
-        require(success, "fail to add keeper to whitelist");
-        emit AddTraderKeeper(perpetualIndex, keeper);
-    }
-
-    /**
-     * @dev     Remove an account from the `liquidateByTrader` whitelist.
-     *
-     * @param   keeper          The account of keeper.
-     * @param   perpetualIndex  The index of perpetual in the liquidity pool
-     */
-    function removeTraderKeeper(
-        LiquidityPoolStorage storage liquidityPool,
-        uint256 perpetualIndex,
-        address keeper
-    ) public {
-        require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
-        EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
-        .perpetuals[perpetualIndex]
-        .traderKeepers;
-        require(whitelist.contains(keeper), "keeper is not added");
-        bool success = whitelist.remove(keeper);
-        require(success, "fail to remove keeper from whitelist");
-        emit RemoveTraderKeeper(perpetualIndex, keeper);
-    }
-
     function setPerpetualOracle(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,

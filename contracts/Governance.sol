@@ -157,34 +157,6 @@ contract Governance is Storage, ILiquidityPoolGovernance {
     }
 
     /**
-     * @dev     Add an account to the whitelist, accounts in the whitelist is allowed to call `liquidateByTrader`.
-     *          Different to whitelist of AMMKeeper, if addByTraderKeeper never called or the whitelist is empty,
-     *          any call is permitted to call `liquidateByTrader`.
-     *
-     * @param   keeper          The account of keeper.
-     * @param   perpetualIndex  The index of perpetual in the liquidity pool
-     */
-    function addTraderKeeper(uint256 perpetualIndex, address keeper)
-        external
-        onlyOperatorOrGovernor
-    {
-        _liquidityPool.addTraderKeeper(perpetualIndex, keeper);
-    }
-
-    /**
-     * @dev     Remove an account from the `liquidateByTrader` whitelist.
-     *
-     * @param   keeper          The account of keeper.
-     * @param   perpetualIndex  The index of perpetual in the liquidity pool
-     */
-    function removeTraderKeeper(uint256 perpetualIndex, address keeper)
-        external
-        onlyOperatorOrGovernor
-    {
-        _liquidityPool.removeTraderKeeper(perpetualIndex, keeper);
-    }
-
-    /**
      * @notice  Force to set the state of the perpetual to "EMERGENCY" and set the settlement price.
      *          Can only called by the governor.
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
