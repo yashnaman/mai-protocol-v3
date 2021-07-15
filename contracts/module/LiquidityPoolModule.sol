@@ -1288,6 +1288,10 @@ library LiquidityPoolModule {
         int256 position2 = trader.position;
         // was perpetual.getAvailableCash(trader)
         adjustCollateral = trader.cash.sub(position2.wmul(perpetual.unitAccumulativeFunding));
+        if (position2 == 0) {
+            // close all, withdraw all
+            return adjustCollateral.neg().min(0);
+        }
         // was adjustClosedMargin
         adjustCollateral = adjustCollateral.wmul(closePosition);
         adjustCollateral = adjustCollateral.sub(deltaCash.sub(totalFee).wmul(position2));
