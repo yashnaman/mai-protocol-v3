@@ -74,28 +74,27 @@ contract TestCalc is Ownable {
         bytes memory signature
     ) public {
         require(expiration >= block.timestamp, "expired 1111");
-        bytes32 result =
-            keccak256(
-                abi.encode(
-                    EIP712_ORDER_TYPE,
-                    // keccak256(bytes(method)),
-                    address(0x6766F3CFD606E1E428747D3364baE65B6f914D56)
-                    // from
-                    // address(this),
-                    // keccak256(callData),
-                    // nonce,
-                    // expiration,
-                    // gasFeeLimit
-                )
-            );
-        bytes32 signedHash =
-            keccak256(abi.encodePacked("\x19\x01", OrderData.DOMAIN_SEPARATOR, result));
+        bytes32 result = keccak256(
+            abi.encode(
+                EIP712_ORDER_TYPE,
+                // keccak256(bytes(method)),
+                address(0x6766F3CFD606E1E428747D3364baE65B6f914D56)
+                // from
+                // address(this),
+                // keccak256(callData),
+                // nonce,
+                // expiration,
+                // gasFeeLimit
+            )
+        );
+        bytes32 signedHash = keccak256(
+            abi.encodePacked("\x19\x01", OrderData.DOMAIN_SEPARATOR, result)
+        );
         address signer = _getEIP712Signer(signedHash, signature);
         require(signer == from, "signer not match 1111");
-        (bool success, ) =
-            address(this).delegatecall(
-                abi.encodePacked(bytes4(keccak256(bytes(method))), callData)
-            );
+        (bool success, ) = address(this).delegatecall(
+            abi.encodePacked(bytes4(keccak256(bytes(method))), callData)
+        );
         require(success, "call failed");
     }
 

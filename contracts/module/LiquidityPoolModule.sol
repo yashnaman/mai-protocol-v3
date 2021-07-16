@@ -342,8 +342,8 @@ library LiquidityPoolModule {
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
-        .perpetuals[perpetualIndex]
-        .ammKeepers;
+            .perpetuals[perpetualIndex]
+            .ammKeepers;
         require(!whitelist.contains(keeper), "keeper is already added");
         bool success = whitelist.add(keeper);
         require(success, "fail to add keeper to whitelist");
@@ -363,8 +363,8 @@ library LiquidityPoolModule {
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         EnumerableSetUpgradeable.AddressSet storage whitelist = liquidityPool
-        .perpetuals[perpetualIndex]
-        .ammKeepers;
+            .perpetuals[perpetualIndex]
+            .ammKeepers;
         require(whitelist.contains(keeper), "keeper is not added");
         bool success = whitelist.remove(keeper);
         require(success, "fail to remove keeper from whitelist");
@@ -1221,9 +1221,9 @@ library LiquidityPoolModule {
             // open from non-zero position
             // adjustCollateral = openPositionMargin + fee - pnl
             adjustCollateral = adjustCollateral
-            .add(totalFee)
-            .sub(markPrice.wmul(deltaPosition))
-            .sub(deltaCash);
+                .add(totalFee)
+                .sub(markPrice.wmul(deltaPosition))
+                .sub(deltaCash);
         } else {
             // open from 0 or close + open
             adjustCollateral = adjustCollateral.add(perpetual.keeperGasReward).sub(oldMargin);
@@ -1346,9 +1346,9 @@ library LiquidityPoolModule {
             // open from non-zero position
             // adjustCollateral = openPositionMargin + fee - pnl
             adjustCollateral = adjustCollateral
-            .add(totalFee)
-            .sub(markPrice.wmul(deltaPosition))
-            .sub(deltaCash);
+                .add(totalFee)
+                .sub(markPrice.wmul(deltaPosition))
+                .sub(deltaCash);
         } else {
             // open from 0 or close + open
             adjustCollateral = adjustCollateral.add(perpetual.keeperGasReward).sub(oldMargin);
@@ -1378,13 +1378,10 @@ library LiquidityPoolModule {
     ) public view returns (int256 availableMargin) {
         int256 threshold = account.position == 0
             ? 0 // was getInitialMargin
-            : account
-            .position
-            .wmul(price)
-            .wmul(perpetual.initialMarginRate)
-            .abs()
-            // was getAvailableMargin
-            .add(perpetual.keeperGasReward);
+            : account.position.wmul(price).wmul(perpetual.initialMarginRate).abs().add(
+                perpetual.keeperGasReward
+            );
+        // was getAvailableMargin
         availableMargin = readonlyGetMargin(perpetual, account, price).sub(threshold);
     }
 }

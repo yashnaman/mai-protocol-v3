@@ -332,8 +332,8 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
 
     function _isAMMKeeper(uint256 perpetualIndex, address liquidator) internal view returns (bool) {
         EnumerableSetUpgradeable.AddressSet storage whitelist = _liquidityPool
-        .perpetuals[perpetualIndex]
-        .ammKeepers;
+            .perpetuals[perpetualIndex]
+            .ammKeepers;
         if (whitelist.length() == 0) {
             return IPoolCreatorFull(_liquidityPool.creator).isKeeper(liquidator);
         } else {

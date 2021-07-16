@@ -17,22 +17,28 @@ contract MockMultiOracle is Ownable {
         bool isTerminated;
     }
     mapping(uint256 => Single) markets;
-    
+
     // @dev if the time since _markPriceTimestamp exceeds this threshold, isTerminated will
     //      be true automatically. maxHeartBeat = 0 means no limit
     uint256 public maxHeartBeat;
 
-    constructor() Ownable() {
-       
-    }
-    
-    function setMarket(uint256 index, string memory collateral_, string memory underlyingAsset_) external onlyOwner {
+    constructor() Ownable() {}
+
+    function setMarket(
+        uint256 index,
+        string memory collateral_,
+        string memory underlyingAsset_
+    ) external onlyOwner {
         Single storage m = markets[index];
         m.collateral = collateral_;
         m.underlyingAsset = underlyingAsset_;
     }
 
-    function setPrice(uint256 index, int256 price, uint256 timestamp) public onlyOwner {
+    function setPrice(
+        uint256 index,
+        int256 price,
+        uint256 timestamp
+    ) public onlyOwner {
         if (checkHeartStop(index)) {
             // keep the old price
             return;
@@ -41,14 +47,14 @@ contract MockMultiOracle is Ownable {
         m.price = price;
         m.timestamp = timestamp;
     }
-    
+
     struct Prices {
         uint256 index;
         int256 price;
     }
-    
+
     function setPrices(Prices[] memory prices, uint256 timestamp) external onlyOwner {
-        for (uint i = 0; i < prices.length; i++) {
+        for (uint256 i = 0; i < prices.length; i++) {
             setPrice(prices[i].index, prices[i].price, timestamp);
         }
     }
@@ -57,7 +63,7 @@ contract MockMultiOracle is Ownable {
         Single storage m = markets[index];
         m.isMarketClosed = isMarketClosed_;
     }
-    
+
     function setTerminated(uint256 index, bool isTerminated_) external onlyOwner {
         Single storage m = markets[index];
         m.isTerminated = isTerminated_;
@@ -77,12 +83,20 @@ contract MockMultiOracle is Ownable {
         return m.underlyingAsset;
     }
 
-    function priceTWAPLong(uint256 index) external view returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPLong(uint256 index)
+        external
+        view
+        returns (int256 newPrice, uint256 newTimestamp)
+    {
         Single storage m = markets[index];
         return (m.price, m.timestamp);
     }
 
-    function priceTWAPShort(uint256 index) external view returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPShort(uint256 index)
+        external
+        view
+        returns (int256 newPrice, uint256 newTimestamp)
+    {
         Single storage m = markets[index];
         return (m.price, m.timestamp);
     }
@@ -118,26 +132,36 @@ contract MockSingleOracle is Initializable, IOracle {
 
     function initialize(MockMultiOracle multiOracle_, uint256 index_) external initializer {
         _multiOracle = multiOracle_;
-       _index = index_;
+        _index = index_;
     }
-    
-    function collateral() external override view returns (string memory) {
+
+    function collateral() external view override returns (string memory) {
         return _multiOracle.collateral(_index);
     }
 
-    function underlyingAsset() external override view returns (string memory) {
+    function underlyingAsset() external view override returns (string memory) {
         return _multiOracle.underlyingAsset(_index);
     }
 
-    function priceTWAPLong() external override view returns (int256 newPrice, uint256 newTimestamp) {
-         return _multiOracle.priceTWAPLong(_index);
+    function priceTWAPLong()
+        external
+        view
+        override
+        returns (int256 newPrice, uint256 newTimestamp)
+    {
+        return _multiOracle.priceTWAPLong(_index);
     }
 
-    function priceTWAPShort() external override view returns (int256 newPrice, uint256 newTimestamp) {
+    function priceTWAPShort()
+        external
+        view
+        override
+        returns (int256 newPrice, uint256 newTimestamp)
+    {
         return _multiOracle.priceTWAPShort(_index);
     }
 
-    function isMarketClosed() external override view returns (bool) {
+    function isMarketClosed() external view override returns (bool) {
         return _multiOracle.isMarketClosed(_index);
     }
 
@@ -145,4 +169,3 @@ contract MockSingleOracle is Initializable, IOracle {
         return _multiOracle.isTerminated(_index);
     }
 }
-

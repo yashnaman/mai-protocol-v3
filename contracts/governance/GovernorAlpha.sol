@@ -556,7 +556,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
 
     function _getOperator() internal view returns (address) {
         (, , address[7] memory addresses, , ) = ILiquidityPoolGetter(_target)
-        .getLiquidityPoolInfo();
+            .getLiquidityPoolInfo();
         return addresses[1];
     }
 

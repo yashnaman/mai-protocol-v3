@@ -79,32 +79,29 @@ contract TestOrder is Storage {
         uint8 v,
         uint8 signType
     ) public pure returns (bytes memory compressed) {
-        bytes memory p1 =
-            abi.encodePacked(
-                testOrder.trader,
-                testOrder.broker,
-                testOrder.relayer,
-                testOrder.referrer,
-                testOrder.liquidityPool
-            );
-        bytes memory p2 =
-            abi.encodePacked(
-                testOrder.minTradeAmount,
-                testOrder.amount,
-                testOrder.limitPrice,
-                testOrder.triggerPrice,
-                testOrder.chainID
-            );
-        bytes memory p3 =
-            abi.encodePacked(
-                testOrder.expiredAt,
-                testOrder.perpetualIndex,
-                testOrder.brokerFeeLimit,
-                testOrder.flags,
-                testOrder.salt,
-                v,
-                signType
-            ); // 64 + 32 + 32 + 32 + 32 + 8 + 8
+        bytes memory p1 = abi.encodePacked(
+            testOrder.trader,
+            testOrder.broker,
+            testOrder.relayer,
+            testOrder.referrer,
+            testOrder.liquidityPool
+        );
+        bytes memory p2 = abi.encodePacked(
+            testOrder.minTradeAmount,
+            testOrder.amount,
+            testOrder.limitPrice,
+            testOrder.triggerPrice,
+            testOrder.chainID
+        );
+        bytes memory p3 = abi.encodePacked(
+            testOrder.expiredAt,
+            testOrder.perpetualIndex,
+            testOrder.brokerFeeLimit,
+            testOrder.flags,
+            testOrder.salt,
+            v,
+            signType
+        ); // 64 + 32 + 32 + 32 + 32 + 8 + 8
         bytes memory p4 = abi.encodePacked(r, s);
         compressed = abi.encodePacked(p1, p2, p3, p4);
     }

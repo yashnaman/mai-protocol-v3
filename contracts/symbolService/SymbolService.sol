@@ -31,7 +31,7 @@ contract SymbolService is Initializable, OwnableUpgradeable {
     event AddWhitelistedFactory(address factory);
     event RemoveWhitelistedFactory(address factory);
 
-    function initialize(uint256 reservedSymbolCount) virtual external initializer {
+    function initialize(uint256 reservedSymbolCount) external virtual initializer {
         __Ownable_init();
         _nextSymbol = reservedSymbolCount;
         _reservedSymbolCount = reservedSymbolCount;
@@ -70,7 +70,7 @@ contract SymbolService is Initializable, OwnableUpgradeable {
     modifier onlyWhitelisted(address liquidityPool) {
         require(AddressUpgradeable.isContract(liquidityPool), "must called by contract");
         (, , address[7] memory addresses, , ) = ILiquidityPoolGetter(liquidityPool)
-        .getLiquidityPoolInfo();
+            .getLiquidityPoolInfo();
         require(_whitelistedFactories.contains(addresses[0]), "wrong factory");
         _;
     }

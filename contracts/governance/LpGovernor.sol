@@ -51,7 +51,6 @@ contract LpGovernor is
         return _minter;
     }
 
-
     function getTarget() public view virtual override(IGovernor, GovernorAlpha) returns (address) {
         return GovernorAlpha.getTarget();
     }

@@ -27,7 +27,8 @@ library MarginAccountModule {
         address trader,
         int256 price
     ) internal view returns (int256 initialMargin) {
-        initialMargin = perpetual.marginAccounts[trader]
+        initialMargin = perpetual
+            .marginAccounts[trader]
             .position
             .wmul(price)
             .wmul(perpetual.initialMarginRate)
@@ -47,7 +48,8 @@ library MarginAccountModule {
         address trader,
         int256 price
     ) internal view returns (int256 maintenanceMargin) {
-        maintenanceMargin = perpetual.marginAccounts[trader]
+        maintenanceMargin = perpetual
+            .marginAccounts[trader]
             .position
             .wmul(price)
             .wmul(perpetual.maintenanceMarginRate)
@@ -118,10 +120,9 @@ library MarginAccountModule {
     ) internal view returns (int256 margin) {
         margin = getMargin(perpetual, trader, price);
         if (margin > 0) {
-            int256 rate =
-                (getPosition(perpetual, trader) == 0)
-                    ? perpetual.redemptionRateWithoutPosition
-                    : perpetual.redemptionRateWithPosition;
+            int256 rate = (getPosition(perpetual, trader) == 0)
+                ? perpetual.redemptionRateWithoutPosition
+                : perpetual.redemptionRateWithPosition;
             // make sure total redemption margin < total collateral of perpetual
             margin = margin.wmul(rate, Round.FLOOR);
         } else {
@@ -142,10 +143,9 @@ library MarginAccountModule {
         address trader,
         int256 price
     ) internal view returns (int256 availableMargin) {
-        int256 threshold =
-            getPosition(perpetual, trader) == 0
-                ? 0
-                : getInitialMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
+        int256 threshold = getPosition(perpetual, trader) == 0
+            ? 0
+            : getInitialMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
         availableMargin = getMargin(perpetual, trader, price).sub(threshold);
     }
 
@@ -177,10 +177,9 @@ library MarginAccountModule {
         address trader,
         int256 price
     ) internal view returns (bool isSafe) {
-        int256 threshold =
-            getPosition(perpetual, trader) == 0
-                ? 0
-                : getMaintenanceMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
+        int256 threshold = getPosition(perpetual, trader) == 0
+            ? 0
+            : getMaintenanceMargin(perpetual, trader, price).add(perpetual.keeperGasReward);
         isSafe = getMargin(perpetual, trader, price) >= threshold;
     }
 

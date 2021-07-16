@@ -33,7 +33,7 @@ contract RemarginHelper is ReentrancyGuard {
 
     function _collateral(address perpetual) internal view returns (address collateral) {
         (, , address[7] memory addresses, , ) = ILiquidityPoolFull(perpetual)
-        .getLiquidityPoolInfo();
+            .getLiquidityPoolInfo();
         collateral = addresses[5];
     }
 }

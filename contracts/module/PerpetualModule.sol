@@ -289,9 +289,9 @@ library PerpetualModule {
      */
     function updateFundingState(PerpetualStorage storage perpetual, int256 timeElapsed) public {
         int256 deltaUnitLoss = timeElapsed
-        .mul(getIndexPrice(perpetual))
-        .wmul(perpetual.fundingRate)
-        .div(FUNDING_INTERVAL);
+            .mul(getIndexPrice(perpetual))
+            .wmul(perpetual.fundingRate)
+            .div(FUNDING_INTERVAL);
         perpetual.unitAccumulativeFunding = perpetual.unitAccumulativeFunding.add(deltaUnitLoss);
         emit UpdateUnitAccumulativeFunding(perpetual.id, perpetual.unitAccumulativeFunding);
     }

@@ -7,7 +7,10 @@ import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 import "./Constant.sol";
 import "./Utils.sol";
 
-enum Round { CEIL, FLOOR }
+enum Round {
+    CEIL,
+    FLOOR
+}
 
 library SafeMathExt {
     using SafeMathUpgradeable for uint256;

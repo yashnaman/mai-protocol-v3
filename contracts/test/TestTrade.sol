@@ -35,7 +35,9 @@ contract TestTrade is TestLiquidityPool {
         address account,
         int256 targetLeverage
     ) public {
-        _liquidityPool.perpetuals[perpetualIndex].marginAccounts[account]
+        _liquidityPool
+            .perpetuals[perpetualIndex]
+            .marginAccounts[account]
             .targetLeverage = targetLeverage;
     }
 

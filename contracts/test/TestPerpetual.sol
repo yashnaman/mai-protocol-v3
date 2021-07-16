@@ -166,8 +166,9 @@ contract TestPerpetual is Storage {
         view
         returns (int256 cash, int256 position)
     {
-        MarginAccount storage account =
-            _liquidityPool.perpetuals[perpetualIndex].marginAccounts[trader];
+        MarginAccount storage account = _liquidityPool.perpetuals[perpetualIndex].marginAccounts[
+            trader
+        ];
         cash = account.cash;
         position = account.position;
     }

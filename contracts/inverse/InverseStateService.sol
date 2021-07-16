@@ -55,8 +55,9 @@ contract InverseStateService {
         view
         returns (address operator, uint256 perpetualCount)
     {
-        (bool success, bytes memory result) =
-            liquidityPool.staticcall(abi.encodeWithSignature("getLiquidityPoolInfo()"));
+        (bool success, bytes memory result) = liquidityPool.staticcall(
+            abi.encodeWithSignature("getLiquidityPoolInfo()")
+        );
         require(success, "call getLiquidityPoolInfo failed");
         assembly {
             operator := mload(add(result, 128)) // 32 + 32 * 3

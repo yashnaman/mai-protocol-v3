@@ -5,7 +5,6 @@ pragma solidity 0.7.4;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface IGovernor {
-
     function initialize(
         string memory name,
         string memory symbol,

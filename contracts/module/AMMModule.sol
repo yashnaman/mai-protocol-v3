@@ -53,16 +53,22 @@ library AMMModule {
         require(tradeAmount != 0, "trading amount is zero");
         Context memory context = prepareContext(liquidityPool, perpetualIndex);
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
-        (int256 closePosition, int256 openPosition) =
-            Utils.splitAmount(context.position, tradeAmount);
+        (int256 closePosition, int256 openPosition) = Utils.splitAmount(
+            context.position,
+            tradeAmount
+        );
         // AMM close position
         int256 closeBestPrice;
         (deltaCash, closeBestPrice) = ammClosePosition(context, perpetual, closePosition);
         context.availableCash = context.availableCash.add(deltaCash);
         context.position = context.position.add(closePosition);
         // AMM open position
-        (int256 openDeltaCash, int256 openDeltaPosition, int256 openBestPrice) =
-            ammOpenPosition(context, perpetual, openPosition, partialFill);
+        (int256 openDeltaCash, int256 openDeltaPosition, int256 openBestPrice) = ammOpenPosition(
+            context,
+            perpetual,
+            openPosition,
+            partialFill
+        );
         deltaCash = deltaCash.add(openDeltaCash);
         deltaPosition = closePosition.add(openDeltaPosition);
         int256 bestPrice = closePosition != 0 ? closeBestPrice : openBestPrice;
@@ -126,8 +132,10 @@ library AMMModule {
             // If share token's total supply is not zero, these share tokens have no value,
             // this case should be avoided.
             require(poolMargin > 0, "share token has no value");
-            int256 newPoolMargin =
-                shareTotalSupply.add(shareToMint).wfrac(poolMargin, shareTotalSupply);
+            int256 newPoolMargin = shareTotalSupply.add(shareToMint).wfrac(
+                poolMargin,
+                shareTotalSupply
+            );
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
             int256 newCash;
             if (newPoolMargin <= minPoolMargin) {
@@ -181,8 +189,10 @@ library AMMModule {
         require(isAMMSafe(context, 0), "AMM is unsafe before removing liquidity");
         removedPoolMargin = calculatePoolMarginWhenSafe(context, 0);
         require(removedPoolMargin > 0, "pool margin must be positive");
-        int256 poolMargin =
-            shareTotalSupply.sub(shareToRemove).wfrac(removedPoolMargin, shareTotalSupply);
+        int256 poolMargin = shareTotalSupply.sub(shareToRemove).wfrac(
+            removedPoolMargin,
+            shareTotalSupply
+        );
         removedPoolMargin = removedPoolMargin.sub(poolMargin);
         {
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
@@ -427,8 +437,9 @@ library AMMModule {
         int256 indexPrice = context.indexPrice;
         int256 slippageFactor = perpetual.closeSlippageFactor.value;
         int256 maxClosePriceDiscount = perpetual.maxClosePriceDiscount.value;
-        int256 halfSpread =
-            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
+        int256 halfSpread = tradeAmount < 0
+            ? perpetual.halfSpread.value
+            : perpetual.halfSpread.value.neg();
         if (isAMMSafe(context, slippageFactor)) {
             int256 poolMargin = calculatePoolMarginWhenSafe(context, slippageFactor);
             require(poolMargin > 0, "pool margin must be positive");
@@ -446,10 +457,9 @@ library AMMModule {
             bestPrice = indexPrice;
             deltaCash = bestPrice.wmul(tradeAmount).neg();
         }
-        int256 priceLimit =
-            tradeAmount > 0
-                ? Constant.SIGNED_ONE.add(maxClosePriceDiscount)
-                : Constant.SIGNED_ONE.sub(maxClosePriceDiscount);
+        int256 priceLimit = tradeAmount > 0
+            ? Constant.SIGNED_ONE.add(maxClosePriceDiscount)
+            : Constant.SIGNED_ONE.sub(maxClosePriceDiscount);
         // prevent too bad price
         deltaCash = deltaCash.max(indexPrice.wmul(priceLimit).wmul(tradeAmount).neg());
         // prevent negative price
@@ -500,14 +510,13 @@ library AMMModule {
         int256 indexPrice = context.indexPrice;
         int256 positionBefore = context.position;
         int256 positionAfter = positionBefore.add(tradeAmount);
-        int256 maxPosition =
-            getMaxPosition(
-                context,
-                poolMargin,
-                perpetual.ammMaxLeverage.value,
-                slippageFactor,
-                positionAfter > 0
-            );
+        int256 maxPosition = getMaxPosition(
+            context,
+            poolMargin,
+            perpetual.ammMaxLeverage.value,
+            slippageFactor,
+            positionAfter > 0
+        );
         if (positionAfter.abs() > maxPosition.abs()) {
             require(partialFill, "trade amount exceeds max amount");
             // trade to max position if partialFill
@@ -532,8 +541,9 @@ library AMMModule {
             !Utils.hasTheSameSign(deltaCash, deltaPosition),
             "price is negative when AMM opens position"
         );
-        int256 halfSpread =
-            tradeAmount < 0 ? perpetual.halfSpread.value : perpetual.halfSpread.value.neg();
+        int256 halfSpread = tradeAmount < 0
+            ? perpetual.halfSpread.value
+            : perpetual.halfSpread.value.neg();
         bestPrice = getMidPrice(poolMargin, indexPrice, positionBefore, slippageFactor).wmul(
             halfSpread.add(Constant.SIGNED_ONE)
         );
@@ -708,8 +718,9 @@ library AMMModule {
         bool isLongSide
     ) internal pure returns (int256 maxPosition) {
         int256 indexPrice = context.indexPrice;
-        int256 beforeSqrt =
-            poolMargin.mul(poolMargin).mul(2).sub(context.squareValue).wdiv(slippageFactor);
+        int256 beforeSqrt = poolMargin.mul(poolMargin).mul(2).sub(context.squareValue).wdiv(
+            slippageFactor
+        );
         if (beforeSqrt <= 0) {
             // 1. already unsafe, can't open position
             // 2. initial AMM is also this case, position = 0, available cash = 0, pool margin = 0

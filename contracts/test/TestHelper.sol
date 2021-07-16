@@ -4,7 +4,6 @@ pragma solidity 0.7.4;
 import "./CustomERC20.sol";
 
 contract TestHelper {
-
     function createERC20(
         string memory name,
         string memory symbol,

@@ -122,7 +122,7 @@ contract Broker is ReentrancyGuard {
     function cancelOrder(Order memory order) public {
         if (msg.sender != order.trader && msg.sender != order.relayer) {
             (, , address[7] memory addresses, , ) = ILiquidityPoolFull(order.liquidityPool)
-            .getLiquidityPoolInfo();
+                .getLiquidityPoolInfo();
             IAccessControl accessControl = IAccessControl(
                 IPoolCreatorFull(addresses[0]).getAccessController()
             );

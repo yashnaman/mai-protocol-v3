@@ -74,19 +74,24 @@ library TradeModule {
         address referrer,
         uint32 flags
     ) public returns (int256 tradeAmount) {
-        (int256 deltaCash, int256 deltaPosition) =
-            preTrade(liquidityPool, perpetualIndex, trader, amount, limitPrice, flags);
+        (int256 deltaCash, int256 deltaPosition) = preTrade(
+            liquidityPool,
+            perpetualIndex,
+            trader,
+            amount,
+            limitPrice,
+            flags
+        );
         doTrade(liquidityPool, perpetualIndex, trader, deltaCash, deltaPosition);
-        (int256 lpFee, int256 totalFee) =
-            postTrade(
-                liquidityPool,
-                perpetualIndex,
-                trader,
-                referrer,
-                deltaCash,
-                deltaPosition,
-                flags
-            );
+        (int256 lpFee, int256 totalFee) = postTrade(
+            liquidityPool,
+            perpetualIndex,
+            trader,
+            referrer,
+            deltaCash,
+            deltaPosition,
+            flags
+        );
         emit Trade(
             perpetualIndex,
             trader,
@@ -139,8 +144,11 @@ library TradeModule {
     ) internal {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         int256 deltaOpenInterest1 = perpetual.updateMargin(address(this), deltaPosition, deltaCash);
-        int256 deltaOpenInterest2 =
-            perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
+        int256 deltaOpenInterest2 = perpetual.updateMargin(
+            trader,
+            deltaPosition.neg(),
+            deltaCash.neg()
+        );
         require(perpetual.openInterest >= 0, "negative open interest");
         if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
             // open interest will increase, check limit
@@ -181,8 +189,10 @@ library TradeModule {
         int256 vaultFee;
         int256 referralRebate;
         {
-            bool hasOpened =
-                Utils.hasOpenedPosition(perpetual.getPosition(trader), deltaPosition.neg());
+            bool hasOpened = Utils.hasOpenedPosition(
+                perpetual.getPosition(trader),
+                deltaPosition.neg()
+            );
             (lpFee, operatorFee, vaultFee, referralRebate) = getFees(
                 liquidityPool,
                 perpetual,
@@ -327,8 +337,11 @@ library TradeModule {
         );
         int256 position = perpetual.getPosition(trader);
         // 0. price / amount
-        (int256 deltaCash, int256 deltaPosition) =
-            liquidityPool.queryTradeWithAMM(perpetualIndex, position, true);
+        (int256 deltaCash, int256 deltaPosition) = liquidityPool.queryTradeWithAMM(
+            perpetualIndex,
+            position,
+            true
+        );
         require(deltaPosition != 0, "insufficient liquidity");
         // 2. trade
         int256 liquidatePrice = deltaCash.wdiv(deltaPosition).abs();
@@ -345,15 +358,14 @@ library TradeModule {
             perpetual.keeperGasReward
         );
         // 3. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
-        (int256 penalty, int256 penaltyToLiquidator) =
-            postLiquidate(
-                liquidityPool,
-                perpetual,
-                address(this),
-                trader,
-                position,
-                deltaPosition.neg()
-            );
+        (int256 penalty, int256 penaltyToLiquidator) = postLiquidate(
+            liquidityPool,
+            perpetual,
+            address(this),
+            trader,
+            position,
+            deltaPosition.neg()
+        );
         emit Liquidate(
             perpetualIndex,
             address(this),
@@ -398,15 +410,14 @@ library TradeModule {
         perpetual.updateMargin(trader, deltaPosition.neg(), deltaCash.neg());
         require(perpetual.openInterest >= 0, "negative open interest");
         // 2. penalty  min(markPrice * liquidationPenaltyRate, margin / position) * deltaPosition
-        (int256 penalty, ) =
-            postLiquidate(
-                liquidityPool,
-                perpetual,
-                liquidator,
-                trader,
-                position,
-                deltaPosition.neg()
-            );
+        (int256 penalty, ) = postLiquidate(
+            liquidityPool,
+            perpetual,
+            liquidator,
+            trader,
+            position,
+            deltaPosition.neg()
+        );
         liquidatedAmount = deltaPosition.neg();
         require(
             liquidityPool.isTraderMarginSafe(perpetualIndex, liquidator, liquidatedAmount),
@@ -461,8 +472,9 @@ library TradeModule {
             penaltyToFund = penalty.wmul(perpetual.insuranceFundRate);
             penaltyToLiquidator = penalty.sub(penaltyToFund);
         } else {
-            int256 totalInsuranceFund =
-                liquidityPool.insuranceFund.add(liquidityPool.donatedInsuranceFund);
+            int256 totalInsuranceFund = liquidityPool.insuranceFund.add(
+                liquidityPool.donatedInsuranceFund
+            );
             if (totalInsuranceFund.add(penalty) < 0) {
                 // ensure donatedInsuranceFund >= 0
                 penalty = totalInsuranceFund.neg();
@@ -540,18 +552,35 @@ library TradeModule {
         int256 amount,
         address referrer,
         uint32 flags
-    ) public returns (int256 tradePrice, int256 totalFee, int256 cost) {
+    )
+        public
+        returns (
+            int256 tradePrice,
+            int256 totalFee,
+            int256 cost
+        )
+    {
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
         MarginAccount memory account = perpetual.marginAccounts[trader]; // clone
-        (int256 deltaCash, int256 deltaPosition) =
-            preTrade(liquidityPool, perpetualIndex, trader, amount,
-                amount > 0 ? type(int256).max : 0,
-                flags);
+        (int256 deltaCash, int256 deltaPosition) = preTrade(
+            liquidityPool,
+            perpetualIndex,
+            trader,
+            amount,
+            amount > 0 ? type(int256).max : 0,
+            flags
+        );
         tradePrice = deltaCash.wdiv(deltaPosition).abs();
-        readonlyDoTrade(
-            liquidityPool, perpetual, account, deltaCash, deltaPosition);
+        readonlyDoTrade(liquidityPool, perpetual, account, deltaCash, deltaPosition);
         (totalFee, cost) = readonlyPostTrade(
-            liquidityPool, perpetual, account, referrer, deltaCash, deltaPosition, flags);
+            liquidityPool,
+            perpetual,
+            account,
+            referrer,
+            deltaCash,
+            deltaPosition,
+            flags
+        );
     }
 
     // A readonly version of doTrade. This function was written post-audit. So there's a lot of repeated logic here.
@@ -567,12 +596,22 @@ library TradeModule {
         int256 deltaOpenInterest1;
         int256 deltaOpenInterest2;
         (, , deltaOpenInterest1) = readonlyUpdateMargin(
-            perpetual, perpetual.marginAccounts[address(this)].cash,
+            perpetual,
+            perpetual.marginAccounts[address(this)].cash,
             perpetual.marginAccounts[address(this)].position,
-            deltaPosition, deltaCash);
+            deltaPosition,
+            deltaCash
+        );
         (account.cash, account.position, deltaOpenInterest2) = readonlyUpdateMargin(
-            perpetual, account.cash, account.position, deltaPosition.neg(), deltaCash.neg());
-        int256 perpetualOpenInterest  = perpetual.openInterest.add(deltaOpenInterest1).add(deltaOpenInterest2);
+            perpetual,
+            account.cash,
+            account.position,
+            deltaPosition.neg(),
+            deltaCash.neg()
+        );
+        int256 perpetualOpenInterest = perpetual.openInterest.add(deltaOpenInterest1).add(
+            deltaOpenInterest2
+        );
         require(perpetualOpenInterest >= 0, "negative open interest");
         if (deltaOpenInterest1.add(deltaOpenInterest2) > 0) {
             // open interest will increase, check limit
@@ -601,8 +640,7 @@ library TradeModule {
         int256 vaultFee;
         int256 referralRebate;
         {
-            bool hasOpened =
-                Utils.hasOpenedPosition(account.position, deltaPosition.neg());
+            bool hasOpened = Utils.hasOpenedPosition(account.position, deltaPosition.neg());
             (lpFee, operatorFee, vaultFee, referralRebate) = readonlyGetFees(
                 liquidityPool,
                 perpetual,
@@ -635,11 +673,17 @@ library TradeModule {
         int256 oldPosition,
         int256 deltaPosition,
         int256 deltaCash
-    ) internal view returns (int256 newCash, int256 newPosition, int256 deltaOpenInterest) {
+    )
+        internal
+        view
+        returns (
+            int256 newCash,
+            int256 newPosition,
+            int256 deltaOpenInterest
+        )
+    {
         newPosition = oldPosition.add(deltaPosition);
-        newCash = oldCash.add(deltaCash).add(
-            perpetual.unitAccumulativeFunding.wmul(deltaPosition)
-        );
+        newCash = oldCash.add(deltaCash).add(perpetual.unitAccumulativeFunding.wmul(deltaPosition));
         if (oldPosition > 0) {
             deltaOpenInterest = oldPosition.neg();
         }
@@ -674,7 +718,10 @@ library TradeModule {
         }
         int256 totalFee = lpFee.add(operatorFee).add(vaultFee);
         int256 availableMargin = LiquidityPoolModule.readonlyGetAvailableMargin(
-            perpetual, trader, perpetual.getMarkPrice());
+            perpetual,
+            trader,
+            perpetual.getMarkPrice()
+        );
         if (!hasOpened) {
             if (availableMargin <= 0) {
                 lpFee = 0;

@@ -138,8 +138,9 @@ contract TestGovernance is Governance {
     }
 
     function settlementPrice(uint256 perpetualIndex) public view returns (int256, uint256) {
-        OraclePriceData storage priceData =
-            _liquidityPool.perpetuals[perpetualIndex].settlementPriceData;
+        OraclePriceData storage priceData = _liquidityPool
+            .perpetuals[perpetualIndex]
+            .settlementPriceData;
         return (priceData.price, priceData.time);
     }
 

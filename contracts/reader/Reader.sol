@@ -111,7 +111,7 @@ contract Reader {
      */
     function isAMMMaintenanceSafe(address liquidityPool) public returns (bool) {
         (, , , , uint256[4] memory uintNums) = ILiquidityPoolFull(liquidityPool)
-        .getLiquidityPoolInfo();
+            .getLiquidityPoolInfo();
         // perpetual count
         if (uintNums[1] == 0) {
             return true;
@@ -271,8 +271,7 @@ contract Reader {
                 )
             {
                 pool.isAMMMaintenanceSafe = false;
-            } catch {
-            }
+            } catch {}
         }
     }
 
@@ -445,6 +444,6 @@ contract Reader {
             isSynced = false;
         }
         (shareToRemoveResult, cashToReturnResult) = ILiquidityPoolFull(liquidityPool)
-        .queryRemoveLiquidity(shareToRemove, cashToReturn);
+            .queryRemoveLiquidity(shareToRemove, cashToReturn);
     }
 }

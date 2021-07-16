@@ -185,7 +185,11 @@ interface ILiquidityPoolGetter {
         uint32 flags
     )
         external
-        returns (int256 tradePrice, int256 totalFee, int256 cost);
+        returns (
+            int256 tradePrice,
+            int256 totalFee,
+            int256 cost
+        );
 
     /**
      * @notice  Query cash to add / share to mint when adding liquidity to the liquidity pool.

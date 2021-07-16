@@ -40,16 +40,15 @@ library OrderModule {
         bytes32 orderHash = order.getOrderHash();
         address signer = Signature.getSigner(orderHash, signature);
         if (signer != order.trader) {
-            bool isAuthorized =
-                IAccessControl(liquidityPool.accessController).isGranted(
-                    order.trader,
-                    signer,
-                    order.flags.useTargetLeverage()
-                        ? Constant.PRIVILEGE_TRADE |
-                            Constant.PRIVILEGE_DEPOSIT |
-                            Constant.PRIVILEGE_WITHDRAW
-                        : Constant.PRIVILEGE_TRADE
-                );
+            bool isAuthorized = IAccessControl(liquidityPool.accessController).isGranted(
+                order.trader,
+                signer,
+                order.flags.useTargetLeverage()
+                    ? Constant.PRIVILEGE_TRADE |
+                        Constant.PRIVILEGE_DEPOSIT |
+                        Constant.PRIVILEGE_WITHDRAW
+                    : Constant.PRIVILEGE_TRADE
+            );
             require(isAuthorized, "signer is unauthorized");
         }
     }
