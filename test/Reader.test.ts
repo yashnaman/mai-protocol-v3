@@ -33,6 +33,7 @@ describe("Reader", () => {
     var oracle1;
     var oracle2;
     var reader;
+    var inverseStateService;
     const vaultFeeRate = toWei("0.001");
 
     let updatePrice = async (price1, price2) => {
@@ -82,7 +83,8 @@ describe("Reader", () => {
             ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
-        reader = await createContract("Reader", [poolCreator.address]);
+        inverseStateService = await createContract("InverseStateService");
+        reader = await createContract("Reader", [inverseStateService.address]);
 
         // oracle
         oracle1 = await createContract("OracleAdaptor", ["USD", "BTC"]);
@@ -141,8 +143,8 @@ describe("Reader", () => {
         const pool = await reader.callStatic.getLiquidityPoolStorage(perp.address);
         expect(pool.isSynced).to.be.true;
         expect(pool.pool.isRunning).to.be.true;
-
         expect(pool.pool.isFastCreationEnabled).to.be.false;
+        expect(pool.pool.isAMMMaintenanceSafe).to.be.true;
         expect(pool.pool.addresses[0]).to.equal(poolCreator.address) // creator
         expect(pool.pool.addresses[1]).to.equal(user0.address) // operator
         expect(pool.pool.addresses[2]).to.equal(none) // transferringOperator
@@ -166,8 +168,10 @@ describe("Reader", () => {
         expect(pool.pool.perpetuals[0].symbol).to.equal(10000);
         expect(pool.pool.perpetuals[0].underlyingAsset).to.equal('BTC');
         expect(pool.pool.perpetuals[0].isMarketClosed).to.be.false;
+        expect(pool.pool.perpetuals[0].isTerminated).to.be.false;
         expect(pool.pool.perpetuals[0].ammCashBalance.gt(0)).to.be.true;;
         expect(pool.pool.perpetuals[0].ammPositionAmount).approximateBigNumber(toWei("-0.1"));
+        expect(pool.pool.perpetuals[0].isInversePerpetual).to.be.false;
         expect(pool.pool.perpetuals[1].state).to.equal(2);
         expect(pool.pool.perpetuals[1].oracle).to.equal(oracle2.address);
         expect(pool.pool.perpetuals[1].nums[0]).approximateBigNumber(toWei("0")); // totalCollateral
@@ -176,8 +180,10 @@ describe("Reader", () => {
         expect(pool.pool.perpetuals[1].symbol).to.equal(10001);
         expect(pool.pool.perpetuals[1].underlyingAsset).to.equal('ETH');
         expect(pool.pool.perpetuals[1].isMarketClosed).to.be.false;
+        expect(pool.pool.perpetuals[1].isTerminated).to.be.false;
         expect(pool.pool.perpetuals[1].ammCashBalance).approximateBigNumber(toWei("0"));
         expect(pool.pool.perpetuals[1].ammPositionAmount).approximateBigNumber(toWei("0"));
+        expect(pool.pool.perpetuals[1].isInversePerpetual).to.be.false;
     });
 
     it('zero price', async () => {

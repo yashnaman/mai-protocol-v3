@@ -12,9 +12,15 @@ import "../interface/ISymbolService.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Constant.sol";
 
+interface IInverseStateService {
+    function isInverse(address liquidityPool, uint256 perpetualIndex) external view returns (bool);
+}
+
 contract Reader {
     using SafeMathExt for uint256;
     using Address for address;
+
+    IInverseStateService public immutable inverseStateService;
 
     struct LiquidityPoolReaderResult {
         bool isRunning;
@@ -24,6 +30,7 @@ contract Reader {
         int256[5] intNums;
         uint256[4] uintNums;
         PerpetualReaderResult[] perpetuals;
+        bool isAMMMaintenanceSafe;
     }
 
     struct PerpetualReaderResult {
@@ -34,8 +41,10 @@ contract Reader {
         uint256 symbol; // minimum number in the symbol service
         string underlyingAsset;
         bool isMarketClosed;
+        bool isTerminated;
         int256 ammCashBalance;
         int256 ammPositionAmount;
+        bool isInversePerpetual;
     }
 
     struct AccountReaderResult {
@@ -57,11 +66,9 @@ contract Reader {
         bool isSafe;
     }
 
-    address public immutable poolCreator;
-
-    constructor(address _poolCreator) {
-        require(_poolCreator != address(0), "poolCreator is zero-address");
-        poolCreator = _poolCreator;
+    constructor(address inverseStateService_) {
+        require(inverseStateService_ != address(0), "inverseStateService is zero-address");
+        inverseStateService = IInverseStateService(inverseStateService_);
     }
 
     /**
@@ -96,7 +103,9 @@ contract Reader {
     }
 
     /**
-     * @notice               If amm is maintenance safe. Function setEmergencyState will revert only if amm is not maintenance margin safe.
+     * @notice If amm is maintenance safe. Function setEmergencyState will revert only if amm is not maintenance margin safe.
+     *
+     *         NOTE: this should NOT be called on chain.
      * @param  liquidityPool The address of the liquidity pool.
      * @return bool          True if amm is maintenance margin safe.
      */
@@ -104,7 +113,9 @@ contract Reader {
         (, , , , uint256[4] memory uintNums) = ILiquidityPoolFull(liquidityPool)
         .getLiquidityPoolInfo();
         // perpetual count
-        require(uintNums[1] > 0, "no perpetual in pool");
+        if (uintNums[1] == 0) {
+            return true;
+        }
         try
             ILiquidityPoolGovernance(liquidityPool).setEmergencyState(
                 Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE
@@ -218,6 +229,8 @@ contract Reader {
 
     /**
      * @notice Get the status of the liquidity pool
+     *
+     *         NOTE: this should NOT be called on chain.
      * @param liquidityPool The address of the liquidity pool
      * @return isSynced True if the funding state is synced to real-time data. False if
      *                  error happens (oracle error, zero price etc.). In this case,
@@ -249,6 +262,18 @@ contract Reader {
         for (uint256 i = 0; i < perpetualCount; i++) {
             getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
         }
+        // leave this dangerous line at the end
+        pool.isAMMMaintenanceSafe = true;
+        if (perpetualCount > 0) {
+            try
+                ILiquidityPoolGovernance(liquidityPool).setEmergencyState(
+                    Constant.SET_ALL_PERPETUALS_TO_EMERGENCY_STATE
+                )
+            {
+                pool.isAMMMaintenanceSafe = false;
+            } catch {
+            }
+        }
     }
 
     function getPerpetual(
@@ -266,10 +291,13 @@ contract Reader {
         // read more from oracle
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
+        perp.isTerminated = IOracle(perp.oracle).isTerminated();
         // read more from account
         (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
             liquidityPool
         ).getMarginAccount(perpetualIndex, liquidityPool);
+        // read more from inverse service
+        perp.isInversePerpetual = inverseStateService.isInverse(liquidityPool, perpetualIndex);
     }
 
     function readIndexPrices(address[] memory oracles)
@@ -303,80 +331,6 @@ contract Reader {
             minSymbol = minSymbol.min(symbols[i]);
         }
         return minSymbol;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    // back-compatible: beta0.0.4
-
-    function getImplementation(address proxy) public view returns (address) {
-        IProxyAdmin proxyAdmin = IPoolCreatorFull(poolCreator).upgradeAdmin();
-        return proxyAdmin.getProxyImplementation(proxy);
-    }
-
-    function isV004(address imp) private pure returns (bool) {
-        // kovan
-        if (
-            imp == 0xBE190440CDaC7F82089C17DA73974aC8a5864Ef8 ||
-            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C
-        ) {
-            return true;
-        }
-        return false;
-    }
-
-    function getPoolMarginV004(address liquidityPool)
-        private
-        view
-        returns (int256 poolMargin, bool isSafe)
-    {
-        poolMargin = ILiquidityPool004(liquidityPool).getPoolMargin();
-        isSafe = true;
-    }
-
-    function getPerpetualV004(
-        PerpetualReaderResult memory perp,
-        address symbolService,
-        address liquidityPool,
-        uint256 perpetualIndex
-    )
-        private
-        returns (
-            int256 insuranceFundCap,
-            int256 insuranceFund,
-            int256 donatedInsuranceFund
-        )
-    {
-        // perpetual
-        int256[34] memory nums;
-        (perp.state, perp.oracle, nums) = ILiquidityPool004(liquidityPool).getPerpetualInfo(
-            perpetualIndex
-        );
-        insuranceFundCap = nums[13];
-        insuranceFund = nums[14];
-        donatedInsuranceFund = nums[15];
-        for (uint256 i = 0; i < 31; i++) {
-            if (i >= 13) {
-                // insuranceFundCap, insuranceFund, donatedInsuranceFund are moved to liquidityPoolStorage
-                perp.nums[i] = nums[i + 3];
-            } else {
-                // 0-12, unchanged
-                perp.nums[i] = nums[i];
-            }
-        }
-        perp.nums[31] = 0; // [31] openInterest
-        perp.nums[32] = 100 * 10**18; // [32] maxOpenInterestRate
-        perp.nums[33] = perp.nums[22]; // [22-24] fundingRateLimit value, min, max [33-35] fundingRateFactor value, min, max
-        perp.nums[34] = perp.nums[23];
-        perp.nums[35] = perp.nums[24];
-        // read more from symbol service
-        perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
-        // read more from oracle
-        perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
-        perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
-        // read more from account
-        (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
-            liquidityPool
-        ).getMarginAccount(perpetualIndex, liquidityPool);
     }
 
     /**
@@ -493,32 +447,4 @@ contract Reader {
         (shareToRemoveResult, cashToReturnResult) = ILiquidityPoolFull(liquidityPool)
         .queryRemoveLiquidity(shareToRemove, cashToReturn);
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////////
-// back-compatible: beta0.0.4
-
-interface ILiquidityPool004 {
-    function getLiquidityPoolInfo()
-        external
-        view
-        returns (
-            bool isRunning,
-            bool isFastCreationEnabled,
-            address[7] memory addresses,
-            int256 vaultFeeRate,
-            int256 poolCash,
-            uint256[4] memory nums
-        );
-
-    function getPerpetualInfo(uint256 perpetualIndex)
-        external
-        view
-        returns (
-            PerpetualState state,
-            address oracle,
-            int256[34] memory nums
-        );
-
-    function getPoolMargin() external view returns (int256 poolMargin);
 }

@@ -30,12 +30,6 @@
     "name": "InverseStateService",
     "address": "0xc4F97bD99f10Ca08Ce9ec9C9CB05C72F358dbC5E"
   },
-  "Reader": {
-    "type": "plain",
-    "name": "Reader",
-    "address": "0x62580b94815BC879Fda6210Bd12f1f58d259Af5d",
-    "deployedAt": 595841
-  },
   "AMMModule": {
     "type": "plain",
     "name": "AMMModule",
@@ -83,5 +77,21 @@
     "name": "LpGovernor",
     "address": "0xaFeB8BCd2291ff55Cf37876c8dcD7154e0e228a7",
     "deployedAt": 595924
+  },
+  "WETH9": {
+    "type": "preset",
+    "name": "WETH9",
+    "address": "0xB47e6A5f8b33b3F17603C83a0535A9dcD7E32681"
+  },
+  "USDC": {
+    "type": "preset",
+    "name": "USDC",
+    "address": "0xd6E6912EC6824C940cc8157544d5c108Bf6E6b35"
+  },
+  "Reader": {
+    "type": "plain",
+    "name": "Reader",
+    "address": "0x49354B337395dB4d23F71a1f74E080A10a6AcF0C",
+    "deployedAt": 869128
   }
 }

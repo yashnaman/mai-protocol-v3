@@ -112,7 +112,7 @@ async function main(accounts: any[]) {
     const pool2 = await set2(accounts, poolCreator, weth, oracleAddresses);
 
     // reader
-    await reader(accounts, poolCreator);
+    await reader(accounts, '');
 }
 
 async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
@@ -244,8 +244,8 @@ async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
     return liquidityPool;
 }
 
-async function reader(accounts: any[], poolCreator) {
-    var reader = await createContract("Reader", [poolCreator.address]);
+async function reader(accounts: any[], inverseStateService) {
+    var reader = await createContract("Reader", [inverseStateService.address]);
     const addresses = [["Reader", reader.address]];
     console.table(addresses);
     return { reader };
