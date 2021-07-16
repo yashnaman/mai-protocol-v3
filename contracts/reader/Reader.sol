@@ -67,7 +67,7 @@ contract Reader {
     }
 
     constructor(address inverseStateService_) {
-        require(inverseStateService_ != address(0), "inverseStateService is zero-address");
+        require(inverseStateService_.isContract(), "inverseStateService must be contract");
         inverseStateService = IInverseStateService(inverseStateService_);
     }
 
