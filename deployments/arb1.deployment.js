@@ -59,12 +59,6 @@
     },
     "deployedAt": 80735
   },
-  "Reader": {
-    "type": "plain",
-    "name": "Reader",
-    "address": "0x3d4B40cA0F98fcCe38aA1704CBDf134496c261E8",
-    "deployedAt": 80738
-  },
   "AMMModule": {
     "type": "plain",
     "name": "AMMModule",
@@ -112,5 +106,11 @@
     "name": "LpGovernor",
     "address": "0xf7F85A5F62eD2Eb63C8D4EDF0a979289857Bad74",
     "deployedAt": 80752
+  },
+  "Reader": {
+    "type": "plain",
+    "name": "Reader",
+    "address": "0x298BadDa419EECE0abe86FeDC2f0677a7e8E35a2",
+    "deployedAt": 117800
   }
 }
