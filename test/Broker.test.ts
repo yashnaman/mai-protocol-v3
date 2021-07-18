@@ -89,7 +89,7 @@ describe('Broker', () => {
         testOrder = await createContract("TestOrder", [], { OrderModule });
     });
 
-    it('broker', async () => {
+    it('good path', async () => {
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -99,8 +99,42 @@ describe('Broker', () => {
 
         const order = {
             trader: user1.address, // trader
-            // broker: broker.address, // broker
-            // relayer: user0.address, // relayer
+            broker: broker.address, // broker
+            relayer: user0.address, // relayer
+            liquidityPool: liquidityPool.address, // liquidityPool
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
+            minTradeAmount: toWei("0.1"),
+            amount: toWei("-0.5"),
+            limitPrice: toWei("0"),
+            triggerPrice: toWei("0"),
+            chainID: 31337,
+            expiredAt: now + 10000,
+            perpetualIndex: 0,
+            brokerFeeLimit: 20,  // 20 gwei
+            flags: 0x00000000,
+            salt: 123456,
+        };
+        var orderHash = await testOrder.orderHash(order);
+        const sig = await user1.signMessage(ethers.utils.arrayify(orderHash));
+        var { r, s, v } = ethers.utils.splitSignature(sig);
+        var compressed = await testOrder.compress(order, r, s, v, 0);
+        expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
+        await broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
+
+        var { position } = await liquidityPool.getMarginAccount(0, user1.address);
+        expect(position).to.equal(toWei("-0.5"));
+    })
+
+    it('skip broker - good', async () => {
+        await ctk.mint(user1.address, toWei("10000"))
+        await ctk.mint(user2.address, toWei("10000"))
+        await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
+        await ctk.connect(user2).approve(liquidityPool.address, toWei("10000"))
+        await liquidityPool.connect(user1).deposit(0, user1.address, toWei("10000"));
+        await liquidityPool.connect(user2).addLiquidity(toWei("10000"));
+
+        const order = {
+            trader: user1.address, // trader
             broker: user0.address,
             relayer: user0.address,
             liquidityPool: liquidityPool.address, // liquidityPool
@@ -121,14 +155,46 @@ describe('Broker', () => {
         var { r, s, v } = ethers.utils.splitSignature(sig);
         var compressed = await testOrder.compress(order, r, s, v, 0);
         expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
-        // await broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")]);
         await liquidityPool.brokerTrade(compressed, toWei("-0.5"));
 
         var { position } = await liquidityPool.getMarginAccount(0, user1.address);
         expect(position).to.equal(toWei("-0.5"));
     })
 
-    it('broker - cancel', async () => {
+    it('skip broker - invalid broker', async () => {
+        await ctk.mint(user1.address, toWei("10000"))
+        await ctk.mint(user2.address, toWei("10000"))
+        await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
+        await ctk.connect(user2).approve(liquidityPool.address, toWei("10000"))
+        await liquidityPool.connect(user1).deposit(0, user1.address, toWei("10000"));
+        await liquidityPool.connect(user2).addLiquidity(toWei("10000"));
+
+        const order = {
+            trader: user1.address, // trader
+            broker: user2.address,
+            relayer: user0.address,
+            liquidityPool: liquidityPool.address, // liquidityPool
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
+            minTradeAmount: toWei("0.1"),
+            amount: toWei("-0.5"),
+            limitPrice: toWei("0"),
+            triggerPrice: toWei("0"),
+            chainID: 31337,
+            expiredAt: now + 10000,
+            perpetualIndex: 0,
+            brokerFeeLimit: 20,  // 20 gwei
+            flags: 0x00000000,
+            salt: 123456,
+        };
+        var orderHash = await testOrder.orderHash(order);
+        const sig = await user1.signMessage(ethers.utils.arrayify(orderHash));
+        var { r, s, v } = ethers.utils.splitSignature(sig);
+        var compressed = await testOrder.compress(order, r, s, v, 0);
+        expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
+        await expect(liquidityPool.brokerTrade(compressed, toWei("-0.5"))).to.be.revertedWith('broker mismatch')
+    })
+
+    it('cancel', async () => {
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -170,7 +236,7 @@ describe('Broker', () => {
         expect(position).to.equal(toWei("0"));
     })
 
-    it('broker - cancel by another signer', async () => {
+    it('cancel by another signer', async () => {
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -214,8 +280,7 @@ describe('Broker', () => {
         expect(position).to.equal(toWei("0"));
     })
 
-
-    it('broker - fee', async () => {
+    it('fee', async () => {
         await ctk.mint(user1.address, toWei("10000"))
         await ctk.mint(user2.address, toWei("10000"))
         await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
@@ -267,5 +332,79 @@ describe('Broker', () => {
 
         await broker.connect(user1).withdraw("999999980000000000");
         expect(await broker.balanceOf(user1.address)).to.equal("0")
+    })
+
+    it('invalid broker', async () => {
+        await ctk.mint(user1.address, toWei("10000"))
+        await ctk.mint(user2.address, toWei("10000"))
+        await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
+        await ctk.connect(user2).approve(liquidityPool.address, toWei("10000"))
+        await liquidityPool.connect(user1).deposit(0, user1.address, toWei("10000"));
+        await liquidityPool.connect(user2).addLiquidity(toWei("10000"));
+
+        const order = {
+            trader: user1.address, // trader
+            broker: user2.address, // broker
+            relayer: user0.address, // relayer
+            liquidityPool: liquidityPool.address, // liquidityPool
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
+            minTradeAmount: toWei("0.1"),
+            amount: toWei("-0.5"),
+            limitPrice: toWei("0"),
+            triggerPrice: toWei("0"),
+            chainID: 31337,
+            expiredAt: now + 10000,
+            perpetualIndex: 0,
+            brokerFeeLimit: 20,  // 20 gwei
+            flags: 0x00000000,
+            salt: 123456,
+        };
+        var orderHash = await testOrder.orderHash(order);
+        const sig = await user1.signMessage(ethers.utils.arrayify(orderHash));
+        var { r, s, v } = ethers.utils.splitSignature(sig);
+        var compressed = await testOrder.compress(order, r, s, v, 0);
+        expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
+        await broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")])
+
+        // no trade happened
+        var { position } = await liquidityPool.getMarginAccount(0, user1.address);
+        expect(position).to.equal(toWei("0"));
+    })
+
+    it('invalid relayer', async () => {
+        await ctk.mint(user1.address, toWei("10000"))
+        await ctk.mint(user2.address, toWei("10000"))
+        await ctk.connect(user1).approve(liquidityPool.address, toWei("10000"))
+        await ctk.connect(user2).approve(liquidityPool.address, toWei("10000"))
+        await liquidityPool.connect(user1).deposit(0, user1.address, toWei("10000"));
+        await liquidityPool.connect(user2).addLiquidity(toWei("10000"));
+
+        const order = {
+            trader: user1.address, // trader
+            broker: broker.address, // broker
+            relayer: user2.address, // relayer
+            liquidityPool: liquidityPool.address, // liquidityPool
+            referrer: "0x0000000000000000000000000000000000000000", // referrer
+            minTradeAmount: toWei("0.1"),
+            amount: toWei("-0.5"),
+            limitPrice: toWei("0"),
+            triggerPrice: toWei("0"),
+            chainID: 31337,
+            expiredAt: now + 10000,
+            perpetualIndex: 0,
+            brokerFeeLimit: 20,  // 20 gwei
+            flags: 0x00000000,
+            salt: 123456,
+        };
+        var orderHash = await testOrder.orderHash(order);
+        const sig = await user1.signMessage(ethers.utils.arrayify(orderHash));
+        var { r, s, v } = ethers.utils.splitSignature(sig);
+        var compressed = await testOrder.compress(order, r, s, v, 0);
+        expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
+        broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")])
+        
+        // no trade happened
+        var { position } = await liquidityPool.getMarginAccount(0, user1.address);
+        expect(position).to.equal(toWei("0"));
     })
 })
