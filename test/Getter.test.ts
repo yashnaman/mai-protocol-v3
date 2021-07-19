@@ -107,8 +107,8 @@ describe("Getter", () => {
         await ctk.connect(user2).approve(perp.address, toWei("100000"));
 
         // deposit
-        perp.connect(user1).deposit(0, user1.address, toWei("100"));
-        perp.connect(user2).deposit(0, user2.address, toWei("100"));
+        await perp.connect(user1).deposit(0, user1.address, toWei("100"));
+        await perp.connect(user2).deposit(0, user2.address, toWei("100"));
 
         // console.log(await perp.listActiveAccounts(0, 0, 0));
         console.log(await perp.listActiveAccounts(0, 0, 1));
