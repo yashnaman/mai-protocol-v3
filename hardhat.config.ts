@@ -5,6 +5,7 @@ import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";
 import "solidity-coverage"
+import { retrieveLinkReferences } from "./scripts/deployer/linkReferenceParser";
 
 const pk = process.env["PK"]
 
@@ -39,9 +40,25 @@ task("deploy", "Deploy a single contract")
         if (typeof args.args != 'undefined') {
             args.args = args.args.split('|')
         }
-        const factory = await hre.ethers.getContractFactory(args.name);
-        const contract = await factory.deploy(...args.args);
-        console.log(args.name, "has been deployed to", contract.address);
+        const linkReferences = await retrieveLinkReferences('./artifacts/contracts')
+        const links = {}
+        const go = async (name) => {
+            const innerLinks = {}
+            for (let linkedContractName of linkReferences[name] || []) {
+                if (linkedContractName in links) {
+                    innerLinks[linkedContractName] = links[linkedContractName];
+                } else {
+                    const deployed = await go(linkedContractName);
+                    innerLinks[linkedContractName] = deployed;
+                    links[linkedContractName] = deployed;
+                }
+            }
+            const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
+            const deployed = await factory.deploy();
+            console.log(name, 'deployed at', deployed.address);
+            return deployed.address;
+        }
+        await go(args.name);
     })
 
 task("send", "Call contract function")
