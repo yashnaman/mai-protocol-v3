@@ -65,6 +65,9 @@ async function main(_, deployer, accounts) {
     printInfo("deploying preset2")
     await preset2(deployer, accounts)
     printInfo("deploying preset2 done")
+
+    console.log('do not forget to add keeper whitelist: poolCreator.addKeeper')
+    console.log('do not forget to transfer vault: poolCreator.setVault')
 }
 
 async function preset2(deployer, accounts) {
