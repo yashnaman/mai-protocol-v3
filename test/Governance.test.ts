@@ -64,7 +64,7 @@ describe('Governance', () => {
         // var now = Math.floor(Date.now() / 1000);
         expect(await governance.operatorExpiration()).to.equal(block.timestamp + 86400 * 10);
         expect(await governance.getOperator()).to.equal(user0.address);
-        await governance.setOperatorExpiration(block.timestamp);
+        await governance.setOperatorExpiration(block.timestamp - 1);
         expect(await governance.getOperator()).to.equal("0x0000000000000000000000000000000000000000")
     })
 
