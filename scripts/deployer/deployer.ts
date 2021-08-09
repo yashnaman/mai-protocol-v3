@@ -19,7 +19,7 @@ export interface DeploymentRecord {
 export class Deployer {
 
     public SAVE_PREFIX = './deployments/'
-    public SAVE_POSTFIX = '.deployment.js'
+    public SAVE_POSTFIX = '.deployment.json'
 
     public ethers: any
     public options: DeploymentOptions

@@ -5,9 +5,8 @@ import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";
 import "solidity-coverage"
-import { retrieveLinkReferences } from "./scripts/deployer/linkReferenceParser";
 
-const pk = process.env["PK"]
+// const pk = process.env["PK"]
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -40,25 +39,9 @@ task("deploy", "Deploy a single contract")
         if (typeof args.args != 'undefined') {
             args.args = args.args.split('|')
         }
-        const linkReferences = await retrieveLinkReferences('./artifacts/contracts')
-        const links = {}
-        const go = async (name) => {
-            const innerLinks = {}
-            for (let linkedContractName of linkReferences[name] || []) {
-                if (linkedContractName in links) {
-                    innerLinks[linkedContractName] = links[linkedContractName];
-                } else {
-                    const deployed = await go(linkedContractName);
-                    innerLinks[linkedContractName] = deployed;
-                    links[linkedContractName] = deployed;
-                }
-            }
-            const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
-            const deployed = await factory.deploy();
-            console.log(name, 'deployed at', deployed.address);
-            return deployed.address;
-        }
-        await go(args.name);
+        const factory = await hre.ethers.getContractFactory(args.name);
+        const contract = await factory.deploy(...args.args);
+        console.log(args.name, "has been deployed to", contract.address);
     })
 
 task("send", "Call contract function")
@@ -111,13 +94,17 @@ task("call", "Call contract function")
 module.exports = {
     defaultNetwork: "hardhat",
     networks: {
+        local: {
+            url: "http://localhost:8545",
+            allowUnlimitedContractSize: true
+        },
         hardhat: {
             allowUnlimitedContractSize: true
         },
         kovan: {
             url: "https://kovan.infura.io/v3/",
             gasPrice: 1e9,
-            accounts: [pk],
+            // accounts: [pk],
             timeout: 300000,
             confirmations: 1,
         },
@@ -131,7 +118,7 @@ module.exports = {
         arb: {
             url: "https://kovan5.arbitrum.io/rpc",
             gasPrice: 3e8,
-            accounts: [pk],
+            // accounts: [pk],
             timeout: 300000,
             confirmations: 1,
         },

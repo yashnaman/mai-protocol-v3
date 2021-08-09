@@ -1,0 +1,124 @@
+{
+  "Broker": {
+    "type": "plain",
+    "name": "Broker",
+    "address": "0xD6b8Eb34413f07a1a67A469345cFEa6633efd58d",
+    "deployedAt": 1057
+  },
+  "OracleRouterCreator": {
+    "type": "plain",
+    "name": "OracleRouterCreator",
+    "address": "0x9cC87998ba85D81e017E6B7662aC00eE2Ab8fe13",
+    "deployedAt": 1058
+  },
+  "UniswapV3OracleAdaptorCreator": {
+    "type": "plain",
+    "name": "UniswapV3OracleAdaptorCreator",
+    "address": "0xB1fC11F03b084FfF8daE95fA08e8D69ad2547Ec1",
+    "deployedAt": 1059
+  },
+  "UniswapV3Tool": {
+    "type": "plain",
+    "name": "UniswapV3Tool",
+    "address": "0x453439300B6C5C645737324b990f2d51137027bC",
+    "deployedAt": 1060
+  },
+  "InverseStateService": {
+    "type": "plain",
+    "name": "InverseStateService",
+    "address": "0x7306a649B451AE08781108445425Bd4E8AcF1E00",
+    "deployedAt": 1061
+  },
+  "WETH9": {
+    "type": "plain",
+    "name": "WETH9",
+    "address": "0xf4c5C29b14f0237131F7510A51684c8191f98E06",
+    "deployedAt": 1062
+  },
+  "CustomERC20": {
+    "type": "plain",
+    "name": "CustomERC20",
+    "address": "0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3",
+    "deployedAt": 1063
+  },
+  "OracleAdaptor": {
+    "type": "plain",
+    "name": "OracleAdaptor",
+    "address": "0xc91B651f770ed996a223a16dA9CCD6f7Df56C987",
+    "deployedAt": 1064
+  },
+  "SymbolService": {
+    "type": "upgradeable",
+    "name": "SymbolService",
+    "address": "0x787c6666213624D788522d516847978D7F348902",
+    "dependencies": {
+      "admin": "0x93a9182883C1019e1dBEbB5d40C140e7680cd151",
+      "implementation": "0xB90AcF57C3BFE8e0E8215defc282B5F48b3edC74"
+    },
+    "deployedAt": 1066
+  },
+  "PoolCreator": {
+    "type": "upgradeable",
+    "name": "PoolCreator",
+    "address": "0xAf7868a9BB72E16B930D50636519038d7F057470",
+    "dependencies": {
+      "admin": "0x93a9182883C1019e1dBEbB5d40C140e7680cd151",
+      "implementation": "0x10d16E2A026C4b5264A2aAC51cA65749cDf2037E"
+    },
+    "deployedAt": 1069
+  },
+  "Reader": {
+    "type": "plain",
+    "name": "Reader",
+    "address": "0x99aA73dA6309b8eC484eF2C95e96C131C1BBF7a0",
+    "deployedAt": 1071
+  },
+  "AMMModule": {
+    "type": "plain",
+    "name": "AMMModule",
+    "address": "0xFBc00Fa47a7d3bbE3e82B5Aa560B47008c1bD64c",
+    "deployedAt": 1073
+  },
+  "CollateralModule": {
+    "type": "plain",
+    "name": "CollateralModule",
+    "address": "0x240A60DC5e0B9013Cb8CF39aa6f9dDd8f25E40D2",
+    "deployedAt": 1074
+  },
+  "PerpetualModule": {
+    "type": "plain",
+    "name": "PerpetualModule",
+    "address": "0x3aD2306eDfBe72ce013cdb6b429212d9CdDE4F96",
+    "deployedAt": 1075
+  },
+  "LiquidityPoolModule": {
+    "type": "plain",
+    "name": "LiquidityPoolModule",
+    "address": "0xb69FC79100eDd058f9c96c0a13C80124aC1a7D77",
+    "deployedAt": 1076
+  },
+  "OrderModule": {
+    "type": "plain",
+    "name": "OrderModule",
+    "address": "0xfDD930c22708c7572278cf74D64f3721Eedc18Ad",
+    "deployedAt": 1077
+  },
+  "TradeModule": {
+    "type": "plain",
+    "name": "TradeModule",
+    "address": "0x757Fd23a0fDF9F9d2786f62f96f02Db4D096d10A",
+    "deployedAt": 1078
+  },
+  "LiquidityPool": {
+    "type": "plain",
+    "name": "LiquidityPool",
+    "address": "0x7930AC7ddD1e35fD4b25230121A9C45923894e67",
+    "deployedAt": 1079
+  },
+  "LpGovernor": {
+    "type": "plain",
+    "name": "LpGovernor",
+    "address": "0x4a680B00eEacbcCA480eB9aB57161A7B08A8F0Ba",
+    "deployedAt": 1080
+  }
+}

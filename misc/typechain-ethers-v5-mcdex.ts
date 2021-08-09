@@ -22,7 +22,8 @@ task(
     return;
   }
   await runSuper();
-
+  //temp solution not to create artifacts every time compilation is done
+  return;
   // RUN TYPECHAIN TASK
   console.log(`Creating simplified Typechain`);
   const cwd = process.cwd();
