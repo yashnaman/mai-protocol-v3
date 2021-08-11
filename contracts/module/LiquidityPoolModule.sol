@@ -447,26 +447,43 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
-        if (!hasAnyNormalPerpetual(liquidityPool)) {
+        if (!isAnyPerpetualIn(liquidityPool, PerpetualState.NORMAL)) {
             refundDonatedInsuranceFund(liquidityPool);
         }
     }
 
     /**
-     * @dev     Check if all the perpetuals in the liquidity pool are not in normal state.
+     * @dev     Check if all the perpetuals in the liquidity pool are not in a state.
      */
-    function hasAnyNormalPerpetual(LiquidityPoolStorage storage liquidityPool)
+    function isAnyPerpetualIn(LiquidityPoolStorage storage liquidityPool, PerpetualState state)
         internal
         view
         returns (bool)
     {
         uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
-            if (liquidityPool.perpetuals[i].state == PerpetualState.NORMAL) {
+            if (liquidityPool.perpetuals[i].state == state) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * @dev     Check if all the perpetuals in the liquidity pool are not in normal state.
+     */
+    function isAllPerpetualIn(LiquidityPoolStorage storage liquidityPool, PerpetualState state)
+        internal
+        view
+        returns (bool)
+    {
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
+            if (liquidityPool.perpetuals[i].state != state) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
