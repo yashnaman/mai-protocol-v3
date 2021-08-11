@@ -41,6 +41,7 @@ async function main(_, deployer, accounts) {
     await deployer.deployOrSkip("UniswapV3OracleAdaptorCreator")
     await deployer.deployOrSkip("UniswapV3Tool")
     await deployer.deployOrSkip("InverseStateService")
+    await deployer.deployOrSkip("Reader", deployer.addressOf("InverseStateService"))
 
     // // test only
     await deployer.deploy("WETH9")
@@ -59,7 +60,6 @@ async function main(_, deployer, accounts) {
         vault,
         vaultFeeRate
     ))
-    await deployer.deployOrSkip("Reader", poolCreator.address)
     await ensureFinished(symbolService.addWhitelistedFactory(poolCreator.address))
 
     // add version
@@ -112,6 +112,8 @@ async function preset2(deployer, accounts) {
         [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
         [toWei("0.1"), toWei("0.5"), toWei("0.5"), toWei("0.1"), toWei("5"), toWei("1"), toWei("0.1"), toWei("10000000")]
     ))
+    const inverseStateService = await deployer.getDeployedContract("InverseStateService")
+    await ensureFinished(inverseStateService.setInverseState(liquidityPool.address, "0", true))
     // await ensureFinished(liquidityPool.createPerpetual(
     //     oracleAddresses["BTC - USD"],
     //     // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi

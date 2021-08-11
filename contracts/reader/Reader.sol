@@ -11,6 +11,7 @@ import "../interface/ISymbolService.sol";
 import "../interface/ISymbolService.sol";
 import "../libraries/SafeMathExt.sol";
 import "../libraries/Constant.sol";
+import "hardhat/console.sol";
 
 interface IInverseStateService {
     function isInverse(address liquidityPool, uint256 perpetualIndex) external view returns (bool);
@@ -242,11 +243,13 @@ contract Reader {
         public
         returns (bool isSynced, LiquidityPoolReaderResult memory pool)
     {
+        console.log("in");
         try ILiquidityPool(liquidityPool).forceToSyncState() {
             isSynced = true;
         } catch {
             isSynced = false;
         }
+        console.log("in2");
         // pool
         (
             pool.isRunning,
@@ -255,15 +258,20 @@ contract Reader {
             pool.intNums,
             pool.uintNums
         ) = ILiquidityPoolFull(liquidityPool).getLiquidityPoolInfo();
+        console.log("in3");
         // perpetual
         uint256 perpetualCount = pool.uintNums[1];
         address symbolService = IPoolCreatorFull(pool.addresses[0]).getSymbolService();
+        console.log("in4");
         pool.perpetuals = new PerpetualReaderResult[](perpetualCount);
+        console.log("perpetualCount", perpetualCount);
         for (uint256 i = 0; i < perpetualCount; i++) {
             getPerpetual(pool.perpetuals[i], symbolService, liquidityPool, i);
         }
+        console.log("in5");
         // leave this dangerous line at the end
         pool.isAMMMaintenanceSafe = true;
+
         if (perpetualCount > 0) {
             try
                 ILiquidityPoolGovernance(liquidityPool).setEmergencyState(
@@ -285,18 +293,28 @@ contract Reader {
         (perp.state, perp.oracle, perp.nums) = ILiquidityPoolFull(liquidityPool).getPerpetualInfo(
             perpetualIndex
         );
+        console.log("181");
         // read more from symbol service
         perp.symbol = getMinSymbol(symbolService, liquidityPool, perpetualIndex);
+        console.log("10001");
         // read more from oracle
         perp.underlyingAsset = IOracle(perp.oracle).underlyingAsset();
+        console.log("121");
         perp.isMarketClosed = IOracle(perp.oracle).isMarketClosed();
+        console.log("12");
         perp.isTerminated = IOracle(perp.oracle).isTerminated();
+        console.log("111");
         // read more from account
         (perp.ammCashBalance, perp.ammPositionAmount, , , , , , , ) = ILiquidityPoolFull(
             liquidityPool
         ).getMarginAccount(perpetualIndex, liquidityPool);
+        console.log("margin account");
         // read more from inverse service
+        console.log("inverseStateService", address(inverseStateService));
         perp.isInversePerpetual = inverseStateService.isInverse(liquidityPool, perpetualIndex);
+        // perp.isInversePerpetual = false;
+        console.log("isInverse", perp.isInversePerpetual);
+        console.log("perpetualIndex", perpetualIndex);
     }
 
     function readIndexPrices(address[] memory oracles)
