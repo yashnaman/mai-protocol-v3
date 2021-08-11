@@ -69,7 +69,7 @@ library LiquidityPoolModule {
     event OperatorCheckIn(address indexed operator);
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
-    event SetTargetLeverage(address indexed trader, int256 targetLeverage);
+    event SetTargetLeverage(uint256 perpetualIndex, address indexed trader, int256 targetLeverage);
     event AddAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event RemoveAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event AddTraderKeeper(uint256 perpetualIndex, address indexed keeper);
@@ -1249,7 +1249,7 @@ library LiquidityPoolModule {
         int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
         require(targetLeverage <= maxLeverage, "targetLeverage exceeds maxLeverage");
         perpetual.setTargetLeverage(trader, targetLeverage);
-        emit SetTargetLeverage(trader, targetLeverage);
+        emit SetTargetLeverage(perpetualIndex, trader, targetLeverage);
     }
 
     // A readonly version of adjustMarginLeverage. This function was written post-audit. So there's a lot of repeated logic here.

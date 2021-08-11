@@ -37,4 +37,12 @@ interface IPoolCreator {
         bytes memory dataForLiquidityPool,
         bytes memory dataForGovernor
     ) external;
+
+    /**
+     * @notice  Indicates the universe settle state.
+     *          If the flag set to true:
+     *              - all the pereptual created by this poolCreator can be settled immediately;
+     *              - all the trading method will be unavailable.
+     */
+    function isUniverseSettled() external view returns (bool);
 }

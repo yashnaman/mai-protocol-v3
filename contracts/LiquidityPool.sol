@@ -130,8 +130,8 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
     function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
         external
         override
-        syncState(false)
         nonReentrant
+        syncState(false)
     {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
