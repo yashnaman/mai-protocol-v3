@@ -73,7 +73,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
         int256[8] calldata riskParams,
         int256[8] calldata minRiskParamValues,
         int256[8] calldata maxRiskParamValues
-    ) external {
+    ) external onlyNotUniverseSettled {
         if (!_liquidityPool.isRunning || _liquidityPool.isFastCreationEnabled) {
             require(
                 _msgSender() == _liquidityPool.getOperator(),
@@ -112,7 +112,13 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
-    function addLiquidity(int256 cashToAdd) external override syncState(false) nonReentrant {
+    function addLiquidity(int256 cashToAdd)
+        external
+        override
+        onlyNotUniverseSettled
+        syncState(false)
+        nonReentrant
+    {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
@@ -134,6 +140,9 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
         syncState(false)
     {
         require(_liquidityPool.isRunning, "pool is not running");
+        if (IPoolCreatorFull(_liquidityPool.creator).isUniverseSettled()) {
+            require(!_liquidityPool.hasAnyNormalPerpetual(), "all perpetual must be settled");
+        }
         _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
     }
 

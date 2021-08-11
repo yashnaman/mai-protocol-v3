@@ -109,7 +109,7 @@ describe("universeSettle", () => {
 
     let now = Math.floor(Date.now() / 1000);
 
-    await poolCreator.setGuaridan(user3.address);
+    await poolCreator.setGuardian(user3.address);
     expect(await poolCreator.guardian()).to.equal(user3.address);
 
     await expect(poolCreator.setUniverseSettled(true)).to.be.revertedWith("sender is not guardian");
