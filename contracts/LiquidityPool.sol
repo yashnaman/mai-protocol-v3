@@ -142,7 +142,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
         require(_liquidityPool.isRunning, "pool is not running");
         if (IPoolCreatorFull(_liquidityPool.creator).isUniverseSettled()) {
             require(
-                !_liquidityPool.isAllPerpetualIn(PerpetualState.CLEARED),
+                _liquidityPool.isAllPerpetualIn(PerpetualState.CLEARED),
                 "all perpetual must be cleared"
             );
         }
