@@ -471,7 +471,7 @@ library LiquidityPoolModule {
 
     /**
      * @dev     Refund donated insurance fund to current operator.
-     *           - If currernt operator address is non-zero, all the donated funds will be forward to the operator address;
+     *           - If current operator address is non-zero, all the donated funds will be forward to the operator address;
      *           - If no operator, the donated funds will be dispatched to the LPs according to the ratio of owned shares.
      */
     function refundDonatedInsuranceFund(LiquidityPoolStorage storage liquidityPool) internal {
@@ -509,7 +509,11 @@ library LiquidityPoolModule {
             margin = margin.add(perpetual.getMargin(address(this), markPrice));
         }
         margin = margin.add(liquidityPool.poolCash);
-        require(margin < maintenanceMargin, "AMM's margin >= maintenance margin");
+        require(
+            margin < maintenanceMargin ||
+                IPoolCreatorFull(liquidityPool.creator).isUniverseSettled(),
+            "AMM's margin >= maintenance margin or not universe settled"
+        );
         // rebalance for settle all perps
         // Floor to make sure poolCash >= 0
         int256 rate = margin.wdiv(initialMargin, Round.FLOOR);

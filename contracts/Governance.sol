@@ -179,7 +179,7 @@ contract Governance is Storage, ILiquidityPoolGovernance {
 
     /**
      * @notice  Set perpetual into "EMERGENCY" state.
-     *          1. if the oralce contract declares itself as "termainated", call setEmergencyState(index).
+     *          1. if the oracle contract declares itself as "terminated", call setEmergencyState(index).
      *          2. if the AMM is maintenance margin unsafe, call
      *             setEmergencyState(SET_ALL_PERPETUALS_TO_EMERGENCY_STATE).
      * @param   perpetualIndex  The index of the perpetual in liquidity pool or
