@@ -1011,6 +1011,7 @@ library LiquidityPoolModule {
             return 0;
         } else if (rebalanceMargin > 0) {
             // from perp to pool
+            rebalanceMargin = rebalanceMargin.min(perpetual.totalCollateral);
             perpetual.updateCash(address(this), rebalanceMargin.neg());
             transferFromPerpetualToPool(liquidityPool, perpetualIndex, rebalanceMargin);
         } else {
