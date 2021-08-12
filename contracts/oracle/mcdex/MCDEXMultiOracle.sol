@@ -2,12 +2,13 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
 import "../../interface/IOracle.sol";
 
-contract MCDEXMultiOracle is Ownable {
+contract MCDEXMultiOracle is AccessControl {
     struct Single {
         string collateral;
         string underlyingAsset;
@@ -16,61 +17,37 @@ contract MCDEXMultiOracle is Ownable {
         bool isMarketClosed;
         bool isTerminated;
     }
+
     mapping(uint256 => Single) markets;
+    bool isAllTerminated;
 
-    // @dev if the time since _markPriceTimestamp exceeds this threshold, isTerminated will
-    //      be true automatically. maxHeartBeat = 0 means no limit
-    uint256 public maxHeartBeat;
+    event SetMarket(uint256 indexed index, string collateral, string underlyingAsset);
+    event SetPrice(uint256 indexed index, int256 price, uint256 timestamp);
+    event SetMarketClosed(uint256 indexed index, bool isMarketClosed);
+    event SetTerminated(uint256 indexed index);
+    event SetAllTerminated();
 
-    constructor() Ownable() {}
+    /**
+     * @dev SET_PRICE_ROLE can update prices.
+     */
+    bytes32 public constant SET_PRICE_ROLE = keccak256("SET_PRICE_ROLE");
 
-    function setMarket(
-        uint256 index,
-        string memory collateral_,
-        string memory underlyingAsset_
-    ) external onlyOwner {
-        Single storage m = markets[index];
-        m.collateral = collateral_;
-        m.underlyingAsset = underlyingAsset_;
-    }
+    /**
+     * @dev CLOSE_MARKET_ROLE can mark the market as closed if it is not in regular
+     *      trading period.
+     */
+    bytes32 public constant CLOSE_MARKET_ROLE = keccak256("CLOSE_MARKET_ROLE");
 
-    function setPrice(
-        uint256 index,
-        int256 price,
-        uint256 timestamp
-    ) public onlyOwner {
-        if (checkHeartStop(index)) {
-            // keep the old price
-            return;
-        }
-        Single storage m = markets[index];
-        m.price = price;
-        m.timestamp = timestamp;
-    }
+    /**
+     * @dev TERMINATE_ROLE can shutdown the oracle service and never online again.
+     */
+    bytes32 public constant TERMINATE_ROLE = keccak256("TERMINATE_ROLE");
 
-    struct Prices {
-        uint256 index;
-        int256 price;
-    }
-
-    function setPrices(Prices[] memory prices, uint256 timestamp) external onlyOwner {
-        for (uint256 i = 0; i < prices.length; i++) {
-            setPrice(prices[i].index, prices[i].price, timestamp);
-        }
-    }
-
-    function setMarketClosed(uint256 index, bool isMarketClosed_) external onlyOwner {
-        Single storage m = markets[index];
-        m.isMarketClosed = isMarketClosed_;
-    }
-
-    function setTerminated(uint256 index, bool isTerminated_) external onlyOwner {
-        Single storage m = markets[index];
-        m.isTerminated = isTerminated_;
-    }
-
-    function setMaxHeartBeat(uint256 maxHeartBeat_) external onlyOwner {
-        maxHeartBeat = maxHeartBeat_;
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(SET_PRICE_ROLE, _msgSender());
+        _setupRole(CLOSE_MARKET_ROLE, _msgSender());
+        _setupRole(TERMINATE_ROLE, _msgSender());
     }
 
     function collateral(uint256 index) external view returns (string memory) {
@@ -106,22 +83,84 @@ contract MCDEXMultiOracle is Ownable {
         return m.isMarketClosed;
     }
 
-    function isTerminated(uint256 index) external returns (bool) {
-        checkHeartStop(index);
+    function isTerminated(uint256 index) external view returns (bool) {
+        if (isAllTerminated) {
+            return true;
+        }
         Single storage m = markets[index];
         return m.isTerminated;
     }
 
-    function checkHeartStop(uint256 index) public returns (bool) {
+    function setMarket(
+        uint256 index,
+        string memory collateral_,
+        string memory underlyingAsset_
+    ) external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "admin_role");
         Single storage m = markets[index];
-        if (maxHeartBeat == 0 || m.timestamp == 0) {
-            return false;
+        m.collateral = collateral_;
+        m.underlyingAsset = underlyingAsset_;
+        emit SetMarket(index, collateral_, underlyingAsset_);
+    }
+
+    function setPrice(
+        uint256 index,
+        int256 price,
+        uint256 timestamp
+    ) external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(SET_PRICE_ROLE, _msgSender()), "set_price_role");
+        _setPrice(index, price, timestamp);
+    }
+
+    struct Prices {
+        uint256 index;
+        int256 price;
+    }
+
+    function setPrices(Prices[] memory prices, uint256 timestamp) external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(SET_PRICE_ROLE, _msgSender()), "set_price_role");
+        for (uint256 i = 0; i < prices.length; i++) {
+            _setPrice(prices[i].index, prices[i].price, timestamp);
         }
-        if (block.timestamp > m.timestamp + maxHeartBeat) {
-            m.isTerminated = true;
-            return true;
-        }
-        return false;
+    }
+
+    function setMarketClosed(uint256 index, bool isMarketClosed_) external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(CLOSE_MARKET_ROLE, _msgSender()), "close_market_role");
+        Single storage m = markets[index];
+        m.isMarketClosed = isMarketClosed_;
+        emit SetMarketClosed(index, isMarketClosed_);
+    }
+
+    function setTerminated(uint256 index) external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(TERMINATE_ROLE, _msgSender()), "terminate_role");
+        Single storage m = markets[index];
+        require(!m.isTerminated, "terminated");
+        m.isTerminated = true;
+        emit SetTerminated(index);
+    }
+
+    function setAllTerminated() external {
+        require(!isAllTerminated, "all terminated");
+        require(hasRole(TERMINATE_ROLE, _msgSender()), "terminate_role");
+        isAllTerminated = true;
+        emit SetAllTerminated();
+    }
+
+    function _setPrice(
+        uint256 index,
+        int256 price,
+        uint256 timestamp
+    ) private {
+        Single storage m = markets[index];
+        require(!m.isTerminated, "terminated");
+        m.price = price;
+        m.timestamp = timestamp;
+        emit SetPrice(index, price, timestamp);
     }
 }
 
@@ -165,7 +204,7 @@ contract MCDEXSingleOracle is Initializable, IOracle {
         return _multiOracle.isMarketClosed(_index);
     }
 
-    function isTerminated() external override returns (bool) {
+    function isTerminated() external view override returns (bool) {
         return _multiOracle.isTerminated(_index);
     }
 }
