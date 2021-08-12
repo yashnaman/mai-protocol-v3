@@ -4,7 +4,6 @@ import { BigNumber as BN } from "ethers";
 import { toWei, fromWei, createFactory, createContract, createLiquidityPoolFactory } from "../scripts/utils";
 
 describe("universeSettle", () => {
-
   it("main", async () => {
     // users
     const accounts = await ethers.getSigners();
@@ -109,16 +108,64 @@ describe("universeSettle", () => {
 
     let now = Math.floor(Date.now() / 1000);
 
-    await poolCreator.setGuardian(user3.address);
-    expect(await poolCreator.guardian()).to.equal(user3.address);
+    await poolCreator.addGuardian(user3.address);
+    expect(await poolCreator.isGuardian(user3.address)).to.be.true;
 
-    await expect(poolCreator.setUniverseSettled(true)).to.be.revertedWith("sender is not guardian");
-    await poolCreator.connect(user3).setUniverseSettled(true)
+    await expect(poolCreator.setUniverseSettled()).to.be.revertedWith("sender is not guardian");
+    await poolCreator.connect(user3).setUniverseSettled();
 
-    await expect(perp.connect(user1).deposit(0, user1.address, toWei("100"))).to.be.revertedWith("universe settled");;
+    await expect(perp.connect(user1).deposit(0, user1.address, toWei("100"))).to.be.revertedWith("universe settled");
     // trade 1
-    await expect(perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0)).to.be.revertedWith("universe settled");
+    await expect(perp.connect(user1).trade(0, user1.address, toWei("0.1"), toWei("1000"), now + 999999, none, 0)).to.be.revertedWith(
+      "universe settled"
+    );
     // withdraw
-    await expect(perp.connect(user1).withdraw(0, user1.address, toWei("10"))).to.be.revertedWith("universe settled");;
+    await expect(perp.connect(user1).withdraw(0, user1.address, toWei("10"))).to.be.revertedWith("universe settled");
+  });
+
+  it("guardian", async () => {
+    // users
+    const accounts = await ethers.getSigners();
+    const user0 = accounts[0];
+    const user1 = accounts[1];
+    const user2 = accounts[2];
+    const user3 = accounts[3];
+    const vault = accounts[9];
+    const none = "0x0000000000000000000000000000000000000000";
+    const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+    // create components
+    var symbol = await createContract("SymbolService");
+    await symbol.initialize(10000);
+    var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+    var perpTemplate = await LiquidityPoolFactory.deploy();
+    var govTemplate = await createContract("TestLpGovernor");
+    var poolCreator = await createContract("PoolCreator");
+    await poolCreator.initialize(symbol.address, vault.address, toWei("0.001"));
+    await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+    await symbol.addWhitelistedFactory(poolCreator.address);
+
+    expect(await poolCreator.guardianCount()).to.equal(0);
+
+    await poolCreator.addGuardian(user2.address);
+    expect(await poolCreator.guardianCount()).to.equal(1);
+    await poolCreator.addGuardian(user3.address);
+    expect(await poolCreator.guardianCount()).to.equal(2);
+
+    await poolCreator.connect(user3).renounceGuardian();
+    await expect(poolCreator.connect(user3).renounceGuardian()).to.be.revertedWith("sender is not guardian");
+    expect(await poolCreator.guardianCount()).to.equal(1);
+
+    expect(await poolCreator.isGuardian(user2.address)).to.be.true;
+    expect(await poolCreator.isGuardian(user3.address)).to.be.false;
+    await poolCreator.connect(user2).transferGuardian(user3.address);
+    await expect(poolCreator.connect(user2).transferGuardian(user3.address)).to.be.revertedWith("sender is not guardian");
+    expect(await poolCreator.isGuardian(user2.address)).to.be.false;
+    expect(await poolCreator.isGuardian(user3.address)).to.be.true;
+
+    await expect(poolCreator.setUniverseSettled()).to.be.revertedWith("sender is not guardian");
+    await expect(poolCreator.connect(user2).setUniverseSettled()).to.be.revertedWith("sender is not guardian");
+    await poolCreator.connect(user3).setUniverseSettled();
+    expect(await poolCreator.isUniverseSettled()).to.be.true;
   });
 });
