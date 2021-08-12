@@ -21,12 +21,12 @@ describe("MCDEXMultiOracle", () => {
 
     beforeEach(async () => {
         oracle0 = await createContract("MCDEXMultiOracle");
-        await oracle0.grantRole(await oracle0.SET_PRICE_ROLE(), accounts[2].address);
-        await oracle0.grantRole(await oracle0.CLOSE_MARKET_ROLE(), accounts[3].address);
-        await oracle0.grantRole(await oracle0.TERMINATE_ROLE(), accounts[4].address);
-        await oracle0.revokeRole(await oracle0.SET_PRICE_ROLE(), accounts[0].address);
-        await oracle0.revokeRole(await oracle0.CLOSE_MARKET_ROLE(), accounts[0].address);
-        await oracle0.revokeRole(await oracle0.TERMINATE_ROLE(), accounts[0].address);
+        await oracle0.grantRole(await oracle0.PRICE_SETTER_ROLE(), accounts[2].address);
+        await oracle0.grantRole(await oracle0.MARKET_CLOSER_ROLE(), accounts[3].address);
+        await oracle0.grantRole(await oracle0.TERMINATER_ROLE(), accounts[4].address);
+        await oracle0.revokeRole(await oracle0.PRICE_SETTER_ROLE(), accounts[0].address);
+        await oracle0.revokeRole(await oracle0.MARKET_CLOSER_ROLE(), accounts[0].address);
+        await oracle0.revokeRole(await oracle0.TERMINATER_ROLE(), accounts[0].address);
 
         oracle1 = await createContract("MCDEXSingleOracle");
         oracle2 = await createContract("MCDEXSingleOracle");
@@ -35,12 +35,12 @@ describe("MCDEXMultiOracle", () => {
     })
 
     it("auth", async () => {
-        await expect(oracle0.connect(accounts[1]).setMarket(0, "a", "b")).to.be.revertedWith("admin_role");
-        await expect(oracle0.connect(accounts[1]).setPrice(0, toWei('1000'), 100)).to.be.revertedWith("set_price_role");
-        await expect(oracle0.connect(accounts[1]).setPrices([[0, toWei('1000')], [1, toWei('2000')]], 100)).to.be.revertedWith("set_price_role");
-        await expect(oracle0.connect(accounts[1]).setMarketClosed(0, true)).to.be.revertedWith("close_market_role");
-        await expect(oracle0.connect(accounts[1]).setTerminated(0)).to.be.revertedWith("terminate_role");
-        await expect(oracle0.connect(accounts[1]).setAllTerminated()).to.be.revertedWith("terminate_role");
+        await expect(oracle0.connect(accounts[1]).setMarket(0, "a", "b")).to.be.revertedWith("role");
+        await expect(oracle0.connect(accounts[1]).setPrice(0, toWei('1000'), 100)).to.be.revertedWith("role");
+        await expect(oracle0.connect(accounts[1]).setPrices([[0, toWei('1000')], [1, toWei('2000')]], 100)).to.be.revertedWith("role");
+        await expect(oracle0.connect(accounts[1]).setMarketClosed(0, true)).to.be.revertedWith("role");
+        await expect(oracle0.connect(accounts[1]).setTerminated(0)).to.be.revertedWith("role");
+        await expect(oracle0.connect(accounts[1]).setAllTerminated()).to.be.revertedWith("role");
     })
 
     it("normal", async () => {

@@ -28,26 +28,26 @@ contract MCDEXMultiOracle is AccessControl {
     event SetAllTerminated();
 
     /**
-     * @dev SET_PRICE_ROLE can update prices.
+     * @dev PRICE_SETTER_ROLE can update prices.
      */
-    bytes32 public constant SET_PRICE_ROLE = keccak256("SET_PRICE_ROLE");
+    bytes32 public constant PRICE_SETTER_ROLE = keccak256("PRICE_SETTER_ROLE");
 
     /**
-     * @dev CLOSE_MARKET_ROLE can mark the market as closed if it is not in regular
+     * @dev MARKET_CLOSER_ROLE can mark the market as closed if it is not in regular
      *      trading period.
      */
-    bytes32 public constant CLOSE_MARKET_ROLE = keccak256("CLOSE_MARKET_ROLE");
+    bytes32 public constant MARKET_CLOSER_ROLE = keccak256("MARKET_CLOSER_ROLE");
 
     /**
-     * @dev TERMINATE_ROLE can shutdown the oracle service and never online again.
+     * @dev TERMINATER_ROLE can shutdown the oracle service and never online again.
      */
-    bytes32 public constant TERMINATE_ROLE = keccak256("TERMINATE_ROLE");
+    bytes32 public constant TERMINATER_ROLE = keccak256("TERMINATER_ROLE");
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(SET_PRICE_ROLE, _msgSender());
-        _setupRole(CLOSE_MARKET_ROLE, _msgSender());
-        _setupRole(TERMINATE_ROLE, _msgSender());
+        _setupRole(PRICE_SETTER_ROLE, _msgSender());
+        _setupRole(MARKET_CLOSER_ROLE, _msgSender());
+        _setupRole(TERMINATER_ROLE, _msgSender());
     }
 
     function collateral(uint256 index) external view returns (string memory) {
@@ -97,7 +97,7 @@ contract MCDEXMultiOracle is AccessControl {
         string memory underlyingAsset_
     ) external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "admin_role");
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "role");
         Single storage m = markets[index];
         m.collateral = collateral_;
         m.underlyingAsset = underlyingAsset_;
@@ -110,7 +110,7 @@ contract MCDEXMultiOracle is AccessControl {
         uint256 timestamp
     ) external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(SET_PRICE_ROLE, _msgSender()), "set_price_role");
+        require(hasRole(PRICE_SETTER_ROLE, _msgSender()), "role");
         _setPrice(index, price, timestamp);
     }
 
@@ -121,7 +121,7 @@ contract MCDEXMultiOracle is AccessControl {
 
     function setPrices(Prices[] memory prices, uint256 timestamp) external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(SET_PRICE_ROLE, _msgSender()), "set_price_role");
+        require(hasRole(PRICE_SETTER_ROLE, _msgSender()), "role");
         for (uint256 i = 0; i < prices.length; i++) {
             _setPrice(prices[i].index, prices[i].price, timestamp);
         }
@@ -129,7 +129,7 @@ contract MCDEXMultiOracle is AccessControl {
 
     function setMarketClosed(uint256 index, bool isMarketClosed_) external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(CLOSE_MARKET_ROLE, _msgSender()), "close_market_role");
+        require(hasRole(MARKET_CLOSER_ROLE, _msgSender()), "role");
         Single storage m = markets[index];
         m.isMarketClosed = isMarketClosed_;
         emit SetMarketClosed(index, isMarketClosed_);
@@ -137,7 +137,7 @@ contract MCDEXMultiOracle is AccessControl {
 
     function setTerminated(uint256 index) external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(TERMINATE_ROLE, _msgSender()), "terminate_role");
+        require(hasRole(TERMINATER_ROLE, _msgSender()), "role");
         Single storage m = markets[index];
         require(!m.isTerminated, "terminated");
         m.isTerminated = true;
@@ -146,7 +146,7 @@ contract MCDEXMultiOracle is AccessControl {
 
     function setAllTerminated() external {
         require(!isAllTerminated, "all terminated");
-        require(hasRole(TERMINATE_ROLE, _msgSender()), "terminate_role");
+        require(hasRole(TERMINATER_ROLE, _msgSender()), "role");
         isAllTerminated = true;
         emit SetAllTerminated();
     }
