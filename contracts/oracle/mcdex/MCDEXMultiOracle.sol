@@ -207,4 +207,12 @@ contract MCDEXSingleOracle is Initializable, IOracle {
     function isTerminated() external view override returns (bool) {
         return _multiOracle.isTerminated(_index);
     }
+
+    // upgrade 20210812:
+    // * Add events
+    // * Seperate a TERMINATER_ROLE
+    function upgradeToV2() external {
+        require(_multiOracle == MCDEXMultiOracle(0x29f748022a943977787807DDE2Dbb0445Ab6365B), "upgraded");
+        _multiOracle = MCDEXMultiOracle(0x29f748022a943977787807DDE2Dbb0445Ab6365B);
+    }
 }
