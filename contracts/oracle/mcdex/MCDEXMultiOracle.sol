@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "../../interface/IOracle.sol";
 
-contract MockMultiOracle is Ownable {
+contract MCDEXMultiOracle is Ownable {
     struct Single {
         string collateral;
         string underlyingAsset;
@@ -126,11 +126,11 @@ contract MockMultiOracle is Ownable {
 }
 
 // note: wrapped by TransparentUpgradeableProxy
-contract MockSingleOracle is Initializable, IOracle {
-    MockMultiOracle private _multiOracle;
+contract MCDEXSingleOracle is Initializable, IOracle {
+    MCDEXMultiOracle private _multiOracle;
     uint256 private _index;
 
-    function initialize(MockMultiOracle multiOracle_, uint256 index_) external initializer {
+    function initialize(MCDEXMultiOracle multiOracle_, uint256 index_) external initializer {
         _multiOracle = multiOracle_;
         _index = index_;
     }
