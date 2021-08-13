@@ -89,7 +89,8 @@ describe('TradeModule2', () => {
 
             await testTrade.setMarginAccount(0, user1.address, toWei('7698.86'), toWei('2.3'));
             await testTrade.setMarginAccount(0, testTrade.address, toWei('83941.29865625'), toWei('2.3'));
-
+            let blockNumber = await ethers.provider.getBlockNumber()
+            let block = await ethers.provider.getBlock(blockNumber)
             const order = {
                 trader: user1.address, // trader
                 broker: testRelay.address, // broker
@@ -103,7 +104,7 @@ describe('TradeModule2', () => {
                 limitPrice: toWei("0"),
                 triggerPrice: toWei("0"),
                 chainID: 31337,
-                expiredAt: now + 10000,
+                expiredAt: block["timestamp"] + 10000,
                 perpetualIndex: 0,
                 brokerFeeLimit: 20,  // 20 gwei
                 flags: 0x00000000,

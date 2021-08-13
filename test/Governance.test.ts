@@ -315,7 +315,7 @@ describe('Governance', () => {
         await governance.setPoolCash(toWei('-2000'));
         // margin = -2000 + 20000 + (-25) * 1000 + 3500 + 5 * 1000 = 1500
         // maintenance margin = 25 * 1000 * 0.05 + 5 * 1000 * 0.05 = 1500
-        await expect(governance.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")).to.be.revertedWith("AMM's margin >= maintenance margin");
+        await expect(governance.setEmergencyState("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")).to.be.revertedWith("AMM's margin >= maintenance margin or not universe settled");
     })
 
     it('setPerpetualBaseParameter', async () => {

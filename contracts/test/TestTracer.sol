@@ -16,4 +16,8 @@ contract TestTracer is Tracer {
     function registerLiquidityPool(address liquidityPool, address operator) public {
         _registerLiquidityPool(liquidityPool, operator);
     }
+
+    function isUniverseSettled() public pure returns (bool) {
+        return false;
+    }
 }
