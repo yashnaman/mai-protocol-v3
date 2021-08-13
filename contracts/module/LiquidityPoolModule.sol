@@ -533,32 +533,30 @@ library LiquidityPoolModule {
         );
         // rebalance for settle all perps
         // Floor to make sure poolCash >= 0
-        if (initialMargin != 0) {
-            int256 rate = margin.wdiv(initialMargin, Round.FLOOR);
-            for (uint256 i = 0; i < length; i++) {
-                PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
-                if (perpetual.state != PerpetualState.NORMAL) {
-                    continue;
-                }
-                int256 markPrice = perpetual.getMarkPrice();
-                // Floor to make sure poolCash >= 0
-                int256 newMargin = perpetual.getInitialMargin(address(this), markPrice).wmul(
-                    rate,
-                    Round.FLOOR
-                );
-                margin = perpetual.getMargin(address(this), markPrice);
-                int256 deltaMargin = newMargin.sub(margin);
-                if (deltaMargin > 0) {
-                    // from pool to perp
-                    perpetual.updateCash(address(this), deltaMargin);
-                    transferFromPoolToPerpetual(liquidityPool, i, deltaMargin);
-                } else if (deltaMargin < 0) {
-                    // from perp to pool
-                    perpetual.updateCash(address(this), deltaMargin);
-                    transferFromPerpetualToPool(liquidityPool, i, deltaMargin.neg());
-                }
-                liquidityPool.perpetuals[i].setEmergencyState();
+        int256 rate = initialMargin != 0 ? margin.wdiv(initialMargin, Round.FLOOR) : 0;
+        for (uint256 i = 0; i < length; i++) {
+            PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
+            if (perpetual.state != PerpetualState.NORMAL) {
+                continue;
             }
+            int256 markPrice = perpetual.getMarkPrice();
+            // Floor to make sure poolCash >= 0
+            int256 newMargin = perpetual.getInitialMargin(address(this), markPrice).wmul(
+                rate,
+                Round.FLOOR
+            );
+            margin = perpetual.getMargin(address(this), markPrice);
+            int256 deltaMargin = newMargin.sub(margin);
+            if (deltaMargin > 0) {
+                // from pool to perp
+                perpetual.updateCash(address(this), deltaMargin);
+                transferFromPoolToPerpetual(liquidityPool, i, deltaMargin);
+            } else if (deltaMargin < 0) {
+                // from perp to pool
+                perpetual.updateCash(address(this), deltaMargin);
+                transferFromPerpetualToPool(liquidityPool, i, deltaMargin.neg());
+            }
+            liquidityPool.perpetuals[i].setEmergencyState();
         }
         require(liquidityPool.poolCash >= 0, "negative poolCash after settle all");
         refundDonatedInsuranceFund(liquidityPool);
