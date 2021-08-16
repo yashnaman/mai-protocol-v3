@@ -301,17 +301,19 @@ contract Reader {
 
     function readIndexPrices(address[] memory oracles)
         public
-        returns (bool[] memory isSuccess, int256[] memory indexPrices)
+        returns (bool[] memory isSuccess, int256[] memory indexPrices, uint256[] memory timestamps)
     {
         isSuccess = new bool[](oracles.length);
         indexPrices = new int256[](oracles.length);
+        timestamps = new uint256[](oracles.length);
         for (uint256 i = 0; i < oracles.length; i++) {
             if (!oracles[i].isContract()) {
                 continue;
             }
-            try IOracle(oracles[i]).priceTWAPShort() returns (int256 indexPrice, uint256) {
-                indexPrices[i] = indexPrice;
+            try IOracle(oracles[i]).priceTWAPShort() returns (int256 indexPrice, uint256 timestamp) {
                 isSuccess[i] = true;
+                indexPrices[i] = indexPrice;
+                timestamps[i] = timestamp;
             } catch {}
         }
     }
