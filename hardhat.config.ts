@@ -54,7 +54,7 @@ task("deploy", "Deploy a single contract")
                 }
             }
             const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
-            const deployed = await factory.deploy();
+            const deployed = await factory.deploy(...args.args);
             console.log(name, 'deployed at', deployed.address);
             return deployed.address;
         }
