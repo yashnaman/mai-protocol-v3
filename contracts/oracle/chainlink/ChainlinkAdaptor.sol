@@ -21,7 +21,6 @@ contract ChainlinkAdaptor is Ownable, IOracle {
     address public chainlink;
     int256 internal _markPrice;
     uint256 internal _markPriceTimestamp;
-    uint256 public maxHeartBeat;
     bool internal _isTerminated;
     string public override collateral;
     string public override underlyingAsset;
@@ -40,21 +39,12 @@ contract ChainlinkAdaptor is Ownable, IOracle {
         return false;
     }
 
-    function isTerminated() public override returns (bool) {
-        checkHeartStop();
+    function isTerminated() public view override returns (bool) {
         return _isTerminated;
     }
 
     function priceTWAPLong() public override returns (int256, uint256) {
-        if (!checkHeartStop()) {
-            int256 markPrice;
-            (, markPrice, , _markPriceTimestamp, ) = IChainlink(chainlink).latestRoundData();
-            require(
-                markPrice > 0 && markPrice <= type(int256).max / 10**10,
-                "invalid oracle price"
-            );
-            _markPrice = markPrice * 10**10;
-        }
+        updatePrice();
         return (_markPrice, _markPriceTimestamp);
     }
 
@@ -62,18 +52,21 @@ contract ChainlinkAdaptor is Ownable, IOracle {
         return priceTWAPLong();
     }
 
-    function setMaxHeartBeat(uint256 _maxHeartBeat) external onlyOwner {
-        maxHeartBeat = _maxHeartBeat;
+    function setTerminated() external onlyOwner {
+        require(!_isTerminated, "already terminated");
+        _isTerminated = true;
     }
 
-    function checkHeartStop() public returns (bool) {
-        if (maxHeartBeat == 0 || _markPriceTimestamp == 0) {
-            return false;
+    function updatePrice() public {
+        if (!_isTerminated) {
+            (, _markPrice, , _markPriceTimestamp, ) = IChainlink(chainlink).latestRoundData();
+            require(
+                _markPrice > 0 &&
+                    _markPrice <= type(int256).max / 10**10 &&
+                    _markPriceTimestamp > 0,
+                "invalid chainlink oracle data"
+            );
+            _markPrice = _markPrice * 10**10;
         }
-        if (block.timestamp > _markPriceTimestamp + maxHeartBeat) {
-            _isTerminated = true;
-            return true;
-        }
-        return false;
     }
 }
