@@ -33,6 +33,7 @@ contract LibraryEvents {
         int256 indexPrice,
         uint256 indexPriceUpdateTime
     );
+    event UpdateFundingRate(uint256 perpetualIndex, int256 fundingRate);
 
     // LiquidityPoolModule
     event AddLiquidity(
