@@ -7,7 +7,11 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 import "../../interface/IOracle.sol";
 
-contract MCDEXMultiOracle is Initializable, AccessControlUpgradeable {
+contract MCDEXMultiOracle is 
+    Initializable,
+    ContextUpgradeable,
+    AccessControlUpgradeable
+{
     struct Single {
         string collateral;
         string underlyingAsset;
@@ -42,7 +46,17 @@ contract MCDEXMultiOracle is Initializable, AccessControlUpgradeable {
      */
     bytes32 public constant TERMINATER_ROLE = keccak256("TERMINATER_ROLE");
 
-    function initialize() external initializer {
+    function initialize() external virtual initializer {
+        __MCDEXMultiOracle_init();
+    }
+
+    function __MCDEXMultiOracle_init() internal initializer {
+        __Context_init_unchained();
+        __AccessControl_init_unchained();
+        __MCDEXMultiOracle_init_unchained();
+    }
+
+    function __MCDEXMultiOracle_init_unchained() internal initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(PRICE_SETTER_ROLE, _msgSender());
         _setupRole(MARKET_CLOSER_ROLE, _msgSender());
