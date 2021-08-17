@@ -128,9 +128,9 @@ module.exports = {
             timeout: 300000,
             confirmations: 1,
         },
-        arb: {
-            url: "https://kovan5.arbitrum.io/rpc",
-            gasPrice: 3e8,
+        arbrinkeby: {
+            url: "https://rinkeby.arbitrum.io/rpc",
+            gasPrice: 1e9,
             accounts: [pk],
             timeout: 300000,
             confirmations: 1,
