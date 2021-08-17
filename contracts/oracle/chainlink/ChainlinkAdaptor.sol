@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.7.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
 import "../../interface/IOracle.sol";
 
 interface IChainlink {
@@ -15,24 +17,42 @@ interface IChainlink {
             uint256 timeStamp,
             uint80 answeredInRound
         );
+
+    function decimals() external view returns (uint8);
 }
 
-contract ChainlinkAdaptor is Ownable, IOracle {
+contract ChainlinkAdaptor is Initializable, ContextUpgradeable, AccessControlUpgradeable, IOracle {
     address public chainlink;
     int256 internal _markPrice;
     uint256 internal _markPriceTimestamp;
     bool internal _isTerminated;
+    uint8 internal _chainlink_decimals;
     string public override collateral;
     string public override underlyingAsset;
 
-    constructor(
+    event SetTerminated();
+
+    function initialize(
         address chainlink_,
         string memory collateral_,
         string memory underlyingAsset_
-    ) Ownable() {
+    ) external virtual initializer {
+        __Context_init_unchained();
+        __AccessControl_init_unchained();
+        __ChainlinkAdaptor_init_unchained(chainlink_, collateral_, underlyingAsset_);
+    }
+
+    function __ChainlinkAdaptor_init_unchained(
+        address chainlink_,
+        string memory collateral_,
+        string memory underlyingAsset_
+    ) internal initializer {
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         chainlink = chainlink_;
         collateral = collateral_;
         underlyingAsset = underlyingAsset_;
+        _chainlink_decimals = IChainlink(chainlink).decimals();
+        require(_chainlink_decimals <= 18, "decimals exceeds 18");
     }
 
     function isMarketClosed() public pure override returns (bool) {
@@ -52,9 +72,11 @@ contract ChainlinkAdaptor is Ownable, IOracle {
         return priceTWAPLong();
     }
 
-    function setTerminated() external onlyOwner {
+    function setTerminated() external {
         require(!_isTerminated, "already terminated");
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "role");
         _isTerminated = true;
+        emit SetTerminated();
     }
 
     function updatePrice() public {
@@ -62,11 +84,11 @@ contract ChainlinkAdaptor is Ownable, IOracle {
             (, _markPrice, , _markPriceTimestamp, ) = IChainlink(chainlink).latestRoundData();
             require(
                 _markPrice > 0 &&
-                    _markPrice <= type(int256).max / 10**10 &&
+                    _markPrice <= type(int256).max / int256(10**(18 - _chainlink_decimals)) &&
                     _markPriceTimestamp > 0,
                 "invalid chainlink oracle data"
             );
-            _markPrice = _markPrice * 10**10;
+            _markPrice = _markPrice * int256(10**(18 - _chainlink_decimals));
         }
     }
 }
