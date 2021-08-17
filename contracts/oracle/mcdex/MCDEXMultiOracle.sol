@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "../../interface/IOracle.sol";
 
-contract MCDEXMultiOracle is AccessControl {
+contract MCDEXMultiOracle is Initializable, AccessControl {
     struct Single {
         string collateral;
         string underlyingAsset;
@@ -43,7 +43,7 @@ contract MCDEXMultiOracle is AccessControl {
      */
     bytes32 public constant TERMINATER_ROLE = keccak256("TERMINATER_ROLE");
 
-    constructor() {
+    function initialize() external initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(PRICE_SETTER_ROLE, _msgSender());
         _setupRole(MARKET_CLOSER_ROLE, _msgSender());
