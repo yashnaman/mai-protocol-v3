@@ -26,7 +26,7 @@ contract ChainlinkAdaptor is Initializable, ContextUpgradeable, AccessControlUpg
     int256 internal _markPrice;
     uint256 internal _markPriceTimestamp;
     bool internal _isTerminated;
-    uint8 internal _chainlink_decimals;
+    uint8 internal _chainlinkDecimals;
     string public override collateral;
     string public override underlyingAsset;
 
@@ -51,8 +51,8 @@ contract ChainlinkAdaptor is Initializable, ContextUpgradeable, AccessControlUpg
         chainlink = chainlink_;
         collateral = collateral_;
         underlyingAsset = underlyingAsset_;
-        _chainlink_decimals = IChainlink(chainlink).decimals();
-        require(_chainlink_decimals <= 18, "decimals exceeds 18");
+        _chainlinkDecimals = IChainlink(chainlink).decimals();
+        require(_chainlinkDecimals <= 18, "decimals exceeds 18");
     }
 
     function isMarketClosed() public pure override returns (bool) {
@@ -84,11 +84,11 @@ contract ChainlinkAdaptor is Initializable, ContextUpgradeable, AccessControlUpg
             (, _markPrice, , _markPriceTimestamp, ) = IChainlink(chainlink).latestRoundData();
             require(
                 _markPrice > 0 &&
-                    _markPrice <= type(int256).max / int256(10**(18 - _chainlink_decimals)) &&
+                    _markPrice <= type(int256).max / int256(10**(18 - _chainlinkDecimals)) &&
                     _markPriceTimestamp > 0,
                 "invalid chainlink oracle data"
             );
-            _markPrice = _markPrice * int256(10**(18 - _chainlink_decimals));
+            _markPrice = _markPrice * int256(10**(18 - _chainlinkDecimals));
         }
     }
 }
