@@ -2,13 +2,12 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/Initializable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "../../interface/IOracle.sol";
 
-contract MCDEXMultiOracle is Initializable, AccessControl {
+contract MCDEXMultiOracle is Initializable, AccessControlUpgradeable {
     struct Single {
         string collateral;
         string underlyingAsset;
