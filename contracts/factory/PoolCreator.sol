@@ -25,13 +25,6 @@ contract PoolCreator is PoolCreatorV2 {
         return guardians[account];
     }
 
-    function upgradeV3Once() external {
-        require(poolVersion == 0, "already called");
-        poolVersion = 3;
-        // TODO: +guardians
-        _addGuardian(address(0));
-    }
-
     /**
      * @notice  Set the guardian who is able to set `isUniverseSettled` flag.
      */
