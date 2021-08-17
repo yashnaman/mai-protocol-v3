@@ -12,12 +12,15 @@ const ENV: DeploymentOptions = {
 }
 
 async function main(_, deployer, accounts) {
-    // 1. deploy
-    // const implementation = deployer.deploy("Contract u want to deploy")
+    // 1. deploy once
+    // const implementation = await deployer.deploy("MCDEXSingleOracle")
     // const beacon = await deployer.deploy("UpgradeableBeacon", implementation.address);
+
+    // 2. deploy proxy
+    // const beacon = await deployer.getContractAt("UpgradeableBeacon", "Deployed UpgradeableBeacon")
     // const proxy = await deployer.deploy("BeaconProxy", beacon.address, "0x");
 
-    // 2. upgrade
+    // 3. upgrade
     // const beacon = await deployer.getContractAt("UpgradeableBeacon", "Deployed UpgradeableBeacon")
     // await beacon.upgradeTo("Contract u want to upgrade to")
 }
