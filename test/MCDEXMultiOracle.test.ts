@@ -21,6 +21,7 @@ describe("MCDEXMultiOracle", () => {
 
     beforeEach(async () => {
         oracle0 = await createContract("MCDEXMultiOracle");
+        await oracle0.initialize();
         await oracle0.grantRole(await oracle0.PRICE_SETTER_ROLE(), accounts[2].address);
         await oracle0.grantRole(await oracle0.MARKET_CLOSER_ROLE(), accounts[3].address);
         await oracle0.grantRole(await oracle0.TERMINATER_ROLE(), accounts[4].address);
