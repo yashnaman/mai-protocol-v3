@@ -110,7 +110,7 @@
   "LpGovernor": {
     "type": "plain",
     "name": "LpGovernor",
-    "address": "0xdc226e7757f9c14d1d986Ea2b914D6d1db5a6AC2",
+    "address": "0xF5648d038F2773d6246e70A0C1F6D634EbF3De14",
     "deployedAt": 219945
   }
 }
