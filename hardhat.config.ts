@@ -5,6 +5,7 @@ import "hardhat-contract-sizer";
 // import "hardhat-gas-reporter";
 // import "hardhat-abi-exporter";
 import "solidity-coverage"
+import { retrieveLinkReferences } from "./scripts/deployer/linkReferenceParser";
 
 // const pk = process.env["PK"]
 
@@ -131,17 +132,10 @@ module.exports = {
             timeout: 300000,
             confirmations: 1,
         },
-<<<<<<< HEAD
         arb: {
             url: "https://kovan5.arbitrum.io/rpc",
             gasPrice: 3e8,
             // accounts: [pk],
-=======
-        arbrinkeby: {
-            url: "https://rinkeby.arbitrum.io/rpc",
-            gasPrice: 1e9,
-            accounts: [pk],
->>>>>>> 597be68078824d6e1df725dd5b876ae6f4508571
             timeout: 300000,
             confirmations: 1,
         },
