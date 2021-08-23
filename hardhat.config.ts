@@ -39,9 +39,25 @@ task("deploy", "Deploy a single contract")
         if (typeof args.args != 'undefined') {
             args.args = args.args.split('|')
         }
-        const factory = await hre.ethers.getContractFactory(args.name);
-        const contract = await factory.deploy(...args.args);
-        console.log(args.name, "has been deployed to", contract.address);
+        const linkReferences = await retrieveLinkReferences('./artifacts/contracts')
+        const links = {}
+        const go = async (name) => {
+            const innerLinks = {}
+            for (let linkedContractName of linkReferences[name] || []) {
+                if (linkedContractName in links) {
+                    innerLinks[linkedContractName] = links[linkedContractName];
+                } else {
+                    const deployed = await go(linkedContractName);
+                    innerLinks[linkedContractName] = deployed;
+                    links[linkedContractName] = deployed;
+                }
+            }
+            const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
+            const deployed = await factory.deploy(...args.args);
+            console.log(name, 'deployed at', deployed.address);
+            return deployed.address;
+        }
+        await go(args.name);
     })
 
 task("send", "Call contract function")
@@ -115,10 +131,17 @@ module.exports = {
             timeout: 300000,
             confirmations: 1,
         },
+<<<<<<< HEAD
         arb: {
             url: "https://kovan5.arbitrum.io/rpc",
             gasPrice: 3e8,
             // accounts: [pk],
+=======
+        arbrinkeby: {
+            url: "https://rinkeby.arbitrum.io/rpc",
+            gasPrice: 1e9,
+            accounts: [pk],
+>>>>>>> 597be68078824d6e1df725dd5b876ae6f4508571
             timeout: 300000,
             confirmations: 1,
         },

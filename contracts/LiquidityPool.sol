@@ -32,7 +32,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
     /**
      * @notice  Initialize the liquidity pool and set up its configuration
      *
-     * @param   operator                The address of operator which should be pool creater currently.
+     * @param   operator                The address of operator which should be current pool creator.
      * @param   collateral              The address of collateral token.
      * @param   collateralDecimals      The decimals of collateral token, to support token without decimals interface.
      * @param   governor                The address of governor, who is able to call governance methods.
@@ -73,7 +73,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
         int256[8] calldata riskParams,
         int256[8] calldata minRiskParamValues,
         int256[8] calldata maxRiskParamValues
-    ) external {
+    ) external onlyNotUniverseSettled {
         if (!_liquidityPool.isRunning || _liquidityPool.isFastCreationEnabled) {
             require(
                 _msgSender() == _liquidityPool.getOperator(),
@@ -112,7 +112,13 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
      *
      * @param   cashToAdd   The amount of cash to add. always use decimals 18.
      */
-    function addLiquidity(int256 cashToAdd) external override syncState(false) nonReentrant {
+    function addLiquidity(int256 cashToAdd)
+        external
+        override
+        onlyNotUniverseSettled
+        syncState(false)
+        nonReentrant
+    {
         require(_liquidityPool.isRunning, "pool is not running");
         _liquidityPool.addLiquidity(_msgSender(), cashToAdd);
     }
@@ -130,10 +136,16 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
     function removeLiquidity(int256 shareToRemove, int256 cashToReturn)
         external
         override
-        syncState(false)
         nonReentrant
+        syncState(false)
     {
         require(_liquidityPool.isRunning, "pool is not running");
+        if (IPoolCreatorFull(_liquidityPool.creator).isUniverseSettled()) {
+            require(
+                _liquidityPool.isAllPerpetualIn(PerpetualState.CLEARED),
+                "all perpetual must be cleared"
+            );
+        }
         _liquidityPool.removeLiquidity(_msgSender(), shareToRemove, cashToReturn);
     }
 
@@ -141,7 +153,7 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
      * @notice  Donate collateral to the insurance fund of the pool.
      *          Can only called when the pool is running.
      *          Donated collateral is not withdrawable but can be used to improve security.
-     *          Unexpected loss (backrupt) will be deducted from insurance fund then donated insurance fund.
+     *          Unexpected loss (bankrupt) will be deducted from insurance fund then donated insurance fund.
      *          Until donated insurance fund is drained, the perpetual will not enter emergency state and shutdown.
      *
      * @param   amount          The amount of collateral to donate. The amount always use decimals 18.

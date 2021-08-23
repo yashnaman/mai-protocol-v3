@@ -33,6 +33,7 @@ contract LibraryEvents {
         int256 indexPrice,
         uint256 indexPriceUpdateTime
     );
+    event UpdateFundingRate(uint256 perpetualIndex, int256 fundingRate);
 
     // LiquidityPoolModule
     event AddLiquidity(
@@ -66,7 +67,7 @@ contract LibraryEvents {
     event OperatorCheckIn(address indexed operator);
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
-    event SetTargetLeverage(address indexed trader, int256 targetLeverage);
+    event SetTargetLeverage(uint256 perpetualIndex, address indexed trader, int256 targetLeverage);
     event AddAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event RemoveAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event AddTraderKeeper(uint256 perpetualIndex, address indexed keeper);

@@ -576,6 +576,98 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
     console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
   });
 
+  it("liquidate -> setEmergency", async () => {
+    // users
+    const accounts = await ethers.getSigners();
+    const user0 = accounts[0];
+    const user1 = accounts[1];
+    const user2 = accounts[2];
+    const user3 = accounts[3];
+    const vault = accounts[9];
+    const none = "0x0000000000000000000000000000000000000000";
+    const LiquidityPoolFactory = await createLiquidityPoolFactory();
+
+    // create components
+    var symbol = await createContract("SymbolService");
+    await symbol.initialize(10000);
+    var ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
+    var perpTemplate = await LiquidityPoolFactory.deploy();
+    var govTemplate = await createContract("TestLpGovernor");
+    var poolCreator = await createContract("PoolCreator");
+    await poolCreator.initialize(symbol.address, vault.address, toWei("0.001"));
+    await poolCreator.addVersion(perpTemplate.address, govTemplate.address, 0, "initial version");
+    await symbol.addWhitelistedFactory(poolCreator.address);
+
+    const { liquidityPool, governor } = await poolCreator.callStatic.createLiquidityPool(
+      ctk.address,
+      18,
+      998,
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+    );
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    const perp = await LiquidityPoolFactory.attach(liquidityPool);
+
+    // oracle
+    let oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
+    let updatePrice = async (price) => {
+      let now = Math.floor(Date.now() / 1000);
+      await oracle.setMarkPrice(price, now);
+      await oracle.setIndexPrice(price, now);
+    };
+    await updatePrice(toWei("500"));
+
+    await perp.createPerpetual(
+      oracle.address,
+      [toWei("0.1"), toWei("0.05"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.02"), toWei("0"), toWei("0.5"), toWei("5")],
+      [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("0")],
+      [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+      [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")]
+    );
+
+    await perp.runLiquidityPool();
+    await poolCreator.addKeeper(user3.address);
+
+    // overview
+    var info = await perp.getLiquidityPoolInfo();
+    const stk = await (await createFactory("LpGovernor")).attach(info[2][4]);
+
+    // get initial coins
+    await ctk.mint(user1.address, toWei("10000"));
+    await ctk.mint(user2.address, toWei("10000"));
+    await ctk.connect(user1).approve(perp.address, toWei("100000"));
+    await ctk.connect(user2).approve(perp.address, toWei("100000"));
+
+    // deposit
+    await perp.connect(user1).deposit(0, user1.address, toWei("500"));
+
+    // lp
+    await perp.connect(user2).addLiquidity(toWei("1000"));
+    // console.log("share:", fromWei(await stk.balanceOf(user2.address)));
+    // console.log("ctk  :", fromWei(await ctk.balanceOf(user2.address)));
+
+    // trade
+    let now = Math.floor(Date.now() / 1000);
+    await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1000"), now + 999999, none, 0);
+
+    // var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
+    // console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+    await updatePrice(toWei("100"));
+    await perp.connect(user1).forceToSyncState();
+
+    // var { cash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
+    // console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+    // var { deltaCash } = await perp.queryTradeWithAMM(0, toWei("0").sub(position))
+    // console.log(deltaCash.add(margin))
+
+    await perp.connect(user3).liquidateByAMM(0, user1.address);
+    var { cash, position, margin, isMaintenanceMarginSafe, _ } = await perp.getMarginAccount(0, user1.address);
+    info = await perp.getPerpetualInfo(0);
+    expect(position).to.equal(0);
+    // perpetual state = emergency
+    expect(info[0]).to.equal(3)
+    console.log("cash:", fromWei(cash), "position:", fromWei(position), "margin:", fromWei(margin), "isSafe:", isMaintenanceMarginSafe);
+  });
+
   it("access control", async () => {
     // users
     const accounts = await ethers.getSigners();

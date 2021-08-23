@@ -17,7 +17,7 @@ import "./VersionControl.sol";
 import "./Variables.sol";
 import "./AccessControl.sol";
 
-contract PoolCreatorV1 is
+abstract contract PoolCreatorV1 is
     Initializable,
     Tracer,
     VersionControl,

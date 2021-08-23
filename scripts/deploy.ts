@@ -19,9 +19,24 @@ const ENV: DeploymentOptions = {
 
 const oracleAddresses = {
     // ArbOne
-    "ETH - USD": "0x77C073a91B53B35382C7C4cdF4079b7E312d552d",
-    "BTC - USD": "0xa9A9B8f657EDF88f50Ac6840ca6191C44BEf7abb",
+    "ETH - USD": "0x1Cf22B7f84F86c36Cb191BB24993EdA2b191399E",
+    "BTC - USD": "0x6ee936BdBD329063E8CE1d13F42eFEf912E85221",
 }
+
+const keeperAddresses = [
+    // ArbRinkeby
+    // '0x276EB779d7Ca51a5F7fba02Bf83d9739dA11e3ba',
+    // ArbOne
+    '0xDA5F340CB0CD99440E1808506D4cD60706BF2fBF',
+    '0x1c990de01d35f3895c9debb8ae85c6a1ade26a17',
+]
+
+const guardianAddresses = [
+    // ArbRinkeby
+    // ArbOne
+    '0x45e8e53F5553A3669dAF0Df8971290bad3974f48',
+    '0x775CeCa71307700a8B43063DCC15691dB20773e8',
+]
 
 function toWei(n) { return hre.ethers.utils.parseEther(n) };
 function fromWei(n) { return hre.ethers.utils.formatEther(n); }
@@ -61,6 +76,14 @@ async function main(_, deployer, accounts) {
         vaultFeeRate
     ))
     await ensureFinished(symbolService.addWhitelistedFactory(poolCreator.address))
+
+    // keeper whitelist
+    for (let keeper of keeperAddresses) {
+        await poolCreator.addKeeper(keeper)
+    }
+    for (let guardian of guardianAddresses) {
+        await poolCreator.addGuardian(guardian)
+    }
 
     // add version
     const liquidityPool = await deployer.deployOrSkip("LiquidityPool")

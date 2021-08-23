@@ -101,8 +101,8 @@ library AMMModule {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             shareToMint = newPoolMargin;
         } else {
-            // If share token's total supply is not zero, these share tokens have no value,
-            // this case should be avoided.
+            // If share token's total supply is not zero and there is no money in pool,
+            // these share tokens have no value. This case should be avoided.
             require(poolMargin > 0, "share token has no value");
             shareToMint = newPoolMargin.sub(poolMargin).wfrac(shareTotalSupply, poolMargin);
         }
@@ -129,8 +129,8 @@ library AMMModule {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             cashToAdd = shareToMint.sub(poolMargin).max(0);
         } else {
-            // If share token's total supply is not zero, these share tokens have no value,
-            // this case should be avoided.
+            // If share token's total supply is not zero and there is no money in pool,
+            // these share tokens have no value. This case should be avoided.
             require(poolMargin > 0, "share token has no value");
             int256 newPoolMargin = shareTotalSupply.add(shareToMint).wfrac(
                 poolMargin,
@@ -334,7 +334,7 @@ library AMMModule {
      * @return  shareToRemove                The amount of share token to redeem.
      * @return  removedInsuranceFund         The part of insurance fund returned to LP if all perpetuals are in CLEARED state.
      * @return  removedDonatedInsuranceFund  The part of donated insurance fund returned to LP if all perpetuals are in CLEARED state.
-     * @return  removedCashFromPool          The part of cash from pool returned to LP if all perpetuals are in CLEARED state.
+     * @return  removedPoolMargin            The part of pool margin returned to LP if all perpetuals are in CLEARED state.
      */
     function getShareToRemoveWhenAllCleared(
         LiquidityPoolStorage storage liquidityPool,
@@ -348,27 +348,29 @@ library AMMModule {
             int256 shareToRemove,
             int256 removedInsuranceFund,
             int256 removedDonatedInsuranceFund,
-            int256 removedCashFromPool
+            int256 removedPoolMargin
         )
     {
-        removedCashFromPool = cashToReturn.wdiv(
-            liquidityPool
-                .insuranceFund
-                .add(liquidityPool.donatedInsuranceFund)
-                .wdiv(poolMargin)
-                .add(Constant.SIGNED_ONE)
+        // get insurance fund proportionally
+        require(
+            poolMargin.add(liquidityPool.insuranceFund).add(liquidityPool.donatedInsuranceFund) > 0,
+            "all cleared, insufficient liquidity"
         );
-        shareToRemove = removedCashFromPool.wfrac(shareTotalSupply, poolMargin);
-        removedInsuranceFund = removedCashFromPool.wfrac(
-            liquidityPool.insuranceFund,
-            poolMargin,
+        shareToRemove = shareTotalSupply.wfrac(
+            cashToReturn,
+            poolMargin.add(liquidityPool.insuranceFund).add(liquidityPool.donatedInsuranceFund)
+        );
+        removedInsuranceFund = liquidityPool.insuranceFund.wfrac(
+            shareToRemove,
+            shareTotalSupply,
             Round.FLOOR
         );
-        removedDonatedInsuranceFund = removedCashFromPool.wfrac(
-            liquidityPool.donatedInsuranceFund,
-            poolMargin,
+        removedDonatedInsuranceFund = liquidityPool.donatedInsuranceFund.wfrac(
+            shareToRemove,
+            shareTotalSupply,
             Round.FLOOR
         );
+        removedPoolMargin = poolMargin.wfrac(shareToRemove, shareTotalSupply, Round.FLOOR);
     }
 
     /**
