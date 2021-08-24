@@ -51,12 +51,13 @@ export class Deployer {
     }
 
     public async load() {
-        try {
-            const savedProgress = JSON.parse(fs.readFileSync(this.SAVE_PREFIX + this.options.network + this.SAVE_POSTFIX, "utf-8"));
-            this.deployedContracts = savedProgress;
-        } catch (err) {
-            this._log("[DEPLOYER] save not found");
-        }
+        //do not use the saved contracts
+        // try {
+        //     const savedProgress = JSON.parse(fs.readFileSync(this.SAVE_PREFIX + this.options.network + this.SAVE_POSTFIX, "utf-8"));
+        //     this.deployedContracts = savedProgress;
+        // } catch (err) {
+        //     this._log("[DEPLOYER] save not found");
+        // }
     }
 
     public async save() {
