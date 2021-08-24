@@ -70,6 +70,7 @@ library PerpetualModule {
         int256 indexPrice,
         uint256 indexPriceUpdateTime
     );
+    event UpdateFundingRate(uint256 perpetualIndex, int256 fundingRate);
 
     /**
      * @dev     Get the mark price of the perpetual. If the state of the perpetual is not "NORMAL",
@@ -324,6 +325,7 @@ library PerpetualModule {
             }
         }
         perpetual.fundingRate = newFundingRate;
+        emit UpdateFundingRate(perpetual.id, newFundingRate);
     }
 
     /**

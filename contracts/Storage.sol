@@ -12,6 +12,11 @@ contract Storage is ContextUpgradeable {
 
     LiquidityPoolStorage internal _liquidityPool;
 
+    modifier onlyNotUniverseSettled() {
+        require(!IPoolCreatorFull(_liquidityPool.creator).isUniverseSettled(), "universe settled");
+        _;
+    }
+
     modifier onlyExistedPerpetual(uint256 perpetualIndex) {
         require(perpetualIndex < _liquidityPool.perpetualCount, "perpetual not exist");
         _;

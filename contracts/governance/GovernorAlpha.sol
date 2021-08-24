@@ -90,12 +90,12 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
-    bytes32 public constant SIGNATURE_PERPETUAL_UPGRADE_AND_CALL =
-        keccak256(bytes("upgradeToAndCall(bytes32,bytes,bytes)"));
-    bytes32 public constant SIGNATURE_PERPETUAL_SETTLE =
-        keccak256(bytes("forceToSetEmergencyState(uint256,int256)"));
-    bytes32 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
-        keccak256(bytes("transferOperator(address)"));
+    bytes4 public constant SIGNATURE_PERPETUAL_UPGRADE_AND_CALL =
+        bytes4(keccak256(bytes("upgradeToAndCall(bytes32,bytes,bytes)")));
+    bytes4 public constant SIGNATURE_PERPETUAL_SETTLE =
+        bytes4(keccak256(bytes("forceToSetEmergencyState(uint256,int256)")));
+    bytes4 public constant SIGNATURE_PERPETUAL_TRANSFER_OPERATOR =
+        bytes4(keccak256(bytes("transferOperator(address)")));
 
     IPoolCreatorFull internal _creator;
     address internal _target;
@@ -265,7 +265,7 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
      * @param   functionSignature   The string signature of function to test.
      */
     function isCriticalFunction(string memory functionSignature) public pure returns (bool) {
-        bytes32 functionHash = keccak256(bytes(functionSignature));
+        bytes4 functionHash = bytes4(keccak256(bytes(functionSignature)));
         return
             functionHash == SIGNATURE_PERPETUAL_UPGRADE_AND_CALL ||
             functionHash == SIGNATURE_PERPETUAL_SETTLE ||

@@ -55,7 +55,13 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         uint256 perpetualIndex,
         address trader,
         int256 amount
-    ) external override onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT) nonReentrant {
+    )
+        external
+        override
+        nonReentrant
+        onlyNotUniverseSettled
+        onlyAuthorized(trader, Constant.PRIVILEGE_DEPOSIT)
+    {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"
@@ -85,9 +91,10 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
     )
         external
         override
+        nonReentrant
+        onlyNotUniverseSettled
         syncState(false)
         onlyAuthorized(trader, Constant.PRIVILEGE_WITHDRAW)
-        nonReentrant
     {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
@@ -249,6 +256,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         external
         override
         nonReentrant
+        onlyNotUniverseSettled
         syncState(false)
         returns (int256 liquidationAmount)
     {
@@ -286,6 +294,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         external
         override
         nonReentrant
+        onlyNotUniverseSettled
         onlyAuthorized(liquidator, Constant.PRIVILEGE_LIQUIDATE)
         syncState(false)
         returns (int256 liquidationAmount)
@@ -315,7 +324,7 @@ contract Perpetual is Storage, ReentrancyGuardUpgradeable, IPerpetual {
         int256 limitPrice,
         address referrer,
         uint32 flags
-    ) internal returns (int256 tradeAmount) {
+    ) internal onlyNotUniverseSettled returns (int256 tradeAmount) {
         require(
             _liquidityPool.perpetuals[perpetualIndex].state == PerpetualState.NORMAL,
             "perpetual should be in NORMAL state"

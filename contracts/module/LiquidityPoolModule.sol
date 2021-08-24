@@ -69,7 +69,7 @@ library LiquidityPoolModule {
     event OperatorCheckIn(address indexed operator);
     event DonateInsuranceFund(int256 amount);
     event TransferExcessInsuranceFundToLP(int256 amount);
-    event SetTargetLeverage(address indexed trader, int256 targetLeverage);
+    event SetTargetLeverage(uint256 perpetualIndex, address indexed trader, int256 targetLeverage);
     event AddAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event RemoveAMMKeeper(uint256 perpetualIndex, address indexed keeper);
     event AddTraderKeeper(uint256 perpetualIndex, address indexed keeper);
@@ -447,22 +447,22 @@ library LiquidityPoolModule {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         rebalance(liquidityPool, perpetualIndex);
         liquidityPool.perpetuals[perpetualIndex].setEmergencyState();
-        if (!hasAnyNormalPerpetual(liquidityPool)) {
+        if (!isAnyPerpetualIn(liquidityPool, PerpetualState.NORMAL)) {
             refundDonatedInsuranceFund(liquidityPool);
         }
     }
 
     /**
-     * @dev     Check if all the perpetuals in the liquidity pool are not in normal state.
+     * @dev     Check if all the perpetuals in the liquidity pool are not in a state.
      */
-    function hasAnyNormalPerpetual(LiquidityPoolStorage storage liquidityPool)
+    function isAnyPerpetualIn(LiquidityPoolStorage storage liquidityPool, PerpetualState state)
         internal
         view
         returns (bool)
     {
         uint256 length = liquidityPool.perpetualCount;
         for (uint256 i = 0; i < length; i++) {
-            if (liquidityPool.perpetuals[i].state == PerpetualState.NORMAL) {
+            if (liquidityPool.perpetuals[i].state == state) {
                 return true;
             }
         }
@@ -470,8 +470,25 @@ library LiquidityPoolModule {
     }
 
     /**
+     * @dev     Check if all the perpetuals in the liquidity pool are not in normal state.
+     */
+    function isAllPerpetualIn(LiquidityPoolStorage storage liquidityPool, PerpetualState state)
+        internal
+        view
+        returns (bool)
+    {
+        uint256 length = liquidityPool.perpetualCount;
+        for (uint256 i = 0; i < length; i++) {
+            if (liquidityPool.perpetuals[i].state != state) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * @dev     Refund donated insurance fund to current operator.
-     *           - If currernt operator address is non-zero, all the donated funds will be forward to the operator address;
+     *           - If current operator address is non-zero, all the donated funds will be forward to the operator address;
      *           - If no operator, the donated funds will be dispatched to the LPs according to the ratio of owned shares.
      */
     function refundDonatedInsuranceFund(LiquidityPoolStorage storage liquidityPool) internal {
@@ -509,10 +526,14 @@ library LiquidityPoolModule {
             margin = margin.add(perpetual.getMargin(address(this), markPrice));
         }
         margin = margin.add(liquidityPool.poolCash);
-        require(margin < maintenanceMargin, "AMM's margin >= maintenance margin");
+        require(
+            margin < maintenanceMargin ||
+                IPoolCreatorFull(liquidityPool.creator).isUniverseSettled(),
+            "AMM's margin >= maintenance margin or not universe settled"
+        );
         // rebalance for settle all perps
         // Floor to make sure poolCash >= 0
-        int256 rate = margin.wdiv(initialMargin, Round.FLOOR);
+        int256 rate = initialMargin != 0 ? margin.wdiv(initialMargin, Round.FLOOR) : 0;
         for (uint256 i = 0; i < length; i++) {
             PerpetualStorage storage perpetual = liquidityPool.perpetuals[i];
             if (perpetual.state != PerpetualState.NORMAL) {
@@ -990,6 +1011,7 @@ library LiquidityPoolModule {
             return 0;
         } else if (rebalanceMargin > 0) {
             // from perp to pool
+            rebalanceMargin = rebalanceMargin.min(perpetual.totalCollateral);
             perpetual.updateCash(address(this), rebalanceMargin.neg());
             transferFromPerpetualToPool(liquidityPool, perpetualIndex, rebalanceMargin);
         } else {
@@ -1249,7 +1271,7 @@ library LiquidityPoolModule {
         int256 maxLeverage = Constant.SIGNED_ONE.wdiv(perpetual.initialMarginRate);
         require(targetLeverage <= maxLeverage, "targetLeverage exceeds maxLeverage");
         perpetual.setTargetLeverage(trader, targetLeverage);
-        emit SetTargetLeverage(trader, targetLeverage);
+        emit SetTargetLeverage(perpetualIndex, trader, targetLeverage);
     }
 
     // A readonly version of adjustMarginLeverage. This function was written post-audit. So there's a lot of repeated logic here.
