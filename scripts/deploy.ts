@@ -107,6 +107,7 @@ async function preset2(deployer, accounts) {
     await ensureFinished(poolCreator.createLiquidityPool(
         weth.address,
         18,
+        // 6,
         Math.floor(Date.now() / 1000),
         ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("10000000")])
     ))
