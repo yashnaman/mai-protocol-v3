@@ -57,7 +57,7 @@ The smart contracts were audited by quantstamp:
 | [`UniswapV3OracleAdaptorCreator`](contracts/oracle/uniswap/UniswapV3OracleAdaptorCreator.sol) | An Oracle who provides prices according to Uniswap v3.       | [0xCEda10b4d3bdE429DdA3A6daB87b38360313CBdB](https://explorer.offchainlabs.com/address/0xCEda10b4d3bdE429DdA3A6daB87b38360313CBdB) |
 | [`InverseStateService`](contracts/inverse/InverseStateService.sol) | Let an Operator mark a Perpetual as an inverse Perpetual.    | [0x129AD040Bd127c00d6De9051b3CfE9F3E36453D3](https://explorer.offchainlabs.com/address/0x129AD040Bd127c00d6De9051b3CfE9F3E36453D3) |
 | [`LiquidityPool (implementation)`](contracts/LiquidityPool.sol) | A liquidity pool provides liquidity for multiple perpetuals using the same collateral | [0xEf5D601ea784ABd465c788C431d990b620e5Fee6](https://explorer.offchainlabs.com/address/0xEf5D601ea784ABd465c788C431d990b620e5Fee6) |
-| [`LpGovernor (implementation)`](contracts/LiquidityPool.sol) | Share token and governance functions                         | [0xF5648d038F2773d6246e70A0C1F6D634EbF3De14](https://explorer.offchainlabs.com/address/0xF5648d038F2773d6246e70A0C1F6D634EbF3De14) |
+| [`LpGovernor (implementation)`](contracts/LiquidityPool.sol) | Share token and governance functions                         | [0x2Baac806CB2b7A07f8f73DB1329767E5a3CbDF4e](https://explorer.offchainlabs.com/address/0x2Baac806CB2b7A07f8f73DB1329767E5a3CbDF4e) |
 
 ## Development
 
