@@ -128,6 +128,12 @@ module.exports = {
             timeout: 300000,
             confirmations: 1,
         },
+        arb1: {
+            url: `https://arb1.arbitrum.io/rpc`,
+            gasPrice: 5e8,
+            blockGasLimit: "80000000",
+            accounts: [pk],
+        },
         arbrinkeby: {
             url: "https://rinkeby.arbitrum.io/rpc",
             gasPrice: 1e9,
