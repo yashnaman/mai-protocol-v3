@@ -12,6 +12,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/GSN/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
@@ -87,6 +88,7 @@ struct Receipt {
  *         Timelock is integrated into GovernorAlpha.
  */
 abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
+    using AddressUpgradeable for address;
     using SafeMathUpgradeable for uint256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
 
@@ -576,14 +578,9 @@ abstract contract GovernorAlpha is Initializable, ContextUpgradeable {
             blockNumber <= eta.add(executionDelay()).add(unlockDelay()),
             "Transaction is stale."
         );
-        bytes memory callData;
-        if (bytes(signature).length == 0) {
-            callData = data;
-        } else {
-            callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
-        }
-        (bool success, bytes memory returnData) = target.call(callData);
-        require(success, "Transaction execution reverted.");
+        bytes memory returnData = target.functionCall(
+            abi.encodePacked(bytes4(keccak256(bytes(signature))), data)
+        );
         emit ExecuteTransaction(txHash, target, signature, data, eta);
         return returnData;
     }

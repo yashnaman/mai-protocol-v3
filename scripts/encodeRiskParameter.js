@@ -33,11 +33,11 @@ const LiquidityPool = new ethers.utils.Interface([
 //   ])
 // )
 // ===============================================================================================
-//                                    vote - createPerpetual
+//                   vote - createPerpetual(only when isFastCreationEnabled = false)
 // ===============================================================================================
 // console.log(
 //   OperatorProxy.encodeFunctionData("propose", [
-//     '0x80918a9bb46bc1c2a03d3a9e09432ef4ee0bb048', // just test pool
+//     '0x80918a9bb46bc1c2a03d3a9e09432ef4ee0bb048', // test pool 2
 //     [
 //       // signatures
 //       "createPerpetual(address,int256[9],int256[8],int256[8],int256[8])",
@@ -52,7 +52,7 @@ const LiquidityPool = new ethers.utils.Interface([
 //         [toWei("0.00075"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("1"), toWei("0.05"), toWei("0.005"), toWei("10")],
 //         [toWei("0"),       toWei("0"),      toWei("0"),       toWei("0"),    toWei("0"), toWei("0"),    toWei("0"),     toWei("0")],
 //         [toWei("0.1"),     toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]    
-//       ]).slice(2 + 8), // skip the function signature
+//       ]).slice(2 + 8), // skip the function signature. important!
 //     ],
 //     JSON.stringify({
 //       underlyingSymbol: "BTC",
@@ -65,19 +65,19 @@ const LiquidityPool = new ethers.utils.Interface([
 // ===============================================================================================
 // console.log(
 //   OperatorProxy.encodeFunctionData("proposeToUpgradeAndCall", [
-//     '0x80918a9bb46bc1c2a03d3a9e09432ef4ee0bb048', // just test pool
-//     '0x58179930b25ca567ea71c55342e0ed9d4a3052109212ac65b2ae0832b1f18772', // versionKey
+//     '0x80918a9bb46bc1c2a03d3a9e09432ef4ee0bb048', // test pool 2
+//     '0xbf94422ecf1c5403b9b1da147df555694905675a0123d464f20b9858d5f3c083', // versionKey
 //     '0x', // dataForLiquidityPool
 //     '0x', // dataForGovernor
 //     JSON.stringify({}), // description
 //   ])
 // )
 // ===============================================================================================
-//                     createPerpetual(only useful when isFastCreationEnabled)
+//                     createPerpetual(only when isFastCreationEnabled = true)
 // ===============================================================================================
 // console.log(
 //   OperatorProxy.encodeFunctionData("createPerpetual", [
-//     '0xe44287a9ee676e92e7687c28bb30ac6b5cb80bb2', // just test pool
+//     '0xe44287a9ee676e92e7687c28bb30ac6b5cb80bb2', // test pool 1
 //     '0x6ee936BdBD329063E8CE1d13F42eFEf912E85221', // BTC oracle
 //     // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
 //     [toWei("0.04"), toWei("0.03"), toWei("0.00010"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("10"), toWei("0.5"), toWei("3")],
@@ -87,6 +87,20 @@ const LiquidityPool = new ethers.utils.Interface([
 //     [toWei("0.1"),     toWei("0.5"),    toWei("0.5"),     toWei("0.1"),  toWei("5"), toWei("1"),    toWei("0.1"),   toWei("10000000")]
 //   ])
 // )
+// ===============================================================================================
+//                             vote - setPerpetualBaseParameter
+// ===============================================================================================
+// setPerpetualBaseParameter(uint256,int256[9])
+// TODO
+// ===============================================================================================
+//                             vote - setPerpetualRiskParameter
+// ===============================================================================================
+// setPerpetualRiskParameter(uint256,int256[8],int256[8],int256[8])
+// TODO
+// ===============================================================================================
+//            vote - setPerpetualBaseParameter + setPerpetualRiskParameter
+// ===============================================================================================
+// TODO
 // ===============================================================================================
 // gnosis
 // function submitTransaction(address destination, uint value, bytes memory data)

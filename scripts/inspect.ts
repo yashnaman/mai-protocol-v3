@@ -1,6 +1,7 @@
 const hre = require("hardhat");
 const chalk = require("chalk");
 const ethers = hre.ethers;
+const BigNumber = require("bignumber.js");
 
 import { DeploymentOptions } from "./deployer/deployer";
 import { readOnlyEnviron } from "./deployer/environ";
@@ -18,11 +19,10 @@ const ENV: DeploymentOptions = {
 
 async function inspectPoolCreator(deployer) {
   console.log("====PoolCreator====");
-  const address = await deployer.addressOf("PoolCreator");
-  console.log("address:", address);
+  console.log("address(proxy):", await deployer.addressOf("PoolCreator"));
   const poolCreator = await deployer.getDeployedContract("PoolCreator");
   const poolUpgradeAdmin = await poolCreator.upgradeAdmin();
-  console.log("poolUpgradeAdmin:", poolUpgradeAdmin);
+  console.log("poolUpgradeAdmin (nobody can transfer the owner):", poolUpgradeAdmin);
   var owner = await poolCreator.owner();
   console.log("owner:", owner);
   var implementation = await deployer.getImplementation(await deployer.addressOf("PoolCreator"));
@@ -49,9 +49,10 @@ async function inspectPoolCreator(deployer) {
   }
   const vault = await poolCreator.getVault();
   const vaultFeeRate = await poolCreator.getVaultFeeRate();
-  console.log("vault:", vault, "vault fee rate:", Number(vaultFeeRate.toString()) / 10 ** 18);
+  console.log("vault:", vault, "vault fee rate:", new BigNumber(vaultFeeRate.toString()).shiftedBy(-18).toFixed());
 
   console.log("\n====SymbolService====");
+  console.log("address(proxy):", await deployer.addressOf("SymbolService"));
   upgradeAdmin = await deployer.getAdminOfUpgradableContract(await deployer.addressOf("SymbolService"));
   console.log("upgradeAdmin:", upgradeAdmin);
   const symbolService = await deployer.getDeployedContract("SymbolService");
@@ -69,61 +70,68 @@ async function inspectPoolCreator(deployer) {
     console.log("    remove ", log.args[0]);
   }
 
-  console.log("\n====MCDEX pool====");
+  console.log("\n====MCDEXFoundation pool====");
   const poolAddress = "0xaB324146C49B23658E5b3930E641BDBDf089CbAc";
+  console.log("address:", poolAddress);
   const pool = await deployer.getContractAt("Getter", poolAddress);
   const data = await pool.getLiquidityPoolInfo();
   console.log("operator:", data.addresses[1]);
   upgradeAdmin = await deployer.getAdminOfUpgradableContract(poolAddress);
   console.log("upgradeAdmin:", upgradeAdmin);
 
-  console.log("\n====MultiOracle====");
+  console.log("\n====MCDEXMultiOracle====");
   const MCDEXMultiOracleAddress = "0x57469550b9A42d2fd964E67A9DD1DE3d9169b291";
+  console.log("address:", MCDEXMultiOracleAddress);
   const MCDEXMultiOracle = await deployer.getContractAt("MCDEXMultiOracle", MCDEXMultiOracleAddress);
   upgradeAdmin = await deployer.getAdminOfUpgradableContract(MCDEXMultiOracleAddress);
   console.log("upgradeAdmin:", upgradeAdmin);
   implementation = await deployer.getImplementation(MCDEXMultiOracleAddress);
   console.log("implementation:", implementation);
-  console.log("default admin role:");
   var role = ethers.constants.HashZero;
+  console.log("default admin role (", role, "):");
   var roleMemberCount = await MCDEXMultiOracle.getRoleMemberCount(role);
   for (let i = 0; i < Number(roleMemberCount); i++) {
     console.log("    ", await MCDEXMultiOracle.getRoleMember(role, i));
   }
-  console.log("price setter role:");
   role = ethers.utils.solidityKeccak256(["string"], ["PRICE_SETTER_ROLE"]);
+  console.log("price setter role (", role, "):");
   roleMemberCount = await MCDEXMultiOracle.getRoleMemberCount(role);
   for (let i = 0; i < Number(roleMemberCount); i++) {
     console.log("    ", await MCDEXMultiOracle.getRoleMember(role, i));
   }
-  console.log("market closer role:");
   role = ethers.utils.solidityKeccak256(["string"], ["MARKET_CLOSER_ROLE"]);
+  console.log("market closer role (", role, "):");
   roleMemberCount = await MCDEXMultiOracle.getRoleMemberCount(role);
   for (let i = 0; i < Number(roleMemberCount); i++) {
     console.log("    ", await MCDEXMultiOracle.getRoleMember(role, i));
   }
-  console.log("terminater role:");
   role = ethers.utils.solidityKeccak256(["string"], ["TERMINATER_ROLE"]);
+  console.log("terminater role (", role, "):");
   roleMemberCount = await MCDEXMultiOracle.getRoleMemberCount(role);
   for (let i = 0; i < Number(roleMemberCount); i++) {
     console.log("    ", await MCDEXMultiOracle.getRoleMember(role, i));
   }
 
-  console.log("\n====SingleOracle====");
+  console.log("\n====MCDEXSingleOracle====");
   const UpgradeableBeaconAddress = "0x1021b725C8C10DC6240c9f1F151095d798906D3c";
   const UpgradeableBeacon = await deployer.getContractAt("UpgradeableBeacon", UpgradeableBeaconAddress);
   implementation = await UpgradeableBeacon.implementation();
   console.log("UpgradeableBeacon:");
+  console.log("    address:", UpgradeableBeaconAddress);
   console.log("    implementation:", implementation);
   var owner = await UpgradeableBeacon.owner();
   console.log("    owner:", owner);
   const ETHOracleAddress = "0x1Cf22B7f84F86c36Cb191BB24993EdA2b191399E";
   console.log("MCDEXSingleOracle:");
   var beacon = await deployer.getBeacon(ETHOracleAddress);
-  console.log("    ETH beacon:", beacon);
-  const BTCOracleAddress = "0x1Cf22B7f84F86c36Cb191BB24993EdA2b191399E";
+  console.log("    ETH");
+  console.log("      address:", ETHOracleAddress);
+  console.log("      beacon:", beacon);
+  const BTCOracleAddress = "0x6ee936BdBD329063E8CE1d13F42eFEf912E85221";
   beacon = await deployer.getBeacon(BTCOracleAddress);
-  console.log("    BTC beacon:", beacon);
+  console.log("    BTC");
+  console.log("      address:", BTCOracleAddress);
+  console.log("      beacon:", beacon);
 }
 
 async function main(_, deployer, accounts) {
