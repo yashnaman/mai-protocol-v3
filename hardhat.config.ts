@@ -36,11 +36,13 @@ task("encode", "Encode calldata")
 
 task("deploy", "Deploy a single contract")
     .addPositionalParam("name", "Name of contract to deploy")
-    .addOptionalPositionalParam("args", "Args of contract constructor, seprated by common ','")
+    .addOptionalPositionalParam("args", "Args of contract constructor, separated by common ','")
     .setAction(async (args, hre) => {
         if (typeof args.args != 'undefined') {
-            args.args = args.args.split('|')
+            args.args = args.args.split(',')
         }
+        let nonce = await hre.ethers.provider.getTransactionCount(await hre.ethers.provider.getSigner(0).getAddress(), 'pending')
+        console.log('nonce', nonce)
         const linkReferences = await retrieveLinkReferences('./artifacts/contracts')
         const links = {}
         const go = async (name) => {
@@ -55,8 +57,11 @@ task("deploy", "Deploy a single contract")
                 }
             }
             const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
-            const deployed = await factory.deploy(...args.args);
+            const constructArgs = args.args ? args.args : []
+            constructArgs.push({ nonce: nonce++ })
+            const deployed = await factory.deploy(...constructArgs);
             console.log(name, 'deployed at', deployed.address);
+            await deployed.deployTransaction.wait();
             return deployed.address;
         }
         await go(args.name);
