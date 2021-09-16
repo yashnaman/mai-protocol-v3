@@ -50,7 +50,7 @@ contract MockLiquidityPool {
             // [1] perpetualCount
             // [2] fundingTime,
             // [3] operatorExpiration,
-            uint256[4] memory uintNums
+            uint256[6] memory uintNums
         )
     {
         addresses[1] = operator;

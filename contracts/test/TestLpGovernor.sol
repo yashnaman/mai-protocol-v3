@@ -25,4 +25,8 @@ contract TestLpGovernor is LpGovernor {
     function setTarget(address creator_) public {
         _creator = IPoolCreatorFull(creator_);
     }
+
+    function _getTransferDelay() internal view virtual override returns (uint256) {
+        return 0;
+    }
 }

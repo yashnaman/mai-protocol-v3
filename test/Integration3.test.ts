@@ -59,13 +59,13 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
 

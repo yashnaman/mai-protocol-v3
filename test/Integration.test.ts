@@ -76,9 +76,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       18,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
     // oracle
@@ -261,9 +261,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       6,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 6, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 6, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
     // oracle
     let oracle1 = await createContract("OracleAdaptor", ["USD", "ETH"]);
@@ -390,9 +390,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       18,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
     // oracle
@@ -510,9 +510,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       18,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
     // oracle
@@ -602,9 +602,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       18,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
     // oracle
@@ -695,9 +695,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
       ctk.address,
       18,
       998,
-      ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+      ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     );
-    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+    await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
     const perp = await LiquidityPoolFactory.attach(liquidityPool);
 
     // oracle
@@ -803,9 +803,9 @@ describe("integration - 4 perps, 1 trader. open + close", () => {
         ctk.address,
         18,
         998,
-        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
       );
-      await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+      await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
       perp = await LiquidityPoolFactory.attach(liquidityPool);
 
       // oracle

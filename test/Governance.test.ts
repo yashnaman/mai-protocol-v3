@@ -749,13 +749,13 @@ describe('Governance', () => {
 
     it("setLiquidityPoolParameter", async () => {
         await governance.setGovernor(user1.address);
-        await governance.connect(user1).setLiquidityPoolParameter([1, 1000]);
+        await governance.connect(user1).setLiquidityPoolParameter([1, 1000, 0, 1]);
 
         expect(await governance.isFastCreationEnabled()).to.be.true;
-        await expect(governance.connect(user1).setLiquidityPoolParameter([0, -1])).to.be.revertedWith("insuranceFundCap < 0");
-        await governance.connect(user1).setLiquidityPoolParameter([0, 1000]);
+        await expect(governance.connect(user1).setLiquidityPoolParameter([0, -1, 0, 1])).to.be.revertedWith("insuranceFundCap < 0");
+        await governance.connect(user1).setLiquidityPoolParameter([0, 1000, 0, 1]);
         expect(await governance.isFastCreationEnabled()).to.be.false;
 
-        await expect(governance.setLiquidityPoolParameter([1, 1000])).to.be.revertedWith("only governor is allowed");
+        await expect(governance.setLiquidityPoolParameter([1, 1000, 0, 1])).to.be.revertedWith("only governor is allowed");
     })
 })

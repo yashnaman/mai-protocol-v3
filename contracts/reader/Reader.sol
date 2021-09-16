@@ -522,9 +522,10 @@ contract Reader {
         }
         return false;
     }
-    
+
     function getLiquidityPoolInfoV103(address liquidityPool)
-        private view
+        private
+        view
         returns (
             bool isRunning,
             bool isFastCreationEnabled,
@@ -534,13 +535,9 @@ contract Reader {
         )
     {
         uint256[4] memory old;
-        (
-            isRunning,
-            isFastCreationEnabled,
-            addresses,
-            intNums,
-            old
-        ) = ILiquidityPool103(liquidityPool).getLiquidityPoolInfo();
+        (isRunning, isFastCreationEnabled, addresses, intNums, old) = ILiquidityPool103(
+            liquidityPool
+        ).getLiquidityPoolInfo();
         uintNums[0] = old[0];
         uintNums[1] = old[1];
         uintNums[2] = old[2];
@@ -562,4 +559,4 @@ interface ILiquidityPool103 {
             int256[5] memory intNums,
             uint256[4] memory uintNums
         );
-}    
+}

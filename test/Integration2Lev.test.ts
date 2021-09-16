@@ -62,13 +62,13 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
 
@@ -130,7 +130,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
         var { nums } = await perp.getPerpetualInfo(1);
         expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
-        
+
         // long 3 (open)
         var activateAccounts = await perp.listActiveAccounts(0, 0, 10);
         // no active account

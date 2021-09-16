@@ -54,16 +54,16 @@ describe('LiquidityPool3', () => {
     });
 
     it("createPerpetual - address", async () => {
-        const deplpyed1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        const deplpyed1 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
         await ctk.approve(deplpyed1[0], 1000);
-        const deplpyed2 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        const deplpyed2 = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
         expect(deplpyed1[0]).to.equal(deplpyed2[0]);
         expect(deplpyed1[1]).to.equal(deplpyed2[1]);
     })
 
     it("createPerpetual - fastCreation disable", async () => {
-        const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-        await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
+        await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
 
         const liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
         await liquidityPool.createPerpetual(oracle.address,
@@ -84,8 +84,8 @@ describe('LiquidityPool3', () => {
     })
 
     it("createPerpetual - fastCreation enabled", async () => {
-        const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")]));
-        await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [true, toWei("1000000")]));
+        const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [true, toWei("1000000"), 0, 1]));
+        await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [true, toWei("1000000"), 0, 1]));
 
         const liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
         await liquidityPool.createPerpetual(oracle.address,

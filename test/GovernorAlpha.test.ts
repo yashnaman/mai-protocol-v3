@@ -260,7 +260,7 @@ describe('GovernorAlpha', () => {
         }
 
         const LiquidityPoolFactory = await createLiquidityPoolFactory();
-        
+
         var symbol = await createContract("SymbolService");
         await symbol.initialize(10000);
         const ctk = await createContract("CustomERC20", ["collateral", "CTK", 18]);
@@ -284,8 +284,8 @@ describe('GovernorAlpha', () => {
         );
         const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
-        const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
+        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
 
         const oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         await oracle.setIndexPrice(toWei("1000"), 1000)
@@ -768,8 +768,8 @@ describe('GovernorAlpha', () => {
         );
         const key1 = versionKey(lpVersion1.address, govVersion1.address);
 
-        const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+        const deployed1 = await poolCreator.connect(user1).callStatic.createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
+        await poolCreator.connect(user1).createLiquidityPool(ctk.address, 18, 996, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
 
         const oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
         await oracle.setIndexPrice(toWei("1000"), 1000)

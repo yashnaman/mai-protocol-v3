@@ -79,8 +79,7 @@ contract LpGovernor is
     }
 
     function isLocked(address account) public virtual returns (bool) {
-        bool isTransferLocked = _getBlockNumber() >=
-            lastMintBlock[account].add(_getTransferDelay());
+        bool isTransferLocked = _getBlockNumber() < lastMintBlock[account].add(_getTransferDelay());
         bool isVoteLocked = GovernorAlpha.isLockedByVoting(account);
         return isTransferLocked || isVoteLocked;
     }
@@ -122,7 +121,7 @@ contract LpGovernor is
         super._beforeTokenTransfer(sender, recipient, amount);
     }
 
-    function _getTransferDelay() internal view returns (uint256) {
+    function _getTransferDelay() internal view virtual returns (uint256) {
         (, , , , uint256[6] memory uintNums) = ILiquidityPoolGetter(_target).getLiquidityPoolInfo();
         return uintNums[5];
     }

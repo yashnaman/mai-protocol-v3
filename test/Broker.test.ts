@@ -60,13 +60,13 @@ describe('Broker', () => {
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         liquidityPool = await LiquidityPoolFactory.attach(result[0]);
 
@@ -402,7 +402,7 @@ describe('Broker', () => {
         var compressed = await testOrder.compress(order, r, s, v, 0);
         expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
         broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")])
-        
+
         // no trade happened
         var { position } = await liquidityPool.getMarginAccount(0, user1.address);
         expect(position).to.equal(toWei("0"));

@@ -58,8 +58,8 @@ describe('Perpetual2', () => {
             oracle = await createContract("OracleAdaptor", ["USD", "ETH"]);
             await oracle.setIndexPrice(toWei("1000"), 10000);
             await oracle.setMarkPrice(toWei("1000"), 10000);
-            const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
-            await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]));
+            const deployed = await poolCreator.callStatic.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
+            await poolCreator.createLiquidityPool(ctk.address, 18, 998, ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]));
 
             liquidityPool = await LiquidityPoolFactory.attach(deployed[0]);
             await liquidityPool.createPerpetual(oracle.address,
