@@ -545,6 +545,10 @@ contract Reader {
         uintNums[4] = 0; // liquidityCap. 0 means ∞
         uintNums[5] = 0; // shareTransferDelay. old perpetual does not lock share tokens
     }
+
+    function getL1BlockNumber() public view returns (uint256) {
+        return block.number;
+    }
 }
 
 // back-compatible
