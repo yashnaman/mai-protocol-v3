@@ -173,5 +173,14 @@ contract LiquidityPool is Storage, Perpetual, Getter, Governance, LibraryEvents,
         _liquidityPool.donateLiquidity(_msgSender(), cashToAdd);
     }
 
+    /**
+     * @notice  Upgrade from v1.0.3. Add shareTransferDelay so that the shareToken can not be transfered and
+     *          removeLiquidity is forbidden until the next block of addLiquidity.
+     */
+    function upgradeFromV103ToV104() external {
+        require(_liquidityPool.shareTransferDelay == 0, "already upgraded");
+        _liquidityPool.shareTransferDelay = 1;
+    }
+
     bytes32[50] private __gap;
 }
