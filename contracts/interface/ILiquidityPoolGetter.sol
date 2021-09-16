@@ -33,12 +33,12 @@ interface ILiquidityPoolGetter {
             // [2] insuranceFundCap,
             // [3] insuranceFund,
             // [4] donatedInsuranceFund,
-            int256[5] memory intNums,
+            int256[6] memory intNums,
             // [0] collateralDecimals,
             // [1] perpetualCount
             // [2] fundingTime,
             // [3] operatorExpiration,
-            uint256[4] memory uintNums
+            uint256[5] memory uintNums
         );
 
     /**

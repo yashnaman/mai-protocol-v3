@@ -52,7 +52,7 @@ contract LibraryEvents {
     event TransferOperatorTo(address indexed newOperator);
     event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
-    event SetLiquidityPoolParameter(int256[2] value);
+    event SetLiquidityPoolParameter(int256[4] value);
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,

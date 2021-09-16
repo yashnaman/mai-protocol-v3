@@ -78,7 +78,7 @@ contract Governance is Storage, ILiquidityPoolGovernance {
      * @notice  Set the parameter of the liquidity pool. Can only called by the governor.
      * @param   params  New values of parameter set.
      */
-    function setLiquidityPoolParameter(int256[2] calldata params) public onlyGovernor {
+    function setLiquidityPoolParameter(int256[4] calldata params) public onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(params);
     }
 

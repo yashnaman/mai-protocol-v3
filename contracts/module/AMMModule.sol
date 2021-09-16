@@ -94,6 +94,7 @@ library AMMModule {
     ) public view returns (int256 shareToMint, int256 addedPoolMargin) {
         Context memory context = prepareContext(liquidityPool);
         (int256 poolMargin, ) = getPoolMargin(context);
+        require(poolMargin <= liquidityPool.liquidityCap, "liquidity reaches cap");
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
         addedPoolMargin = newPoolMargin.sub(poolMargin);

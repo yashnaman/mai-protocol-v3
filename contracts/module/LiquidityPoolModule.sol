@@ -54,7 +54,7 @@ library LiquidityPoolModule {
     event TransferOperatorTo(address indexed newOperator);
     event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
-    event SetLiquidityPoolParameter(int256[2] value);
+    event SetLiquidityPoolParameter(int256[4] value);
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -214,11 +214,14 @@ library LiquidityPoolModule {
     ) public {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
-
-        (bool isFastCreationEnabled, int256 insuranceFundCap) = abi.decode(
-            initData,
-            (bool, int256)
-        );
+        (
+            bool isFastCreationEnabled,
+            int256 insuranceFundCap,
+            int256 liquidityCap,
+            uint256 shareTransferDelay
+        ) = abi.decode(initData, (bool, int256, int256, uint256));
+        require(liquidityCap >= 0, "liquidity cap should be greater than 0");
+        require(shareTransferDelay >= 1, "share transfer delay should be at lease 1");
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = creator;
@@ -228,8 +231,11 @@ library LiquidityPoolModule {
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.governor = governor;
         liquidityPool.shareToken = governor;
+
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
         liquidityPool.insuranceFundCap = insuranceFundCap;
+        liquidityPool.liquidityCap = liquidityCap;
+        liquidityPool.shareTransferDelay = shareTransferDelay;
     }
 
     /**
@@ -310,11 +316,13 @@ library LiquidityPoolModule {
      */
     function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
-        int256[2] memory params
+        int256[4] memory params
     ) public {
         validateLiquidityPoolParameter(params);
         liquidityPool.isFastCreationEnabled = (params[0] != 0);
         liquidityPool.insuranceFundCap = params[1];
+        liquidityPool.liquidityCap = params[2];
+        liquidityPool.shareTransferDelay = uint256(params[3]);
         emit SetLiquidityPoolParameter(params);
     }
 
@@ -323,8 +331,10 @@ library LiquidityPoolModule {
      *            1. insurance fund cap >= 0
      * @param   liquidityPoolParams  The parameters of the liquidity pool.
      */
-    function validateLiquidityPoolParameter(int256[2] memory liquidityPoolParams) public pure {
+    function validateLiquidityPoolParameter(int256[4] memory liquidityPoolParams) public pure {
         require(liquidityPoolParams[1] >= 0, "insuranceFundCap < 0");
+        require(liquidityPoolParams[2] >= 0, "liquidityCap < 0");
+        require(liquidityPoolParams[3] >= 1, "shareTransferDelay < 1");
     }
 
     /**

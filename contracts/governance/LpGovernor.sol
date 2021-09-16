@@ -4,11 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/GSN/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
 import "./GovernorAlpha.sol";
 import "./RewardDistribution.sol";
 import "../interface/IGovernor.sol";
+import "../interface/ILiquidityPoolGetter.sol";
 
 contract LpGovernor is
     IGovernor,
@@ -18,8 +20,12 @@ contract LpGovernor is
     GovernorAlpha,
     RewardDistribution
 {
+    using SafeMathUpgradeable for uint256;
+
     // admin:  to mint/burn token
     address internal _minter;
+
+    mapping(address => uint256) public lastMintBlock;
 
     /**
      * @notice  Initialize LpGovernor instance.
@@ -60,6 +66,7 @@ contract LpGovernor is
      */
     function mint(address account, uint256 amount) public virtual override {
         require(_msgSender() == _minter, "must be minter to mint");
+        lastMintBlock[account] = _getBlockNumber();
         _mint(account, amount);
     }
 
@@ -72,7 +79,10 @@ contract LpGovernor is
     }
 
     function isLocked(address account) public virtual returns (bool) {
-        return GovernorAlpha.isLockedByVoting(account);
+        bool isTransferLocked = _getBlockNumber() >=
+            lastMintBlock[account].add(_getTransferDelay());
+        bool isVoteLocked = GovernorAlpha.isLockedByVoting(account);
+        return isTransferLocked || isVoteLocked;
     }
 
     /**
@@ -110,6 +120,21 @@ contract LpGovernor is
         _updateReward(sender);
         _updateReward(recipient);
         super._beforeTokenTransfer(sender, recipient, amount);
+    }
+
+    function _getTransferDelay() internal view returns (uint256) {
+        (
+            ,
+            ,
+            ,
+            ,
+            // [0] collateralDecimals,
+            // [1] perpetualCount
+            // [2] fundingTime,
+            // [3] operatorExpiration,
+            uint256[5] memory uintNums
+        ) = ILiquidityPoolGetter(_target).getLiquidityPoolInfo();
+        return uintNums[4];
     }
 
     bytes32[50] private __gap;
