@@ -112,4 +112,13 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         expect(await stk.balanceOf(user1.address)).to.equal(toWei("0"))
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("10"))
     })
+
+    it("lock - 1", async () => {
+        const flash = await createContract("FlashLP")
+        await perp.runLiquidityPool();
+        // add liquidity
+        await ctk.mint(flash.address, toWei("1000000"))
+        await flash.approve(ctk.address, perp.address)
+        await expect(flash.act1(perp.address, toWei("10"))).to.be.revertedWith("sender is locked")
+    })
 })

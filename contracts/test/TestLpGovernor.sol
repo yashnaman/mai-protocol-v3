@@ -27,6 +27,7 @@ contract TestLpGovernor is LpGovernor {
     }
 
     function _getTransferDelay() internal view virtual override returns (uint256) {
-        return 0;
+        if (_target == address(0)) return 0;
+        return super._getTransferDelay();
     }
 }
