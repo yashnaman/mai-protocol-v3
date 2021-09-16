@@ -516,7 +516,7 @@ contract Reader {
             // arb1
             imp == 0xEf5D601ea784ABd465c788C431d990b620e5Fee6 ||
             // arb-rinkeby
-            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C
+            imp == 0x755C852d94ffa5E9B6bE974A5051d23d5bE27e4F
         ) {
             return true;
         }
@@ -545,8 +545,8 @@ contract Reader {
         uintNums[1] = old[1];
         uintNums[2] = old[2];
         uintNums[3] = old[3];
-        // [4] liquidityCap = 0
-        uintNums[5] = 1; // [5] shareTransferDelay
+        uintNums[4] = 0; // liquidityCap
+        uintNums[5] = 1; // shareTransferDelay
     }
 }
 
