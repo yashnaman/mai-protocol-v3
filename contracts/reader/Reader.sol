@@ -542,8 +542,8 @@ contract Reader {
         uintNums[1] = old[1];
         uintNums[2] = old[2];
         uintNums[3] = old[3];
-        uintNums[4] = 0; // liquidityCap
-        uintNums[5] = 1; // shareTransferDelay
+        uintNums[4] = 0; // liquidityCap. 0 means ∞
+        uintNums[5] = 0; // shareTransferDelay. old perpetual does not lock share tokens
     }
 }
 
