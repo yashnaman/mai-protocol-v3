@@ -127,5 +127,5 @@ contract LpGovernor is
         return uintNums[5];
     }
 
-    bytes32[50] private __gap;
+    bytes32[49] private __gap;
 }
