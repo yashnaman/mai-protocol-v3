@@ -217,9 +217,9 @@ library LiquidityPoolModule {
         (
             bool isFastCreationEnabled,
             int256 insuranceFundCap,
-            int256 liquidityCap,
+            uint256 liquidityCap,
             uint256 shareTransferDelay
-        ) = abi.decode(initData, (bool, int256, int256, uint256));
+        ) = abi.decode(initData, (bool, int256, uint256, uint256));
         require(liquidityCap >= 0, "liquidity cap should be greater than 0");
         require(shareTransferDelay >= 1, "share transfer delay should be at lease 1");
 
@@ -321,7 +321,7 @@ library LiquidityPoolModule {
         validateLiquidityPoolParameter(params);
         liquidityPool.isFastCreationEnabled = (params[0] != 0);
         liquidityPool.insuranceFundCap = params[1];
-        liquidityPool.liquidityCap = params[2];
+        liquidityPool.liquidityCap = uint256(params[2]);
         liquidityPool.shareTransferDelay = uint256(params[3]);
         emit SetLiquidityPoolParameter(params);
     }

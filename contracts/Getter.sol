@@ -67,14 +67,14 @@ contract Getter is Storage, ILiquidityPoolGetter {
             // [2] insuranceFundCap,
             // [3] insuranceFund,
             // [4] donatedInsuranceFund,
-            // [5] liquidityCap,
-            int256[6] memory intNums,
+            int256[5] memory intNums,
             // [0] collateralDecimals,
             // [1] perpetualCount,
             // [2] fundingTime,
             // [3] operatorExpiration,
-            // [4] shareTransferDelay,
-            uint256[5] memory uintNums
+            // [4] liquidityCap,
+            // [5] shareTransferDelay,
+            uint256[6] memory uintNums
         )
     {
         isRunning = _liquidityPool.isRunning;
@@ -97,6 +97,8 @@ contract Getter is Storage, ILiquidityPoolGetter {
         uintNums[1] = _liquidityPool.perpetualCount;
         uintNums[2] = _liquidityPool.fundingTime;
         uintNums[3] = _liquidityPool.operatorExpiration;
+        uintNums[4] = _liquidityPool.liquidityCap;
+        uintNums[5] = _liquidityPool.shareTransferDelay;
     }
 
     /**

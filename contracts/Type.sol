@@ -103,7 +103,7 @@ struct LiquidityPoolStorage {
     int256 insuranceFund;
     int256 donatedInsuranceFund;
     address reserved4;
-    int256 liquidityCap;
+    uint256 liquidityCap;
     uint256 shareTransferDelay;
     // reserved slot for future upgrade
     bytes32[14] reserved;

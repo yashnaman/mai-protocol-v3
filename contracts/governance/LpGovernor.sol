@@ -123,18 +123,8 @@ contract LpGovernor is
     }
 
     function _getTransferDelay() internal view returns (uint256) {
-        (
-            ,
-            ,
-            ,
-            ,
-            // [0] collateralDecimals,
-            // [1] perpetualCount
-            // [2] fundingTime,
-            // [3] operatorExpiration,
-            uint256[5] memory uintNums
-        ) = ILiquidityPoolGetter(_target).getLiquidityPoolInfo();
-        return uintNums[4];
+        (, , , , uint256[6] memory uintNums) = ILiquidityPoolGetter(_target).getLiquidityPoolInfo();
+        return uintNums[5];
     }
 
     bytes32[50] private __gap;

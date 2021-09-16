@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/Constant.sol";
@@ -18,6 +19,8 @@ library AMMModule {
     using Math for int256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
+    using SafeCastUpgradeable for uint256;
+
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -97,7 +100,8 @@ library AMMModule {
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
         require(
-            liquidityPool.liquidityCap == 0 || newPoolMargin <= liquidityPool.liquidityCap,
+            liquidityPool.liquidityCap == 0 ||
+                newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
             "liquidity reaches cap"
         );
         addedPoolMargin = newPoolMargin.sub(poolMargin);
