@@ -96,7 +96,10 @@ library AMMModule {
         (int256 poolMargin, ) = getPoolMargin(context);
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
-        require(newPoolMargin <= liquidityPool.liquidityCap, "liquidity reaches cap");
+        require(
+            liquidityPool.liquidityCap == 0 || newPoolMargin <= liquidityPool.liquidityCap,
+            "liquidity reaches cap"
+        );
         addedPoolMargin = newPoolMargin.sub(poolMargin);
         if (shareTotalSupply == 0) {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
