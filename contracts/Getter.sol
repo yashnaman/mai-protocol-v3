@@ -98,7 +98,7 @@ contract Getter is Storage, ILiquidityPoolGetter {
         uintNums[2] = _liquidityPool.fundingTime;
         uintNums[3] = _liquidityPool.operatorExpiration;
         uintNums[4] = _liquidityPool.liquidityCap;
-        uintNums[5] = _liquidityPool.shareTransferDelay;
+        uintNums[5] = _liquidityPool.getShareTransferDelay();
     }
 
     /**

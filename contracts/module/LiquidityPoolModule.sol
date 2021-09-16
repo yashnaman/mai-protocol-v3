@@ -25,6 +25,7 @@ library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
+    using SafeMathExt for uint256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -87,6 +88,14 @@ library LiquidityPoolModule {
         returns (address vault)
     {
         vault = IPoolCreatorFull(liquidityPool.creator).getVault();
+    }
+
+    function getShareTransferDelay(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (uint256 delay)
+    {
+        delay = liquidityPool.shareTransferDelay.max(1);
     }
 
     function getOperator(LiquidityPoolStorage storage liquidityPool)
