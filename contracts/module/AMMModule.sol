@@ -136,6 +136,12 @@ library AMMModule {
         if (shareTotalSupply == 0) {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             cashToAdd = shareToMint.sub(poolMargin).max(0);
+            int256 newPoolMargin = cashToAdd.add(poolMargin);
+            require(
+                liquidityPool.liquidityCap == 0 ||
+                    newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
+                "liquidity reaches cap"
+            );
         } else {
             // If share token's total supply is not zero and there is no money in pool,
             // these share tokens have no value. This case should be avoided.
@@ -143,6 +149,11 @@ library AMMModule {
             int256 newPoolMargin = shareTotalSupply.add(shareToMint).wfrac(
                 poolMargin,
                 shareTotalSupply
+            );
+            require(
+                liquidityPool.liquidityCap == 0 ||
+                    newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
+                "liquidity reaches cap"
             );
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
             int256 newCash;
