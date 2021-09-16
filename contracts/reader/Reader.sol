@@ -30,7 +30,7 @@ contract Reader {
         // check Getter.sol for detail
         address[7] addresses;
         int256[5] intNums;
-        uint256[4] uintNums;
+        uint256[6] uintNums;
         PerpetualReaderResult[] perpetuals;
         bool isAMMMaintenanceSafe;
     }
@@ -69,8 +69,12 @@ contract Reader {
         int256 availableCash;
     }
 
-    constructor(address inverseStateService_) {
+    address public immutable poolCreator;
+
+    constructor(address poolCreator_, address inverseStateService_) {
+        require(poolCreator_.isContract(), "poolCreator must be contract");
         require(inverseStateService_.isContract(), "inverseStateService must be contract");
+        poolCreator = poolCreator_;
         inverseStateService = IInverseStateService(inverseStateService_);
     }
 
@@ -113,8 +117,13 @@ contract Reader {
      * @return bool          True if amm is maintenance margin safe.
      */
     function isAMMMaintenanceSafe(address liquidityPool) public returns (bool) {
-        (, , , , uint256[4] memory uintNums) = ILiquidityPoolFull(liquidityPool)
-            .getLiquidityPoolInfo();
+        uint256[6] memory uintNums;
+        address imp = getImplementation(liquidityPool);
+        if (isV103(imp)) {
+            (, , , , uintNums) = getLiquidityPoolInfoV103(liquidityPool);
+        } else {
+            (, , , , uintNums) = ILiquidityPoolFull(liquidityPool).getLiquidityPoolInfo();
+        }
         // perpetual count
         if (uintNums[1] == 0) {
             return true;
@@ -251,13 +260,24 @@ contract Reader {
             isSynced = false;
         }
         // pool
-        (
-            pool.isRunning,
-            pool.isFastCreationEnabled,
-            pool.addresses,
-            pool.intNums,
-            pool.uintNums
-        ) = ILiquidityPoolFull(liquidityPool).getLiquidityPoolInfo();
+        address imp = getImplementation(liquidityPool);
+        if (isV103(imp)) {
+            (
+                pool.isRunning,
+                pool.isFastCreationEnabled,
+                pool.addresses,
+                pool.intNums,
+                pool.uintNums
+            ) = getLiquidityPoolInfoV103(liquidityPool);
+        } else {
+            (
+                pool.isRunning,
+                pool.isFastCreationEnabled,
+                pool.addresses,
+                pool.intNums,
+                pool.uintNums
+            ) = ILiquidityPoolFull(liquidityPool).getLiquidityPoolInfo();
+        }
         // perpetual
         uint256 perpetualCount = pool.uintNums[1];
         address symbolService = IPoolCreatorFull(pool.addresses[0]).getSymbolService();
@@ -482,4 +502,64 @@ contract Reader {
         (shareToRemoveResult, cashToReturnResult) = ILiquidityPoolFull(liquidityPool)
             .queryRemoveLiquidity(shareToRemove, cashToReturn);
     }
+
+    function getImplementation(address proxy) public view returns (address) {
+        IProxyAdmin proxyAdmin = IPoolCreatorFull(poolCreator).upgradeAdmin();
+        return proxyAdmin.getProxyImplementation(proxy);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////
+    // back-compatible: <= v1.0.3
+
+    function isV103(address imp) private pure returns (bool) {
+        if (
+            // arb1
+            imp == 0xEf5D601ea784ABd465c788C431d990b620e5Fee6 ||
+            // arb-rinkeby
+            imp == 0xEBB6C33196047c79d2ABc405022054A6cD7bB95C
+        ) {
+            return true;
+        }
+        return false;
+    }
+    
+    function getLiquidityPoolInfoV103(address liquidityPool)
+        private view
+        returns (
+            bool isRunning,
+            bool isFastCreationEnabled,
+            address[7] memory addresses,
+            int256[5] memory intNums,
+            uint256[6] memory uintNums
+        )
+    {
+        uint256[4] memory old;
+        (
+            isRunning,
+            isFastCreationEnabled,
+            addresses,
+            intNums,
+            old
+        ) = ILiquidityPool103(liquidityPool).getLiquidityPoolInfo();
+        uintNums[0] = old[0];
+        uintNums[1] = old[1];
+        uintNums[2] = old[2];
+        uintNums[3] = old[3];
+        // [4] liquidityCap = 0
+        uintNums[5] = 1; // [5] shareTransferDelay
+    }
 }
+
+// back-compatible
+interface ILiquidityPool103 {
+    function getLiquidityPoolInfo()
+        external
+        view
+        returns (
+            bool isRunning,
+            bool isFastCreationEnabled,
+            address[7] memory addresses,
+            int256[5] memory intNums,
+            uint256[4] memory uintNums
+        );
+}    
