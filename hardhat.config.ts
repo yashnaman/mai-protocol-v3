@@ -9,6 +9,7 @@ import "solidity-coverage"
 import { retrieveLinkReferences } from "./scripts/deployer/linkReferenceParser";
 
 const pk = process.env["PK"]
+const etherscanApiKey = process.env["ETHERSCAN_API_KEY"];
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -136,7 +137,7 @@ module.exports = {
         },
         arb1: {
             url: `https://arb1.arbitrum.io/rpc`,
-            gasPrice: 5e8,
+            gasPrice: 2e9,
             blockGasLimit: "80000000",
             accounts: [pk],
         },
@@ -163,16 +164,8 @@ module.exports = {
         cache: "./cache",
         artifacts: "./artifacts"
     },
-    contractSizer: {
-        alphaSort: true,
-        runOnCompile: false,
-        disambiguatePaths: false,
-    },
-    abiExporter: {
-        path: './abi',
-        clear: false,
-        flat: true,
-        only: ['PoolCreator', 'LiquidityPool'],
+    etherscan: {
+        apiKey: etherscanApiKey
     },
     mocha: {
         timeout: 60000
