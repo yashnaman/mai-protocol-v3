@@ -80,7 +80,8 @@ interface ILiquidityPoolGetter {
             // [32] maxOpenInterestRate,
             // [33-35] fundingRateFactor value, min, max,
             // [36-38] defaultTargetLeverage value, min, max,
-            int256[39] memory nums
+            // [36-38] baseFundingRate value, min, max,
+            int256[42] memory nums
         );
 
     /**
