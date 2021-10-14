@@ -84,7 +84,7 @@ describe("Reader", () => {
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
         inverseStateService = await createContract("InverseStateService");
-        reader = await createContract("Reader", [inverseStateService.address]);
+        reader = await createContract("Reader", [poolCreator.address, inverseStateService.address]);
 
         // oracle
         oracle1 = await createContract("OracleAdaptor", ["USD", "BTC"]);
