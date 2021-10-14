@@ -323,4 +323,8 @@ contract TestPerpetual is Storage {
     function getOpenInterest(uint256 perpetualIndex) public view returns (int256) {
         return _liquidityPool.perpetuals[perpetualIndex].openInterest;
     }
+
+    function setOpenInterest(uint256 perpetualIndex, int256 value) public {
+        _liquidityPool.perpetuals[perpetualIndex].openInterest = value;
+    }
 }
