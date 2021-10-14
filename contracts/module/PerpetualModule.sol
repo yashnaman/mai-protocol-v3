@@ -320,8 +320,9 @@ library PerpetualModule {
         int256 position = perpetual.getPosition(address(this));
         int256 newFundingRate;
         if (
-            (perpetual.baseFundingRate.value > 0 && position <= 0) ||
-            (perpetual.baseFundingRate.value < 0 && position >= 0)
+            ((perpetual.baseFundingRate.value > 0 && position <= 0) ||
+                (perpetual.baseFundingRate.value < 0 && position >= 0)) &&
+            perpetual.openInterest != 0
         ) {
             newFundingRate = perpetual.baseFundingRate.value;
         } else {
@@ -330,8 +331,10 @@ library PerpetualModule {
         if (position != 0) {
             int256 fundingRateLimit = perpetual.fundingRateLimit.value;
             if (poolMargin != 0) {
-                newFundingRate += getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
-                    perpetual.fundingRateFactor.value
+                newFundingRate = newFundingRate.add(
+                    getIndexPrice(perpetual).wfrac(position, poolMargin).neg().wmul(
+                        perpetual.fundingRateFactor.value
+                    )
                 );
                 newFundingRate = newFundingRate.min(fundingRateLimit).max(fundingRateLimit.neg());
             } else if (position > 0) {
