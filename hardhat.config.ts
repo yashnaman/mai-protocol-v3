@@ -1,4 +1,5 @@
 import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "./misc/typechain-ethers-v5-mcdex"
 import "hardhat-contract-sizer";
@@ -8,6 +9,7 @@ import "solidity-coverage"
 import { retrieveLinkReferences } from "./scripts/deployer/linkReferenceParser";
 
 // const pk = process.env["PK"]
+const etherscanApiKey = process.env["ETHERSCAN_API_KEY"];
 
 task("accounts", "Prints the list of accounts", async (args, hre) => {
     const accounts = await hre.ethers.getSigners();
@@ -35,11 +37,13 @@ task("encode", "Encode calldata")
 
 task("deploy", "Deploy a single contract")
     .addPositionalParam("name", "Name of contract to deploy")
-    .addOptionalPositionalParam("args", "Args of contract constructor, seprated by common ','")
+    .addOptionalPositionalParam("args", "Args of contract constructor, separated by common ','")
     .setAction(async (args, hre) => {
         if (typeof args.args != 'undefined') {
-            args.args = args.args.split('|')
+            args.args = args.args.split(',')
         }
+        let nonce = await hre.ethers.provider.getTransactionCount(await hre.ethers.provider.getSigner(0).getAddress(), 'pending')
+        console.log('nonce', nonce)
         const linkReferences = await retrieveLinkReferences('./artifacts/contracts')
         const links = {}
         const go = async (name) => {
@@ -54,8 +58,11 @@ task("deploy", "Deploy a single contract")
                 }
             }
             const factory = await hre.ethers.getContractFactory(name, { libraries: innerLinks });
-            const deployed = await factory.deploy(...args.args);
+            const constructArgs = args.args ? args.args : []
+            constructArgs.push({ nonce: nonce++ })
+            const deployed = await factory.deploy(...constructArgs);
             console.log(name, 'deployed at', deployed.address);
+            await deployed.deployTransaction.wait();
             return deployed.address;
         }
         await go(args.name);
@@ -134,7 +141,7 @@ module.exports = {
         },
         arb1: {
             url: `https://arb1.arbitrum.io/rpc`,
-            gasPrice: 5e8,
+            gasPrice: 2e9,
             blockGasLimit: "80000000",
             // accounts: [pk],
         },
@@ -161,16 +168,8 @@ module.exports = {
         cache: "./cache",
         artifacts: "./artifacts"
     },
-    contractSizer: {
-        alphaSort: true,
-        runOnCompile: false,
-        disambiguatePaths: false,
-    },
-    abiExporter: {
-        path: './abi',
-        clear: false,
-        flat: true,
-        only: ['PoolCreator', 'LiquidityPool'],
+    etherscan: {
+        apiKey: etherscanApiKey
     },
     mocha: {
         timeout: 60000

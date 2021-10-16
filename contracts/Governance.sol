@@ -78,7 +78,7 @@ contract Governance is Storage, ILiquidityPoolGovernance {
      * @notice  Set the parameter of the liquidity pool. Can only called by the governor.
      * @param   params  New values of parameter set.
      */
-    function setLiquidityPoolParameter(int256[2] calldata params) public onlyGovernor {
+    function setLiquidityPoolParameter(int256[4] calldata params) public onlyGovernor {
         _liquidityPool.setLiquidityPoolParameter(params);
     }
 
@@ -107,9 +107,9 @@ contract Governance is Storage, ILiquidityPoolGovernance {
      */
     function setPerpetualRiskParameter(
         uint256 perpetualIndex,
-        int256[8] calldata riskParams,
-        int256[8] calldata minRiskParamValues,
-        int256[8] calldata maxRiskParamValues
+        int256[9] calldata riskParams,
+        int256[9] calldata minRiskParamValues,
+        int256[9] calldata maxRiskParamValues
     ) external onlyGovernor {
         _liquidityPool.setPerpetualRiskParameter(
             perpetualIndex,
@@ -124,7 +124,7 @@ contract Governance is Storage, ILiquidityPoolGovernance {
      * @param   perpetualIndex  The index of the perpetual in liquidity pool.
      * @param   riskParams      The new value of the risk parameter, must between minimum value and maximum value
      */
-    function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[8] calldata riskParams)
+    function updatePerpetualRiskParameter(uint256 perpetualIndex, int256[9] calldata riskParams)
         external
         onlyOperator
     {

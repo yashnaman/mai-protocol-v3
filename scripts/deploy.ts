@@ -56,7 +56,7 @@ async function main(_, deployer, accounts) {
     await deployer.deployOrSkip("UniswapV3OracleAdaptorCreator")
     await deployer.deployOrSkip("UniswapV3Tool")
     await deployer.deployOrSkip("InverseStateService")
-    await deployer.deployOrSkip("Reader", deployer.addressOf("InverseStateService"))
+    // await deployer.deployOrSkip("Reader", deployer.addressOf("InverseStateService"))
 
     // // test only
     await deployer.deploy("WETH9")
@@ -76,6 +76,7 @@ async function main(_, deployer, accounts) {
         vaultFeeRate
     ))
     await ensureFinished(symbolService.addWhitelistedFactory(poolCreator.address))
+    await deployer.deployOrSkip("Reader", poolCreator.address, deployer.addressOf("InverseStateService"))
 
     // keeper whitelist
     for (let keeper of keeperAddresses) {
@@ -109,7 +110,7 @@ async function preset2(deployer, accounts) {
         18,
         // 6,
         Math.floor(Date.now() / 1000),
-        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("10000000")])
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("10000000"), 0, 1])
     ))
 
     const n = await poolCreator.getLiquidityPoolCount();
@@ -131,10 +132,10 @@ async function preset2(deployer, accounts) {
         oracleAdaptor.address,
         // imr          mmr            operatorfr        lpfr              rebate        penalty        keeper       insur         oi
         [toWei("0.04"), toWei("0.03"), toWei("0.00000"), toWei("0.00055"), toWei("0.2"), toWei("0.01"), toWei("0.02"), toWei("0.5"), toWei("3")],
-        // alpha           beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev
-        [toWei("0.00075"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("1"), toWei("0.05"), toWei("0.005"), toWei("10")],
-        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-        [toWei("0.1"), toWei("0.5"), toWei("0.5"), toWei("0.1"), toWei("5"), toWei("1"), toWei("0.1"), toWei("10000000")]
+        // alpha           beta1            beta2             frLimit        lev         maxClose       frFactor        defaultLev   baseFundingRate
+        [toWei("0.00075"), toWei("0.0075"), toWei("0.00525"), toWei("0.01"), toWei("1"), toWei("0.05"), toWei("0.005"), toWei("10"), toWei("-0.01")],
+        [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("-1")],
+        [toWei("0.1"), toWei("0.5"), toWei("0.5"), toWei("0.1"), toWei("5"), toWei("1"), toWei("0.1"), toWei("10000000"), toWei("1")]
     ))
     const inverseStateService = await deployer.getDeployedContract("InverseStateService")
     await ensureFinished(inverseStateService.setInverseState(liquidityPool.address, "0", true))

@@ -118,7 +118,7 @@ async function main(accounts: any[]) {
 async function set1(accounts: any[], poolCreator, weth, oracleAddresses) {
     const tx = await (await poolCreator.createLiquidityPool(weth.address, 18 /* decimals */, 998 /* nonce */,
         // (isFastCreationEnabled, insuranceFundCap)
-        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     )).wait()
 
     const n = await poolCreator.getLiquidityPoolCount();
@@ -175,7 +175,7 @@ async function set2(accounts: any[], poolCreator, weth, oracleAddresses) {
 
     const tx = await (await poolCreator.createLiquidityPool(usd.address, 6 /* decimals */, 998 /* nonce */,
         // (isFastCreationEnabled, insuranceFundCap)
-        ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")])
+        ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1])
     )).wait()
 
     const n = await poolCreator.getLiquidityPoolCount();

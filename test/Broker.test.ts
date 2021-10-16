@@ -60,13 +60,13 @@ describe('Broker', () => {
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         liquidityPool = await LiquidityPoolFactory.attach(result[0]);
 
@@ -78,9 +78,9 @@ describe('Broker', () => {
             oracle.address,
             // imr         mmr            operatorfr       lpfr             rebate      penalty         keeper      insur            oi
             [toWei("0.1"), toWei("0.05"), toWei("0.0001"), toWei("0.0008"), toWei("0"), toWei("0.005"), toWei("2"), toWei("0.0001"), toWei("2")],
-            [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1")],
+            [toWei("0.001"), toWei("0.014285714285714285"), toWei("0.012857142857142857"), toWei("0.005"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1"), toWei("0")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("1"), toWei("1"), toWei("1"), toWei("1"), toWei("10"), toWei("1"), toWei("1"), toWei("1"), toWei("0")],
         )
         await liquidityPool.runLiquidityPool();
         broker = await createContract("Broker");
@@ -402,7 +402,7 @@ describe('Broker', () => {
         var compressed = await testOrder.compress(order, r, s, v, 0);
         expect(await testOrder.getSigner(order, sig)).to.equal(user1.address);
         broker.batchTrade([compressed], [toWei("-0.5")], [toWei("0")])
-        
+
         // no trade happened
         var { position } = await liquidityPool.getMarginAccount(0, user1.address);
         expect(position).to.equal(toWei("0"));

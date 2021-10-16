@@ -103,8 +103,10 @@ struct LiquidityPoolStorage {
     int256 insuranceFund;
     int256 donatedInsuranceFund;
     address reserved4;
+    uint256 liquidityCap;
+    uint256 shareTransferDelay;
     // reserved slot for future upgrade
-    bytes32[16] reserved;
+    bytes32[14] reserved;
 }
 
 /**
@@ -159,6 +161,7 @@ struct PerpetualStorage {
     address reserved4;
     EnumerableSetUpgradeable.AddressSet ammKeepers;
     EnumerableSetUpgradeable.AddressSet reserved5;
+    Option baseFundingRate;
     // reserved slot for future upgrade
-    bytes32[12] reserved;
+    bytes32[9] reserved;
 }

@@ -67,7 +67,7 @@ contract TestSymbolService {
             bool isFastCreationEnabled,
             address[7] memory addresses,
             int256[5] memory intNums,
-            uint256[4] memory uintNums
+            uint256[6] memory uintNums
         )
     {
         addresses[0] = factory;

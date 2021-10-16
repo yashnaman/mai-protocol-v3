@@ -59,13 +59,13 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         await poolCreator.createLiquidityPool(
             ctk.address,
             18,
             998,
-            ethers.utils.defaultAbiCoder.encode(["bool", "int256"], [false, toWei("1000000")]),
+            ethers.utils.defaultAbiCoder.encode(["bool", "int256", "uint256", "uint256"], [false, toWei("1000000"), 0, 1]),
         );
         perp = await LiquidityPoolFactory.attach(liquidityPool);
 
@@ -78,15 +78,15 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         // create perpetual
         await perp.createPerpetual(oracle1.address,
             [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("4")],
-            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1"), toWei("0")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1"), toWei("0")],
         )
         await perp.createPerpetual(oracle2.address,
             [toWei("0.01"), toWei("0.005"), toWei("0.001"), toWei("0.001"), toWei("0.2"), toWei("0.002"), toWei("0.5"), toWei("0.5"), toWei("4")],
-            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1")],
-            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
-            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1")],
+            [toWei("0.01"), toWei("0.1"), toWei("0.06"), toWei("0"), toWei("5"), toWei("0.05"), toWei("0.01"), toWei("1"), toWei("0")],
+            [toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0"), toWei("0")],
+            [toWei("0.1"), toWei("0.2"), toWei("0.2"), toWei("0.5"), toWei("10"), toWei("0.99"), toWei("1"), toWei("1"), toWei("0")],
         )
 
         // share token
@@ -111,5 +111,14 @@ describe("integration3 - 2 perps. add/remove liquidity", () => {
         await perp.connect(user1).removeLiquidity(toWei("5"), 0);
         expect(await stk.balanceOf(user1.address)).to.equal(toWei("0"))
         expect(await ctk.balanceOf(user1.address)).to.equal(toWei("10"))
+    })
+
+    it("lock - 1", async () => {
+        const flash = await createContract("FlashLP")
+        await perp.runLiquidityPool();
+        // add liquidity
+        await ctk.mint(flash.address, toWei("1000000"))
+        await flash.approve(ctk.address, perp.address)
+        await expect(flash.act1(perp.address, toWei("10"))).to.be.revertedWith("sender is locked")
     })
 })

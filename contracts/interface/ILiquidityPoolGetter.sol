@@ -35,10 +35,12 @@ interface ILiquidityPoolGetter {
             // [4] donatedInsuranceFund,
             int256[5] memory intNums,
             // [0] collateralDecimals,
-            // [1] perpetualCount
+            // [1] perpetualCount,
             // [2] fundingTime,
             // [3] operatorExpiration,
-            uint256[4] memory uintNums
+            // [4] liquidityCap,
+            // [5] shareTransferDelay,
+            uint256[6] memory uintNums
         );
 
     /**
@@ -78,7 +80,8 @@ interface ILiquidityPoolGetter {
             // [32] maxOpenInterestRate,
             // [33-35] fundingRateFactor value, min, max,
             // [36-38] defaultTargetLeverage value, min, max,
-            int256[39] memory nums
+            // [39-41] baseFundingRate value, min, max,
+            int256[42] memory nums
         );
 
     /**

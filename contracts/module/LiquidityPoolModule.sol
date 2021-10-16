@@ -25,6 +25,7 @@ library LiquidityPoolModule {
     using SafeCastUpgradeable for uint256;
     using SafeCastUpgradeable for int256;
     using SafeMathExt for int256;
+    using SafeMathExt for uint256;
     using SafeMathUpgradeable for uint256;
     using SignedSafeMathUpgradeable for int256;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
@@ -54,7 +55,7 @@ library LiquidityPoolModule {
     event TransferOperatorTo(address indexed newOperator);
     event ClaimOperator(address indexed newOperator);
     event RevokeOperator();
-    event SetLiquidityPoolParameter(int256[2] value);
+    event SetLiquidityPoolParameter(int256[4] value);
     event CreatePerpetual(
         uint256 perpetualIndex,
         address governor,
@@ -63,7 +64,7 @@ library LiquidityPoolModule {
         address oracle,
         address collateral,
         int256[9] baseParams,
-        int256[8] riskParams
+        int256[9] riskParams
     );
     event RunLiquidityPool();
     event OperatorCheckIn(address indexed operator);
@@ -87,6 +88,14 @@ library LiquidityPoolModule {
         returns (address vault)
     {
         vault = IPoolCreatorFull(liquidityPool.creator).getVault();
+    }
+
+    function getShareTransferDelay(LiquidityPoolStorage storage liquidityPool)
+        public
+        view
+        returns (uint256 delay)
+    {
+        delay = liquidityPool.shareTransferDelay.max(1);
     }
 
     function getOperator(LiquidityPoolStorage storage liquidityPool)
@@ -214,11 +223,14 @@ library LiquidityPoolModule {
     ) public {
         require(collateral != address(0), "collateral is invalid");
         require(governor != address(0), "governor is invalid");
-
-        (bool isFastCreationEnabled, int256 insuranceFundCap) = abi.decode(
-            initData,
-            (bool, int256)
-        );
+        (
+            bool isFastCreationEnabled,
+            int256 insuranceFundCap,
+            uint256 liquidityCap,
+            uint256 shareTransferDelay
+        ) = abi.decode(initData, (bool, int256, uint256, uint256));
+        require(liquidityCap >= 0, "liquidity cap should be greater than 0");
+        require(shareTransferDelay >= 1, "share transfer delay should be at lease 1");
 
         liquidityPool.initializeCollateral(collateral, collateralDecimals);
         liquidityPool.creator = creator;
@@ -228,8 +240,11 @@ library LiquidityPoolModule {
         liquidityPool.operatorExpiration = block.timestamp.add(OPERATOR_CHECK_IN_TIMEOUT);
         liquidityPool.governor = governor;
         liquidityPool.shareToken = governor;
+
         liquidityPool.isFastCreationEnabled = isFastCreationEnabled;
         liquidityPool.insuranceFundCap = insuranceFundCap;
+        liquidityPool.liquidityCap = liquidityCap;
+        liquidityPool.shareTransferDelay = shareTransferDelay;
     }
 
     /**
@@ -247,9 +262,9 @@ library LiquidityPoolModule {
         LiquidityPoolStorage storage liquidityPool,
         address oracle,
         int256[9] calldata baseParams,
-        int256[8] calldata riskParams,
-        int256[8] calldata minRiskParamValues,
-        int256[8] calldata maxRiskParamValues
+        int256[9] calldata riskParams,
+        int256[9] calldata minRiskParamValues,
+        int256[9] calldata maxRiskParamValues
     ) public {
         require(
             liquidityPool.perpetualCount < MAX_PERPETUAL_COUNT,
@@ -310,11 +325,13 @@ library LiquidityPoolModule {
      */
     function setLiquidityPoolParameter(
         LiquidityPoolStorage storage liquidityPool,
-        int256[2] memory params
+        int256[4] memory params
     ) public {
         validateLiquidityPoolParameter(params);
         liquidityPool.isFastCreationEnabled = (params[0] != 0);
         liquidityPool.insuranceFundCap = params[1];
+        liquidityPool.liquidityCap = uint256(params[2]);
+        liquidityPool.shareTransferDelay = uint256(params[3]);
         emit SetLiquidityPoolParameter(params);
     }
 
@@ -323,8 +340,10 @@ library LiquidityPoolModule {
      *            1. insurance fund cap >= 0
      * @param   liquidityPoolParams  The parameters of the liquidity pool.
      */
-    function validateLiquidityPoolParameter(int256[2] memory liquidityPoolParams) public pure {
+    function validateLiquidityPoolParameter(int256[4] memory liquidityPoolParams) public pure {
         require(liquidityPoolParams[1] >= 0, "insuranceFundCap < 0");
+        require(liquidityPoolParams[2] >= 0, "liquidityCap < 0");
+        require(liquidityPoolParams[3] >= 1, "shareTransferDelay < 1");
     }
 
     /**
@@ -409,9 +428,9 @@ library LiquidityPoolModule {
     function setPerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        int256[8] memory riskParams,
-        int256[8] memory minRiskParamValues,
-        int256[8] memory maxRiskParamValues
+        int256[9] memory riskParams,
+        int256[9] memory minRiskParamValues,
+        int256[9] memory maxRiskParamValues
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -427,7 +446,7 @@ library LiquidityPoolModule {
     function updatePerpetualRiskParameter(
         LiquidityPoolStorage storage liquidityPool,
         uint256 perpetualIndex,
-        int256[8] memory riskParams
+        int256[9] memory riskParams
     ) public {
         require(perpetualIndex < liquidityPool.perpetualCount, "perpetual index out of range");
         PerpetualStorage storage perpetual = liquidityPool.perpetuals[perpetualIndex];
@@ -494,8 +513,9 @@ library LiquidityPoolModule {
     function refundDonatedInsuranceFund(LiquidityPoolStorage storage liquidityPool) internal {
         address operator = getOperator(liquidityPool);
         if (liquidityPool.donatedInsuranceFund > 0 && operator != address(0)) {
-            liquidityPool.transferToUser(operator, liquidityPool.donatedInsuranceFund);
+            int256 toRefund = liquidityPool.donatedInsuranceFund;
             liquidityPool.donatedInsuranceFund = 0;
+            liquidityPool.transferToUser(operator, toRefund);
         }
     }
 

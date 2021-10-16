@@ -2,6 +2,7 @@
 pragma solidity 0.7.4;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts-upgradeable/utils/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/math/SignedSafeMathUpgradeable.sol";
 
 import "../libraries/Constant.sol";
@@ -18,6 +19,8 @@ library AMMModule {
     using Math for int256;
     using SafeMathExt for int256;
     using SignedSafeMathUpgradeable for int256;
+    using SafeCastUpgradeable for uint256;
+
     using MarginAccountModule for PerpetualStorage;
     using PerpetualModule for PerpetualStorage;
 
@@ -96,6 +99,11 @@ library AMMModule {
         (int256 poolMargin, ) = getPoolMargin(context);
         context.availableCash = context.availableCash.add(cashToAdd);
         (int256 newPoolMargin, ) = getPoolMargin(context);
+        require(
+            liquidityPool.liquidityCap == 0 ||
+                newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
+            "liquidity reaches cap"
+        );
         addedPoolMargin = newPoolMargin.sub(poolMargin);
         if (shareTotalSupply == 0) {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
@@ -128,6 +136,12 @@ library AMMModule {
         if (shareTotalSupply == 0) {
             // first time, if there is pool margin left in pool, it belongs to the first person who adds liquidity
             cashToAdd = shareToMint.sub(poolMargin).max(0);
+            int256 newPoolMargin = cashToAdd.add(poolMargin);
+            require(
+                liquidityPool.liquidityCap == 0 ||
+                    newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
+                "liquidity reaches cap"
+            );
         } else {
             // If share token's total supply is not zero and there is no money in pool,
             // these share tokens have no value. This case should be avoided.
@@ -135,6 +149,11 @@ library AMMModule {
             int256 newPoolMargin = shareTotalSupply.add(shareToMint).wfrac(
                 poolMargin,
                 shareTotalSupply
+            );
+            require(
+                liquidityPool.liquidityCap == 0 ||
+                    newPoolMargin <= liquidityPool.liquidityCap.toInt256(),
+                "liquidity reaches cap"
             );
             int256 minPoolMargin = context.squareValue.div(2).sqrt();
             int256 newCash;
