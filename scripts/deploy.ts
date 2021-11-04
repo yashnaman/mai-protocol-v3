@@ -100,7 +100,9 @@ async function preset2(deployer, accounts) {
     console.log("WETH9 address", deployer.addressOf("WETH9"));
 
     // const usd = await deployer.getContractAt("CustomERC20", deployer.addressOf("CustomERC20"))
-    const weth = await deployer.getDeployedContract("WETH9");
+    let weth = await deployer.getDeployedContract("WETH9");
+    weth = weth.attach("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");//WETH9 on the mainnet
+    console.log("WETH9 address", weth.address);
 
     const poolCreator = await deployer.getDeployedContract("PoolCreator");
     console.log("creating liquidity pool");
