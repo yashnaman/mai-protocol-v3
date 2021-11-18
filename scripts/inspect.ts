@@ -31,6 +31,7 @@ async function inspectPoolCreator(deployer) {
   console.log("upgradeAdmin:", upgradeAdmin);
   const keepers = await poolCreator.listKeepers(0, 100);
   console.log("whitelist keepers:", keepers);
+  /* block too much
   console.log("guardian:");
   var filter = poolCreator.filters.AddGuardian();
   var logs = await poolCreator.queryFilter(filter);
@@ -47,6 +48,7 @@ async function inspectPoolCreator(deployer) {
   for (const log of logs) {
     console.log("    renounce ", log.args[0]);
   }
+  */
   const vault = await poolCreator.getVault();
   const vaultFeeRate = await poolCreator.getVaultFeeRate();
   console.log("vault:", vault, "vault fee rate:", new BigNumber(vaultFeeRate.toString()).shiftedBy(-18).toFixed());
@@ -58,6 +60,7 @@ async function inspectPoolCreator(deployer) {
   const symbolService = await deployer.getDeployedContract("SymbolService");
   owner = await symbolService.owner();
   console.log("owner:", owner);
+  /* block too much
   console.log("whitelist factory:");
   filter = symbolService.filters.AddWhitelistedFactory();
   logs = await symbolService.queryFilter(filter);
@@ -69,6 +72,7 @@ async function inspectPoolCreator(deployer) {
   for (const log of logs) {
     console.log("    remove ", log.args[0]);
   }
+  */
 
   console.log("\n====MCDEXFoundation pool====");
   const poolAddress = "0xaB324146C49B23658E5b3930E641BDBDf089CbAc";
