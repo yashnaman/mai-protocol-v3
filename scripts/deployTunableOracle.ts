@@ -95,7 +95,7 @@ async function deployTunableOracle(deployer) {
     for (const [chainlinkAdaptor, base, quote, deviation, timeout, chainlink] of chainlinkAdaptors) {
         console.log('new TunableOracle', base, quote)
         const receipt = await ensureFinished(register.newTunableOracle(liquidityPoolAddress, chainlinkAdaptor));
-        console.log('  tx', receipt.hash)
+        console.log('  tx', receipt.transactionHash)
         console.log('  deployed at', receipt.events[0].args['newOracle'])
     }
 }
