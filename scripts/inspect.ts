@@ -137,8 +137,8 @@ async function inspectPoolCreator(deployer) {
   const TunableOracleRegisterAddress = "0x43800D850C87d5D585D8DDF3DFB23152A826cDeB";
   console.log("address:", TunableOracleRegisterAddress);
   const TunableOracleRegister = await deployer.getContractAt("TunableOracleRegister", TunableOracleRegisterAddress);
-  console.log("upgradeAdmin:", await deployer.getAdminOfUpgradableContract(TunableOracleRegister));
-  console.log("implementation:", await deployer.getImplementation(TunableOracleRegister));
+  console.log("upgradeAdmin:", await deployer.getAdminOfUpgradableContract(TunableOracleRegister.address));
+  console.log("implementation:", await deployer.getImplementation(TunableOracleRegister.address));
   console.log("beacon implementation(for TunableOracle):", await TunableOracleRegister.implementation());
   var role = ethers.constants.HashZero;
   console.log("default admin role (", role, "):");
@@ -156,16 +156,9 @@ async function inspectPoolCreator(deployer) {
   for (let tunableOracleAddress of ["0x9F64F38F18530d70B0caD57d6B929Fa8f371d6c6", "0x78c9014568f8677df0beee444b224e09df519d9e"]) {
     console.log("\n====TunableOracle====", tunableOracleAddress);
     const TunableOracle = await deployer.getContractAt("TunableOracle", tunableOracleAddress);
-    role = ethers.utils.solidityKeccak256(["string"], ["PRICE_SETTER_ROLE"]);
-    console.log("price setter role (", role, "):");
-    roleMemberCount = await TunableOracle.getRoleMemberCount(role);
-    for (let i = 0; i < Number(roleMemberCount); i++) {
-      console.log("    ", await TunableOracle.getRoleMember(role, i));
-    }
+    console.log("externalOracle:", await TunableOracle.externalOracle());
+    console.log("fineTuner:", await TunableOracle.fineTuner());
   }
-
- 
-  
 
 }
 
