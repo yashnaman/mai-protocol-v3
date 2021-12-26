@@ -222,7 +222,8 @@ library TradeModule {
                 trader,
                 deltaPosition.neg(),
                 deltaCash.neg(),
-                totalFee
+                totalFee,
+                flags
             );
         }
         // send fee
@@ -676,7 +677,8 @@ library TradeModule {
                 account,
                 deltaPosition.neg(),
                 deltaCash.neg(),
-                totalFee
+                totalFee,
+                flags
             );
         }
         account.cash = account.cash.add(adjustCollateral);

@@ -10,7 +10,8 @@ import {
 } from "../scripts/utils";
 
 describe("integration2 - 2 perps. trade with targetLeverage", () => {
-    let USE_TARGET_LEVERAGE = 0x8000000;
+    // 200 << 7 = 25600
+    let USE_2x_TARGET_LEVERAGE = 25600;
     let IS_CLOSE_ONLY = 0x80000000;
 
     let user0;
@@ -106,9 +107,6 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await ctk.connect(user1).approve(perp.address, toWei("100000"));
         await ctk.connect(user2).approve(perp.address, toWei("100000"));
         await ctk.connect(user3).approve(perp.address, toWei("100000"));
-
-        // 2x target leverage
-        await perp.connect(user1).setTargetLeverage(0, user1.address, toWei("2"));
     });
 
     it("get default target leverage", async () => {
@@ -137,12 +135,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(activateAccounts.length).to.equal(0);
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // active account user1
         activateAccounts = await perp.listActiveAccounts(0, 0, 10);
         expect(activateAccounts[0]).to.equal(user1.address);
@@ -166,12 +164,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // short 2 (partial close)
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-2"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-2"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1050"));
             expect(totalFee).to.equal(toWei("6.3"));
             expect(cost).to.equal(toWei("-1093.7"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // active account user1
         activateAccounts = await perp.listActiveAccounts(0, 0, 10);
         expect(activateAccounts[0]).to.equal(user1.address);
@@ -197,12 +195,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // short 2 (close all + open)
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-2"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-2"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("992.498378537341251"));
             expect(totalFee).to.equal(toWei("5.954990271224047506"));
             expect(cost).to.equal(toWei("20.958233196541545506"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-2"), toWei("950"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // active account user1
         activateAccounts = await perp.listActiveAccounts(0, 0, 10);
         expect(activateAccounts[0]).to.equal(user1.address);
@@ -226,12 +224,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // long 1 (close all)
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("977.783065493367778000"));
             expect(totalFee).to.equal(toWei("2.933349196480103334"));
             expect(cost).to.equal(toWei("-519.783585310152118666"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // no active account
         activateAccounts = await perp.listActiveAccounts(0, 0, 10);
         expect(activateAccounts.length).to.equal(0);
@@ -276,12 +274,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1460.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -316,12 +314,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -346,12 +344,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(isInitialMarginSafe).to.be.false;
         expect(isMaintenanceMarginSafe).to.be.true;
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("515.541132467602916841"));
             expect(totalFee).to.equal(toWei("1.546623397402808751"));
             expect(cost).to.equal(toWei("-13.894509070200108090"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = -515.541132467602916841
         // newMargin = newCash + 505 * 2 = 505 * 2 * 0.01 + 0.5. so cash = -999.4
@@ -385,12 +383,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -413,7 +411,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await perp.forceToSyncState();
 
         // user 2 longs. make a higher price
-        await perp.connect(user2).trade(0, user2.address, toWei("2"), toWei("1000"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user2).trade(0, user2.address, toWei("2"), toWei("1000"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // amm deltaCash = 1070.964429859700685024
         var { cash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account
         expect(cash).to.equal(toWei("4525.485394289560385709")); // oldCash + deltaCash + lpfee
@@ -428,12 +426,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(isMaintenanceMarginSafe).to.be.false;
         expect(isMarginSafe).to.be.true;
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("521.201994206724030199"));
             expect(totalFee).to.equal(toWei("1.563605982620172090"));
             expect(cost).to.equal(toWei("-11.618388224103858109"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = -521.201994206724030199
         // old lev = 501x, margin = 501 * 2 * 1% = cash + 501 * 2 + 0.5
@@ -468,12 +466,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -499,12 +497,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         var { isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         expect(isMaintenanceMarginSafe).to.be.false;
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("510.522727823788730153"));
             expect(totalFee).to.equal(toWei("1.116727823788730153"));
             expect(cost).to.equal(toWei("0"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("500"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = -510.522727823788730153
         // fee = 1.116727823788730153 (72% of normal fees)
@@ -541,12 +539,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -569,7 +567,7 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await perp.forceToSyncState();
 
         // user 2 sells. make a lower price
-        await perp.connect(user2).trade(0, user2.address, toWei("-4"), toWei("0"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user2).trade(0, user2.address, toWei("-4"), toWei("0"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         // amm deltaCash = -2043.345318849321722334
         var { cash, position, margin } = await perp.getMarginAccount(0, perp.address); // AMM account
         expect(cash).to.equal(toWei("1412.148026469527599388")); // oldCash + deltaCash + lpfee
@@ -583,12 +581,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         var { isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
         expect(isInitialMarginSafe).to.be.true;
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("-1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("492.240720624875890864"));
             expect(totalFee).to.equal(toWei("0"));
             expect(cost).to.equal(toWei("0"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("450"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-1"), toWei("450"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMarginSafe, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = -492.240720624875890864
         // required im = 10.12, margin(after trade) = 4.240720624875890864 < im
@@ -623,12 +621,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 1e-7 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("0.0000001"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("0.0000001"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1010"));
             expect(totalFee).to.equal(toWei("0.000000303"));
             expect(cost).to.equal(toWei("0.500051303"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("0.0000001"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("0.0000001"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 1010 * 1e-7
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 0.50005. so cash = 0.49995
@@ -663,12 +661,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -688,12 +686,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // long 1 (open)
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1347.829178578730146"));
             expect(totalFee).to.equal(toWei("4.043487535736190438"));
             expect(cost).to.equal(toWei("851.872666114466336438"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1350"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1350"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 1347.829178578730146
         // deposit = deltaPosition * mark / 2xLev + pnl + fee = 1000 / 2 + 347.829178578730146 + 1347.829178578730146 * 0.003 = 851.872666114466336438
@@ -729,12 +727,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         // long 3 (open)
         let now = Math.floor(Date.now() / 1000);
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("3"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("1150"));
             expect(totalFee).to.equal(toWei("10.35"));
             expect(cost).to.equal(toWei("1960.85"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("3"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isMaintenanceMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 3450
         // margin = cash + positionValue = 0.5 + | positionValue | / 2xLev = 1500.5. so cash = -1499.5
@@ -763,12 +761,12 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // long 1 (open)
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_2x_TARGET_LEVERAGE);
             expect(tradePrice).to.equal(toWei("101.729704413161927575"));
             expect(totalFee).to.equal(toWei("0.305189113239485784"));
             expect(cost).to.equal(toWei("1206.034893526401413359"));
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
         // amm deltaCash = 101.729704413161927575
         // margin = initialMargin + keeperGasReward = 4 * 100 * 0.01 + 0.5 = 4.5
@@ -796,9 +794,9 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         await updatePrice(toWei("0.00053165"), toWei("1000"));
         await perp.forceToSyncState();
         {
-            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_TARGET_LEVERAGE);
+            let { tradePrice, totalFee, cost } = await perp.callStatic.queryTrade(0, user1.address, toWei("1"), none, USE_2x_TARGET_LEVERAGE);
         }
-        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
     });
 
     it("heart beat stop", async () => {
@@ -818,15 +816,15 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
 
         // long 1 (open)
         let now = Math.floor(Date.now() / 1000);
-        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
 
         // revert on perp 1
         await ethers.provider.send("evm_increaseTime", [3600])
         await ethers.provider.send("evm_mine")
-        await expect(perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE)).to.be.revertedWith("should be in NORMAL state");
+        await expect(perp.connect(user1).trade(0, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE)).to.be.revertedWith("should be in NORMAL state");
 
         // success on perp 2, auto setEmergency
-        await perp.connect(user1).trade(1, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE)
+        await perp.connect(user1).trade(1, user1.address, toWei("1"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE)
         await expect(perp.setEmergencyState(0)).to.be.revertedWith("should be in NORMAL state");
         const state = await perp.getPerpetualInfo(0)
         expect(state.state).to.equal(3 /* EMERGENCY */)
@@ -846,8 +844,8 @@ describe("integration2 - 2 perps. trade with targetLeverage", () => {
         expect(nums[0]).to.equal(toWei("0")); // total collateral of perpetual
 
         let now = Math.floor(Date.now() / 1000);
-        await perp.connect(user1).trade(0, user1.address, toWei("0.000065"), toWei("1150"), now + 999999, none, USE_TARGET_LEVERAGE);
-        await perp.connect(user1).trade(0, user1.address, toWei("-0.000065"), toWei("0"), now + 999999, none, USE_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("0.000065"), toWei("1150"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
+        await perp.connect(user1).trade(0, user1.address, toWei("-0.000065"), toWei("0"), now + 999999, none, USE_2x_TARGET_LEVERAGE);
         var { cash, position, margin, isInitialMarginSafe } = await perp.getMarginAccount(0, user1.address);
         expect(cash).to.equal(toWei("0"));
         expect(position).to.equal(toWei("0"));
