@@ -31,6 +31,7 @@ async function inspectPoolCreator(deployer) {
   console.log("upgradeAdmin:", upgradeAdmin);
   const keepers = await poolCreator.listKeepers(0, 100);
   console.log("whitelist keepers:", keepers);
+  /* block too much
   console.log("guardian:");
   var filter = poolCreator.filters.AddGuardian();
   var logs = await poolCreator.queryFilter(filter);
@@ -47,6 +48,7 @@ async function inspectPoolCreator(deployer) {
   for (const log of logs) {
     console.log("    renounce ", log.args[0]);
   }
+  */
   const vault = await poolCreator.getVault();
   const vaultFeeRate = await poolCreator.getVaultFeeRate();
   console.log("vault:", vault, "vault fee rate:", new BigNumber(vaultFeeRate.toString()).shiftedBy(-18).toFixed());
@@ -58,6 +60,7 @@ async function inspectPoolCreator(deployer) {
   const symbolService = await deployer.getDeployedContract("SymbolService");
   owner = await symbolService.owner();
   console.log("owner:", owner);
+  /* block too much
   console.log("whitelist factory:");
   filter = symbolService.filters.AddWhitelistedFactory();
   logs = await symbolService.queryFilter(filter);
@@ -69,6 +72,7 @@ async function inspectPoolCreator(deployer) {
   for (const log of logs) {
     console.log("    remove ", log.args[0]);
   }
+  */
 
   console.log("\n====MCDEXFoundation pool====");
   const poolAddress = "0xaB324146C49B23658E5b3930E641BDBDf089CbAc";
@@ -132,6 +136,34 @@ async function inspectPoolCreator(deployer) {
   console.log("    BTC");
   console.log("      address:", BTCOracleAddress);
   console.log("      beacon:", beacon);
+
+  console.log("\n====TunableOracleRegister====");
+  const TunableOracleRegisterAddress = "0x43800D850C87d5D585D8DDF3DFB23152A826cDeB";
+  console.log("address:", TunableOracleRegisterAddress);
+  const TunableOracleRegister = await deployer.getContractAt("TunableOracleRegister", TunableOracleRegisterAddress);
+  console.log("upgradeAdmin:", await deployer.getAdminOfUpgradableContract(TunableOracleRegister.address));
+  console.log("implementation:", await deployer.getImplementation(TunableOracleRegister.address));
+  console.log("beacon implementation(for TunableOracle):", await TunableOracleRegister.implementation());
+  var role = ethers.constants.HashZero;
+  console.log("default admin role (", role, "):");
+  var roleMemberCount = await TunableOracleRegister.getRoleMemberCount(role);
+  for (let i = 0; i < Number(roleMemberCount); i++) {
+    console.log("    ", await TunableOracleRegister.getRoleMember(role, i));
+  }
+  role = ethers.utils.solidityKeccak256(["string"], ["TERMINATER_ROLE"]);
+  console.log("terminater role (", role, "):");
+  roleMemberCount = await TunableOracleRegister.getRoleMemberCount(role);
+  for (let i = 0; i < Number(roleMemberCount); i++) {
+    console.log("    ", await TunableOracleRegister.getRoleMember(role, i));
+  }
+
+  for (let tunableOracleAddress of ["0x9F64F38F18530d70B0caD57d6B929Fa8f371d6c6", "0x78c9014568f8677df0beee444b224e09df519d9e"]) {
+    console.log("\n====TunableOracle====", tunableOracleAddress);
+    const TunableOracle = await deployer.getContractAt("TunableOracle", tunableOracleAddress);
+    console.log("externalOracle:", await TunableOracle.externalOracle());
+    console.log("fineTuner:", await TunableOracle.fineTuner());
+  }
+
 }
 
 async function main(_, deployer, accounts) {
